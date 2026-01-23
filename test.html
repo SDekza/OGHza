@@ -82,7 +82,8 @@
 
         // --- 1. GLOBAL CONSTANTS ---
         const YT_AVATAR_URL = "https://yt3.googleusercontent.com/vlD4rkRPBg-HIUX6kAbuW1AHgE1FzYa4cs7W3ZD1AV0z4Xg_vM42d1r_slf8SVPhjmJXPslvcg=s160-c-k-c0x00ffffff-no-rj";
-        const APP_VERSION = "Ver.1.00";
+        // Updated Version Number
+        const APP_VERSION = "Ver.1.01";
 
         const i18n = {
             th: {
@@ -191,7 +192,7 @@
                 Sun: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
                 Moon: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
                 Languages: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></svg>,
-                Settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+                Settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2 2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
                 FileText: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
                 MinusCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
                 AlertCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
@@ -218,7 +219,6 @@
                         <div className={`w-48 h-48 md:w-56 md:h-56 rounded-[4rem] flex items-center justify-center shadow-2xl border-2 rotate-3 ${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700/50' : 'bg-[#f4f2ee] border-stone-300'}`}>
                             <SVGs.Spell className="w-28 h-28 md:w-32 md:h-32 drop-shadow-2xl" />
                         </div>
-                        {/* Modified: Replaced Profile Badge with Version Badge */}
                         <div className={`absolute -bottom-2 -right-2 px-3 py-1.5 rounded-lg shadow-lg border-2 transform -rotate-6 text-[10px] font-bold tracking-widest ${theme === 'dark' ? 'bg-white text-slate-900 border-slate-200' : 'bg-stone-800 text-white border-stone-700'}`}>
                             {APP_VERSION}
                         </div>
@@ -237,10 +237,19 @@
                         <button onClick={onShowInstall} className={`w-full h-14 flex items-center justify-center gap-2 px-6 rounded-2xl font-semibold text-sm hover:translate-y-[-2px] transition-all border ${theme === 'dark' ? 'bg-transparent text-blue-500 border-blue-900/30 hover:bg-blue-950/20' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50'}`}>
                             <Icon name="HelpCircle" size={16} /> <span className="font-bold">{t.install}</span>
                         </button>
-                        {/* Modified: Youtube Button integrated here */}
-                        <a href="https://www.youtube.com/@SDekza-RO" target="_blank" rel="noreferrer" className={`w-full h-14 flex items-center justify-center gap-3 px-6 rounded-2xl font-bold shadow-xl hover:translate-y-[-2px] transition-all ${theme === 'dark' ? 'bg-red-600/10 border border-red-600/30 text-red-500 hover:bg-red-600/20' : 'bg-white text-red-600 border border-stone-200 hover:bg-red-50'}`}>
-                            <Icon name="Youtube" size={20} /> 
-                            <span>Youtube Channel</span>
+
+                        <a href="https://www.youtube.com/@SDekza-RO" target="_blank" rel="noreferrer" className={`mt-8 w-full flex items-center justify-between p-4 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${theme === 'dark' ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200 shadow-sm'}`}>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-cover shadow-sm border-2 border-red-600" style={{backgroundImage: `url('${YT_AVATAR_URL}')`}}></div>
+                                <div className="text-left">
+                                    <p className={`text-xs font-bold uppercase leading-none ${theme === 'dark' ? 'text-white' : 'text-stone-900'}`}>SDekza RO</p>
+                                    <p className={`text-[10px] mt-0.5 ${theme === 'dark' ? 'text-stone-400' : 'text-stone-500'}`}>{i18n[lang].subs || "140+ Subs"}</p>
+                                </div>
+                            </div>
+                            <div className="bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-md">
+                                <Icon name="Youtube" size={12} />
+                                <span>Subscribe</span>
+                            </div>
                         </a>
 
                         <button onClick={() => setLang(lang === 'th' ? 'en' : 'th')} className={`flex items-center gap-2 mx-auto pt-4 text-[10px] font-black uppercase tracking-widest transition-colors ${theme === 'dark' ? 'text-slate-600 hover:text-white' : 'text-stone-400 hover:text-stone-800'}`}>
@@ -570,6 +579,7 @@
                                 <div className={`max-w-xl mx-auto border rounded-[2.5rem] p-8 md:p-10 shadow-2xl animate-in fade-in zoom-in duration-200 ${themeClasses.card}`}>
                                     <form onSubmit={handleSaveInternal} className="space-y-8 font-black">
                                         <div className="flex justify-between items-center border-b border-stone-300 dark:border-slate-800 pb-6 font-black"><h2 className="text-xl md:text-2xl font-black text-purple-400 italic uppercase font-black">{editingId ? t.editRecord : t.newRecord}</h2></div>
+                                        {/* ... Form Content ... */}
                                         <div className="space-y-3 font-black">
                                             <label className={`text-xs md:text-sm font-medium uppercase tracking-widest flex items-center gap-2 ${themeClasses.textDim} font-black`}><Icon name="Settings" size={14}/> {t.selectionMode}</label>
                                             <div className="flex flex-col sm:flex-row gap-3">
@@ -821,12 +831,13 @@
                                                                                 </td>
                                                                             </tr>
                                                                             {expandedId === record.id && (
-                                                                                <tr className={`border-l-4 border-purple-500 animate-in slide-in-from-left-1 transition-all ${theme === 'dark' ? 'bg-slate-950/40' : 'bg-[#f4f2ee]'}`}><td colSpan="6" className="px-6 py-6 font-medium"><div className="grid grid-cols-1 md:grid-cols-4 gap-8"><div><p className={`font-black mb-3 uppercase text-[11px] tracking-widest ${themeClasses.textDim}`}>{t.costBreakdown}</p><p className="flex justify-between py-1 font-medium">{t.itemGum}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.gumCost} /></span></p><p className="flex justify-between py-1 font-medium">{t.itemSilvervine}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.silvervineCost} /></span></p><p className="flex justify-between py-1 font-medium">{t.etc}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.etcCost} /></span></p></div><div><p className={`font-black mb-3 uppercase text-[11px] tracking-widest ${themeClasses.textDim}`}>{t.revSource}</p><p className="flex justify-between py-1 font-medium">ขยะ: <span className={themeClasses.textMain}><ZenyDisplay amount={record.trashAmount} /></span></p><p className="flex justify-between py-1 font-medium">{t.stone}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.revenue - record.trashAmount} /></span></p></div><div className="md:col-span-2"><p className={`font-black mb-3 uppercase text-[11px] tracking-widest ${themeClasses.textDim}`}>{t.notes}</p><p className={`italic p-5 rounded-2xl min-h-[80px] whitespace-pre-wrap border text-sm font-medium ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-400' : 'bg-white border-stone-300 text-stone-600 shadow-inner'}`}>{record.notes || '-'}</p></div></div></td></tr>
+                                                                                <tr className={`border-l-4 border-purple-500 animate-in slide-in-from-left-1 transition-all ${theme === 'dark' ? 'bg-slate-950/40' : 'bg-[#f4f2ee]'}`}><td colSpan="6" className="px-6 py-6 font-medium"><div className="grid grid-cols-1 md:grid-cols-4 gap-8"><div><p className={`font-black mb-3 uppercase text-[11px] tracking-widest ${themeClasses.textDim} font-black`}>{t.costBreakdown}</p><p className="flex justify-between py-1 font-medium">{t.itemGum}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.gumCost} /></span></p><p className="flex justify-between py-1 font-medium">{t.itemSilvervine}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.silvervineCost} /></span></p><p className="flex justify-between py-1 font-medium">{t.etc}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.etcCost} /></span></p></div><div><p className={`font-black mb-3 uppercase text-[11px] tracking-widest ${themeClasses.textDim} font-black`}>{t.revSource}</p><p className="flex justify-between py-1 font-medium">ขยะ: <span className={themeClasses.textMain}><ZenyDisplay amount={record.trashAmount} /></span></p><p className="flex justify-between py-1 font-medium">{t.stone}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.revenue - record.trashAmount} /></span></p></div><div className="md:col-span-2"><p className={`font-black mb-3 uppercase text-[11px] tracking-widest ${themeClasses.textDim} font-black`}>{t.notes}</p><p className={`italic p-5 rounded-2xl min-h-[80px] whitespace-pre-wrap border text-sm font-medium ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-400' : 'bg-white border-stone-300 text-stone-600 shadow-inner'}`}>{record.notes || '-'}</p></div></div></td></tr>
                                                                             )}
                                                                         </React.Fragment>
                                                                     ))}
                                                                 </tbody>
                                                             </table>
+
                                                             {/* Mobile Card List View */}
                                                             <div className="md:hidden p-4 space-y-4">
                                                                 {paginatedData.map(record => (
@@ -838,6 +849,7 @@
                                                                             </div>
                                                                             <div className={`text-base font-bold ${record.profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}><ZenyDisplay amount={record.profit} /></div>
                                                                         </div>
+                                                                        
                                                                         <div className="grid grid-cols-2 gap-4 mb-4">
                                                                             <div className="flex flex-col gap-1">
                                                                                 <div className="flex items-center gap-1.5 text-xs font-medium"><SVGs.Spell className="w-3.5 h-3.5"/><span>{record.purpleStoneCount || 0}</span></div>
@@ -850,6 +862,7 @@
                                                                                 <span className={`px-1.5 py-0.5 rounded font-bold border flex items-center gap-1 text-[10px] ${record.useSilvervine ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10' : 'bg-slate-500/10 text-slate-500 border-slate-500/10 opacity-50'}`}><SVGs.SilvervineBox className="w-3 h-3"/> {record.useSilvervine ? '✓' : '✕'}</span>
                                                                             </div>
                                                                         </div>
+
                                                                         <div className={`flex justify-between items-center pt-3 border-t ${theme === 'dark' ? 'border-slate-800' : 'border-stone-100'}`}>
                                                                             <p className="text-[10px] opacity-50">แตะเพื่อดูรายละเอียด</p>
                                                                             <div className="flex gap-3">
@@ -858,6 +871,7 @@
                                                                                 <button onClick={(e) => { e.stopPropagation(); handleDelete(record.id); }} className="text-rose-500"><Icon name="Trash2" size={14}/></button>
                                                                             </div>
                                                                         </div>
+                                                                        
                                                                         {expandedId === record.id && (
                                                                             <div className={`mt-4 pt-4 border-t ${theme === 'dark' ? 'border-slate-800' : 'border-stone-100'} animate-in slide-in-from-top-2`}>
                                                                                  <div className="grid grid-cols-2 gap-4 text-xs font-medium mb-3">
@@ -958,8 +972,8 @@
                                             </div>
                                             <div className="grid grid-cols-1 gap-4">
                                                 <div className="flex gap-4 items-end">
-                                                    <div className="flex-1 space-y-1.5 font-black"><label className="text-[10px] font-black uppercase opacity-50 flex items-center gap-1 font-black"><SVGs.Spell className="w-3.5 h-3.5"/> {t.itemSpell}</label><input type="number" value={editModalData.purpleStoneCount} onFocus={(e) => e.target.select()} onChange={e => setEditModalData({...editModalData, purpleStoneCount: e.target.value})} className={`w-full p-3 rounded-xl border font-bold outline-none ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white font-black' : 'bg-stone-50 border-stone-200 text-stone-900 shadow-inner'}`} /></div>
-                                                    <div className={`flex p-1 rounded-xl border w-32 shrink-0 h-[46px] ${theme === 'dark' ? 'bg-slate-950 border-slate-800 font-black' : 'bg-[#e9e6dc] border-stone-300 shadow-inner'}`}><button type="button" onClick={() => setEditModalData({...editModalData, isSellingSpell: true})} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${editModalData.isSellingSpell ? 'bg-rose-600 text-white shadow-md font-black' : 'text-stone-600'}`}>{t.sell}</button><button type="button" onClick={() => setEditModalData({...editModalData, isSellingSpell: false})} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${!editModalData.isSellingSpell ? 'bg-emerald-600 text-white shadow-md' : 'text-stone-600'}`}>{t.storeShort}</button></div>
+                                                    <div className="flex-1 space-y-1.5 font-black"><label className="text-[10px] font-black uppercase opacity-50 flex items-center gap-1"><SVGs.Spell className="w-3.5 h-3.5"/> {t.itemSpell}</label><input type="number" value={editModalData.purpleStoneCount} onFocus={(e) => e.target.select()} onChange={e => setEditModalData({...editModalData, purpleStoneCount: e.target.value})} className={`w-full p-3 rounded-xl border font-bold outline-none ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white font-black' : 'bg-stone-50 border-stone-200 text-stone-900 shadow-inner'}`} /></div>
+                                                    <div className={`flex p-1 rounded-xl border w-32 shrink-0 h-[46px] ${theme === 'dark' ? 'bg-slate-950 border-slate-800 font-black' : 'bg-[#e9e6dc] border-stone-300 shadow-inner'}`}><button type="button" onClick={() => setEditModalData({...editModalData, isSellingSpell: true})} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${editModalData.isSellingSpell ? 'bg-rose-600 text-white shadow-md' : 'text-stone-600'}`}>{t.sell}</button><button type="button" onClick={() => setEditModalData({...editModalData, isSellingSpell: false})} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${!editModalData.isSellingSpell ? 'bg-emerald-600 text-white shadow-md' : 'text-stone-600'}`}>{t.storeShort}</button></div>
                                                 </div>
                                                 {editModalData.isSellingSpell && (
                                                     <div className="space-y-1.5 animate-in slide-in-from-top-1 font-black"><label className="text-[10px] font-black uppercase opacity-50 text-rose-500 font-black">ระบุราคาขายหินม่วง (ชิ้นละ)</label><input type="number" value={editModalData.customSpellPrice} onFocus={(e) => e.target.select()} onChange={e => setEditModalData({...editModalData, customSpellPrice: e.target.value})} className={`w-full p-3 rounded-xl border border-rose-500/30 font-bold outline-none ${theme === 'dark' ? 'bg-slate-950 text-rose-400' : 'bg-rose-50 text-rose-600 shadow-inner'}`} /></div>
@@ -967,7 +981,7 @@
                                                 {editModalData.mode === 'aogh' && (
                                                     <React.Fragment>
                                                         <div className="flex gap-4 items-end mt-2">
-                                                            <div className="flex-1 space-y-1.5 font-black"><label className="text-[10px] font-black uppercase opacity-50 flex items-center gap-1 font-black"><SVGs.Magic className="w-3.5 h-3.5"/> {t.itemMagic}</label><input type="number" value={editModalData.contMagicCount} onFocus={(e) => e.target.select()} onChange={e => setEditModalData({...editModalData, contMagicCount: e.target.value})} className={`w-full p-3 rounded-xl border font-bold outline-none ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white font-black' : 'bg-stone-50 border-stone-200 text-stone-900 shadow-inner'}`} /></div>
+                                                            <div className="flex-1 space-y-1.5 font-black"><label className="text-[10px] font-black uppercase opacity-50 flex items-center gap-1"><SVGs.Magic className="w-3.5 h-3.5"/> {t.itemMagic}</label><input type="number" value={editModalData.contMagicCount} onFocus={(e) => e.target.select()} onChange={e => setEditModalData({...editModalData, contMagicCount: e.target.value})} className={`w-full p-3 rounded-xl border font-bold outline-none ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white font-black' : 'bg-stone-50 border-stone-200 text-stone-900 shadow-inner'}`} /></div>
                                                             <div className={`flex p-1 rounded-xl border w-32 shrink-0 h-[46px] ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-[#e9e6dc] border-stone-300 shadow-inner'}`}><button type="button" onClick={() => setEditModalData({...editModalData, isSellingMagic: true})} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${editModalData.isSellingMagic ? 'bg-rose-600 text-white shadow-md' : 'text-stone-600'}`}>{t.sell}</button><button type="button" onClick={() => setEditModalData({...editModalData, isSellingMagic: false})} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${!editModalData.isSellingMagic ? 'bg-emerald-600 text-white shadow-md' : 'text-stone-600'}`}>{t.storeShort}</button></div>
                                                         </div>
                                                         {editModalData.isSellingMagic && (
@@ -979,7 +993,7 @@
                                             </div>
                                             <div className="space-y-1.5 font-black"><label className="text-[10px] font-black uppercase opacity-50 font-black">{t.notes}</label><textarea value={editModalData.notes} onChange={e => setEditModalData({...editModalData, notes: e.target.value})} className={`w-full p-3 rounded-xl border font-medium text-xs h-24 outline-none ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-stone-50 border-stone-200 text-stone-900 shadow-inner'}`} /></div>
                                         </div>
-                                        <div className="flex gap-4 mt-8 font-black"><button onClick={() => setShowEditModal(false)} className={`flex-1 py-4 rounded-2xl font-black uppercase text-xs transition-all ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-stone-100 hover:bg-stone-200 text-stone-600'}`}>{t.cancel}</button><button onClick={submitEditModal} className="flex-[1.5] bg-gradient-to-r from-amber-500 to-orange-600 text-white py-4 rounded-2xl font-black uppercase text-xs shadow-lg active:scale-95 transition-all">บันทึกการแก้ไข</button></div>
+                                        <div className="flex gap-4 mt-8 font-black"><button onClick={() => setShowEditModal(false)} className={`flex-1 py-4 rounded-2xl font-black uppercase text-xs transition-all ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-stone-100 hover:bg-stone-200 text-stone-600'}`}>{t.cancel}</button><button onClick={submitEditModal} className="flex-[1.5] bg-gradient-to-r from-amber-500 to-orange-600 text-white py-4 rounded-2xl font-black uppercase text-xs shadow-lg active:scale-95 transition-all font-black">บันทึกการแก้ไข</button></div>
                                     </div>
                                 </div>
                             )}
@@ -989,7 +1003,7 @@
                                     <div className={`border w-full max-sm p-10 rounded-[3rem] shadow-2xl relative transition-all text-center ${theme === 'dark' ? 'bg-slate-900 border-slate-800 font-black' : 'bg-white border-stone-300 font-black'}`} onClick={e => e.stopPropagation()}>
                                         <div className="mx-auto w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500 mb-8 font-black"><Icon name="Trash2" size={40} /></div>
                                         <h3 className={`text-xl md:text-2xl font-black uppercase mb-5 ${themeClasses.textMain} font-black`}>{t.confirmDeleteAll}</h3>
-                                        <p className={`text-sm font-medium mb-10 leading-relaxed ${themeClasses.textDim}`}>{t.deleteWarn}</p>
+                                        <p className={`text-sm font-medium mb-10 leading-relaxed ${themeClasses.textDim} font-black`}>{t.deleteWarn}</p>
                                         <div className="flex gap-4 font-black">
                                             <button onClick={() => setShowDeleteAllModal(false)} className={`flex-1 py-5 rounded-2xl font-black uppercase text-xs transition-all ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-stone-100 hover:bg-stone-200 text-stone-600'}`}>{t.cancel}</button>
                                             <button onClick={handleClearAllHistory} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-lg active:scale-95 transition-all font-black">ยืนยันการลบ</button>
