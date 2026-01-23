@@ -1,901 +1,111 @@
-!DOCTYPE html
-html lang=th
-head
-    meta charset=UTF-8
-    meta name=viewport content=width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no
-    titleOGH TRACKER - Ver.01.01title
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OGH TRACKER - กำลังปรับปรุง</title>
     
-    link rel=icon type=imagepng href=httpscdn-icons-png.flaticon.com51230623062634.png
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    !-- Tailwind CSS --
-    script src=httpscdn.tailwindcss.comscript
-    
-    !-- React & DOM --
-    script crossorigin src=httpsunpkg.comreact@18umdreact.production.min.jsscript
-    script crossorigin src=httpsunpkg.comreact-dom@18umdreact-dom.production.min.jsscript
-    script src=httpsunpkg.comprop-types@15.8.1prop-types.min.jsscript
-    
-    !-- HTML2Canvas (For Share Feature) --
-    script src=httpshtml2canvas.hertzen.comdisthtml2canvas.min.jsscript
-    
-    !-- Babel --
-    script src=httpsunpkg.com@babelstandalonebabel.min.jsscript
+    <!-- Libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    style
-        @import url('httpsfonts.googleapis.comcss2family=Interwght@400;500;700;900&family=Kanitwght@300;400;600;700;900&display=swap');
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Kanit:wght@300;400;500;700;900&display=swap');
         
         body {
-            font-family 'Inter', 'Kanit', sans-serif;
-            margin 0;
-            padding 0;
-            transition background-color 0.5s ease, color 0.5s ease;
-            -webkit-tap-highlight-color transparent;
+            font-family: 'Inter', 'Kanit', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
         }
 
-         Custom Scrollbar 
-        -webkit-scrollbar { width 4px; }
-        -webkit-scrollbar-track { background transparent; }
-        -webkit-scrollbar-thumb { background #a855f7; border-radius 10px; }
-
-         Hide Number Input Arrows 
-        input-webkit-outer-spin-button,
-        input-webkit-inner-spin-button {
-            -webkit-appearance none;
-            margin 0;
-        }
-        input[type=number] {
-            -moz-appearance textfield;
+        .maintenance-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
-         Animations 
-        @keyframes fadeIn { from { opacity 0; transform translateY(10px); } to { opacity 1; transform translateY(0); } }
-        @keyframes pulse-soft { 0%, 100% { opacity 1; } 50% { opacity 0.7; } }
-        .animate-in { animation fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-pulse-soft { animation pulse-soft 2s infinite; }
-    style
-head
-body
-    div id=rootdiv
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.98); }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100">
+    <div id="root"></div>
 
-    script type=textbabel
-         --- 1. CORE REACT HOOKS ---
-        const { useState, useEffect, useMemo, useRef } = React;
+    <script type="text/babel">
+        const { useState } = React;
 
-         --- 2. GLOBAL CONSTANTS ---
-        const YT_AVATAR_URL = httpsui-avatars.comapiname=SDekza+RO&background=random&color=fff&background=7e22ce; 
-        const GUEST_AVATAR_URL = httpscdn-icons-png.flaticon.com512847847969.png;
-
-        const i18n = {
-            th {
-                dashboard OLD GLAST HEIM, welcomeSub ระบบบันทึกสถิติและวิเคราะห์กำไร, loginBtn เข้าสู่ระบบด้วย Gmail, guestBtn ใช้งานแบบบุคคลทั่วไป,
-                exit ออกจากระบบ, home หน้าแรก, addData เพิ่มข้อมูล, netProfit กำไรสุทธิ, totalBothModes ยอดรวมทั้งสองโหมด, avgRev รายได้เฉลี่ยต่อรอบ,
-                avgMin รายได้เฉลี่ยต่อนาที, inventory คลังสมบัติ, stats กราฟสถิติ, history ประวัติการฟาร์ม, prices ราคาตลาดปัจจุบัน,
-                timer นาฬิกาจับเวลา, install ติดตั้งแอป, newRecord บันทึกข้อมูลใหม่, editRecord แก้ไขข้อมูล, date วันที่, duration เวลาที่ใช้ (นาที),
-                trashSale ยอดขายขยะ (Zeny), gum บับเบิ้ลกั้ม, silvervine มะละกอ, etc ต้นทุนอื่นๆ, notes บันทึกช่วยจำ, save บันทึกข้อมูล,
-                cancel ยกเลิก, subs Subscribe, profit กำไร, revenue รายได้, mode โหมด, guestLogin Guest, gmailLogin Gmail,
-                itemSpell หินม่วง, itemMagic หินแดง, itemGum บับเบิ้ลกั้ม, itemGumBox กล่องบับเบิ้ลกั้ม, itemSilvervine มะละกอ, itemSilvervineBox กล่องมะละกอ,
-                unit ชิ้น, langName English, revSource ที่มาของรายได้, costBreakdown รายละเอียดต้นทุน, stone หิน, trash ขยะ,
-                selectionMode เลือกโหมดการเล่น, max สูงสุด, min ต่ำสุด, currentValue มูลค่าปัจจุบัน, sell ขาย, sellPopup ขายไอเทมจากคลัง,
-                sellQuantity จำนวนที่จะขาย, sellPrice ราคาขายต่อชิ้น, confirmSell ยืนยันการขาย, fromSpell จากการขายหินม่วง, fromMagic จากการขายหินแดง,
-                priceWarning กรุณาระบุราคาตลาดปัจจุบันให้ครบถ้วนก่อนเพิ่มข้อมูล, gumShort กั้ม, viewDetails คลิกเพื่อดูรายละเอียด,
-                range1W 1 สัปดาห์, range1M 30 วัน, range3M 3 เดือน, range1Y 1 ปี, assetTrend มูลค่าทรัพย์สินที่ได้รับ, theme เปลี่ยนธีม,
-                deleteAll ลบทั้งหมด, confirmDeleteAll ยืนยันการลบข้อมูลทั้งหมดหรือไม่, deleteWarn การกระทำนี้จะลบประวัติการฟาร์มและรายการขายทั้งหมดและไม่สามารถกู้คืนได้,
-                manage จัดการ, share แชร์, edit แก้ไข, delete ลบ, copyText คัดลอกข้อความ, saveImage บันทึกรูปภาพ, shareTitle สถิติการฟาร์ม OGH,
-                generating กำลังสร้างรูปภาพ..., copied คัดลอกแล้ว!, loggingIn กำลังเชื่อมต่อ Google...
-            },
-            en {
-                dashboard OLD GLAST HEIM, welcomeSub Statistics & Profit Analytics System, loginBtn Login with Gmail, guestBtn Use as Guest,
-                exit Logout, home Home, addData Add Data, netProfit Net Profit, totalBothModes Total for both modes, avgRev Avg. Revenue  Round,
-                avgMin Avg. Revenue  Min, inventory Inventory, stats Statistics, history History, prices Market Prices,
-                timer Farm Timer, install Install App, newRecord New Record, editRecord Edit Record, date Date, duration Duration (Min),
-                trashSale Trash Sales (Zeny), gum Bubble Gum, silvervine Silvervine, etc Other Costs (etc.), notes Notes (Memo), save Save Data,
-                cancel Cancel, subs Subscribe, profit Profit, revenue Revenue, mode Mode, guestLogin Guest, gmailLogin Gmail,
-                itemSpell Coagulated Spell, itemMagic Contaminated Magic, itemGum Bubble Gum, itemGumBox Bubble Gum Box, itemSilvervine Silvervine,
-                itemSilvervineBox Silvervine Box, unit ea., langName ภาษาไทย, revSource Revenue Source, costBreakdown Costs Breakdown,
-                stone Stone, trash Trash, selectionMode Select Run Mode, max Max, min Min, currentValue Current Value, sell Sell,
-                sellPopup Sell Item from Stock, sellQuantity Quantity to Sell, sellPrice Price per ea., confirmSell Confirm Sale,
-                fromSpell from Coagulated Spell sales, fromMagic from Contaminated Magic sales, priceWarning Please fill in all market prices before adding data,
-                gumShort Gum, viewDetails Click to view details, range1W 1 Week, range1M 30 Days, range3M 3 Months, range1Y 1 Year,
-                assetTrend Acquired Asset Value, theme Change Theme,
-                deleteAll Delete All, confirmDeleteAll Confirm delete all data, deleteWarn This will permanently remove all farm records and sales history.,
-                manage Manage, share Share, edit Edit, delete Delete, copyText Copy Text, saveImage Save Image, shareTitle OGH Farming Stats,
-                generating Generating..., copied Copied!, loggingIn Connecting to Google...
-            }
-        };
+        const YT_AVATAR_URL = "https://yt3.googleusercontent.com/vlD4rkRPBg-HIUX6kAbuW1AHgE1FzYa4cs7W3ZD1AV0z4Xg_vM42d1r_slf8SVPhjmJXPslvcg=s160-c-k-c0x00ffffff-no-rj";
 
         const SVGs = {
-            Spell ({className, style}) = (
-                svg viewBox=0 0 32 32 className={className} style={style} shapeRendering=crispEdges
-                    path d=M16 4 L24 12 L24 22 L16 28 L8 22 L8 12 Z fill=#7E57C2 
-                    path d=M16 6 L22 12 L22 20 L16 26 L10 20 L10 12 Z fill=#9575CD 
-                    rect x=13 y=10 width=2 height=2 fill=#EDE7F6 
-                svg
-            ),
-            Magic ({className, style}) = (
-                svg viewBox=0 0 32 32 className={className} style={style} shapeRendering=crispEdges
-                    circle cx=16 cy=16 r=10 fill=#EF5350 
-                    circle cx=16 cy=16 r=6 fill=#B71C1C 
-                    path d=M16 6 L18 10 L22 10 L20 14 L22 18 L18 18 L16 22 L14 18 L10 18 L12 14 L10 10 L14 10 Z fill=#FFCDD2 opacity=0.5
-                svg
-            ),
-            Silvervine ({className, style}) = (
-                svg viewBox=0 0 32 32 className={className} style={style} shapeRendering=crispEdges
-                    rect x=8 y=10 width=16 height=14 fill=#5D4037 
-                    rect x=14 y=4 width=4 height=6 fill=#4CAF50 
-                    rect x=14 y=14 width=4 height=4 fill=#FFD600 
-                svg
-            ),
-            GumBox ({className, style}) = (
-                 svg viewBox=0 0 32 32 className={className} style={style} shapeRendering=crispEdges
-                    rect x=6 y=8 width=20 height=18 rx=2 fill=#42A5F5 
-                    path d=M6 14 L26 14 stroke=#BBDEFB strokeWidth=2 
-                    circle cx=16 cy=20 r=4 fill=#fff opacity=0.8 
-                svg
-            ),
-            SilvervineBox ({className, style}) = (
-                 svg viewBox=0 0 32 32 className={className} style={style} shapeRendering=crispEdges
-                    rect x=6 y=8 width=20 height=18 rx=2 fill=#66BB6A 
-                    path d=M16 8 L16 26 stroke=#C8E6C9 strokeWidth=2 
-                    rect x=13 y=14 width=6 height=6 fill=#FFD600 rx=1 
-                svg
-            ),
-            Google () = (
-                svg width=18 height=18 viewBox=0 0 24 24
-                    path d=M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z fill=#4285F4
-                    path d=M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z fill=#34A853
-                    path d=M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z fill=#FBBC05
-                    path d=M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z fill=#EA4335
-                svg
+            Spell: ({className}) => (
+                <svg viewBox="0 0 32 32" className={className} shapeRendering="crispEdges">
+                    <path d="M16 4 L24 12 L24 22 L16 28 L8 22 L8 12 Z" fill="#7E57C2" />
+                    <path d="M16 6 L22 12 L22 20 L16 26 L10 20 L10 12 Z" fill="#9575CD" />
+                    <rect x="13" y="10" width="2" height="2" fill="#EDE7F6" />
+                </svg>
             )
         };
 
-        const Icon = ({ name, size = 16, className =  }) = {
-            const icons = {
-                Wallet svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}path d=M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2path d=M18 12h4circle cx=16 cy=12 r=2svg,
-                TrendingUp svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}polyline points=23 6 13.5 15.5 8.5 10.5 1 18polyline points=17 6 23 6 23 12svg,
-                Archive svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}polyline points=21 8 21 21 3 21 3 8rect x=1 y=3 width=22 height=5line x1=10 y1=12 x2=14 y2=12svg,
-                History svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}path d=M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8path d=M3 3v5h5path d=M12 7v5l4 2svg,
-                Trash2 svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}polyline points=3 6 5 6 21 6path d=M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2line x1=10 y1=11 x2=10 y2=17line x1=14 y1=11 x2=14 y2=17svg,
-                PlusCircle svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}circle cx=12 cy=12 r=10line x1=12 y1=8 x2=12 y2=16line x1=8 y1=12 x2=16 y2=12svg,
-                Plus svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}line x1=12 y1=5 x2=12 y2=19line x1=5 y1=12 x2=19 y2=12svg,
-                Check svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=3 strokeLinecap=round strokeLinejoin=round className={className}polyline points=20 6 9 17 4 12svg,
-                Sun svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}circle cx=12 cy=12 r=5line x1=12 y1=1 x2=12 y2=3line x1=12 y1=21 x2=12 y2=23line x1=4.22 y1=4.22 x2=5.64 y2=5.64line x1=18.36 y1=18.36 x2=19.78 y2=19.78line x1=1 y1=12 x2=3 y2=12line x1=21 y1=12 x2=23 y2=12line x1=4.22 y1=19.78 x2=5.64 y2=18.36line x1=18.36 y1=5.64 x2=19.78 y2=4.22svg,
-                Moon svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}path d=M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79zsvg,
-                X svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=3 strokeLinecap=round strokeLinejoin=round className={className}line x1=18 y1=6 x2=6 y2=18line x1=6 y1=6 x2=18 y2=18svg,
-                Maximize2 svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}polyline points=15 3 21 3 21 9polyline points=9 21 3 21 3 15line x1=21 y1=3 x2=14 y2=10line x1=3 y1=21 x2=10 y2=14svg,
-                Youtube svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}path d=M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2c.46-1.7.46-5.33.46-5.33s0-3.63-.46-5.33zpolygon points=9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02svg,
-                LogOut svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}path d=M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4polyline points=16 17 21 12 16 7line x1=21 y1=12 x2=9 y2=12svg,
-                User svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}path d=M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2circle cx=12 cy=7 r=4svg,
-                Languages svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}line x1=2 y1=12 x2=22 y2=12path d=M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10zsvg,
-                HelpCircle svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}circle cx=12 cy=12 r=10path d=M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3line x1=12 y1=17 x2=12.01 y2=17svg,
-                LayoutDashboard svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}rect x=3 y=3 width=7 height=9rect x=14 y=3 width=7 height=5rect x=14 y=12 width=7 height=9rect x=3 y=16 width=7 height=5svg,
-                Clock svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}circle cx=12 cy=12 r=10polyline points=12 6 12 12 16 14svg,
-                Settings svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}circle cx=12 cy=12 r=3path d=M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1zsvg,
-                FileText svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}path d=M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zpolyline points=14 2 14 8 20 8line x1=16 y1=13 x2=8 y2=13line x1=16 y1=17 x2=8 y2=17polyline points=10 9 9 9 8 9svg,
-                AlertCircle svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}circle cx=12 cy=12 r=10line x1=12 y1=8 x2=12 y2=12line x1=12 y1=16 x2=12.01 y2=16svg,
-                MinusCircle svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}circle cx=12 cy=12 r=10line x1=8 y1=12 x2=16 y2=12svg,
-                Play svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}polygon points=5 3 19 12 5 21 5 3 svg,
-                Pause svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}rect x=6 y=4 width=4 height=16 rect x=14 y=4 width=4 height=16 svg,
-                Square svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}rect x=3 y=3 width=18 height=18 rx=2 ry=2 svg,
-                ArrowUp svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}line x1=12 y1=19 x2=12 y2=5linepolyline points=5 12 12 5 19 12polylinesvg,
-                ArrowDown svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}line x1=12 y1=5 x2=12 y2=19linepolyline points=19 12 12 19 5 12polylinesvg,
-                Edit svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}path d=M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7pathpath d=M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5zpathsvg,
-                Share2 svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}circle cx=18 cy=5 r=3circlecircle cx=6 cy=12 r=3circlecircle cx=18 cy=19 r=3circleline x1=8.59 y1=13.51 x2=15.42 y2=17.49lineline x1=15.41 y1=6.51 x2=8.59 y2=10.49linesvg,
-                Copy svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}rect x=9 y=9 width=13 height=13 rx=2 ry=2rectpath d=M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1pathsvg,
-                Download svg width={size} height={size} viewBox=0 0 24 24 fill=none stroke=currentColor strokeWidth=2 strokeLinecap=round strokeLinejoin=round className={className}path d=M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4pathpolyline points=7 10 12 15 17 10polylineline x1=12 y1=15 x2=12 y2=3linesvg
-            };
-            return icons[name]  null;
-        };
-
-         --- 3. WELCOME SCREEN COMPONENT ---
-        const WelcomeScreen = ({ onLogin, onGuest, lang, setLang, theme, onInstall, loginLoading }) = (
-            div className={`min-h-screen flex flex-col items-center justify-center p-6 text-center overflow-hidden transition-colors duration-500 ${theme === 'dark'  'bg-slate-950 text-slate-100'  'bg-[#e5e2da] text-stone-900'}`}
-                div className={`absolute top-14 left-14 w-64 h-64 rounded-full blur-[120px] animate-pulse ${theme === 'dark'  'bg-purple-60010'  'bg-purple-6005'}`}div
-                div className={`absolute bottom-14 right-14 w-64 h-64 rounded-full blur-[120px] animate-pulse ${theme === 'dark'  'bg-blue-60010'  'bg-blue-6005'}`}div
-                
-                div className=relative mb-12 transform hoverscale-105 transition-transform duration-500
-                    div className={`w-48 h-48 mdw-56 mdh-56 rounded-[4rem] flex items-center justify-center shadow-2xl border-2 rotate-3 ${theme === 'dark'  'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-70050'  'bg-[#f4f2ee] border-stone-300'}`}
-                        SVGs.Spell className=w-28 h-28 mdw-32 mdh-32 drop-shadow-2xl 
-                    div
-                    div className=absolute -bottom-2 -right-2 bg-purple-600 text-white flex items-center gap-2 px-3 py-1.5 rounded-full shadow-lg border-2 border-slate-950 -rotate-6
-                        span className=text-[10px] font-black uppercase tracking-widestVer.01.01span
-                    div
-                div
-
-                h1 className=text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-purple-500 to-pink-500 mb-4 tracking-tighter italic uppercaseOGH TRACKERh1
-                p className={`text-sm mb-12 font-medium leading-relaxed max-w-xs mx-auto ${theme === 'dark'  'text-slate-400'  'text-stone-600'}`}{i18n[lang].welcomeSub}brspan className=text-xs mt-1 block uppercase tracking-widest italic font-bold tracking-[0.2em]RO Classic  GGTspanp
-                
-                div className=space-y-4 w-full max-w-xs relative z-10
-                    button disabled={loginLoading} onClick={onLogin} className={`w-full h-14 flex items-center justify-center gap-3 px-6 rounded-2xl font-bold shadow-xl hovertranslate-y-[-2px] transition-all ${theme === 'dark'  'bg-white text-slate-900'  'bg-stone-800 text-white'} ${loginLoading  'opacity-70 cursor-not-allowed'  ''}`}
-                        {loginLoading  div className=w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spindivspan className=text-xs{i18n[lang].loggingIn}span  SVGs.Google  span{i18n[lang].loginBtn}span}
-                    button
-                    button onClick={onGuest} className={`w-full h-14 flex items-center justify-center gap-2 px-6 rounded-2xl font-semibold text-sm hovertranslate-y-[-2px] transition-all border ${theme === 'dark'  'bg-transparent text-slate-500 border-slate-800 hoverbg-slate-900 hovertext-white'  'bg-white text-stone-500 border-stone-300 hoverbg-[#eceae4] hovertext-stone-800'}`}
-                        Icon name=User size={16}  {i18n[lang].guestBtn}
-                    button
-                    button onClick={onInstall} className={`w-full h-12 flex items-center justify-center gap-2 px-6 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border ${theme === 'dark'  'border-purple-50030 text-purple-400 hoverbg-purple-50010'  'border-purple-200 text-purple-600 hoverbg-purple-50'}`}
-                        Icon name=HelpCircle size={14}  {i18n[lang].install}
-                    button
-                    button onClick={() = setLang(lang === 'th'  'en'  'th')} className={`flex items-center gap-2 mx-auto pt-4 text-[10px] font-black uppercase tracking-widest transition-colors ${theme === 'dark'  'text-slate-600 hovertext-white'  'text-stone-400 hovertext-stone-800'}`}
-                        Icon name=Languages size={14}  {i18n[lang].langName}
-                    button
-                div
-            div
-        );
-
-         --- 4. MAIN APP COMPONENT ---
-        function App() {
-             Recharts removed per request
-
-             --- State Management ---
-            const [lang, setLang] = useState('th');
-            const [theme, setTheme] = useState('dark'); 
-            const [user, setUser] = useState(null);
-            const [isGuestMode, setIsGuestMode] = useState(false);
-            const [loginLoading, setLoginLoading] = useState(false);  New state for simulation
-            
-             Core Data
-            const [records, setRecords] = useState([]);
-            const [manualSales, setManualSales] = useState([]); 
-            const [globalPrices, setGlobalPrices] = useState({ purpleStonePrice 0, contMagicPrice 0, gumBoxPrice 0, silvervineBoxPrice 0 });
-            
-             UI State
-            const [activeTab, setActiveTab] = useState('ogh');
-            const [isAdding, setIsAdding] = useState(false);
-            const [editingId, setEditingId] = useState(null);
-            const [sortOrder, setSortOrder] = useState('date-desc');
-            const [expandedId, setExpandedId] = useState(null);
-            const [showManual, setShowManual] = useState(false);
-            const [priceValidationPulse, setPriceValidationPulse] = useState(false); 
-            const [priceWarningActive, setPriceWarningActive] = useState(false);
-            const [showSaleModal, setShowSaleModal] = useState(false);
-            const [showDeleteAllModal, setShowDeleteAllModal] = useState(false); 
-            const [showEditModal, setShowEditModal] = useState(false);  New Edit Modal
-            const [showShareModal, setShowShareModal] = useState(null);  New Share Modal (holds record)
-            const [shareLoading, setShareLoading] = useState(false);
-            const [shareCopied, setShareCopied] = useState(false);
-
-             Timer State
-            const [timeInMs, setTimeInMs] = useState(0);
-            const [isTimerActive, setIsTimerActive] = useState(false);
-            const [isTimerPaused, setIsTimerPaused] = useState(true);
-            const timerRef = useRef(null);
-
-             Forms
-            const [saleItem, setSaleItem] = useState(null); 
-            const [saleFormData, setSaleFormData] = useState({ quantity , price  });
-            const [formData, setFormData] = useState({
-                date new Date().toLocaleDateString('en-GB'),
-                gumUsed 0, trashAmount , purpleStoneCount , contMagicCount ,
-                isSellingSpell false, isSellingMagic false, useSilvervine true,
-                minutesUsed 60, notes , otherCosts [], runMode 'ogh'
-            });
-
-             Edit Form Data (Separate to avoid conflict)
-            const [editFormData, setEditFormData] = useState(null);
-
-            const t = i18n[lang];
-
-             --- Effects ---
-             Timer Logic
-            useEffect(() = {
-                if (isTimerActive && !isTimerPaused) {
-                    timerRef.current = setInterval(() = setTimeInMs(p = p + 1000), 1000);
-                } else { clearInterval(timerRef.current); }
-                return () = clearInterval(timerRef.current);
-            }, [isTimerActive, isTimerPaused]);
-
-             --- Helpers ---
-            const formatZeny = (n) = new Intl.NumberFormat('th-TH').format(Math.round(n  0));
-            const formatMZeny = (n) = (Number(n  0)  1000000).toFixed(2) +  M;
-            const formatTimer = (ms) = {
-                const m = Math.floor(ms  60000).toString().padStart(2, '0');
-                const s = Math.floor((ms % 60000)  1000).toString().padStart(2, '0');
-                return `${m}${s}`;
-            };
-
-            const handleLogin = () = {
-                setLoginLoading(true);
-                 Simulate network request to Google
-                setTimeout(() = {
-                    const randomName = SDekza RO;  In real app, from Auth Provider
-                    const randomEmail = sdekza.ro@gmail.com;
-                    setUser({ displayName randomName, email randomEmail, photoURL YT_AVATAR_URL });
-                    setLoginLoading(false);
-                }, 1500);
-            };
-
-            const handleLogout = () = { setUser(null); setIsGuestMode(false); setRecords([]); setManualSales([]); };
-            const updatePrice = (key, val) = setGlobalPrices(prev = ({ ...prev, [key] val ===     Number(val) }));
-
-            const handleAddDataToggle = () = {
-                if (isAdding) { setIsAdding(false); setEditingId(null); setPriceWarningActive(false); return; }
-                const isValid = globalPrices.purpleStonePrice  0 && globalPrices.contMagicPrice  0 && globalPrices.gumBoxPrice  0 && globalPrices.silvervineBoxPrice  0;
-                if (!isValid) { setPriceWarningActive(true); setPriceValidationPulse(true); setTimeout(() = setPriceValidationPulse(false), 500); return; }
-                setIsAdding(true); setPriceWarningActive(false);
-            };
-
-            const handleSave = (e) = {
-                e.preventDefault();
-                const id = Date.now().toString();
-                const entryMode = formData.runMode  activeTab;
-                const entry = { ...formData, id, timestamp Date.now(), mode entryMode, prices { ...globalPrices } };
-                setRecords(prev = [entry, ...prev]);
-                setIsAdding(false);
-                setFormData({ date new Date().toLocaleDateString('en-GB'), gumUsed 0, trashAmount , purpleStoneCount , contMagicCount , isSellingSpell false, isSellingMagic false, useSilvervine true, minutesUsed 60, notes , otherCosts [], runMode 'ogh' });
-            };
-
-            const handleEditSave = (e) = {
-                e.preventDefault();
-                if (!editFormData) return;
-                setRecords(prev = prev.map(r = r.id === editFormData.id  { ...editFormData, prices { ...globalPrices } }  r));
-                setShowEditModal(false);
-                setEditFormData(null);
-            };
-
-            const openEditModal = (record) = {
-                setEditFormData({ ...record });
-                setShowEditModal(true);
-            };
-
-            const handleDelete = (id) = setRecords(prev = prev.filter(r = r.id !== id));
-            const handleClearAllHistory = () = { setRecords([]); setManualSales([]); setShowDeleteAllModal(false); };
-
-             --- Calculations ---
-            const tableData = useMemo(() = {
-                const runsPerDate = {};
-                records.forEach(r = { if (r.useSilvervine) { const d = r.date; runsPerDate[d] = (runsPerDate[d]  0) + 1; } });
-                return records.map(r = {
-                    const p = r.prices  globalPrices; 
-                    const stoneVal = (Number(r.purpleStoneCount  0)  p.purpleStonePrice) + ((r.mode === 'aogh')  (Number(r.contMagicCount  0)  p.contMagicPrice)  0);
-                     Revenue Calculation Trash + (If selling Spell  val  0) + (If selling Magic  val  0)
-                     Note If user selects 'Selling', we use current market price or saved price Usually saved price at time of record, but for simplicity using current globalsaved in record
-                    const spellRev = r.isSellingSpell  (Number(r.purpleStoneCount  0)  p.purpleStonePrice)  0;
-                    const magicRev = (r.mode === 'aogh' && r.isSellingMagic)  (Number(r.contMagicCount  0)  p.contMagicPrice)  0;
-                    
-                    const rev = Number(r.trashAmount  0) + spellRev + magicRev;
-                    const gumCost = (r.gumUsed  (p.gumBoxPrice  10));
-                    let svCost = r.useSilvervine  (2  (p.silvervineBoxPrice  10))  (runsPerDate[r.date]  1)  0;
-                    const etcCost = (r.otherCosts  []).reduce((a, b) = a + Number(b.amount  0), 0);
-                    const totalCost = gumCost + svCost + etcCost;
-                    return { ...r, revenue rev, gumCost, silvervineCost svCost, totalCost, profit rev - totalCost, revenuePerMinute r.minutesUsed  0  rev  r.minutesUsed  0, stoneValue stoneVal, spellRevenue spellRev, magicRevenue magicRev };
-                }).sort((a, b) = sortOrder === 'date-desc'  b.timestamp - a.timestamp  a.timestamp - b.timestamp);
-            }, [records, globalPrices, sortOrder]);
-
-            const filteredData = useMemo(() = tableData.filter(r = (r.mode  'ogh') === activeTab), [tableData, activeTab]);
-
-            const stats = useMemo(() = {
-                const totalEarnedSpell = tableData.reduce((a, b) = a + (!b.isSellingSpell  Number(b.purpleStoneCount  0)  0), 0);
-                const totalEarnedMagic = tableData.reduce((a, b) = a + (!b.isSellingMagic  Number(b.contMagicCount  0)  0), 0);
-                const totalSoldSpellCount = manualSales.reduce((a, b) = b.item === 'spell'  a + Number(b.quantity)  a, 0);
-                const totalSoldMagicCount = manualSales.reduce((a, b) = b.item === 'magic'  a + Number(b.quantity)  a, 0);
-                const stockSpell = totalEarnedSpell - totalSoldSpellCount;
-                const stockMagic = totalEarnedMagic - totalSoldMagicCount;
-                const manualSpellRevenue = manualSales.reduce((a, b) = b.item === 'spell'  a + (Number(b.quantity)  Number(b.price))  a, 0);
-                const manualMagicRevenue = manualSales.reduce((a, b) = b.item === 'magic'  a + (Number(b.quantity)  Number(b.price))  a, 0);
-                
-                 Farm Profit includes revenue from runs where stones were sold immediately
-                const farmProfit = tableData.reduce((a, b) = a + b.profit, 0);
-                const totalNetProfit = farmProfit + manualSpellRevenue + manualMagicRevenue;
-                
-                 For the From Selling X display on card
-                const totalSpellSales = tableData.reduce((a,b) = a + b.spellRevenue, 0) + manualSpellRevenue;
-                const totalMagicSales = tableData.reduce((a,b) = a + b.magicRevenue, 0) + manualMagicRevenue;
-
-                return {
-                    totalNetProfit, totalSpellSales, totalMagicSales,
-                    avgRevenue filteredData.length  filteredData.reduce((a, b) = a + b.revenue, 0)  filteredData.length  0,
-                    maxRevenue filteredData.length  Math.max(...filteredData.map(r = r.revenue))  0,
-                    minRevenue filteredData.length  Math.min(...filteredData.map(r = r.revenue))  0,
-                    avgRevMin filteredData.reduce((a, b) = a + (b.revenue  (b.minutesUsed  1)), 0)  (filteredData.length  1),
-                    stockSpell, stockMagic,
-                    inventoryValue (stockSpell  globalPrices.purpleStonePrice) + (stockMagic  globalPrices.contMagicPrice)
-                };
-            }, [tableData, filteredData, manualSales, globalPrices]);
-
-            const handleManualSell = () = {
-                let q = Number(saleFormData.quantity); let p = Number(saleFormData.price); const max = saleItem === 'spell'  stats.stockSpell  stats.stockMagic;
-                if (q  0) q = 0; if (q  max) q = max;
-                if (q === 0) { setShowSaleModal(false); return; }
-                setManualSales(prev = [...prev, { item saleItem, quantity q, price p, timestamp Date.now(), id Date.now().toString() }]);
-                setShowSaleModal(false); setSaleFormData({ quantity , price  });
-            };
-
-             Share Feature
-            const handleShareDownload = () = {
-                setShareLoading(true);
-                const element = document.getElementById('share-card-content');
-                html2canvas(element, { backgroundColor null, scale 2 }).then(canvas = {
-                    const link = document.createElement('a');
-                    link.download = `OGH_Stat_${Date.now()}.png`;
-                    link.href = canvas.toDataURL();
-                    link.click();
-                    setShareLoading(false);
-                }).catch(err = {
-                    console.error(Share failed, err);
-                    setShareLoading(false);
-                });
-            };
-
-            const handleShareCopy = () = {
-                if(!showShareModal) return;
-                const r = showShareModal;
-                const text = `OGH Tracker StatsnDate ${r.date}nMode ${r.mode}nNet Profit ${formatZeny(r.profit)} znTime ${r.minutesUsed} minnSpell ${r.purpleStoneCount}  Magic ${r.contMagicCount}`;
-                navigator.clipboard.writeText(text);
-                setShareCopied(true);
-                setTimeout(() = setShareCopied(false), 2000);
-            };
-
-            const themeClasses = {
-                bg theme === 'dark'  'bg-slate-950 text-slate-100'  'bg-[#e5e2da] text-stone-900',
-                card theme === 'dark'  'bg-slate-90060 border-slate-800 shadow-2xl'  'bg-[#f4f2ee]95 border-stone-300 shadow-md',
-                btnGhost theme === 'dark'  'bg-slate-95080 border-slate-800 text-slate-400 hovertext-white'  'bg-[#f4f2ee] border-stone-300 text-stone-600 hovertext-stone-900 shadow-sm',
-                textDim theme === 'dark'  'text-slate-500'  'text-stone-600',
-                textMain theme === 'dark'  'text-white'  'text-stone-900'
-            };
-
-             --- Render Logic ---
-            if (!user && !isGuestMode) return WelcomeScreen onLogin={handleLogin} onGuest={() = setIsGuestMode(true)} lang={lang} setLang={setLang} theme={theme} onInstall={() = setShowManual(true)} loginLoading={loginLoading} ;
-
+        function WelcomeScreen() {
             return (
-                div className={`min-h-screen p-4 mdp-6 lgp-8 font-sans selectionbg-purple-50030 transition-colors duration-500 ${themeClasses.bg}`}
-                    div className=max-w-7xl mx-auto space-y-6
-                        { WARNING BANNER }
-                        {priceWarningActive && !isAdding && (
-                            div className=bg-rose-50010 border border-rose-50030 p-4 rounded-2xl flex items-center justify-between animate-in slide-in-from-top-4 duration-300
-                                div className=flex items-center gap-3 text-rose-500Icon name=AlertCircle size={20} span className=text-xs mdtext-sm font-black uppercase tracking-tight{t.priceWarning}spandiv
-                                button onClick={() = setPriceWarningActive(false)} className=text-rose-50060 hovertext-rose-500Icon name=X size={18}button
-                            div
-                        )}
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center relative bg-slate-950">
+                    {/* Background Glows */}
+                    <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full blur-[120px] bg-purple-600/10 animate-pulse"></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-[120px] bg-blue-600/10 animate-pulse"></div>
+                    
+                    {/* Logo Section */}
+                    <div className="relative mb-12 transform hover:scale-105 transition-transform duration-500">
+                        <div className="w-48 h-48 md:w-56 md:h-56 rounded-[4rem] flex items-center justify-center shadow-2xl border-2 rotate-3 bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700/50">
+                            <SVGs.Spell className="w-28 h-28 md:w-32 md:h-32 drop-shadow-2xl" />
+                        </div>
+                        <div className="absolute -bottom-2 -right-2 bg-purple-600 text-white flex items-center gap-2 p-1.5 pr-4 rounded-full shadow-lg border-2 border-slate-950 -rotate-6">
+                            <div className="w-6 h-6 rounded-full bg-cover border border-white/20" style={{backgroundImage: `url('${YT_AVATAR_URL}')`}}></div>
+                            <span className="text-[10px] font-black uppercase tracking-widest">SDekza RO</span>
+                        </div>
+                    </div>
 
-                        { NEW HEADER }
-                        header className={`border p-4 mdp-5 rounded-[2rem] backdrop-blur-md shadow-2xl transition-all ${themeClasses.card} flex flex-col mdflex-row justify-between items-center gap-4`}
-                            { Left Logo & User Info }
-                            div className=flex items-center gap-4 w-full mdw-auto justify-between mdjustify-start
-                                div className=flex items-center gap-3
-                                    div className=w-10 h-10 mdw-12 mdh-12 rounded-full overflow-hidden border-2 border-purple-50030
-                                        img src={user  (user.photoURL  YT_AVATAR_URL)  GUEST_AVATAR_URL} alt=Profile className=w-full h-full object-cover 
-                                    div
-                                    div className=flex flex-col
-                                        h1 className=text-lg font-black tracking-tight leading-none uppercase italic{user  user.displayName  Guest User}h1
-                                        span className={`text-[10px] font-bold ${themeClasses.textDim}`}{user  user.email  Local Session}span
-                                    div
-                                div
-                                { Mobile Menu Toggle could go here if needed, keeping simple for now }
-                            div
+                    {/* Title */}
+                    <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-purple-500 to-pink-500 mb-4 tracking-tighter italic uppercase">
+                        OGH TRACKER
+                    </h1>
+                    
+                    <p className="text-sm mb-12 font-medium leading-relaxed max-w-xs mx-auto text-slate-400">
+                        ระบบบันทึกสถิติและวิเคราะห์กำไร<br/>
+                        <span className="text-xs mt-1 block uppercase tracking-widest italic font-bold tracking-[0.2em]">RO Classic / GGT</span>
+                    </p>
+                    
+                    {/* Maintenance Message */}
+                    <div className="w-full max-w-xs relative z-10">
+                        <div className="maintenance-pulse bg-slate-900/50 border border-slate-800 py-4 px-8 rounded-2xl shadow-xl">
+                            <span className="text-xl md:text-2xl font-black text-amber-500 uppercase tracking-widest italic">
+                                กำลังปรับปรุง
+                            </span>
+                            <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-widest font-bold">
+                                Under Maintenance
+                            </p>
+                        </div>
+                    </div>
 
-                            { Center Youtube (Moved from card) }
-                            div className={`hidden mdflex items-center gap-3 px-4 py-2 rounded-2xl border ${theme === 'dark'  'bg-slate-95050 border-slate-800'  'bg-white50 border-stone-200'}`}
-                                div className=w-8 h-8 rounded-full bg-cover border border-red-50030 style={{backgroundImage `url('${YT_AVATAR_URL}')`}}div
-                                div className=flex flex-col
-                                    span className={`text-[10px] font-black uppercase ${themeClasses.textMain}`}SDekza ROspan
-                                    div className=flex items-center gap-1
-                                        Icon name=Youtube size={10} className=text-red-500
-                                        span className={`text-[8px] font-bold ${themeClasses.textDim}`}140+ Subsspan
-                                    div
-                                div
-                                a href=# className=bg-red-600 hoverbg-red-700 text-white text-[9px] font-black uppercase py-1.5 px-3 rounded-lg ml-2 transition-colors{t.subs}a
-                            div
-
-                            { Right Actions }
-                            div className=flex items-center gap-2 w-full mdw-auto justify-end
-                                button onClick={() = setTheme(theme === 'dark'  'light'  'dark')} className={`w-10 h-10 flex items-center justify-center rounded-xl border transition-all ${themeClasses.btnGhost}`}
-                                    {theme === 'dark'  Icon name=Sun size={18}   Icon name=Moon size={18} }
-                                button
-                                button onClick={() = setLang(lang === 'th'  'en'  'th')} className={`h-10 px-3 flex items-center gap-2 rounded-xl border transition-all text-[10px] font-black uppercase ${themeClasses.btnGhost}`}
-                                    Icon name=Languages size={14}  {lang.toUpperCase()}
-                                button
-                                button onClick={handleLogout} className={`h-10 px-3 flex items-center gap-2 rounded-xl border transition-all text-[10px] font-black uppercase ${theme === 'dark'  'bg-rose-50010 border-rose-50020 text-rose-500 hoverbg-rose-50020'  'bg-rose-50 border-rose-200 text-rose-600 hoverbg-rose-100'}`}
-                                    Icon name=LogOut size={14} span className=hidden sminline{t.exit}span
-                                button
-                                div className=w-px h-8 bg-stone-300 darkbg-slate-800 mx-1div
-                                button onClick={handleAddDataToggle} className={`h-10 px-4 rounded-xl font-black flex items-center gap-2 shadow-lg activescale-95 transition-all text-[10px] uppercase tracking-wider ${isAdding  (theme === 'dark'  'bg-stone-800 text-white'  'bg-stone-700 text-white')  'bg-purple-600 hoverbg-purple-700 text-white'}`}
-                                    {isAdding  Icon name=LayoutDashboard size={14}  {t.home}  Icon name=PlusCircle size={14}  {t.addData}}
-                                button
-                            div
-                        header
-
-                        { PRICE SECTION }
-                        {!isAdding && (
-                            section className={`border p-5 mdp-6 rounded-[2rem] shadow-xl backdrop-blur-sm transition-all duration-300 ${themeClasses.card} ${priceValidationPulse  'border-rose-500 animate-bounce'  ''}`}
-                                h3 className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 italic mb-4 ${theme === 'dark'  'text-indigo-400'  'text-indigo-600'}`}Icon name=TrendingUp size={14}  {t.prices}h3
-                                div className=grid grid-cols-2 mdgrid-cols-4 gap-3 mdgap-4
-                                    {['purpleStonePrice', 'contMagicPrice', 'gumBoxPrice', 'silvervineBoxPrice'].map((key) = (
-                                        div key={key} className={`p-3 rounded-2xl border flex flex-col gap-1 transition-colors ${theme === 'dark'  'bg-slate-95050 border-slate-800'  'bg-[#e9e6dc] border-stone-200'}`}
-                                            span className={`text-[8px] font-black uppercase flex items-center gap-1 ${themeClasses.textDim}`}
-                                                {key === 'purpleStonePrice'  SVGs.Spell className=w-3.5 h-3.5  
-                                                 key === 'contMagicPrice'  SVGs.Magic className=w-3.5 h-3.5  
-                                                 key === 'gumBoxPrice'  SVGs.GumBox className=w-3.5 h-3.5 
-                                                 SVGs.SilvervineBox className=w-3.5 h-3.5}
-                                                {t[key.replace('Price', '').replace('purpleStone', 'itemSpell').replace('contMagic', 'itemMagic').replace('gumBox', 'itemGumBox').replace('silvervineBox', 'itemSilvervineBox')]}
-                                            span
-                                            div className=flex items-center gap-1
-                                                input 
-                                                    type=number 
-                                                    value={globalPrices[key]} 
-                                                    onChange={e = updatePrice(key, e.target.value)} 
-                                                    onFocus={(e) = e.target.select()}
-                                                    className={`bg-transparent text-sm font-black outline-none w-full ${themeClasses.textMain}`} 
-                                                    placeholder=0 
-                                                
-                                                span className={`text-[9px] font-bold ${themeClasses.textDim}`}Zspan
-                                            div
-                                        div
-                                    ))}
-                                div
-                            section
-                        )}
-
-                        { MAIN CONTENT }
-                        {isAdding  (
-                            div className={`max-w-xl mx-auto border rounded-[2.5rem] p-8 mdp-10 shadow-2xl animate-in fade-in zoom-in duration-200 ${themeClasses.card}`}
-                                form onSubmit={handleSave} className=space-y-8
-                                    div className=flex justify-between items-center border-b border-stone-300 darkborder-slate-800 pb-6h2 className=text-xl font-black text-purple-400 italic uppercase{t.newRecord}h2div
-                                    { ... (Reuse form fields same as original logic) ... }
-                                    div className=space-y-3
-                                        label className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-2 ${themeClasses.textDim}`}Icon name=Settings size={12} {t.selectionMode}label
-                                        div className=flex flex-col smflex-row gap-3
-                                            div className={`flex p-1 rounded-2xl border flex-[2] ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-[#e9e6dc] border-stone-200'}`}
-                                                button type=button onClick={() = setFormData(p = ({...p, runMode 'ogh'}))} className={`flex-1 flex items-center justify-center gap-3 py-3 rounded-xl text-xs font-black transition-all ${formData.runMode === 'ogh'  'bg-purple-600 text-white shadow-lg'  'text-stone-500'}`}SVGs.Spell className=w-5 h-5 OGHbutton
-                                                button type=button onClick={() = setFormData(p = ({...p, runMode 'aogh'}))} className={`flex-1 flex items-center justify-center gap-3 py-3 rounded-xl text-xs font-black transition-all ${formData.runMode === 'aogh'  'bg-rose-600 text-white shadow-lg'  'text-stone-500'}`}SVGs.Magic className=w-5 h-5 AOGHbutton
-                                            div
-                                            label className={`flex-1 flex items-center justify-between gap-3 cursor-pointer p-3 rounded-2xl border group hoverborder-emerald-50050 transition-all ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-white border-stone-300'}`}
-                                                div className=flex items-center gap-2SVGs.Silvervine className=w-5 h-5span className={`text-[10px] font-black uppercase ${themeClasses.textDim}`}{t.silvervine}spandiv
-                                                div className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${formData.useSilvervine  'bg-emerald-500 border-emerald-500'  'border-stone-300 darkborder-slate-700'}`}{formData.useSilvervine && Icon name=Check size={14} className=text-white }div
-                                                input type=checkbox className=hidden checked={formData.useSilvervine} onChange={e = setFormData(p = ({...p, useSilvervine e.target.checked}))} 
-                                            label
-                                        div
-                                    div
-                                    div className=grid grid-cols-2 gap-6
-                                        div className=space-y-2label className={`text-[9px] font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.date}labelinput type=text value={formData.date} onChange={e = setFormData(p = ({...p, date e.target.value}))} className={`w-full border rounded-xl p-3 font-bold outline-none focusborder-purple-500 text-sm ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white'  'bg-[#f4f2ee] border-stone-300 text-stone-900'}`} div
-                                        div className=space-y-2label className={`text-[9px] font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.gum}labeldiv className={`flex p-1 rounded-xl border ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-[#e9e6dc] border-stone-300'}`}{[0, 1, 2].map(n = (button key={n} type=button onClick={() = setFormData(p = ({...p, gumUsed n}))} className={`flex-1 py-2 rounded-lg text-xs font-black transition-all ${formData.gumUsed === n  'bg-blue-600 text-white shadow-md'  'text-stone-500'}`}{n}button))}divdiv
-                                    div
-                                    div className=grid grid-cols-2 gap-6
-                                        div className=space-y-2label className={`text-[9px] font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.duration}labelinput type=number value={formData.minutesUsed} onFocus={(e) = e.target.select()} onChange={e = setFormData(p = ({...p, minutesUsed e.target.value ===     Number(e.target.value)}))} className={`w-full border rounded-xl p-3 font-bold outline-none text-sm ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white'  'bg-[#f4f2ee] border-stone-300 text-stone-900'}`} div
-                                        div className=space-y-2label className={`text-[9px] font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.trashSale}labelinput type=number value={formData.trashAmount} onFocus={(e) = e.target.select()} onChange={e = setFormData(p = ({...p, trashAmount e.target.value ===     Number(e.target.value)}))} placeholder=0 className={`w-full border rounded-xl p-3 font-bold outline-none text-sm ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white'  'bg-[#f4f2ee] border-stone-300 text-stone-900'}`} div
-                                    div
-                                    div className=space-y-6 pt-4 border-t border-stone-300 darkborder-slate-800
-                                        div className=flex gap-4 items-end
-                                            div className=flex-1 space-y-2label className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1 ${themeClasses.textDim}`}SVGs.Spell className=w-3 h-3 {t.itemSpell}labelinput type=number value={formData.purpleStoneCount} onFocus={(e) = e.target.select()} onChange={e = setFormData(p = ({...p, purpleStoneCount e.target.value ===     Number(e.target.value)}))} className={`w-full border rounded-xl p-3 font-bold text-sm outline-none ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white'  'bg-[#f4f2ee] border-stone-300 text-stone-900'}`} div
-                                            div className={`flex p-1 rounded-xl border w-32 shrink-0 h-[46px] ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-[#e9e6dc] border-stone-300'}`}button type=button onClick={() = setFormData(p = ({...p, isSellingSpell true}))} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${formData.isSellingSpell  'bg-rose-600 text-white shadow-md'  'text-stone-600'}`}ขายbuttonbutton type=button onClick={() = setFormData(p = ({...p, isSellingSpell false}))} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${!formData.isSellingSpell  'bg-emerald-600 text-white shadow-md'  'text-stone-600'}`}เก็บbuttondiv
-                                        div
-                                        {formData.runMode === 'aogh' && (
-                                            div className=flex gap-4 items-end animate-in slide-in-from-top-1
-                                                div className=flex-1 space-y-2label className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1 text-rose-400`}SVGs.Magic className=w-3 h-3 {t.itemMagic}labelinput type=number value={formData.contMagicCount} onFocus={(e) = e.target.select()} onChange={e = setFormData(p = ({...p, contMagicCount e.target.value ===     Number(e.target.value)}))} className={`w-full border rounded-xl p-3 font-bold text-sm outline-none ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white'  'bg-[#f4f2ee] border-stone-300 text-stone-900'}`} div
-                                                div className={`flex p-1 rounded-xl border w-32 shrink-0 h-[46px] ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-[#e9e6dc] border-stone-300'}`}button type=button onClick={() = setFormData(p = ({...p, isSellingMagic true}))} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${formData.isSellingMagic  'bg-rose-600 text-white shadow-md'  'text-stone-600'}`}ขายbuttonbutton type=button onClick={() = setFormData(p = ({...p, isSellingMagic false}))} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${!formData.isSellingMagic  'bg-emerald-600 text-white shadow-md'  'text-stone-600'}`}เก็บbuttondiv
-                                            div
-                                        )}
-                                    div
-                                    div className=space-y-4 pt-4 border-t border-stone-300 darkborder-slate-800
-                                        div className=flex justify-between items-centerlabel className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1 ${themeClasses.textDim}`}Icon name=FileText size={12} {t.notes}labelbutton type=button onClick={() = setFormData(p = ({...p, otherCosts [...p.otherCosts, {name , amount }]}))} className=text-[9px] font-black text-blue-500 hovertext-blue-600 transition-colors uppercase+ {t.etc}buttondiv
-                                        {formData.otherCosts.map((cost, idx) = (
-                                            div key={idx} className=flex gap-2input type=text value={cost.name} onChange={e = { const nc = [...formData.otherCosts]; nc[idx].name = e.target.value; setFormData(p = ({...p, otherCosts nc})); }} placeholder=ชื่อรายการ className={`flex-[2] border rounded-lg p-2.5 font-bold text-xs outline-none ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white'  'bg-[#faf9f6] border-stone-300 text-stone-900'}`} input type=number value={cost.amount} onFocus={(e) = e.target.select()} onChange={e = { const nc = [...formData.otherCosts]; nc[idx].amount = e.target.value ===     Number(e.target.value); setFormData(p = ({...p, otherCosts nc})); }} className={`flex-1 border rounded-lg p-2.5 font-bold text-xs outline-none text-right ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white'  'bg-[#faf9f6] border-stone-300 text-stone-900'}`} button type=button onClick={() = setFormData(p = ({...p, otherCosts p.otherCosts.filter((_, i) = i !== idx)}))} className=text-rose-500 hovertext-rose-400Icon name=MinusCircle size={18} buttondiv
-                                        ))}
-                                        textarea value={formData.notes} onChange={e = setFormData(p = ({...p, notes e.target.value}))} placeholder=บันทึก... className={`w-full border rounded-xl p-4 text-xs outline-none h-24 resize-none transition-all ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white focusborder-purple-500'  'bg-stone-50 border-stone-200 text-stone-900 focusborder-purple-400'}`} 
-                                    div
-                                    div className=flex gap-4 pt-4button type=button onClick={() = setIsAdding(false)} className={`flex-1 py-4 rounded-xl font-black uppercase text-xs transition-all ${theme === 'dark'  'bg-slate-800 hoverbg-slate-700 text-white'  'bg-stone-100 hoverbg-stone-200 text-stone-600'}`}{t.cancel}buttonbutton type=submit className=flex-[2] bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg activescale-95 transition-all{t.save}buttondiv
-                                form
-                            div
-                        )  (
-                            div className=grid grid-cols-1 lggrid-cols-3 gap-6 animate-in fade-in duration-300 relative
-                                div className=lgcol-span-2 space-y-6
-                                    { DASHBOARD CARDS }
-                                    div className=grid grid-cols-1 mdgrid-cols-3 gap-5
-                                        div onClick={() = setShowDetailChart('profit')} className={`p-6 rounded-3xl group flex flex-col justify-between text-left relative transition-all border cursor-pointer ${themeClasses.card} hoverborder-emerald-50030`}
-                                            div className=absolute top-4 right-4 text-stone-400 opacity-0 group-hoveropacity-100 transition-opacityIcon name=Maximize2 size={12}div
-                                            div
-                                                div className=p-2.5 bg-emerald-50010 rounded-xl text-emerald-500 w-fit mb-4 group-hoverscale-110 transition-transformIcon name=Wallet size={20} div
-                                                h3 className={`text-[10px] font-black uppercase tracking-widest mb-1 ${themeClasses.textDim}`}{t.netProfit}h3
-                                                p className={`text-2xl font-black ${themeClasses.textMain}`}{formatMZeny(stats.totalNetProfit)} span className=text-[10px] opacity-40 ml-1Zspanp
-                                                p className={`text-[9px] font-bold mt-1 uppercase tracking-tighter opacity-70 italic ${themeClasses.textDim}`}{t.totalBothModes}p
-                                            div
-                                            div className={`mt-3 pt-2 border-t space-y-1.5 ${theme === 'dark'  'border-slate-80050'  'border-stone-200'}`}
-                                                div className=flex items-center gap-2
-                                                    SVGs.Spell className=w-3.5 h-3.5 
-                                                    span className={`text-[10px] font-bold ${themeClasses.textMain}`}{formatZeny(stats.totalSpellSales)} zspan
-                                                div
-                                                div className=flex items-center gap-2
-                                                    SVGs.Magic className=w-3.5 h-3.5 
-                                                    span className={`text-[10px] font-bold ${themeClasses.textMain}`}{formatZeny(stats.totalMagicSales)} zspan
-                                                div
-                                            div
-                                        div
-                                        div className={`p-6 rounded-3xl relative overflow-hidden flex flex-col justify-between group transition-all border ${themeClasses.card} hoverborder-blue-50030`}
-                                            div className=absolute top-4 right-4 text-stone-400 opacity-0 group-hoveropacity-100 transition-opacityIcon name=Maximize2 size={12}div
-                                            div onClick={() = setShowDetailChart('avgRevenue')} className=cursor-pointer h-full flex flex-col justify-between
-                                                div
-                                                    div className=flex justify-between items-start mb-4
-                                                        div className=p-2.5 bg-blue-50010 rounded-xl text-blue-500 w-fitIcon name=TrendingUp size={20} div
-                                                        div onClick={(e) = e.stopPropagation()} className={`flex p-1 rounded-xl border ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-[#f0ede6] border-stone-200'}`}
-                                                            button onClick={() = setActiveTab('ogh')} className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase transition-all ${activeTab === 'ogh'  'bg-purple-600 text-white shadow-md'  'text-stone-500'}`}OGHbutton
-                                                            button onClick={() = setActiveTab('aogh')} className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase transition-all ${activeTab === 'aogh'  'bg-rose-600 text-white shadow-md'  'text-stone-500'}`}AOGHbutton
-                                                        div
-                                                    div
-                                                    h3 className={`text-[10px] font-black uppercase tracking-widest mb-1 ${themeClasses.textDim}`}{t.avgRev}h3
-                                                    p className={`text-2xl font-black ${themeClasses.textMain}`}{formatMZeny(stats.avgRevenue)} span className=text-[10px] opacity-40 ml-1Zspanp
-                                                div
-                                                div className={`mt-4 pt-3 border-t space-y-1.5 ${theme === 'dark'  'border-slate-80050'  'border-stone-300'}`}
-                                                    div className=flex items-center justify-between text-[10px]span className={themeClasses.textDim}{t.avgMin}spanspan className=text-blue-500 font-black{formatZeny(stats.avgRevMin)} Zspandiv
-                                                    div className=flex gap-2
-                                                        span className=flex items-center gap-1 text-[8px] font-bold text-emerald-500 bg-emerald-5005 px-1.5 rounded uppercaseIcon name=ArrowUp size={10} {formatMZeny(stats.maxRevenue)}span
-                                                        span className=flex items-center gap-1 text-[8px] font-bold text-rose-500 bg-rose-5005 px-1.5 rounded uppercaseIcon name=ArrowDown size={10} {formatMZeny(stats.minRevenue)}span
-                                                    div
-                                                div
-                                            div
-                                        div
-                                        div onClick={() = setShowDetailChart('inventory')} className={`p-6 rounded-3xl flex flex-col justify-between text-left group transition-all border cursor-pointer relative ${themeClasses.card} hoverborder-amber-50030`}
-                                            div className=absolute top-4 right-4 text-stone-400 opacity-0 group-hoveropacity-100 transition-opacityIcon name=Maximize2 size={12}div
-                                            div
-                                                div className=flex justify-between items-start mb-4
-                                                    div className=p-2.5 bg-amber-50010 rounded-xl text-amber-500 w-fitIcon name=Archive size={20} div
-                                                div
-                                                h3 className={`text-[10px] font-black uppercase tracking-widest mb-1 ${themeClasses.textDim}`}{t.inventory}h3
-                                                div className=space-y-3 mt-2 onClick={(e) = e.stopPropagation()}
-                                                    div className=flex items-center justify-between grouplinediv className=flex items-center gap-2SVGs.Spell className=w-4 h-4span className={`text-[9px] font-black uppercase tracking-tighter ${themeClasses.textDim}`}{t.itemSpell}spandivdiv className=flex items-center gap-2span className={`text-xs font-black ${themeClasses.textMain}`}{stats.stockSpell.toLocaleString()}spanbutton onClick={() = { setSaleItem('spell'); setShowSaleModal(true); setSaleFormData({ quantity stats.stockSpell.toString(), price globalPrices.purpleStonePrice.toString() }); }} className=bg-purple-60010 hoverbg-purple-600 text-purple-600 hovertext-white px-2 py-1 rounded-md text-[8px] font-black uppercase transition-all shadow-sm font-boldขายbuttondivdiv
-                                                    div className=flex items-center justify-between grouplinediv className=flex items-center gap-2SVGs.Magic className=w-4 h-4span className={`text-[9px] font-black uppercase tracking-tighter ${themeClasses.textDim}`}{t.itemMagic}spandivdiv className=flex items-center gap-2span className={`text-xs font-black ${themeClasses.textMain}`}{stats.stockMagic.toLocaleString()}spanbutton onClick={() = { setSaleItem('magic'); setShowSaleModal(true); setSaleFormData({ quantity stats.stockMagic.toString(), price globalPrices.contMagicPrice.toString() }); }} className=bg-rose-60010 hoverbg-rose-600 text-rose-600 hovertext-white px-2 py-1 rounded-md text-[8px] font-black uppercase transition-all shadow-sm font-boldขายbuttondivdiv
-                                                div
-                                            div
-                                            div className=mt-4 pt-3 border-t border-dashed border-stone-300 darkborder-slate-800 flex justify-between items-end
-                                                p className={`text-[8px] font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.currentValue}p
-                                                p className={`text-xs font-black ${theme === 'dark'  'text-amber-500'  'text-amber-700'}`}{formatMZeny(stats.inventoryValue)} span className={`text-[8px] opacity-40`}Zspanp
-                                            div
-                                        div
-                                    div
-                                    
-                                    { TABLE }
-                                    div className={`border rounded-[2rem] overflow-hidden shadow-xl transition-all ${themeClasses.card}`}
-                                        div className={`p-6 border-b flex justify-between items-center transition-all ${theme === 'dark'  'bg-slate-95020 border-slate-800'  'bg-stone-5050 border-stone-300'}`}
-                                            h2 className=text-sm font-black text-blue-600 italic flex items-center gap-2 uppercase tracking-widestIcon name=History size={18}  {t.history}h2
-                                            {records.length  0 && (
-                                                button 
-                                                    onClick={() = setShowDeleteAllModal(true)}
-                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all shadow-sm activescale-95 border ${theme === 'dark'  'bg-rose-90020 border-rose-50030 text-rose-500 hoverbg-rose-600 hovertext-white'  'bg-rose-50 border-rose-200 text-rose-600 hoverbg-rose-600 hovertext-white'}`}
-                                                
-                                                    Icon name=Trash2 size={12} 
-                                                    {t.deleteAll}
-                                                button
-                                            )}
-                                        div
-                                        div className=overflow-x-auto min-h-[100px]
-                                            table className=w-full text-left text-[10px]
-                                                thead className={theme === 'dark'  'bg-slate-95040'  'bg-[#e9e6dc]'}trth className={`px-6 py-4 font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.date}thth className={`px-6 py-4 font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.mode}thth className={`px-6 py-4 font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.itemGum}  {t.itemSilvervine}  {t.stone}thth className={`px-6 py-4 text-right font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.netProfit}thth className={`px-6 py-4 text-center font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.manage}thtrthead
-                                                tbody className={`divide-y transition-all ${theme === 'dark'  'divide-slate-80040'  'divide-stone-300'}`}
-                                                    {tableData.map(record = (
-                                                        React.Fragment key={record.id}
-                                                            tr className={`hoverbg-stone-4005 cursor-pointer transition-colors ${theme === 'dark'  ''  'text-stone-700'}`} onClick={() = setExpandedId(expandedId === record.id  null  record.id)}
-                                                                td className=px-6 py-4 font-bold whitespace-nowrap{record.date}td
-                                                                td className=px-6 py-4span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${record.mode === 'aogh'  'bg-rose-50010 text-rose-500 border border-rose-50020'  'bg-purple-50010 text-purple-500 border border-purple-50020'}`}{record.mode  'ogh'}spantd
-                                                                td className=px-6 py-4 whitespace-nowrapdiv className=flex gap-2 items-centerspan className=bg-blue-50010 text-blue-500 px-1.5 py-0.5 rounded font-black border border-blue-50010{t.gumShort} {record.gumUsed}spanSVGs.Silvervine className=w-4 h-4 style={{ filter record.useSilvervine  'none'  'grayscale(100%)', opacity record.useSilvervine  1  0.2 }} div className=flex items-center gap-1 text-purple-500 font-black ml-1SVGs.Spell className=w-3.5 h-3.5{record.purpleStoneCount  0}div{record.mode === 'aogh' && div className=flex items-center gap-1 text-rose-500 font-blackSVGs.Magic className=w-3.5 h-3.5{record.contMagicCount  0}div}divtd
-                                                                td className={`px-6 py-4 text-right font-black text-sm ${record.profit = 0  'text-emerald-600'  'text-rose-600'}`}{formatZeny(record.profit)}td
-                                                                td className=px-4 py-4 text-center onClick={e = e.stopPropagation()}
-                                                                    div className=flex justify-center gap-2
-                                                                        button onClick={() = setShowShareModal(record)} className={`p-1.5 rounded-lg hoverbg-blue-50010 hovertext-blue-500 ${themeClasses.textDim}`}Icon name=Share2 size={14}button
-                                                                        button onClick={() = openEditModal(record)} className={`p-1.5 rounded-lg hoverbg-amber-50010 hovertext-amber-500 ${themeClasses.textDim}`}Icon name=Edit size={14}button
-                                                                        button onClick={() = handleDelete(record.id)} className={`p-1.5 rounded-lg hoverbg-rose-50010 hovertext-rose-500 ${themeClasses.textDim}`}Icon name=Trash2 size={14}button
-                                                                    div
-                                                                td
-                                                            tr
-                                                            {expandedId === record.id && (
-                                                                tr className={`border-l-4 border-purple-500 animate-in slide-in-from-left-1 transition-all ${theme === 'dark'  'bg-slate-95040'  'bg-[#f4f2ee]'}`}td colSpan=5 className=px-6 py-6div className=grid grid-cols-2 mdgrid-cols-4 gap-6divp className={`font-black mb-2 uppercase text-[8px] tracking-widest ${themeClasses.textDim}`}{t.costBreakdown}pp className=flex justify-between{t.itemGum} span className={themeClasses.textMain}{formatZeny(record.gumCost)} Zspanpp className=flex justify-between{t.itemSilvervine} span className={themeClasses.textMain}{formatZeny(record.silvervineCost)} Zspanp{(record.otherCosts  []).map((o,i) = p key={i} className=flex justify-between{t.etc} ({o.name}) span className={themeClasses.textMain}{formatZeny(o.amount)} Zspanp)}divdivp className={`font-black mb-2 uppercase text-[8px] tracking-widest ${themeClasses.textDim}`}{t.revSource}pp className=flex justify-betweenขยะ span className={themeClasses.textMain}{formatZeny(record.trashAmount)} Zspanpp className=flex justify-between{t.stone} span className={themeClasses.textMain}{formatZeny(record.revenue - record.trashAmount)} Zspanpdivdiv className=col-span-2p className={`font-black mb-2 uppercase text-[8px] tracking-widest ${themeClasses.textDim}`}{t.notes}pp className={`italic p-3 rounded-xl min-h-[50px] whitespace-pre-wrap border ${theme === 'dark'  'bg-slate-95050 border-slate-800 text-slate-400'  'bg-white border-stone-300 text-stone-600'}`}{record.notes  '-'}pdivdivtdtr
-                                                            )}
-                                                        React.Fragment
-                                                    ))}
-                                                tbody
-                                            table
-                                        div
-                                    div
-                                div
-
-                                aside className=space-y-6
-                                    div className={`border p-6 rounded-[2rem] shadow-xl border-t-rose-50020 transition-all ${themeClasses.card}`}
-                                        h3 className=text-[10px] font-black mb-5 text-rose-500 uppercase tracking-widest flex items-center gap-2 italicIcon name=Clock size={14}  {t.timer}h3
-                                        div className={`text-4xl font-black tabular-nums mb-6 text-center py-8 rounded-[2rem] border shadow-inner transition-all ${theme === 'dark'  'bg-slate-95080 border-slate-800 text-white'  'bg-[#f0ede6] border-stone-200 text-stone-900'}`}{formatTimer(timeInMs)}div
-                                        div className=grid grid-cols-2 gap-3
-                                            {!isTimerActive  isTimerPaused  (
-                                                button onClick={() = { setIsTimerActive(true); setIsTimerPaused(false); }} className=bg-emerald-600 hoverbg-emerald-500 text-white py-4 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-1.5 transition-all activescale-95 shadow-lgIcon name=Play size={12}  {timeInMs  0  ทำต่อ  เริ่ม}button
-                                            )  (
-                                                button onClick={() = setIsTimerPaused(true)} className=bg-amber-600 hoverbg-amber-500 text-white py-4 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-1.5 transition-all activescale-95 shadow-lgIcon name=Pause size={12}  พักbutton
-                                            )}
-                                            button onClick={() = { setFormData(p = ({...p, minutesUsed Math.ceil(timeInMs  60000)  1})); setIsTimerActive(false); setIsTimerPaused(true); setIsAdding(true); }} className={`py-4 rounded-xl font-black text-[10px] uppercase flex items-center justify-center gap-1.5 transition-all activescale-95 group shadow-lg ${theme === 'dark'  'bg-slate-800 hoverbg-rose-600 text-white'  'bg-stone-300 hoverbg-rose-600 hovertext-white text-stone-700'}`}Icon name=Square size={12} className=group-hovertext-white  หยุดbutton
-                                            button onClick={() = { setTimeInMs(0); setIsTimerActive(false); setIsTimerPaused(true); }} className={`col-span-2 py-2 text-[9px] font-black uppercase transition-colors ${themeClasses.textDim} hovertext-rose-600`}รีเซตbutton
-                                        div
-                                    div
-                                aside
-                            div
-                        )}
-
-                        { Modal Edit }
-                        {showEditModal && editFormData && (
-                             div className=fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black70 backdrop-blur-md animate-in fade-in duration-300 onClick={() = setShowEditModal(false)}
-                                div className={`border w-full max-w-xl p-8 rounded-[2.5rem] shadow-2xl relative transition-all ${theme === 'dark'  'bg-slate-900 border-slate-800'  'bg-[#f4f2ee] border-stone-300'}`} onClick={e = e.stopPropagation()}
-                                    button onClick={() = setShowEditModal(false)} className=absolute top-6 right-6 p-2Icon name=X size={24} className={themeClasses.textDim} button
-                                    h3 className=text-xl font-black text-amber-500 italic uppercase mb-6{t.editRecord}h3
-                                    
-                                    form onSubmit={handleEditSave} className=space-y-6
-                                        div className=grid grid-cols-2 gap-4
-                                            div className=space-y-1label className={`text-[9px] uppercase font-black ${themeClasses.textDim}`}{t.gum}labeldiv className={`flex p-1 rounded-xl border ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-[#e9e6dc] border-stone-300'}`}{[0, 1, 2].map(n = (button key={n} type=button onClick={() = setEditFormData(p = ({...p, gumUsed n}))} className={`flex-1 py-1.5 rounded-lg text-xs font-black ${editFormData.gumUsed === n  'bg-blue-600 text-white'  'text-stone-500'}`}{n}button))}divdiv
-                                            div className=space-y-1label className={`text-[9px] uppercase font-black ${themeClasses.textDim}`}{t.trashSale}labelinput type=number value={editFormData.trashAmount} onChange={e = setEditFormData(p = ({...p, trashAmount Number(e.target.value)}))} className={`w-full p-2.5 rounded-xl border text-sm font-bold bg-transparent ${theme === 'dark'  'border-slate-700'  'border-stone-300'}`} div
-                                        div
-                                        
-                                        div className=space-y-1label className={`text-[9px] uppercase font-black ${themeClasses.textDim}`}{t.duration}labelinput type=number value={editFormData.minutesUsed} onChange={e = setEditFormData(p = ({...p, minutesUsed Number(e.target.value)}))} className={`w-full p-2.5 rounded-xl border text-sm font-bold bg-transparent ${theme === 'dark'  'border-slate-700'  'border-stone-300'}`} div
-                                        
-                                        { Stone Logic }
-                                        div className=space-y-4 pt-2 border-t border-dashed border-stone-300 darkborder-slate-800
-                                             div className=flex gap-4 items-end
-                                                div className=flex-1 space-y-1label className={`text-[9px] uppercase font-black flex items-center gap-1 ${themeClasses.textDim}`}SVGs.Spell className=w-3 h-3 {t.itemSpell}labelinput type=number value={editFormData.purpleStoneCount} onChange={e = setEditFormData(p = ({...p, purpleStoneCount Number(e.target.value)}))} className={`w-full p-2.5 rounded-xl border text-sm font-bold bg-transparent ${theme === 'dark'  'border-slate-700'  'border-stone-300'}`} div
-                                                div className={`flex p-1 rounded-xl border w-28 shrink-0 h-[42px] ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-[#e9e6dc] border-stone-300'}`}button type=button onClick={() = setEditFormData(p = ({...p, isSellingSpell true}))} className={`flex-1 rounded-lg text-[9px] font-black uppercase ${editFormData.isSellingSpell  'bg-rose-600 text-white'  'text-stone-500'}`}ขายbuttonbutton type=button onClick={() = setEditFormData(p = ({...p, isSellingSpell false}))} className={`flex-1 rounded-lg text-[9px] font-black uppercase ${!editFormData.isSellingSpell  'bg-emerald-600 text-white'  'text-stone-500'}`}เก็บbuttondiv
-                                            div
-                                            {editFormData.mode === 'aogh' && (
-                                                div className=flex gap-4 items-end
-                                                    div className=flex-1 space-y-1label className={`text-[9px] uppercase font-black flex items-center gap-1 ${themeClasses.textDim}`}SVGs.Magic className=w-3 h-3 {t.itemMagic}labelinput type=number value={editFormData.contMagicCount} onChange={e = setEditFormData(p = ({...p, contMagicCount Number(e.target.value)}))} className={`w-full p-2.5 rounded-xl border text-sm font-bold bg-transparent ${theme === 'dark'  'border-slate-700'  'border-stone-300'}`} div
-                                                    div className={`flex p-1 rounded-xl border w-28 shrink-0 h-[42px] ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-[#e9e6dc] border-stone-300'}`}button type=button onClick={() = setEditFormData(p = ({...p, isSellingMagic true}))} className={`flex-1 rounded-lg text-[9px] font-black uppercase ${editFormData.isSellingMagic  'bg-rose-600 text-white'  'text-stone-500'}`}ขายbuttonbutton type=button onClick={() = setEditFormData(p = ({...p, isSellingMagic false}))} className={`flex-1 rounded-lg text-[9px] font-black uppercase ${!editFormData.isSellingMagic  'bg-emerald-600 text-white'  'text-stone-500'}`}เก็บbuttondiv
-                                                div
-                                            )}
-                                        div
-
-                                        button type=submit className=w-full bg-amber-500 hoverbg-amber-600 text-white py-3.5 rounded-xl font-black uppercase text-xs shadow-lg activescale-95 transition-all{t.save}button
-                                    form
-                                div
-                             div
-                        )}
-
-                        { Share Modal }
-                        {showShareModal && (
-                            div className=fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black80 backdrop-blur-md animate-in fade-in duration-300 onClick={() = setShowShareModal(null)}
-                                div className={`border w-full max-w-md p-6 rounded-[2rem] shadow-2xl relative transition-all flex flex-col items-center ${theme === 'dark'  'bg-slate-900 border-slate-800'  'bg-[#f4f2ee] border-stone-300'}`} onClick={e = e.stopPropagation()}
-                                    h3 className={`text-lg font-black uppercase mb-4 ${themeClasses.textMain}`}{t.shareTitle}h3
-                                    
-                                    { Card to Capture }
-                                    div id=share-card-content className={`w-full p-6 rounded-2xl border mb-6 relative overflow-hidden ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-white border-stone-200'}`}
-                                        div className=absolute top-0 right-0 w-32 h-32 bg-purple-50010 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-nonediv
-                                        div className=flex justify-between items-start mb-4
-                                            div
-                                                h4 className=text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 italic uppercaseOGH TRACKERh4
-                                                p className={`text-[10px] font-bold ${themeClasses.textDim}`}{showShareModal.date}p
-                                            div
-                                            span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${showShareModal.mode === 'aogh'  'bg-rose-50010 text-rose-500 border border-rose-50020'  'bg-purple-50010 text-purple-500 border border-purple-50020'}`}{showShareModal.mode  'ogh'}span
-                                        div
-                                        
-                                        div className=text-center py-4
-                                            p className={`text-[10px] font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.netProfit}p
-                                            p className={`text-3xl font-black ${showShareModal.profit = 0  'text-emerald-500'  'text-rose-500'}`}{formatZeny(showShareModal.profit)} span className=text-xs text-stone-500Zspanp
-                                        div
-
-                                        div className={`grid grid-cols-3 gap-2 mt-4 pt-4 border-t ${theme === 'dark'  'border-slate-800'  'border-stone-100'}`}
-                                            div className=text-center
-                                                p className={`text-[8px] font-black uppercase ${themeClasses.textDim}`}{t.trashSale}p
-                                                p className={`text-[10px] font-bold ${themeClasses.textMain}`}{formatZeny(showShareModal.trashAmount)}p
-                                            div
-                                            div className=text-center border-l border-r border-dashed border-stone-70020
-                                                 p className={`text-[8px] font-black uppercase ${themeClasses.textDim}`}{t.totalCost}p
-                                                 p className={`text-[10px] font-bold ${themeClasses.textMain}`}{formatZeny(showShareModal.totalCost)}p
-                                            div
-                                            div className=text-center
-                                                 p className={`text-[8px] font-black uppercase ${themeClasses.textDim}`}{t.avgMin}p
-                                                 p className={`text-[10px] font-bold ${themeClasses.textMain}`}{formatZeny(showShareModal.revenuePerMinute)}p
-                                            div
-                                        div
-
-                                        div className={`flex justify-between items-center mt-4 pt-4 border-t ${theme === 'dark'  'border-slate-800'  'border-stone-100'}`}
-                                             div className=flex gap-3
-                                                div className=flex items-center gap-1SVGs.Spell className=w-3 h-3span className={`text-[10px] font-black ${themeClasses.textMain}`}{showShareModal.purpleStoneCount}spandiv
-                                                {showShareModal.mode === 'aogh' && div className=flex items-center gap-1SVGs.Magic className=w-3 h-3span className={`text-[10px] font-black ${themeClasses.textMain}`}{showShareModal.contMagicCount}spandiv}
-                                                div className=flex items-center gap-1span className=text-[10px] text-blue-500 font-blackGum {showShareModal.gumUsed}spandiv
-                                             div
-                                             div className=flex items-center gap-2
-                                                 {showShareModal.useSilvervine && SVGs.Silvervine className=w-4 h-4}
-                                                 span className={`text-[10px] font-bold ${themeClasses.textDim}`}{showShareModal.minutesUsed} minspan
-                                             div
-                                        div
-                                    div
-
-                                    div className=flex gap-3 w-full
-                                        button onClick={handleShareCopy} className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-2 transition-all ${shareCopied  'bg-emerald-500 text-white'  (theme === 'dark'  'bg-slate-800 hoverbg-slate-700 text-white'  'bg-stone-200 hoverbg-stone-300 text-stone-700')}`}
-                                            {shareCopied  Icon name=Check size={14} {t.copied}  Icon name=Copy size={14} {t.copyText}}
-                                        button
-                                        button disabled={shareLoading} onClick={handleShareDownload} className=flex-1 bg-blue-600 hoverbg-blue-700 text-white py-3 rounded-xl font-bold text-xs uppercase flex items-center justify-center gap-2 shadow-lg
-                                            {shareLoading  span className=animate-pulse{t.generating}span  Icon name=Download size={14} {t.saveImage}}
-                                        button
-                                    div
-                                div
-                            div
-                        )}
-
-                        { Modal Delete All history Confirmation }
-                        {showDeleteAllModal && (
-                            div className=fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black80 backdrop-blur-sm animate-in fade-in duration-200 onClick={() = setShowDeleteAllModal(false)}
-                                div className={`border w-full max-w-sm p-8 rounded-[3rem] shadow-2xl relative transition-all text-center ${theme === 'dark'  'bg-slate-900 border-slate-800'  'bg-white border-stone-300'}`} onClick={e = e.stopPropagation()}
-                                    div className=mx-auto w-16 h-16 bg-rose-50010 rounded-full flex items-center justify-center text-rose-500 mb-6
-                                        Icon name=Trash2 size={32} 
-                                    div
-                                    h3 className={`text-xl font-black uppercase mb-4 ${themeClasses.textMain}`}{t.confirmDeleteAll}h3
-                                    p className={`text-xs font-medium mb-8 leading-relaxed ${themeClasses.textDim}`}{t.deleteWarn}p
-                                    div className=flex gap-4
-                                        button onClick={() = setShowDeleteAllModal(false)} className={`flex-1 py-4 rounded-xl font-black uppercase text-xs transition-all ${theme === 'dark'  'bg-slate-800 hoverbg-slate-700 text-white'  'bg-stone-100 hoverbg-stone-200 text-stone-600'}`}{t.cancel}button
-                                        button onClick={handleClearAllHistory} className=flex-1 bg-rose-600 hoverbg-rose-700 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg shadow-rose-60020 activescale-95 transition-allยืนยันการลบbutton
-                                    div
-                                div
-                            div
-                        )}
-
-                        { Modal Sale }
-                        {showSaleModal && (
-                            div className=fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black60 backdrop-blur-md animate-in fade-in duration-200 onClick={() = setShowSaleModal(false)}
-                                div className={`border w-full max-w-sm p-8 rounded-[3rem] shadow-2xl relative transition-all ${theme === 'dark'  'bg-slate-900 border-slate-800'  'bg-white border-stone-300'}`} onClick={e = e.stopPropagation()}
-                                    button onClick={() = setShowSaleModal(false)} className={`${themeClasses.textDim} hovertext-rose-500 absolute top-6 right-6`}Icon name=X size={20} button
-                                    div className=flex items-center gap-3 mb-6
-                                        div className=p-3 bg-purple-50010 rounded-2xl text-purple-600
-                                            {saleItem === 'spell'  SVGs.Spell className=w-8 h-8   SVGs.Magic className=w-8 h-8 }
-                                        div
-                                        div
-                                            h3 className={`text-xl font-black uppercase italic ${themeClasses.textMain}`}{t.sellPopup}h3
-                                            p className={`text-[10px] font-black uppercase tracking-widest ${themeClasses.textDim}`}{saleItem === 'spell'  t.itemSpell  t.itemMagic}p
-                                        div
-                                    div
-                                    div className=space-y-4
-                                        div className=space-y-1.5
-                                            label className={`text-[9px] font-black uppercase tracking-widest ${themeClasses.textDim}`}
-                                                {t.sellQuantity} (Max {saleItem === 'spell'  stats.stockSpell.toLocaleString()  stats.stockMagic.toLocaleString()})
-                                            label
-                                            input 
-                                                type=number 
-                                                value={saleFormData.quantity} 
-                                                onFocus={(e) = e.target.select()}
-                                                onChange={e = {
-                                                    const valString = e.target.value;
-                                                    const val = valString ===     Number(valString);
-                                                    const max = saleItem === 'spell'  stats.stockSpell  stats.stockMagic;
-                                                    let cleanVal = val;
-                                                    if (val !==  && val  0) cleanVal = 0;
-                                                    if (val !==  && val  max) cleanVal = max;
-                                                    setSaleFormData({...saleFormData, quantity cleanVal.toString()});
-                                                }} 
-                                                className={`w-full border rounded-xl p-4 font-bold outline-none focusborder-purple-500 ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white'  'bg-[#faf9f6] border-stone-200 text-stone-900'}`} 
-                                                placeholder=0 
-                                            
-                                        div
-                                        div className=space-y-1.5
-                                            label className={`text-[9px] font-black uppercase tracking-widest ${themeClasses.textDim}`}{t.sellPrice}label
-                                            input 
-                                                type=number 
-                                                value={saleFormData.price} 
-                                                onFocus={(e) = e.target.select()}
-                                                onChange={e = setSaleFormData({...saleFormData, price e.target.value})} 
-                                                className={`w-full border rounded-xl p-4 font-bold outline-none focusborder-purple-500 ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white'  'bg-[#faf9f6] border-stone-200 text-stone-900'}`} 
-                                                placeholder=0 
-                                            
-                                        div
-                                    div
-                                    button 
-                                        onClick={handleManualSell} 
-                                        className=w-full mt-8 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg shadow-purple-60020 activescale-95 transition-all
-                                    
-                                        {t.confirmSell}
-                                    button
-                                div
-                            div
-                        )}
-
-                        { Modal Installation Guide }
-                        {showManual && (
-                            div className=fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black60 backdrop-blur-md animate-in fade-in duration-300 onClick={() = setShowManual(false)}
-                                div className={`border w-full max-sm p-10 rounded-[3rem] shadow-2xl relative transition-all ${theme === 'dark'  'bg-slate-950 border-slate-800 text-white'  'bg-[#e5e2da] border-stone-300 text-stone-900'}`} onClick={e = e.stopPropagation()}
-                                    button onClick={() = setShowManual(false)} className={`${themeClasses.textDim} absolute top-8 right-8 hovertext-rose-500`}Icon name=X size={20} button
-                                    h3 className=text-xl font-black mb-8 text-purple-600 italic uppercase{t.install} Guideh3
-                                    div className=space-y-6 text-xs text-stone-600
-                                        div className=space-y-2p className={`font-black uppercase text-[9px] tracking-widest ${themeClasses.textMain}`}สำหรับ iOS (Safari)pp className={`p-4 rounded-2xl border ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-white50 border-stone-300'}`}กดปุ่มแชร์  เลือก span className=text-blue-600 font-boldเพิ่มไปยังหน้าจอโฮมspanpdiv
-                                        div className=space-y-2p className={`font-black uppercase text-[9px] tracking-widest ${themeClasses.textMain}`}สำหรับ Android (Chrome)pp className={`p-4 rounded-2xl border ${theme === 'dark'  'bg-slate-950 border-slate-800'  'bg-white50 border-stone-300'}`}กดปุ่มเมนู (จุดสามจุด)  เลือก span className=text-purple-600 font-boldติดตั้งแอปspanpdiv
-                                    div
-                                    button onClick={() = setShowManual(false)} className={`w-full mt-10 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all ${theme === 'dark'  'bg-slate-800 hoverbg-slate-700'  'bg-stone-300 hoverbg-stone-400'}`}Closebutton
-                                div
-                            div
-                        )}
-                    div
-                div
+                    {/* Footer Info */}
+                    <div className="absolute bottom-8 text-slate-600 text-[10px] uppercase tracking-[0.3em] font-bold">
+                        Coming Soon
+                    </div>
+                </div>
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(App );
-    script
-body
-html
+        function App() {
+            return <WelcomeScreen />;
+        }
+
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+</html>
