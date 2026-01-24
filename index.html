@@ -24,12 +24,13 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // เพิ่ม updateProfile เข้ามาในการ import
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged, signInWithCustomToken, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Expose Firebase to global scope for React component to use
         window.firebaseModules = {
-            initializeApp, getAuth, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged, signInWithCustomToken,
+            initializeApp, getAuth, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged, signInWithCustomToken, updateProfile,
             getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc
         };
         
@@ -103,8 +104,8 @@
              background-color: #0f172a !important;
         }
         .share-gradient-light-capture {
-             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
-             background-color: #f8fafc !important;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+            background-color: #f8fafc !important;
         }
     </style>
 </head>
@@ -188,7 +189,15 @@
             Calendar: ({size, className}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
             Share: ({size, className}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
             Download: ({size, className}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12.01" y2="3"/></svg>,
-            Copy: ({size, className}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy: ({size, className}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+            // Avatar Presets (Class Icons)
+            AvatarKnight: ({className}) => <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="14" fill="#ef4444"/><path d="M16 6l-6 6v12h12v-12z" fill="#fff"/><path d="M16 10l-3 3v6h6v-6z" fill="#ef4444"/></svg>,
+            AvatarWizard: ({className}) => <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="14" fill="#3b82f6"/><path d="M16 6l-8 16h16z" fill="#fff"/><circle cx="16" cy="14" r="3" fill="#3b82f6"/></svg>,
+            AvatarPriest: ({className}) => <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="14" fill="#10b981"/><rect x="14" y="8" width="4" height="16" fill="#fff"/><rect x="8" y="14" width="16" height="4" fill="#fff"/></svg>,
+            AvatarAssassin: ({className}) => <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="14" fill="#6366f1"/><path d="M16 6l4 6 4-2-2 10-6 4-6-4-2-10 4 2z" fill="#fff"/></svg>,
+            AvatarMerchant: ({className}) => <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="14" fill="#f59e0b"/><path d="M10 12h12v12h-12z" fill="#fff"/><path d="M10 12l6-6 6 6" fill="none" stroke="#fff" strokeWidth="2"/></svg>,
+            AvatarHunter: ({className}) => <svg viewBox="0 0 32 32" className={className}><circle cx="16" cy="16" r="14" fill="#8b5cf6"/><path d="M16 6c5.5 0 10 4.5 10 10s-4.5 10-10 10-10-4.5-10-10 4.5-10 10-10zm0 4c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6z" fill="#fff"/></svg>,
+            Camera: ({size, className}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         };
 
         const Icon = ({ name, size = 16, className = "" }) => {
@@ -288,6 +297,9 @@
             const [lang, setLang] = useState('th');
             const [theme, setTheme] = useState('dark'); 
             const [user, setUser] = useState(null);
+            // เพิ่ม state สำหรับจัดการชื่อและรูปที่แสดงผล
+            const [displayName, setDisplayName] = useState('');
+            const [displayAvatar, setDisplayAvatar] = useState(null);
             const [isGuestMode, setIsGuestMode] = useState(false);
             const [records, setRecords] = useState([]);
             const [manualSales, setManualSales] = useState([]); 
@@ -318,6 +330,11 @@
             const [searchDate, setSearchDate] = useState('');
             const [currentPage, setCurrentPage] = useState(1);
             const [firebaseInitialized, setFirebaseInitialized] = useState(false);
+            
+            // เพิ่ม state สำหรับ Modal แก้ไขชื่อ และ เลือก Avatar
+            const [showNameModal, setShowNameModal] = useState(false);
+            const [showAvatarModal, setShowAvatarModal] = useState(false);
+            const [tempName, setTempName] = useState("");
 
             const timerRef = useRef(null);
             const slideTimerRef = useRef(null);
@@ -333,6 +350,15 @@
                 minutesUsed: 60, notes: "", otherCosts: [], runMode: 'ogh',
                 customSpellPrice: "", customMagicPrice: ""
             });
+
+            // Helper to render avatar (External Image vs Internal SVG)
+            const renderAvatar = (src, className) => {
+                if (src && src.startsWith('preset:')) {
+                    const AvatarComp = SVGs[src.split(':')[1]];
+                    return AvatarComp ? <AvatarComp className={className} /> : null;
+                }
+                return <img src={src || YT_AVATAR_URL} className={`${className} object-cover`} alt="avatar" />;
+            };
 
             // Firebase Initialization Logic
             useEffect(() => {
@@ -371,7 +397,11 @@
 
                         onAuthStateChanged(auth, (currentUser) => {
                             setUser(currentUser);
-                            setIsGuestMode(currentUser?.isAnonymous || false);
+                            if (currentUser) {
+                                setIsGuestMode(currentUser.isAnonymous);
+                                setDisplayName(currentUser.displayName || (currentUser.isAnonymous ? "Guest" : "User"));
+                                setDisplayAvatar(currentUser.photoURL || null);
+                            }
                             setIsLoading(false);
                         });
                     } catch (err) {
@@ -390,6 +420,13 @@
                     const localRecords = JSON.parse(localStorage.getItem('ogh_records') || '[]');
                     const localSales = JSON.parse(localStorage.getItem('ogh_sales') || '[]');
                     const localPrices = JSON.parse(localStorage.getItem('ogh_prices') || JSON.stringify(globalPrices));
+                    
+                    // โหลดชื่อและรูปจาก LocalStorage
+                    const savedName = localStorage.getItem('ogh_display_name');
+                    const savedAvatar = localStorage.getItem('ogh_avatar');
+                    if (savedName) setDisplayName(savedName);
+                    if (savedAvatar) setDisplayAvatar(savedAvatar);
+
                     setRecords(localRecords);
                     setManualSales(localSales);
                     setGlobalPrices(localPrices);
@@ -397,6 +434,7 @@
                 }
 
                 if (!user || !firebaseInitialized || !window.firebaseModules || !db) return;
+                
                 const { collection, onSnapshot, doc } = window.firebaseModules;
 
                 const unsubRecords = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'records'), (snap) => {
@@ -416,7 +454,11 @@
 
             // Handlers
             const enterOfflineMode = () => {
-                setUser({ uid: 'offline', displayName: 'Guest (Offline)', isAnonymous: true, isOffline: true, photoURL: null });
+                const savedName = localStorage.getItem('ogh_display_name') || 'Guest (Offline)';
+                const savedAvatar = localStorage.getItem('ogh_avatar') || null;
+                setUser({ uid: 'offline', displayName: savedName, photoURL: savedAvatar, isAnonymous: true, isOffline: true });
+                setDisplayName(savedName);
+                setDisplayAvatar(savedAvatar);
                 setIsGuestMode(true);
                 setIsLoading(false);
             };
@@ -431,23 +473,8 @@
                 }
             };
 
-            const handleGuest = async () => {
-                if (!firebaseInitialized) {
-                     // ถ้าไม่มี Config ให้เข้า Offline Mode เลย
-                     enterOfflineMode();
-                     return;
-                }
-                const { getAuth, signInAnonymously } = window.firebaseModules;
-                try {
-                    // ใช้ getAuth() เพื่อให้แน่ใจว่าได้ Instance ที่ถูกต้อง
-                    await signInAnonymously(getAuth());
-                } catch (e) { 
-                    console.error("Guest Login Error", e);
-                    // ถ้า Login ไม่ผ่าน (เช่น ไม่ได้เปิด Anonymous ใน Console) ให้เสนอ Offline Mode
-                    if(confirm("ไม่สามารถ Login แบบ Guest ได้ (อาจยังไม่ได้เปิดใช้งานใน Firebase Console)\n\nคุณต้องการเข้าใช้งานแบบ 'Offline Mode' แทนหรือไม่? (ข้อมูลจะบันทึกในเครื่องนี้เท่านั้น)")) {
-                        enterOfflineMode();
-                    }
-                }
+            const handleGuest = () => {
+                enterOfflineMode();
             };
 
             const handleLogout = async () => {
@@ -456,6 +483,8 @@
                     setIsGuestMode(false);
                     setRecords([]);
                     setManualSales([]);
+                    setDisplayName('');
+                    setDisplayAvatar(null);
                     return;
                 }
                 if (!auth) return;
@@ -463,6 +492,53 @@
                 await signOut(auth);
                 setRecords([]);
                 setManualSales([]);
+                setDisplayName('');
+                setDisplayAvatar(null);
+            };
+
+            // ฟังก์ชันอัปเดตชื่อ
+            const handleUpdateName = async () => {
+                if (!tempName.trim()) return;
+                const newName = tempName.trim();
+                setDisplayName(newName); 
+
+                if (user?.isOffline) {
+                    localStorage.setItem('ogh_display_name', newName);
+                    setUser(prev => ({ ...prev, displayName: newName }));
+                } else {
+                    if (auth && auth.currentUser) {
+                        try {
+                            const { updateProfile } = window.firebaseModules;
+                            await updateProfile(auth.currentUser, { displayName: newName });
+                            setUser(prev => ({ ...prev, displayName: newName }));
+                        } catch (e) {
+                            console.error("Update name failed", e);
+                        }
+                    }
+                }
+                setShowNameModal(false);
+            };
+
+            // ฟังก์ชันอัปเดต Avatar (เลือก Preset)
+            const handleSelectAvatar = async (presetKey) => {
+                const avatarValue = `preset:${presetKey}`;
+                setDisplayAvatar(avatarValue);
+
+                if (user?.isOffline) {
+                    localStorage.setItem('ogh_avatar', avatarValue);
+                    setUser(prev => ({ ...prev, photoURL: avatarValue }));
+                } else {
+                    if (auth && auth.currentUser) {
+                        try {
+                            const { updateProfile } = window.firebaseModules;
+                            await updateProfile(auth.currentUser, { photoURL: avatarValue });
+                            setUser(prev => ({ ...prev, photoURL: avatarValue }));
+                        } catch (e) {
+                            console.error("Update avatar failed", e);
+                        }
+                    }
+                }
+                setShowAvatarModal(false);
             };
 
             const handleSaveInternal = async (e) => {
@@ -481,9 +557,7 @@
                 };
 
                 if (user?.isOffline) {
-                    // Save to LocalStorage
                     localStorage.setItem('ogh_prices', JSON.stringify(globalPrices));
-                    
                     if (editingId) {
                         const updatedRecords = records.map(r => r.id === editingId ? { ...entry, id: editingId } : r);
                         setRecords(updatedRecords);
@@ -495,13 +569,10 @@
                         localStorage.setItem('ogh_records', JSON.stringify(newRecords));
                     }
                 } else {
-                    // Save to Firebase
                     if (!db || !user || !window.firebaseModules) return;
                     const { collection, addDoc, updateDoc, doc, setDoc } = window.firebaseModules;
-                    
                     const configRef = doc(db, 'artifacts', appId, 'users', user.uid, 'config', 'prices');
                     await setDoc(configRef, globalPrices, { merge: true });
-
                     if (editingId) {
                          const recordRef = doc(db, 'artifacts', appId, 'users', user.uid, 'records', editingId);
                          await updateDoc(recordRef, entry);
@@ -509,7 +580,6 @@
                          await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'records'), entry);
                     }
                 }
-
                 setIsAdding(false); 
                 setEditingId(null);
                 setFormData({ 
@@ -528,7 +598,6 @@
                     localStorage.setItem('ogh_records', JSON.stringify(newRecords));
                     return;
                 }
-
                 if (!db || !user || !window.firebaseModules) return;
                 const { deleteDoc, doc } = window.firebaseModules;
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', id));
@@ -543,7 +612,6 @@
                     setShowDeleteAllModal(false);
                     return;
                 }
-
                 if (!db || !user || !window.firebaseModules) return;
                 const { deleteDoc, doc } = window.firebaseModules;
                 const deletePromises = [
@@ -558,14 +626,7 @@
                 const q = Number(saleFormData.quantity);
                 const p = Number(saleFormData.price);
                 if (isNaN(q) || q <= 0 || isNaN(p) || p < 0) return;
-                
-                const saleData = { 
-                    item: saleItem, 
-                    quantity: q, 
-                    price: p, 
-                    timestamp: Date.now() 
-                };
-
+                const saleData = { item: saleItem, quantity: q, price: p, timestamp: Date.now() };
                 if (user?.isOffline) {
                     const newSale = { ...saleData, id: 'sale_' + Date.now() };
                     const newSales = [...manualSales, newSale];
@@ -576,7 +637,6 @@
                     const { addDoc, collection } = window.firebaseModules;
                     await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'sales'), saleData);
                 }
-
                 setShowSaleModal(false);
                 setSaleFormData({ quantity: "", price: "" });
             };
@@ -588,22 +648,16 @@
 
             const submitEditModal = async () => {
                  const { id, revenue, profit, gumCost, silvervineCost, etcCost, totalCost, revenuePerMinute, stoneValue, timestamp, ...dataToSave } = editModalData;
-                 
                  if (user?.isOffline) {
-                     // Update LocalStorage
                      const updatedRecords = records.map(r => r.id === id ? { ...r, ...dataToSave } : r);
                      setRecords(updatedRecords);
                      localStorage.setItem('ogh_records', JSON.stringify(updatedRecords));
-                     
-                     // Update prices as well
                      localStorage.setItem('ogh_prices', JSON.stringify(globalPrices));
                  } else {
                      if (!db || !user || !window.firebaseModules) return;
                      const { updateDoc, doc, setDoc } = window.firebaseModules;
-
                      const configRef = doc(db, 'artifacts', appId, 'users', user.uid, 'config', 'prices');
                      await setDoc(configRef, globalPrices, { merge: true });
-                    
                      const recordRef = doc(db, 'artifacts', appId, 'users', user.uid, 'records', editModalData.id);
                      await updateDoc(recordRef, dataToSave);
                  }
@@ -769,7 +823,7 @@
                 if (!shareData) return;
                 const text = `[OGH RUN SUMMARY]\n` +
                              `📅 วันที่: ${shareData.date}\n` +
-                             `👤 ผู้เล่น: ${user && !isGuestMode ? '@'+user.displayName : '@Guest'}\n` +
+                             `👤 ผู้เล่น: @${displayName}\n` +
                              `💎 โหมด: ${shareData.mode.toUpperCase()}\n` +
                              `---------------------------\n` +
                              `💰 กำไรสุทธิ: ${shareData.profit.toLocaleString()} Zeny\n` +
@@ -828,13 +882,21 @@
                             <header className={`border p-4 md:p-6 rounded-[2rem] backdrop-blur-md shadow-2xl flex flex-wrap justify-between items-center gap-4 ${themeClasses.card}`}>
                                 <div className="flex flex-row justify-between items-center gap-4 w-full">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-11 h-11 md:w-14 md:h-14 rounded-full bg-purple-600/20 border-2 border-purple-500/30 flex items-center justify-center overflow-hidden shadow-lg font-black">
-                                            {user && !isGuestMode ? <img src={user.photoURL || YT_AVATAR_URL} className="w-full h-full object-cover" /> : <Icon name="User" size={24} className="text-purple-400" />}
+                                        <div onClick={() => setShowAvatarModal(true)} className="relative w-12 h-12 md:w-16 md:h-16 rounded-full bg-purple-600/20 border-2 border-purple-500/30 flex items-center justify-center overflow-hidden shadow-lg font-black cursor-pointer group hover:border-purple-400 transition-all">
+                                            {renderAvatar(displayAvatar, "w-full h-full")}
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <SVGs.Camera className="w-5 h-5 text-white" />
+                                            </div>
                                         </div>
                                         <div className="text-left font-black">
-                                            <h4 className={`text-sm md:text-lg font-black leading-none uppercase ${themeClasses.textMain}`}>
-                                                {user && !isGuestMode ? `@${user.displayName}` : '@Guest'}
-                                            </h4>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className={`text-sm md:text-lg font-black leading-none uppercase ${themeClasses.textMain}`}>
+                                                    @{displayName}
+                                                </h4>
+                                                <button onClick={() => { setTempName(displayName); setShowNameModal(true); }} className={`opacity-50 hover:opacity-100 transition-opacity p-1 rounded-full ${theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-stone-200'}`}>
+                                                    <Icon name="Pencil" size={12} />
+                                                </button>
+                                            </div>
                                             <p className={`text-[10px] md:text-[12px] font-bold mt-1 opacity-60 ${themeClasses.textDim}`}>
                                                 {isGuestMode ? (user.isOffline ? "Offline Mode" : t.guestLogin) : t.gmailLogin}
                                             </p>
@@ -906,7 +968,7 @@
                                         </div>
                                         <div className="space-y-6 pt-4 border-t border-stone-300 dark:border-slate-800 font-black">
                                             <div className="flex gap-4 items-end">
-                                                <div className="flex-1 space-y-2 font-medium"><label className={`text-xs md:text-sm font-medium uppercase tracking-widest flex items-center gap-1 ${themeClasses.textDim}`}><SVGs.Spell className="w-3 h-3"/> {t.itemSpell}</label><input type="number" inputMode="numeric" pattern="[0-9]*" value={formData.purpleStoneCount} onFocus={(e) => e.target.select()} onChange={e => { let val = parseInt(e.target.value); if (isNaN(val)) val = ""; else if (val < 0) val = 0; setFormData(p => ({...p, purpleStoneCount: val})); }} className={`w-full border rounded-xl h-[46px] p-3 font-bold text-sm outline-none ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-[#faf9f6] border-stone-300 text-stone-900 shadow-inner'}`} /></div>
+                                                <div className="flex-1 space-y-2 font-medium"><label className={`text-xs md:text-sm font-medium uppercase tracking-widest flex items-center gap-1 ${themeClasses.textDim}`}><SVGs.Spell className="w-3.5 h-3.5"/> {t.itemSpell}</label><input type="number" inputMode="numeric" pattern="[0-9]*" value={formData.purpleStoneCount} onFocus={(e) => e.target.select()} onChange={e => { let val = parseInt(e.target.value); if (isNaN(val)) val = ""; else if (val < 0) val = 0; setFormData(p => ({...p, purpleStoneCount: val})); }} className={`w-full border rounded-xl h-[46px] p-3 font-bold text-sm outline-none ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white' : 'bg-[#faf9f6] border-stone-300 text-stone-900 shadow-inner'}`} /></div>
                                                 <div className={`flex items-stretch p-1 rounded-xl border w-32 shrink-0 h-[46px] ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-[#e9e6dc] border-stone-300 shadow-inner'}`}><button type="button" onClick={() => setFormData(p => ({...p, isSellingSpell: true}))} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${formData.isSellingSpell ? 'bg-rose-600 text-white shadow-md' : 'text-stone-600'}`}>ขาย</button><button type="button" onClick={() => setFormData(p => ({...p, isSellingSpell: false}))} className={`flex-1 rounded-lg text-[9px] font-black uppercase transition-all ${!formData.isSellingSpell ? 'bg-emerald-600 text-white shadow-md' : 'text-stone-600'}`}>เก็บ</button></div>
                                             </div>
                                             {formData.runMode === 'aogh' && (
@@ -1209,7 +1271,12 @@
                                                     <div className="relative z-10 p-10 md:p-14 text-center font-black">
                                                         <div className="flex flex-col items-center gap-1 mb-10 opacity-70">
                                                             <div className={`flex items-center gap-3 text-xs font-bold uppercase tracking-[0.3em] ${theme === 'dark' ? 'text-slate-300' : 'text-stone-500'}`}>
-                                                                <span>{user && !isGuestMode ? `@${user.displayName}` : '@Guest'}</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center border border-current">
+                                                                        {renderAvatar(displayAvatar, "w-full h-full")}
+                                                                    </div>
+                                                                    <span>@{displayName}</span>
+                                                                </div>
                                                                 <span className={`w-1 h-1 rounded-full ${theme === 'dark' ? 'bg-slate-500' : 'bg-stone-400'}`}></span>
                                                                 <span>{shareData.date}</span>
                                                             </div>
@@ -1414,6 +1481,63 @@
                                             <button onClick={() => setShowDeleteAllModal(false)} className={`flex-1 py-5 rounded-2xl font-black uppercase text-xs transition-all ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-stone-100 hover:bg-stone-200 text-stone-600'}`}>{t.cancel}</button>
                                             <button onClick={handleClearAllHistory} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-5 rounded-2xl font-black uppercase text-xs shadow-lg active:scale-95 transition-all">ยืนยันการลบ</button>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Modal แก้ไขชื่อ */}
+                            {showNameModal && (
+                                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 font-black" onClick={() => setShowNameModal(false)}>
+                                    <div className={`border w-full max-w-sm p-8 rounded-[2.5rem] shadow-2xl relative transition-all ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-stone-300'}`} onClick={e => e.stopPropagation()}>
+                                        <h3 className="text-lg font-black uppercase mb-6 flex items-center gap-2 text-purple-500">
+                                            <Icon name="User" size={20}/> ตั้งชื่อผู้ใช้งาน
+                                        </h3>
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <label className={`text-[10px] font-black uppercase tracking-widest ${themeClasses.textDim}`}>Display Name</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={tempName} 
+                                                    onChange={e => setTempName(e.target.value)}
+                                                    onKeyDown={e => e.key === 'Enter' && handleUpdateName()}
+                                                    autoFocus
+                                                    className={`w-full p-4 rounded-xl border font-bold outline-none text-center text-lg ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white focus:border-purple-500' : 'bg-stone-50 border-stone-200 text-stone-900 focus:border-purple-400 shadow-inner'}`} 
+                                                    placeholder="กรอกชื่อของคุณ..." 
+                                                    maxLength={20}
+                                                />
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <button onClick={() => setShowNameModal(false)} className={`flex-1 py-3 rounded-xl font-black uppercase text-xs transition-all ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-stone-200 hover:bg-stone-300 text-stone-600'}`}>ยกเลิก</button>
+                                                <button onClick={handleUpdateName} className="flex-[1.5] bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow-lg active:scale-95 transition-all">บันทึก</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Modal เลือก Avatar */}
+                            {showAvatarModal && (
+                                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 font-black" onClick={() => setShowAvatarModal(false)}>
+                                    <div className={`border w-full max-w-sm p-8 rounded-[2.5rem] shadow-2xl relative transition-all ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-stone-300'}`} onClick={e => e.stopPropagation()}>
+                                        <h3 className="text-lg font-black uppercase mb-6 flex items-center gap-2 text-pink-500">
+                                            <Icon name="User" size={20}/> เลือกรูปโปรไฟล์
+                                        </h3>
+                                        <div className="grid grid-cols-3 gap-4 mb-6">
+                                            {['AvatarKnight', 'AvatarWizard', 'AvatarPriest', 'AvatarAssassin', 'AvatarMerchant', 'AvatarHunter'].map((avatarKey) => {
+                                                const AvatarComp = SVGs[avatarKey];
+                                                const isSelected = displayAvatar === `preset:${avatarKey}`;
+                                                return (
+                                                    <button 
+                                                        key={avatarKey} 
+                                                        onClick={() => handleSelectAvatar(avatarKey)}
+                                                        className={`aspect-square rounded-2xl flex items-center justify-center border-2 transition-all p-2 ${isSelected ? 'border-pink-500 bg-pink-500/10' : (theme === 'dark' ? 'border-slate-800 hover:border-slate-600 bg-slate-950' : 'border-stone-200 hover:border-stone-400 bg-stone-50')}`}
+                                                    >
+                                                        <AvatarComp className="w-full h-full" />
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <button onClick={() => setShowAvatarModal(false)} className={`w-full py-3 rounded-xl font-black uppercase text-xs transition-all ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-stone-200 hover:bg-stone-300 text-stone-600'}`}>ยกเลิก</button>
                                     </div>
                                 </div>
                             )}
