@@ -219,6 +219,8 @@
                 Share2: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
                 Download: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12.01" y2="3"/></svg>,
                 Copy: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+                // เพิ่ม icon Menu (Hamburger)
+                Menu: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>,
                 Sun: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
                 Moon: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
                 Languages: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></svg>,
@@ -332,9 +334,10 @@
             const [currentPage, setCurrentPage] = useState(1);
             const [firebaseInitialized, setFirebaseInitialized] = useState(false);
             
-            // เพิ่ม state สำหรับ Modal แก้ไขชื่อ และ เลือก Avatar
+            // เพิ่ม state สำหรับ Modal แก้ไขชื่อ และ เลือก Avatar และ Mobile Menu
             const [showNameModal, setShowNameModal] = useState(false);
             const [showAvatarModal, setShowAvatarModal] = useState(false);
+            const [showMobileMenu, setShowMobileMenu] = useState(false); // State สำหรับเมนูมือถือ
             const [tempName, setTempName] = useState("");
 
             const timerRef = useRef(null);
@@ -879,8 +882,18 @@
                     {!user ? (
                         <WelcomeScreen onLogin={handleLogin} onGuest={handleGuest} onShowInstall={() => setShowManual(true)} lang={lang} setLang={setLang} theme={theme} />
                     ) : (
-                        <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-8 font-black">
-                            <header className={`border p-4 md:p-6 rounded-[2rem] backdrop-blur-md shadow-2xl flex flex-wrap justify-between items-center gap-4 ${themeClasses.card}`}>
+                        <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-8 font-black relative">
+                            {/* Floating Action Button (FAB) สำหรับเพิ่มข้อมูล (แสดงเฉพาะมือถือ และไม่อยู่ในหน้าเพิ่มข้อมูล) */}
+                            {!isAdding && (
+                                <button 
+                                    onClick={handleAddDataToggle}
+                                    className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-2xl shadow-purple-600/40 flex items-center justify-center md:hidden active:scale-90 transition-transform animate-in zoom-in duration-300"
+                                >
+                                    <Icon name="PlusCircle" size={28} />
+                                </button>
+                            )}
+
+                            <header className={`border p-4 md:p-6 rounded-[2rem] backdrop-blur-md shadow-2xl flex flex-wrap justify-between items-center gap-4 ${themeClasses.card} relative z-40`}>
                                 <div className="flex flex-row justify-between items-center gap-4 w-full">
                                     <div className="flex items-center gap-4">
                                         {/* แก้ไข: เพิ่ม shrink-0 เพื่อป้องกันรูปเบี้ยวบนมือถือ */}
@@ -904,7 +917,9 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1.5 md:gap-3 flex-wrap justify-end font-black">
+
+                                    {/* Desktop Menu (แสดงเหมือนเดิมเมื่อจอใหญ่) */}
+                                    <div className="hidden md:flex items-center gap-1.5 md:gap-3 flex-wrap justify-end font-black">
                                         <a href="https://www.youtube.com/@SDekza-RO" target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-1.5 px-3 rounded-xl bg-red-600/10 border border-red-600/20 hover:bg-red-600/20 transition-all group font-black`}>
                                             <div className="w-7 h-7 rounded-full bg-cover shadow-md border border-red-600/30 font-black" style={{backgroundImage: `url('${YT_AVATAR_URL}')`}}></div>
                                             <div className="hidden sm:block text-left"><p className="text-[10px] font-black leading-none text-red-600 uppercase font-black">SDekza RO</p></div>
@@ -918,6 +933,58 @@
                                         <div className="flex items-center ml-1 md:ml-2 pl-2 md:pl-4 border-l border-stone-300 dark:border-slate-800 font-black">
                                             <button onClick={handleAddDataToggle} className={`px-3 md:px-6 py-2 md:py-3.5 rounded-xl font-black flex items-center justify-center gap-1.5 md:gap-2 shadow-lg active:scale-95 transition-all text-[11px] md:text-[13px] uppercase tracking-wider ${isAdding ? (theme === 'dark' ? 'bg-stone-800 text-white' : 'bg-stone-700 text-white') : 'bg-purple-600 hover:bg-purple-700 text-white'}`}>{isAdding ? <><Icon name="LayoutDashboard" size={14} /> {t.home}</> : <><Icon name="PlusCircle" size={14} /> {t.addData}</>}</button>
                                         </div>
+                                    </div>
+
+                                    {/* Mobile Menu Trigger (Hamburger) */}
+                                    <div className="md:hidden relative">
+                                        <button 
+                                            onClick={() => setShowMobileMenu(!showMobileMenu)} 
+                                            className={`p-3 rounded-2xl border transition-all active:scale-95 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-stone-200 text-stone-700'} ${showMobileMenu ? 'ring-2 ring-purple-500 border-transparent' : ''}`}
+                                        >
+                                            <Icon name={showMobileMenu ? "X" : "Menu"} size={20} />
+                                        </button>
+
+                                        {/* Mobile Menu Dropdown */}
+                                        {showMobileMenu && (
+                                            <>
+                                                <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]" onClick={() => setShowMobileMenu(false)}></div>
+                                                <div className={`absolute right-0 top-full mt-4 w-56 p-4 rounded-3xl shadow-2xl border z-50 flex flex-col gap-3 animate-in slide-in-from-top-5 duration-200 ${theme === 'dark' ? 'bg-slate-900/95 border-slate-700 backdrop-blur-xl' : 'bg-white/95 border-stone-200 backdrop-blur-xl'}`}>
+                                                    <a href="https://www.youtube.com/@SDekza-RO" target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${theme === 'dark' ? 'bg-black/30 border-red-900/30' : 'bg-red-50 border-red-100'}`}>
+                                                        <div className="w-8 h-8 rounded-full bg-cover shadow-sm border border-red-600/30" style={{backgroundImage: `url('${YT_AVATAR_URL}')`}}></div>
+                                                        <div className="text-left flex-1">
+                                                            <p className={`text-[10px] font-black leading-none uppercase ${theme === 'dark' ? 'text-white' : 'text-stone-900'}`}>SDekza RO</p>
+                                                            <p className={`text-[9px] mt-0.5 text-red-500 font-bold`}>Subscribe</p>
+                                                        </div>
+                                                        <Icon name="ChevronRight" size={14} className="text-red-500" />
+                                                    </a>
+                                                    
+                                                    <div className="h-px w-full bg-gradient-to-r from-transparent via-stone-500/20 to-transparent my-1"></div>
+
+                                                    <button onClick={() => { setTheme(theme === 'dark' ? 'light' : 'dark'); setShowMobileMenu(false); }} className={`flex items-center justify-between p-3 rounded-2xl transition-all ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-stone-100 text-stone-600'}`}>
+                                                        <div className="flex items-center gap-3">
+                                                            <Icon name={theme === 'dark' ? 'Sun' : 'Moon'} size={18} />
+                                                            <span className="text-xs font-bold uppercase">{t.theme}</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-black opacity-50">{theme.toUpperCase()}</span>
+                                                    </button>
+
+                                                    <button onClick={() => { setLang(lang === 'th' ? 'en' : 'th'); setShowMobileMenu(false); }} className={`flex items-center justify-between p-3 rounded-2xl transition-all ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-stone-100 text-stone-600'}`}>
+                                                        <div className="flex items-center gap-3">
+                                                            <Icon name="Languages" size={18} />
+                                                            <span className="text-xs font-bold uppercase">{i18n[lang].langName}</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-black opacity-50">{lang.toUpperCase()}</span>
+                                                    </button>
+
+                                                    <div className="h-px w-full bg-gradient-to-r from-transparent via-stone-500/20 to-transparent my-1"></div>
+
+                                                    <button onClick={() => { handleLogout(); setShowMobileMenu(false); }} className={`flex items-center gap-3 p-3 rounded-2xl transition-all text-rose-500 ${theme === 'dark' ? 'hover:bg-rose-500/10' : 'hover:bg-rose-50'}`}>
+                                                        <Icon name="LogOut" size={18} />
+                                                        <span className="text-xs font-bold uppercase">{t.exit}</span>
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </header>
