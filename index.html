@@ -39,7 +39,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Kanit:wght@300;400;500;700;900&display=swap');
         
         html { font-size: clamp(14px, 0.85vw + 10px, 16px); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Inter', 'Kanit', sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; padding-bottom: 110px; /* Space for Bottom Nav + Safe Area */ }
+        body { font-family: 'Inter', 'Kanit', sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; padding-bottom: 110px; }
         
         /* Dark Mode Override */
         body.dark { background-color: #0f172a; color: #f1f5f9; }
@@ -61,14 +61,22 @@
         @keyframes toastSlideDown { from { transform: translate(-50%, -100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
         .animate-toast { animation: toastSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .animate-shake { animation: shake 0.3s ease-in-out; }
+
+        @keyframes levelUp { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-level-up { animation: levelUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         /* iOS Safe Area Fixes */
         .pb-safe {
-            padding-bottom: 20px; /* Default Fallback */
+            padding-bottom: 20px;
             padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
         }
+        
+        .progress-bar { transition: width 0.5s ease-in-out; }
     </style>
 </head>
 <body class="dark"> <!-- Default Dark Mode -->
@@ -77,6 +85,9 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, Fragment } = React;
         const { LineChart, Line, ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } = window.Recharts || {};
+
+        // --- GLOBAL VARIABLES ---
+        let auth, db;
 
         const MANUAL_FIREBASE_CONFIG = {
             apiKey: "AIzaSyAbWzr8o_OhkjGbEetBYq_nzYmVZ2fTf40",
@@ -88,58 +99,59 @@
             measurementId: "G-04JN1ERQ4T"
         };
         
-        // --- GEMINI API CONFIG ---
         const SHARED_API_KEY = "AIzaSyBDpQNDMH1xCpyvbjMWzEyccfc9JX2xHPg";
         const DAILY_QUOTA = 10;
         
-        const callGemini = async (prompt) => {
-            const userKey = localStorage.getItem('ogh_gemini_key');
-            let activeKey = userKey;
-            let usingShared = false;
+        const CLASS_TREE = {
+            'Novice': { next: ['Swordman', 'Mage', 'Merchant', 'Thief', 'Acolyte', 'Archer'], maxJob: 10 },
+            'Swordman': { next: ['Knight', 'Crusader'], maxJob: 50 },
+            'Mage': { next: ['Wizard', 'Sage'], maxJob: 50 },
+            'Merchant': { next: ['Blacksmith', 'Alchemist'], maxJob: 50 },
+            'Thief': { next: ['Assassin', 'Rogue'], maxJob: 50 },
+            'Acolyte': { next: ['Priest', 'Monk'], maxJob: 50 },
+            'Archer': { next: ['Hunter', 'Bard'], maxJob: 50 },
+            'Knight': { next: ['Lord Knight'], maxJob: 50 },
+            'Wizard': { next: ['High Wizard'], maxJob: 50 },
+            'Blacksmith': { next: ['Whitesmith'], maxJob: 50 },
+            'Assassin': { next: ['Assassin Cross'], maxJob: 50 },
+            'Priest': { next: ['High Priest'], maxJob: 50 },
+            'Hunter': { next: ['Sniper'], maxJob: 50 },
+            'High Novice': { next: ['High Swordman', 'High Mage', 'High Merchant', 'High Thief', 'High Acolyte', 'High Archer'], maxJob: 10 },
+            'Lord Knight': { next: [], maxJob: 70 }, 
+        };
 
-            if (!activeKey) {
-                const today = new Date().toISOString().split('T')[0];
-                const usageData = JSON.parse(localStorage.getItem('ogh_ai_quota') || '{"date":"", "count":0}');
-                
-                if (usageData.date === today && usageData.count >= DAILY_QUOTA) {
-                    return "QUOTA_EXCEEDED";
-                }
-                
-                activeKey = SHARED_API_KEY;
-                usingShared = true;
+        const INITIAL_STATS = {
+            baseLv: 1, baseExp: 0,
+            jobLv: 1, jobExp: 0,
+            jobClass: 'Novice',
+            coins: 0,
+            zeny: 0,
+            isHighClass: false
+        };
+
+        // --- GLOBAL HELPERS ---
+        const getExpReq = (lv, type) => Math.floor(100 * Math.pow(lv, 1.2));
+        const formatMoney = (n) => new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(n);
+        const formatFullMoney = (n) => new Intl.NumberFormat('th-TH').format(n);
+        const formatTimer = (ms) => { const m = Math.floor(ms / 60000).toString().padStart(2, '0'); const s = Math.floor((ms % 60000) / 1000).toString().padStart(2, '0'); return `${m}:${s}`; };
+        
+        const handleNumberInput = (e, field, setFormData) => {
+            const val = e.target.value;
+            // Allow only digits
+            if (val === '' || /^\d*$/.test(val)) {
+                setFormData(p => ({ ...p, [field]: val }));
             }
+        };
 
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
-                });
-                
-                if (!response.ok) {
-                    await new Promise(r => setTimeout(r, 1000));
-                     const retryResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                    });
-                    if (!retryResponse.ok) throw new Error('API Failed');
-                    const data = await retryResponse.json();
-                    
-                    if (usingShared) incrementQuota();
-                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "ไม่สามารถวิเคราะห์ได้";
-                }
-
-                const data = await response.json();
-                if (usingShared) incrementQuota();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "ไม่สามารถวิเคราะห์ได้";
-
-            } catch (error) {
-                console.error("Gemini Error:", error);
-                return "เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI";
-            }
+        const calculateProfit = (f, p) => {
+            let rev = Number(f.trashAmount) || 0;
+            const sp = f.isSellingSpell ? (Number(f.customSpellPrice) || p.purpleStonePrice) : 0;
+            const mp = (f.runMode === 'aogh' && f.isSellingMagic) ? (Number(f.customMagicPrice) || p.contMagicPrice) : 0;
+            rev += (f.purpleStoneCount * sp) + (f.contMagicCount * mp);
+            const costGum = f.gumUsed * (p.gumBoxPrice / 10);
+            const costSv = f.useSilvervine ? (2 * (p.silvervineBoxPrice / 10)) : 0;
+            const costOther = f.otherCosts.reduce((a, c) => a + (Number(c.amount) || 0), 0);
+            return rev - (costGum + costSv + costOther);
         };
 
         const incrementQuota = () => {
@@ -152,7 +164,31 @@
             localStorage.setItem('ogh_ai_quota', JSON.stringify({ date: today, count: newCount }));
         };
 
-        // --- ICONS & ASSETS ---
+        const callGemini = async (prompt) => {
+            const userKey = localStorage.getItem('ogh_gemini_key');
+            let activeKey = userKey;
+            let usingShared = false;
+
+            if (!activeKey) {
+                const today = new Date().toISOString().split('T')[0];
+                const usageData = JSON.parse(localStorage.getItem('ogh_ai_quota') || '{"date":"", "count":0}');
+                if (usageData.date === today && usageData.count >= DAILY_QUOTA) return "QUOTA_EXCEEDED";
+                activeKey = SHARED_API_KEY; usingShared = true;
+            }
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (!response.ok) return "ไม่สามารถวิเคราะห์ได้";
+                const data = await response.json();
+                if (usingShared) incrementQuota();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "ไม่สามารถวิเคราะห์ได้";
+            } catch (error) { return "เกิดข้อผิดพลาดในการเชื่อมต่อ"; }
+        };
+
+        // --- ICONS ---
         const SVGs = {
             Spell: ({className}) => <svg viewBox="0 0 32 32" className={className}><path d="M16 4 L24 12 L24 22 L16 28 L8 22 L8 12 Z" fill="#7E57C2" /><path d="M16 6 L22 12 L22 20 L16 26 L10 20 L10 12 Z" fill="#9575CD" /><rect x="13" y="10" width="2" height="2" fill="#EDE7F6" /></svg>,
             Magic: ({className}) => <svg viewBox="0 0 32 32" className={className}><path d="M16 4 L24 12 L24 22 L16 28 L8 22 L8 12 Z" fill="#b91c1c" /><path d="M16 6 L22 12 L22 20 L16 26 L10 20 L10 12 Z" fill="#ef4444" /><rect x="13" y="10" width="2" height="2" fill="#fecaca" /></svg>,
@@ -169,7 +205,7 @@
                 Home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
                 History: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
                 Box: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
-                Settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+                Settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
                 Plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
                 X: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
                 Trash: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
@@ -186,14 +222,14 @@
                 AlertTriangle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
                 Key: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3L15.5 7.5z"/></svg>,
                 HelpCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>,
-                Loader: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                Loader: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
+                Coins: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="M16.72 11.06h1v4"/></svg>,
+                User: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+                ArrowLeft: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>,
+                Save: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
             };
             return icons[name] || null;
         };
-
-        const formatMoney = (n) => new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(n);
-        
-        let auth, db;
 
         const NumberStepper = ({ value, onChange, min = 0, max = 999, step = 1, theme }) => {
             const handleStep = (amount) => {
@@ -212,42 +248,579 @@
             );
         };
 
-        const handleNumberInput = (e, field, setFormData) => {
-            const val = e.target.value;
-            if (val === '') {
-                setFormData(p => ({ ...p, [field]: '' }));
-                return;
-            }
-            if (/^\d*$/.test(val)) {
-                setFormData(p => ({ ...p, [field]: val }));
-            }
-        };
-
-        const calculateProfit = (f, p) => {
-            let rev = Number(f.trashAmount) || 0;
-            const sp = f.isSellingSpell ? (Number(f.customSpellPrice) || p.purpleStonePrice) : 0;
-            const mp = (f.runMode === 'aogh' && f.isSellingMagic) ? (Number(f.customMagicPrice) || p.contMagicPrice) : 0;
-            
-            rev += (f.purpleStoneCount * sp) + (f.contMagicCount * mp);
-            
-            const costGum = f.gumUsed * (p.gumBoxPrice / 10);
-            const costSv = f.useSilvervine ? (2 * (p.silvervineBoxPrice / 10)) : 0;
-            const costOther = f.otherCosts.reduce((a, c) => a + (Number(c.amount) || 0), 0);
-            
-            return rev - (costGum + costSv + costOther);
-        };
-
-        // --- TOAST COMPONENT ---
         const Toast = ({ message, type = 'success', onClose }) => {
-            useEffect(() => {
-                const timer = setTimeout(onClose, 3000);
-                return () => clearTimeout(timer);
-            }, [onClose]);
-
+            useEffect(() => { const timer = setTimeout(onClose, 3000); return () => clearTimeout(timer); }, [onClose]);
             return (
-                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-toast border border-slate-700/50 backdrop-blur-md">
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[70] bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-toast border border-slate-700/50 backdrop-blur-md">
                     {type === 'success' ? <div className="bg-emerald-500 rounded-full p-1"><Icon name="Check" size={12} className="text-white"/></div> : <Icon name="AlertTriangle" size={16} className="text-rose-500"/>}
                     <span className="text-xs font-bold">{message}</span>
+                </div>
+            );
+        };
+
+        const ConfirmModal = ({ title, message, onConfirm, onCancel, isProcessing, confirmColor = "rose" }) => {
+            return (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={!isProcessing ? onCancel : undefined}>
+                    <div className={`w-full max-w-sm p-6 rounded-3xl shadow-2xl border bg-slate-900 border-slate-700 relative`} onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <div className={`w-16 h-16 rounded-full bg-${confirmColor}-500/20 flex items-center justify-center text-${confirmColor}-500 mb-2 animate-shake`}>
+                                <Icon name="AlertTriangle" size={32} />
+                            </div>
+                            <h3 className={`text-xl font-black text-${confirmColor}-500`}>{title}</h3>
+                            <p className="text-sm opacity-70 leading-relaxed whitespace-pre-wrap">{message}</p>
+                            <div className="flex gap-3 w-full mt-4">
+                                <button onClick={onCancel} className="flex-1 py-3 rounded-2xl font-bold text-xs bg-slate-800 text-slate-400 hover:bg-slate-700" disabled={isProcessing}>ยกเลิก</button>
+                                <button onClick={onConfirm} className={`flex-1 py-3 rounded-2xl font-bold text-xs bg-${confirmColor}-600 hover:bg-${confirmColor}-700 text-white shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all`} disabled={isProcessing}>
+                                    {isProcessing ? <Icon name="Loader" size={16} className="animate-spin"/> : "ยืนยัน"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const MessageModal = ({ title, message, onClose, icon = "Check", color = "emerald" }) => {
+            return (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+                    <div className={`w-full max-w-sm p-6 rounded-3xl shadow-2xl border bg-slate-900 border-slate-700 relative`} onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <div className={`w-16 h-16 rounded-full bg-${color}-500/20 flex items-center justify-center text-${color}-500 mb-2 animate-level-up`}>
+                                <Icon name={icon} size={32} />
+                            </div>
+                            <h3 className={`text-xl font-black text-${color}-500`}>{title}</h3>
+                            <p className="text-sm opacity-70 leading-relaxed whitespace-pre-wrap">{message}</p>
+                            <div className="flex gap-3 w-full mt-4">
+                                <button onClick={onClose} className="flex-1 py-3 rounded-2xl font-bold text-xs bg-slate-800 text-slate-400 hover:bg-slate-700">ปิด</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const RewardPopup = ({ data, onClose }) => {
+            return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+                    <div className="bg-slate-900 border border-slate-700 p-8 rounded-[2.5rem] w-full max-w-sm text-center relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/20 to-transparent pointer-events-none"></div>
+                        <div className="animate-level-up mb-4">
+                            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500 italic">RECORD SAVED!</h2>
+                        </div>
+                        <div className="space-y-4 relative z-10">
+                            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                                <p className="text-xs text-slate-400 font-bold uppercase mb-2">Rewards</p>
+                                <div className="flex justify-center gap-6">
+                                    <div className="text-center">
+                                        <div className="text-xl font-black text-yellow-400">+{data.expGain}</div>
+                                        <div className="text-[9px] font-bold opacity-60">EXP</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-xl font-black text-emerald-400">+{data.zenyGain}</div>
+                                        <div className="text-[9px] font-bold opacity-60">E-ZENY</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-xl font-black text-amber-500">+{data.coinGain}</div>
+                                        <div className="text-[9px] font-bold opacity-60">COINS</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="w-full py-3 bg-white text-slate-900 rounded-xl font-black text-xs hover:scale-105 transition-transform">AWESOME!</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 w-12 transition-colors ${active ? 'text-purple-500' : 'opacity-40 hover:opacity-70'}`}>
+                <Icon name={icon} size={20} />
+                <span className="text-[9px] font-bold">{label}</span>
+            </button>
+        );
+
+        // --- VIEWS ---
+        const AddDataView = ({ onClose, targetUid, db, prices, editRecord, theme, onSuccess, userStats, allRecords, setGlobalIsSaving, setIsFormValid }) => {
+            const [form, setForm] = useState(editRecord ? { ...editRecord, otherCosts: editRecord.otherCosts || [] } : { date: new Date().toISOString().split('T')[0], runMode: 'ogh', trashAmount: '', gumUsed: 0, useSilvervine: true, purpleStoneCount: 0, contMagicCount: 0, isSellingSpell: false, isSellingMagic: false, minutesUsed: '60', otherCosts: [], notes: '' });
+            const [activeLootTab, setActiveLootTab] = useState('spell');
+            const [activeSection, setActiveSection] = useState('loot');
+
+            useEffect(() => {
+                const isValid = form.trashAmount !== '' && parseInt(form.trashAmount) >= 0 && targetUid;
+                setIsFormValid(isValid);
+            }, [form.trashAmount, targetUid, setIsFormValid]);
+
+            const calculateRewards = (record, history) => {
+                const currentProfit = calculateProfit(record, prices);
+                let totalProfit = 0;
+                history.forEach(r => totalProfit += r.profit);
+                const avgProfit = history.length > 0 ? totalProfit / history.length : currentProfit;
+                let coin = 0;
+                if(currentProfit > avgProfit * 1.2) coin = 2; else if(currentProfit >= avgProfit * 0.8) coin = 1; else coin = 0;
+                const baseExp = 10;
+                let bonusExp = 0;
+                if(coin === 2) bonusExp = 30; else if(coin === 1) bonusExp = 10;
+                const zenyGain = Math.floor(currentProfit / 1000);
+                return { coin, exp: baseExp + bonusExp, zeny: zenyGain };
+            };
+
+            const save = async (e) => {
+                e.preventDefault();
+                if(!targetUid) { alert("ระบบกำลังเชื่อมต่อ กรุณารอสักครู่..."); return; }
+                setGlobalIsSaving(true);
+                const { addDoc, collection, updateDoc, doc, setDoc } = window.firebaseModules;
+                const finalData = { ...form, trashAmount: Number(form.trashAmount) || 0, minutesUsed: Number(form.minutesUsed) || 60, purpleStoneCount: Number(form.purpleStoneCount) || 0, contMagicCount: Number(form.contMagicCount) || 0, timestamp: Date.now(), profit: calculateProfit(form, prices) };
+                
+                await new Promise(r => setTimeout(r, 600));
+
+                if(editRecord) {
+                     await updateDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records', editRecord.id), finalData);
+                     onSuccess(null);
+                } else {
+                     await addDoc(collection(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records'), finalData);
+                     const rewards = calculateRewards(finalData, allRecords);
+                     let newStats = { ...userStats };
+                     newStats.baseExp += rewards.exp; newStats.jobExp += rewards.exp; newStats.coins += rewards.coin; newStats.zeny += rewards.zeny;
+                     let nextBase = getExpReq(newStats.baseLv, 'base');
+                     while(newStats.baseExp >= nextBase && newStats.baseLv < 99) { newStats.baseExp -= nextBase; newStats.baseLv++; nextBase = getExpReq(newStats.baseLv, 'base'); }
+                     const maxJob = CLASS_TREE[newStats.jobClass]?.maxJob || 50;
+                     let nextJob = getExpReq(newStats.jobLv, 'job');
+                     while(newStats.jobExp >= nextJob && newStats.jobLv < maxJob) { newStats.jobExp -= nextJob; newStats.jobLv++; nextJob = getExpReq(newStats.jobLv, 'job'); }
+                     await setDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'gamification', 'stats'), newStats);
+                     onSuccess({ expGain: rewards.exp, coinGain: rewards.coin, zenyGain: rewards.zeny });
+                }
+                setGlobalIsSaving(false);
+            };
+
+            const addCost = () => setForm(p => ({...p, otherCosts: [...p.otherCosts, {id: Date.now(), name: '', amount: ''}]}));
+            const removeCost = (id) => setForm(p => ({...p, otherCosts: p.otherCosts.filter(c => c.id !== id)}));
+            const updateCost = (id, field, val) => {
+                if (field === 'amount' && val !== '' && !/^\d*$/.test(val)) return;
+                setForm(p => ({...p, otherCosts: p.otherCosts.map(c => c.id === id ? {...c, [field]: val} : c)}));
+            };
+
+            return (
+                <div className={`p-6 pb-32 animate-fade-in space-y-6 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                    <h2 className="text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 uppercase text-center mb-2">{editRecord ? "แก้ไขข้อมูล" : "บันทึกการลงดัน"}</h2>
+                    
+                    <div className="flex bg-slate-800 p-1 rounded-2xl mb-4">
+                       <button type="button" onClick={()=>setActiveSection('loot')} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${activeSection === 'loot' ? 'bg-slate-700 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}>ผลลัพธ์ (Loot)</button>
+                       <button type="button" onClick={()=>setActiveSection('setup')} className={`flex-1 py-3 rounded-xl text-xs font-black transition-all ${activeSection === 'setup' ? 'bg-slate-700 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}>ตั้งค่า (Setup)</button>
+                    </div>
+
+                    <form id="add-data-form" onSubmit={save} className="space-y-6"> 
+                        {activeSection === 'loot' && (
+                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                                <div className="flex justify-between items-center bg-slate-900/50 p-2 rounded-2xl border border-white/5">
+                                    <button type="button" onClick={() => setForm(p => ({...p, runMode: 'ogh'}))} className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all ${form.runMode === 'ogh' ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30' : 'text-slate-500'}`}>
+                                        <span className="text-[10px] font-black">OGH</span>
+                                    </button>
+                                    <button type="button" onClick={() => setForm(p => ({...p, runMode: 'aogh'}))} className={`flex-1 flex flex-col items-center justify-center py-3 rounded-xl transition-all ${form.runMode === 'aogh' ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30' : 'text-slate-500'}`}>
+                                        <span className="text-[10px] font-black">AOGH</span>
+                                    </button>
+                                </div>
+
+                                <div className="bg-gradient-to-br from-emerald-900/40 to-slate-900/40 p-6 rounded-3xl border border-emerald-500/20 text-center">
+                                    <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-2 block">ยอดขายขยะ (Trash Sales)</label>
+                                    <input 
+                                        type="text" 
+                                        inputMode="decimal" 
+                                        value={form.trashAmount} 
+                                        onChange={e => handleNumberInput(e, 'trashAmount', setForm)} 
+                                        placeholder="0" 
+                                        className="w-full text-center text-5xl font-black bg-transparent outline-none text-white placeholder-slate-700 tracking-tight" 
+                                    />
+                                    <span className="text-[10px] font-bold opacity-30 mt-2 block">ZENY</span>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {/* Tabs for Stone Selection (Only in AOGH) */}
+                                    {form.runMode === 'aogh' && (
+                                        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/5 mb-2">
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setActiveLootTab('spell')}
+                                                className={`flex-1 py-2 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-2 ${activeLootTab === 'spell' ? 'bg-purple-600 text-white shadow' : 'text-slate-500'}`}
+                                            >
+                                                <SVGs.Spell className="w-4 h-4" /> หินม่วง ({form.purpleStoneCount || 0})
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setActiveLootTab('magic')}
+                                                className={`flex-1 py-2 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-2 ${activeLootTab === 'magic' ? 'bg-rose-600 text-white shadow' : 'text-slate-500'}`}
+                                            >
+                                                <SVGs.Magic className="w-4 h-4" /> หินแดง ({form.contMagicCount || 0})
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Purple Stone Input */}
+                                    {(form.runMode === 'ogh' || activeLootTab === 'spell') && (
+                                        <div className="bg-slate-900/50 p-5 rounded-3xl border border-white/5 flex flex-col gap-4 animate-in fade-in zoom-in duration-300">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-purple-500/20 p-2 rounded-xl"><SVGs.Spell className="w-8 h-8"/></div>
+                                                    <span className="text-sm font-bold text-purple-300">Coagulated Spell</span>
+                                                </div>
+                                                <div className="flex bg-slate-800 rounded-lg p-0.5">
+                                                    <button type="button" onClick={() => setForm(p => ({...p, isSellingSpell: false}))} className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${!form.isSellingSpell ? 'bg-purple-600 text-white' : 'text-slate-500'}`}>เก็บ</button>
+                                                    <button type="button" onClick={() => setForm(p => ({...p, isSellingSpell: true}))} className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${form.isSellingSpell ? 'bg-white text-slate-900' : 'text-slate-500'}`}>ขาย</button>
+                                                </div>
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                inputMode="numeric" 
+                                                value={form.purpleStoneCount} 
+                                                onChange={e => handleNumberInput(e, 'purpleStoneCount', setForm)} 
+                                                className={`w-full h-16 rounded-2xl text-center text-4xl font-black outline-none ${theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'}`} 
+                                                placeholder="0" 
+                                            />
+                                            {form.isSellingSpell && (
+                                                <div className="flex items-center gap-2 bg-slate-800 p-3 rounded-xl animate-fade-in">
+                                                    <span className="text-[10px] font-bold opacity-50 whitespace-nowrap">ราคาขาย:</span>
+                                                    <input type="text" inputMode="decimal" placeholder={prices.purpleStonePrice} onFocus={(e) => { if(e.target.value === prices.purpleStonePrice.toString()) setForm(p => ({...p, customSpellPrice: ''})) }} className="flex-1 bg-transparent text-right font-bold text-sm outline-none text-white" onChange={(e) => handleNumberInput(e, 'customSpellPrice', setForm)} value={form.customSpellPrice} />
+                                                    <span className="text-[10px] font-bold opacity-50">Z</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Red Stone Input */}
+                                    {form.runMode === 'aogh' && activeLootTab === 'magic' && (
+                                        <div className="bg-slate-900/50 p-5 rounded-3xl border border-white/5 flex flex-col gap-4 animate-in fade-in zoom-in duration-300">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-rose-500/20 p-2 rounded-xl"><SVGs.Magic className="w-8 h-8"/></div>
+                                                    <span className="text-sm font-bold text-rose-300">Contaminated Magic</span>
+                                                </div>
+                                                <div className="flex bg-slate-800 rounded-lg p-0.5">
+                                                    <button type="button" onClick={() => setForm(p => ({...p, isSellingMagic: false}))} className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${!form.isSellingMagic ? 'bg-rose-600 text-white' : 'text-slate-500'}`}>เก็บ</button>
+                                                    <button type="button" onClick={() => setForm(p => ({...p, isSellingMagic: true}))} className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${form.isSellingMagic ? 'bg-white text-slate-900' : 'text-slate-500'}`}>ขาย</button>
+                                                </div>
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                inputMode="numeric" 
+                                                value={form.contMagicCount} 
+                                                onChange={e => handleNumberInput(e, 'contMagicCount', setForm)} 
+                                                className={`w-full h-16 rounded-2xl text-center text-4xl font-black outline-none ${theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'}`} 
+                                                placeholder="0" 
+                                            />
+                                            {form.isSellingMagic && (
+                                                <div className="flex items-center gap-2 bg-slate-800 p-3 rounded-xl animate-fade-in">
+                                                    <span className="text-[10px] font-bold opacity-50 whitespace-nowrap">ราคาขาย:</span>
+                                                    <input type="text" inputMode="decimal" placeholder={prices.contMagicPrice} onFocus={(e) => { if(e.target.value === prices.contMagicPrice.toString()) setForm(p => ({...p, customMagicPrice: ''})) }} className="flex-1 bg-transparent text-right font-bold text-sm outline-none text-white" onChange={(e) => handleNumberInput(e, 'customMagicPrice', setForm)} value={form.customMagicPrice} />
+                                                    <span className="text-[10px] font-bold opacity-50">Z</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSection === 'setup' && (
+                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className={`text-[10px] font-bold uppercase tracking-widest ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>วันที่</label>
+                                        <input type="date" value={form.date} onChange={e => setForm(p => ({...p, date: e.target.value}))} className={`w-full h-12 rounded-xl px-4 font-bold outline-none text-center ${theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-900'}`} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className={`text-[10px] font-bold uppercase tracking-widest ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>เวลา (นาที)</label>
+                                        <input type="text" inputMode="numeric" value={form.minutesUsed} onChange={e => handleNumberInput(e, 'minutesUsed', setForm)} className={`w-full h-12 rounded-xl px-4 font-bold text-center outline-none ${theme === 'dark' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-900'}`} placeholder="60" />
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-900/50 p-5 rounded-3xl border border-white/5 space-y-5">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-blue-500/20 p-2 rounded-xl"><SVGs.GumBox className="w-5 h-5"/></div>
+                                            <span className="text-sm font-bold">Bubble Gum</span>
+                                        </div>
+                                        <div className="flex gap-1 bg-slate-800 p-1 rounded-lg">
+                                            {[0,1,2].map(n => <button key={n} type="button" onClick={() => setForm(p => ({...p, gumUsed: n}))} className={`w-10 h-10 rounded-md text-sm font-black transition-all ${form.gumUsed === n ? 'bg-blue-500 text-white shadow' : 'text-slate-500 hover:bg-slate-700'}`}>{n}</button>)}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-emerald-500/20 p-2 rounded-xl"><SVGs.SilvervineBox className="w-5 h-5"/></div>
+                                            <span className="text-sm font-bold">Silvervine</span>
+                                        </div>
+                                        <button type="button" onClick={() => setForm(p => ({...p, useSilvervine: !p.useSilvervine}))} className={`w-14 h-10 rounded-lg border flex items-center justify-center transition-all ${form.useSilvervine ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-600 text-slate-600'}`}>
+                                            {form.useSilvervine ? <Icon name="Check" size={20}/> : <Icon name="X" size={20}/>}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">ต้นทุนอื่นๆ</span>
+                                        <button type="button" onClick={addCost} className="text-[10px] bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all"><Icon name="Plus" size={12}/> เพิ่มรายการ</button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {form.otherCosts.map(c => (
+                                            <div key={c.id} className="flex gap-2 animate-fade-in">
+                                                <input type="text" placeholder="ชื่อรายการ..." value={c.name} onChange={e => updateCost(c.id, 'name', e.target.value)} className="flex-1 h-12 bg-slate-800 rounded-xl px-4 text-sm outline-none text-white" />
+                                                <input type="text" inputMode="numeric" placeholder="0" value={c.amount} onChange={e => updateCost(c.id, 'amount', e.target.value)} className="w-24 h-12 bg-slate-800 rounded-xl px-4 text-sm outline-none text-right text-white" />
+                                                <button type="button" onClick={() => removeCost(c.id)} className="w-12 h-12 flex items-center justify-center text-rose-500 hover:bg-rose-500/10 rounded-xl"><Icon name="Trash" size={18}/></button>
+                                            </div>
+                                        ))}
+                                        {form.otherCosts.length === 0 && <p className="text-center text-[10px] opacity-30 py-4 border border-dashed border-slate-700 rounded-xl">ไม่มีรายการเพิ่มเติม</p>}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">บันทึกช่วยจำ</p>
+                                    <textarea value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} className="w-full h-32 bg-slate-900/50 border border-white/5 rounded-3xl p-4 text-sm font-medium outline-none resize-none text-white placeholder-slate-600" placeholder="พิมพ์บันทึกเพิ่มเติม..."></textarea>
+                                </div>
+                            </div>
+                        )}
+                    </form>
+                </div>
+            );
+        };
+
+        const HomeView = ({ records, prices, userStats, goToTab }) => {
+            const totalProfit = records.reduce((acc, r) => acc + (r.profit || 0), 0);
+            const totalRuns = records.length;
+            const chartData = [...records].reverse().slice(-7).map(r => ({ name: r.date.split('/')[0], profit: r.profit }));
+
+            return (
+                <div className="p-6 space-y-6 animate-fade-in pb-24">
+                    <header className="flex justify-between items-center">
+                        <div onClick={() => goToTab('profile')} className="flex items-center gap-3 bg-white/5 border border-white/10 p-1.5 pr-4 rounded-full cursor-pointer hover:bg-white/10 transition-all active:scale-95">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-black shadow-lg border border-white/20 ${userStats.isHighClass ? 'bg-gradient-to-tr from-amber-300 to-yellow-600 text-white' : 'bg-gradient-to-tr from-slate-600 to-slate-500 text-white'}`}>
+                                 {userStats.jobClass ? userStats.jobClass.substring(0, 2).toUpperCase() : 'NO'}
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[9px] font-bold uppercase tracking-wider opacity-60">Lv. {userStats.baseLv}</span>
+                                <span className="text-[10px] font-black leading-none">{userStats.jobClass}</span>
+                            </div>
+                        </div>
+                        <div className="text-right"><p className="text-[10px] opacity-50 uppercase font-bold">Total Profit</p><p className="text-xl font-black text-emerald-500">{formatMoney(totalProfit)}</p></div>
+                    </header>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="glass-panel p-4 rounded-3xl"><div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center mb-2"><Icon name="TrendingUp" size={16}/></div><p className="text-2xl font-black">{totalRuns}</p><p className="text-[10px] opacity-50 font-bold">รอบการลง</p></div>
+                        <div className="glass-panel p-4 rounded-3xl"><div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center mb-2"><Icon name="History" size={16}/></div><p className="text-2xl font-black">{records.length > 0 ? records[0].date : '-'}</p><p className="text-[10px] opacity-50 font-bold">ล่าสุด</p></div>
+                    </div>
+                    <div className="glass-panel p-4 rounded-3xl h-48 relative overflow-hidden">
+                         <p className="text-xs font-bold opacity-50 mb-2 absolute top-4 left-4 z-10">แนวโน้มกำไร (7 รอบล่าสุด)</p>
+                         <div className="absolute inset-0 pt-8 pl-0 pr-0"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData}><defs><linearGradient id="colorP" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/><stop offset="95%" stopColor="#a855f7" stopOpacity={0}/></linearGradient></defs><Area type="monotone" dataKey="profit" stroke="#a855f7" strokeWidth={3} fill="url(#colorP)" /></AreaChart></ResponsiveContainer></div>
+                    </div>
+                     <div className="space-y-2">
+                        <p className="text-xs font-bold opacity-50 px-2">RECENT ACTIVITY</p>
+                        {records.slice(0, 3).map(r => (
+                            <div key={r.id} className="glass-panel p-3 rounded-2xl flex justify-between items-center"><div className="flex gap-3 items-center"><div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[8px] font-black uppercase ${r.mode === 'aogh' ? 'bg-rose-500 text-white' : 'bg-purple-500 text-white'}`}>{r.mode}</div><div><p className="font-bold text-xs">{r.date}</p><p className="text-[10px] opacity-50">{r.purpleStoneCount} Spell {r.contMagicCount > 0 && `• ${r.contMagicCount} Magic`}</p></div></div><span className="font-black text-emerald-500 text-sm">+{formatMoney(r.profit)}</span></div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const HistoryView = ({ records, onEdit, onDelete }) => (
+            <div className="p-4 pb-24 animate-fade-in">
+                <h2 className="text-lg font-black mb-4 px-2">ประวัติการฟาร์ม</h2>
+                <div className="space-y-3">
+                    {records.map((r) => (
+                        <div key={r.id} className="glass-panel p-4 rounded-3xl flex justify-between items-center relative group overflow-hidden"><div className="flex gap-4 items-center relative z-10"><div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-[10px] font-black uppercase ${r.mode === 'aogh' ? 'bg-rose-500 text-white' : 'bg-purple-500 text-white'}`}><span>{r.mode}</span></div><div><p className="font-bold text-sm">{r.date}</p><div className="flex gap-2 text-[10px] opacity-60 mt-0.5"><span className="flex items-center gap-1"><SVGs.Spell className="w-3 h-3"/> {r.purpleStoneCount || 0}</span>{r.contMagicCount > 0 && <span className="flex items-center gap-1"><SVGs.Magic className="w-3 h-3"/> {r.contMagicCount}</span>}</div></div></div><div className="text-right relative z-10"><p className="font-black text-emerald-500 text-lg">{formatMoney(r.profit)}</p><div className="flex justify-end gap-3 mt-1"><button onClick={() => onEdit(r)} className="opacity-40 hover:opacity-100"><Icon name="Edit" size={14}/></button><button onClick={() => onDelete(r.id)} className="opacity-40 hover:opacity-100 hover:text-rose-500"><Icon name="Trash" size={14}/></button></div></div></div>
+                    ))}
+                    {records.length === 0 && <div className="text-center py-10 opacity-30 font-bold">ยังไม่มีข้อมูล</div>}
+                </div>
+            </div>
+        );
+
+        const InventoryView = ({ records, prices, manualSales, onSell, goToTab }) => {
+            const soldSpell = records.reduce((acc, r) => acc + (r.isSellingSpell ? Number(r.purpleStoneCount) : 0), 0);
+            const totalSpell = records.reduce((acc, r) => acc + Number(r.purpleStoneCount || 0), 0);
+            const stockSpell = Math.max(0, totalSpell - soldSpell);
+
+            const soldMagic = records.reduce((acc, r) => acc + (r.isSellingMagic ? Number(r.contMagicCount) : 0), 0);
+            const totalMagic = records.reduce((acc, r) => acc + Number(r.contMagicCount || 0), 0);
+            const stockMagic = Math.max(0, totalMagic - soldMagic);
+
+            const manualSoldSpell = manualSales.filter(s => s.item === 'spell').reduce((acc, s) => acc + Number(s.quantity || 0), 0);
+            const manualSoldMagic = manualSales.filter(s => s.item === 'magic').reduce((acc, s) => acc + Number(s.quantity || 0), 0);
+
+            const finalStockSpell = Math.max(0, stockSpell - manualSoldSpell);
+            const finalStockMagic = Math.max(0, stockMagic - manualSoldMagic);
+            
+            const [analysisResult, setAnalysisResult] = useState(null);
+            const [analyzing, setAnalyzing] = useState(false);
+            const [usageInfo, setUsageInfo] = useState({ count: 0, remaining: 10 });
+            const [hasCustomKey, setHasCustomKey] = useState(false);
+
+            useEffect(() => {
+                const checkAiQuota = () => {
+                    const customKey = localStorage.getItem('ogh_gemini_key');
+                    if (customKey) { setHasCustomKey(true); return; }
+                    const today = new Date().toISOString().split('T')[0];
+                    const usageData = JSON.parse(localStorage.getItem('ogh_ai_quota') || '{"date":"", "count":0}');
+                    if (usageData.date !== today) { setUsageInfo({ count: 0, remaining: 10 }); } else { setUsageInfo({ count: usageData.count, remaining: 10 - usageData.count }); }
+                };
+                checkAiQuota();
+            }, []);
+
+            const incrementAiQuota = () => {
+                const today = new Date().toISOString().split('T')[0];
+                const usageData = JSON.parse(localStorage.getItem('ogh_ai_quota') || '{"date":"", "count":0}');
+                let newCount = 1;
+                if (usageData.date === today) { newCount = usageData.count + 1; }
+                localStorage.setItem('ogh_ai_quota', JSON.stringify({ date: today, count: newCount }));
+                setUsageInfo({ count: newCount, remaining: 10 - newCount });
+            };
+
+            const handleAnalysis = async () => {
+                if (!hasCustomKey && usageInfo.remaining <= 0) { setAnalysisResult("QUOTA_EXCEEDED"); return; }
+                setAnalyzing(true);
+                const recent = records.slice(0, 10);
+                const prompt = `Analyze these Ragnarok Online OGH stats for last 10 runs (JSON): ${JSON.stringify(recent)}. Current prices: Spell=${prices.purpleStonePrice}, Magic=${prices.contMagicPrice}. Analyze Drop Luck and Zeny Efficiency. Respond in Thai language, friendly tone, short and concise (max 2 sentences). Add emoji.`;
+                const result = await callGemini(prompt);
+                if (result && result !== "QUOTA_EXCEEDED" && !hasCustomKey) { incrementAiQuota(); }
+                setAnalysisResult(result);
+                setAnalyzing(false);
+            };
+
+            return (
+                <div className="p-6 pb-24 animate-fade-in">
+                    <h2 className="text-lg font-black mb-6">คลังสมบัติ</h2>
+                    <div className="space-y-4">
+                        <div className="glass-panel p-6 rounded-3xl flex items-center justify-between">
+                            <div className="flex items-center gap-4"><div className="w-16 h-16 bg-purple-500/20 rounded-2xl flex items-center justify-center"><SVGs.Spell className="w-10 h-10"/></div><div><p className="text-xs opacity-50 font-bold uppercase">หินม่วงคงเหลือ</p><p className="text-3xl font-black">{finalStockSpell}</p></div></div>
+                            <div className="flex flex-col items-end gap-2"><div className="text-right"><p className="text-[10px] opacity-50 mb-1">มูลค่าประมาณ</p><p className="text-sm font-bold text-purple-400">{formatMoney(finalStockSpell * prices.purpleStonePrice)} z</p></div><button onClick={() => onSell('spell', finalStockSpell)} className="bg-purple-500 hover:bg-purple-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-md transition-all active:scale-95">ขาย</button></div>
+                        </div>
+                        <div className="glass-panel p-6 rounded-3xl flex items-center justify-between">
+                            <div className="flex items-center gap-4"><div className="w-16 h-16 bg-rose-500/20 rounded-2xl flex items-center justify-center"><SVGs.Magic className="w-10 h-10"/></div><div><p className="text-xs opacity-50 font-bold uppercase">หินแดงคงเหลือ</p><p className="text-3xl font-black">{finalStockMagic}</p></div></div>
+                            <div className="flex flex-col items-end gap-2"><div className="text-right"><p className="text-[10px] opacity-50 mb-1">มูลค่าประมาณ</p><p className="text-sm font-bold text-rose-400">{formatMoney(finalStockMagic * prices.contMagicPrice)} z</p></div><button onClick={() => onSell('magic', finalStockMagic)} className="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-md transition-all active:scale-95">ขาย</button></div>
+                        </div>
+                    </div>
+                    <div className="mt-8"><div className="glass-panel p-5 rounded-3xl relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10"><Icon name="Sparkles" size={60} /></div><h3 className="text-sm font-black mb-2 flex items-center gap-2"><Icon name="Sparkles" size={16} className="text-yellow-400"/> AI Merchant Insight</h3>
+                        {!analysisResult ? (
+                            <div className="text-center py-4"><p className="text-xs opacity-60 mb-4">ให้ AI ช่วยวิเคราะห์ดวงและกำไรของคุณ</p><button onClick={handleAnalysis} disabled={analyzing || (!hasCustomKey && usageInfo.remaining <= 0)} className={`bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2 mx-auto ${(!hasCustomKey && usageInfo.remaining <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}>{analyzing ? "กำลังร่ายเวทย์..." : "✨ วิเคราะห์ผลประกอบการ"}</button>{!hasCustomKey && <p className="text-[10px] mt-2 opacity-40">โควต้าวันนี้: {usageInfo.remaining}/10 ครั้ง</p>}{hasCustomKey && <p className="text-[10px] mt-2 text-emerald-500 font-bold">Personal Key Active (Unlimited)</p>}</div>
+                        ) : (
+                            <div className="animate-fade-in">
+                                {analysisResult === "QUOTA_EXCEEDED" ? (
+                                    <div className="bg-rose-500/10 p-4 rounded-2xl border border-rose-500/20 text-center"><p className="text-rose-500 font-bold text-xs mb-2">โควต้าฟรีประจำวันหมดแล้ว!</p><p className="text-[10px] opacity-70 mb-3">คุณสามารถใส่ API Key ส่วนตัวเพื่อใช้งานต่อได้ไม่จำกัด</p><button onClick={() => goToTab('settings')} className="bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold">ไปตั้งค่า API Key</button></div>
+                                ) : (
+                                    <div><p className="text-xs font-medium leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/5">"{analysisResult}"</p><div className="flex justify-between items-center mt-3">{!hasCustomKey && <p className="text-[10px] opacity-40">เหลือโควต้า: {usageInfo.remaining}/10</p>}<button onClick={() => setAnalysisResult(null)} className="text-[10px] font-bold opacity-50 hover:opacity-100 uppercase">รีเซ็ต</button></div></div>
+                                )}
+                            </div>
+                        )}
+                    </div></div>
+                </div>
+            );
+        };
+
+        const SettingsView = ({ uid, prices, theme, setTheme, setTargetUid, authError, showToast, db }) => {
+            const [localPrices, setLocalPrices] = useState(prices);
+            const [restoreCode, setRestoreCode] = useState('');
+            const [localKey, setLocalKey] = useState('');
+            const [showKeyGuide, setShowKeyGuide] = useState(false);
+            const [showRestore, setShowRestore] = useState(false);
+            const [saveStatus, setSaveStatus] = useState('idle');
+            const [isDeleting, setIsDeleting] = useState(false);
+            const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+            const [showCopyModal, setShowCopyModal] = useState(false);
+
+            useEffect(() => { setLocalKey(localStorage.getItem('ogh_gemini_key') || ''); }, []);
+
+            const handleSavePrices = async () => {
+                if(!uid) return;
+                setSaveStatus('saving');
+                const { doc, setDoc } = window.firebaseModules;
+                await setDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', uid, 'config', 'prices'), localPrices, { merge: true });
+                await new Promise(r => setTimeout(r, 500));
+                setSaveStatus('success');
+                setTimeout(() => setSaveStatus('idle'), 2000);
+            };
+            const handleRestore = () => { if(restoreCode.length < 5) return; localStorage.setItem('ogh_restore_uid', restoreCode); window.location.reload(); };
+            const copyUid = () => { navigator.clipboard.writeText(uid); setShowCopyModal(true); };
+            const saveApiKey = () => { localStorage.setItem('ogh_gemini_key', localKey); alert("บันทึก Gemini API Key เรียบร้อย"); window.location.reload(); };
+
+            const deleteAllData = async () => { setShowDeleteConfirm(true); };
+            
+            const performDelete = async () => {
+                setIsDeleting(true);
+                const { collection, getDocs, deleteDoc, doc } = window.firebaseModules;
+                try {
+                    const recordsRef = collection(db, 'artifacts', 'ogh-tracker-v2', 'users', uid, 'records');
+                    const recordsSnap = await getDocs(recordsRef);
+                    const deleteRecordsPromises = recordsSnap.docs.map(d => deleteDoc(d.ref));
+                    const salesRef = collection(db, 'artifacts', 'ogh-tracker-v2', 'users', uid, 'sales');
+                    const salesSnap = await getDocs(salesRef);
+                    const deleteSalesPromises = salesSnap.docs.map(d => deleteDoc(d.ref));
+                    const statsRef = doc(db, 'artifacts', 'ogh-tracker-v2', 'users', uid, 'gamification', 'stats');
+                    await deleteDoc(statsRef);
+                    await Promise.all([...deleteRecordsPromises, ...deleteSalesPromises]);
+                    showToast("ลบข้อมูลทั้งหมดเรียบร้อยแล้ว");
+                    setShowDeleteConfirm(false);
+                    setTimeout(() => window.location.reload(), 1000);
+                } catch(e) { console.error(e); alert("Error: " + e.message); } finally { setIsDeleting(false); }
+            };
+
+            const priceConfig = [ { key: 'purpleStonePrice', label: 'Coagulated Spell', icon: <SVGs.Spell className="w-4 h-4" /> }, { key: 'contMagicPrice', label: 'Contaminated Magic', icon: <SVGs.Magic className="w-4 h-4" /> }, { key: 'gumBoxPrice', label: 'Bubble Gum (Box)', icon: <SVGs.GumBox className="w-4 h-4" /> }, { key: 'silvervineBoxPrice', label: 'Silvervine (Box)', icon: <SVGs.SilvervineBox className="w-4 h-4" /> } ];
+
+            return (
+                <div className="p-6 pb-24 animate-fade-in space-y-8">
+                    <h2 className="text-lg font-black">ตั้งค่า</h2>
+                    {authError && (<div className="bg-rose-500/10 border border-rose-500/30 p-4 rounded-2xl flex items-center gap-3 text-rose-500"><Icon name="AlertTriangle" size={24} /><div><p className="text-xs font-bold uppercase">Connection Error</p><p className="text-[10px] opacity-70 break-all">{authError}</p></div></div>)}
+                    <div className="glass-panel p-5 rounded-3xl">
+                        <div className="flex justify-between items-center mb-2"><p className="text-[10px] font-bold opacity-50 uppercase">User ID (Backup Code)</p><button onClick={() => setShowRestore(!showRestore)} className="text-[10px] text-blue-500 font-bold hover:underline flex items-center gap-1"><Icon name="RefreshCw" size={12} /> กู้คืนข้อมูล (Restore)</button></div>
+                        <div className="flex gap-2"><code className={`p-3 rounded-xl text-xs font-mono flex-1 overflow-hidden ${uid ? 'bg-black/20' : 'bg-amber-500/20 text-amber-500'}`}>{uid || 'กำลังเชื่อมต่อ...'}</code>{uid ? <button onClick={copyUid} className="bg-slate-500/20 p-3 rounded-xl"><Icon name="Copy" size={16}/></button> : <button onClick={() => window.location.reload()} className="bg-slate-500/20 p-3 rounded-xl"><Icon name="RefreshCw" size={16}/></button>}</div>
+                        {showRestore && (<div className="mt-3 p-4 rounded-2xl bg-slate-500/10 animate-fade-in"><p className="text-[10px] font-bold opacity-70 mb-2">กรอกรหัส UID เดิมเพื่อกู้คืนข้อมูล:</p><div className="flex gap-2"><input type="text" placeholder="วางรหัสที่นี่..." value={restoreCode} onChange={e => setRestoreCode(e.target.value)} className="flex-1 bg-black/10 rounded-xl px-3 text-xs outline-none h-10" /><button onClick={handleRestore} className="px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-bold">Restore</button></div></div>)}
+                    </div>
+                    <div className="glass-panel p-5 rounded-3xl"><div className="flex justify-between items-center mb-2"><p className="text-[10px] font-bold opacity-50 uppercase">Gemini API Key (Optional)</p><button onClick={() => setShowKeyGuide(!showKeyGuide)} className="text-[10px] text-blue-500 font-bold hover:underline flex items-center gap-1"><Icon name="HelpCircle" size={12} /> วิธีรับ Key ฟรี</button></div><div className="flex gap-2 mb-2"><input type="password" placeholder="Paste your API Key here..." value={localKey} onChange={e => setLocalKey(e.target.value)} className={`flex-1 ${theme === 'dark' ? 'bg-black/20' : 'bg-slate-100'} rounded-2xl px-4 text-xs outline-none h-10`} /><button onClick={saveApiKey} className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-3 rounded-xl text-[10px] font-bold shadow-lg">SAVE</button></div><p className="text-[10px] opacity-40">ใส่ Key ของคุณเองเพื่อปลดล็อกการใช้งาน AI แบบไม่จำกัด</p>{showKeyGuide && (<div className={`mt-3 p-4 rounded-2xl text-xs ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-50'} animate-fade-in`}><ol className="list-decimal pl-4 space-y-2 opacity-80"><li>ไปที่เว็บ <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-blue-500 underline font-bold">Google AI Studio</a></li><li>ล็อกอินด้วย Google Account</li><li>กดปุ่ม <span className="font-bold">Create API Key</span></li><li>เลือก <span className="font-bold">Create API key in new project</span></li><li>คัดลอกรหัสที่ได้ (ที่ขึ้นต้นด้วย AIza...) มาวางในช่องด้านบน</li></ol></div>)}</div>
+                    <div className="space-y-4"><p className="text-xs font-bold opacity-50 uppercase">ราคากลาง (Market Prices)</p><div className="grid grid-cols-2 gap-4">{priceConfig.map(item => (<div key={item.key} className="glass-panel p-3 rounded-2xl"><div className="flex items-center gap-2 mb-2 opacity-70">{item.icon}<label className="text-[10px] font-bold uppercase truncate">{item.label}</label></div><input type="text" inputMode="numeric" value={localPrices[item.key] || ''} onChange={e => { const val = e.target.value; if (val === '' || /^\d*$/.test(val)) { setLocalPrices({...localPrices, [item.key]: val === '' ? '' : Number(val)}) } }} className="w-full bg-transparent font-bold outline-none" placeholder="0" /></div>))}</div><button onClick={handleSavePrices} disabled={saveStatus !== 'idle'} className={`w-full py-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${saveStatus === 'success' ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-white'}`}>{saveStatus === 'saving' && <Icon name="Loader" size={16} className="animate-spin"/>}{saveStatus === 'success' && <Icon name="Check" size={16}/>}{saveStatus === 'idle' && "บันทึกราคา"}{saveStatus === 'saving' && "กำลังบันทึก..."}{saveStatus === 'success' && "เรียบร้อย!"}</button></div>
+                    <div className="space-y-4 pt-4 border-t border-slate-500/20"><button onClick={deleteAllData} className="w-full py-3 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all"><Icon name="Trash" size={16}/> Delete All Data (ลบข้อมูลทั้งหมด)</button><button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="w-full py-3 border border-slate-500/20 rounded-2xl text-xs font-bold flex items-center justify-center gap-2">{theme === 'dark' ? <Icon name="Sun" size={16}/> : <Icon name="Moon" size={16}/>} เปลี่ยนธีม</button></div>
+                    {showDeleteConfirm && (<ConfirmModal title="ลบข้อมูลทั้งหมด?" message="ประวัติการฟาร์มและการขายทั้งหมดจะหายไป ไม่สามารถกู้คืนได้" onConfirm={performDelete} onCancel={() => setShowDeleteConfirm(false)} isProcessing={isDeleting} />)}
+                    {showCopyModal && <MessageModal title="Copied!" message="คัดลอก User ID เรียบร้อยแล้ว" onClose={() => setShowCopyModal(false)} icon="Check" color="emerald" />}
+                </div>
+            );
+        };
+
+        const ProfileView = ({ stats, records, db, uid, showToast, goToTab }) => {
+            const [showClassChange, setShowClassChange] = useState(false);
+            
+            const nextLevelExp = getExpReq(stats.baseLv, 'base');
+            const nextJobExp = getExpReq(stats.jobLv, 'job');
+            const baseProgress = Math.min((stats.baseExp / nextLevelExp) * 100, 100);
+            const jobProgress = Math.min((stats.jobExp / nextJobExp) * 100, 100);
+            
+            const handleClassChange = async (targetClass, cost) => {
+                 if (stats.coins < cost) { alert("Coins ไม่พอ!"); return; }
+                 const { doc, updateDoc } = window.firebaseModules;
+                 const newStats = { ...stats, jobClass: targetClass, jobLv: 1, jobExp: 0, coins: stats.coins - cost };
+                 if (targetClass === 'High Novice') { if(stats.baseLv < 99 || stats.jobLv < 50) return; newStats.baseLv = 1; newStats.baseExp = 0; newStats.isHighClass = true; newStats.zeny = stats.zeny - 1285000; }
+                 await updateDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', uid, 'gamification', 'stats'), newStats);
+                 showToast("เปลี่ยนอาชีพสำเร็จ!", "success");
+                 setShowClassChange(false);
+            };
+
+            const availableClasses = CLASS_TREE[stats.jobClass]?.next || [];
+            const canChangeJob = (stats.jobClass === 'Novice' && stats.jobLv >= 10) || (stats.jobLv >= 40 && availableClasses.length > 0) || (stats.baseLv >= 99 && stats.jobLv >= 50 && !stats.isHighClass && stats.jobClass.includes('Knight'));
+
+            return (
+                <div className="p-6 pb-24 animate-fade-in space-y-6">
+                    <header className="flex justify-between items-start">
+                        <div><h2 className="text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">PROFILE</h2><p className="text-[10px] opacity-50 font-bold tracking-widest">{stats.isHighClass ? 'HIGH CLASS' : 'NORMAL CLASS'}</p></div>
+                    </header>
+                    <div className="glass-panel p-6 rounded-3xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10"><Icon name="User" size={80} /></div>
+                        <div className="flex items-center gap-4 mb-6 relative z-10">
+                            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black shadow-lg ${stats.isHighClass ? 'bg-gradient-to-tr from-amber-300 to-yellow-500 text-white' : 'bg-gradient-to-tr from-slate-700 to-slate-600 text-white'}`}>{stats.jobClass.substring(0, 2).toUpperCase()}</div>
+                            <div><h3 className="text-xl font-black">{stats.jobClass}</h3><p className="text-xs opacity-60">Base Lv. {stats.baseLv} / Job Lv. {stats.jobLv}</p></div>
+                        </div>
+                        <div className="space-y-3 relative z-10">
+                            <div><div className="flex justify-between text-[10px] font-bold mb-1 opacity-70"><span>Base EXP</span><span>{Math.floor(baseProgress)}%</span></div><div className="w-full h-2 bg-black/20 rounded-full overflow-hidden"><div className="h-full bg-amber-400 rounded-full progress-bar" style={{width: `${baseProgress}%`}}></div></div></div>
+                            <div><div className="flex justify-between text-[10px] font-bold mb-1 opacity-70"><span>Job EXP</span><span>{Math.floor(jobProgress)}%</span></div><div className="w-full h-2 bg-black/20 rounded-full overflow-hidden"><div className="h-full bg-blue-400 rounded-full progress-bar" style={{width: `${jobProgress}%`}}></div></div></div>
+                        </div>
+                        {canChangeJob && (<button onClick={() => setShowClassChange(true)} className="mt-6 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl text-xs font-black shadow-lg active:scale-95 transition-all animate-pulse">CHANGE JOB AVAILABLE!</button>)}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="glass-panel p-4 rounded-3xl flex flex-col items-center justify-center gap-2"><Icon name="Coins" size={24} className="text-amber-400" /><div><p className="text-2xl font-black text-amber-400">{stats.coins}</p><p className="text-[10px] opacity-50 font-bold text-center">OGH COINS</p></div></div>
+                        <div className="glass-panel p-4 rounded-3xl flex flex-col items-center justify-center gap-2"><SVGs.Zeny className="text-2xl text-blue-400" /><div><p className="text-xl font-black text-blue-400">{formatMoney(stats.zeny)}</p><p className="text-[10px] opacity-50 font-bold text-center">E-ZENY</p></div></div>
+                    </div>
+                    {showClassChange && (<div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm" onClick={() => setShowClassChange(false)}><div className="bg-slate-900 border border-slate-700 p-6 rounded-3xl w-full max-w-sm" onClick={e => e.stopPropagation()}><h3 className="text-xl font-black mb-4">Class Change</h3><div className="space-y-3">{availableClasses.map(cls => (<button key={cls} onClick={() => handleClassChange(cls, 10)} className="w-full p-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-left flex justify-between items-center"><span className="font-bold">{cls}</span><span className="text-xs text-amber-400 font-bold">10 Coins</span></button>))}</div></div></div>)}
                 </div>
             );
         };
@@ -256,7 +829,6 @@
         function App() {
             const [user, setUser] = useState(null);
             const [activeTab, setActiveTab] = useState('home'); 
-            const [isAdding, setIsAdding] = useState(false);
             const [records, setRecords] = useState([]);
             const [globalPrices, setGlobalPrices] = useState({ purpleStonePrice: 0, contMagicPrice: 0, gumBoxPrice: 0, silvervineBoxPrice: 0 });
             const [targetUid, setTargetUid] = useState(null);
@@ -264,52 +836,43 @@
             const [theme, setTheme] = useState('dark');
             const [editRecordId, setEditRecordId] = useState(null);
             const [authError, setAuthError] = useState(null);
-            const [toast, setToast] = useState(null); // { message, type }
+            const [toast, setToast] = useState(null);
+            const [rewardData, setRewardData] = useState(null);
+            const [userStats, setUserStats] = useState(INITIAL_STATS);
+            const [isSaving, setIsSaving] = useState(false);
+            const [isFormValid, setIsFormValid] = useState(false); // Track form validity
 
-            // Manual sales state for InventoryView
+            // Manual sales state
             const [manualSales, setManualSales] = useState([]);
             const [showSaleModal, setShowSaleModal] = useState(false);
             const [saleItem, setSaleItem] = useState(null);
             const [saleFormData, setSaleFormData] = useState({ quantity: "", price: "" });
             const [maxSaleQty, setMaxSaleQty] = useState(0);
+            
+            const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // For History delete
+            const [deleteTargetId, setDeleteTargetId] = useState(null);
+            const [isDeleting, setIsDeleting] = useState(false);
 
-            const showToast = (message, type = 'success') => {
-                setToast({ message, type });
-            };
+            const showToast = (message, type = 'success') => { setToast({ message, type }); };
+            const goToTab = (tabName) => setActiveTab(tabName);
 
             useEffect(() => {
                 const init = async () => {
                     if (!window.firebaseModules) { window.addEventListener('firebase-ready', init); return; }
                     const { initializeApp, getAuth, getFirestore, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.firebaseModules;
-                    
                     try {
                         const config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : MANUAL_FIREBASE_CONFIG;
                         const app = initializeApp(config);
                         auth = getAuth(app);
                         db = getFirestore(app);
-                        
                         const savedUid = localStorage.getItem('ogh_restore_uid');
-                        
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                             await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                             await signInAnonymously(auth);
-                        }
-                        
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } else { await signInAnonymously(auth); }
                         onAuthStateChanged(auth, (u) => {
                             setUser(u);
                             if(u) setTargetUid(savedUid || u.uid);
                             setLoading(false);
-                        }, (error) => {
-                            console.error("Auth State Error:", error);
-                            setAuthError(error.message);
-                            setLoading(false);
-                        });
-                    } catch(e) { 
-                        console.error("Firebase init error:", e); 
-                        setAuthError(e.message);
-                        setLoading(false); 
-                    } 
+                        }, (error) => { console.error(error); setAuthError(error.message); setLoading(false); });
+                    } catch(e) { console.error(e); setAuthError(e.message); setLoading(false); } 
                 };
                 init();
             }, []);
@@ -317,18 +880,15 @@
             useEffect(() => {
                 if(!targetUid || !db) return;
                 const { collection, onSnapshot, doc, query, orderBy } = window.firebaseModules;
-                
                 const q = query(collection(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records'), orderBy('timestamp', 'desc'));
                 const unsubRecords = onSnapshot(q, snap => setRecords(snap.docs.map(d => ({...d.data(), id: d.id}))));
                 const unsubConfig = onSnapshot(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'config', 'prices'), d => { if(d.exists()) setGlobalPrices(d.data()); });
                 const unsubSales = onSnapshot(collection(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'sales'), (snap) => setManualSales(snap.docs.map(d => ({ ...d.data(), id: d.id }))));
-                
-                return () => { unsubRecords(); unsubConfig(); unsubSales(); };
+                const unsubStats = onSnapshot(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'gamification', 'stats'), d => { if(d.exists()) setUserStats(d.data()); else setUserStats(INITIAL_STATS); });
+                return () => { unsubRecords(); unsubConfig(); unsubSales(); unsubStats(); };
             }, [targetUid]);
 
-            useEffect(() => {
-                document.body.className = theme;
-            }, [theme]);
+            useEffect(() => { document.body.className = theme; }, [theme]);
 
             const handleManualSellSubmit = async () => {
                 const q = Number(saleFormData.quantity);
@@ -343,77 +903,26 @@
                 setShowSaleModal(false);
                 setSaleFormData({ quantity: "", price: "" });
             };
-
-            const handleAddDataToggle = () => { setIsAdding(!isAdding); setEditRecordId(null); };
+            
+            const handleConfirmDeleteHistory = async () => {
+                if(!deleteTargetId) return;
+                setIsDeleting(true);
+                const { deleteDoc, doc } = window.firebaseModules;
+                try {
+                     await deleteDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records', deleteTargetId)); 
+                     showToast("ลบรายการแล้ว");
+                     setShowDeleteConfirm(false);
+                     setDeleteTargetId(null);
+                } catch(e) { console.error(e); } finally { setIsDeleting(false); }
+            };
 
             if(loading) return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white animate-pulse">Loading OGHza...</div>;
 
             return (
                 <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
-                    
                     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-
-                    <div className="max-w-md mx-auto min-h-screen relative">
-                        
-                        {/* VIEW: HOME */}
-                        {activeTab === 'home' && <HomeView records={records} prices={globalPrices} />}
-
-                        {/* VIEW: HISTORY */}
-                        {activeTab === 'history' && <HistoryView records={records} onEdit={(r) => { setEditRecordId(r.id); setIsAdding(true); }} onDelete={async(id) => {
-                             const { deleteDoc, doc } = window.firebaseModules;
-                             if(confirm('ยืนยันลบรายการนี้?')) {
-                                 await deleteDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records', id));
-                                 showToast("ลบรายการแล้ว");
-                             }
-                        }} />}
-
-                        {/* VIEW: INVENTORY */}
-                        {activeTab === 'inventory' && 
-                            <InventoryView 
-                                records={records} 
-                                prices={globalPrices} 
-                                manualSales={manualSales}
-                                onSell={(item, maxQty) => {
-                                    setSaleItem(item);
-                                    setMaxSaleQty(maxQty);
-                                    setSaleFormData({ quantity: maxQty.toString(), price: globalPrices[item === 'spell' ? 'purpleStonePrice' : 'contMagicPrice'].toString() });
-                                    setShowSaleModal(true);
-                                }}
-                            />
-                        }
-
-                        {activeTab === 'settings' && <SettingsView uid={targetUid} prices={globalPrices} theme={theme} setTheme={setTheme} setTargetUid={setTargetUid} authError={authError} showToast={showToast} db={db} />}
-
-                    </div>
-
-                    <nav className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto border-t pb-safe pt-2 px-6 flex justify-between items-center z-40 ${theme === 'dark' ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'} backdrop-blur-md`}>
-                        <NavButton icon="Home" label="หน้าหลัก" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                        <NavButton icon="History" label="ประวัติ" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
-                        
-                        <div className="relative -top-6">
-                            <button onClick={handleAddDataToggle} className="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/40 flex items-center justify-center transform transition-transform active:scale-95">
-                                <Icon name="Plus" size={28} />
-                            </button>
-                        </div>
-
-                        <NavButton icon="Box" label="คลัง" active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} />
-                        <NavButton icon="Settings" label="ตั้งค่า" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
-                    </nav>
-
-                    {/* --- ADD DATA BOTTOM SHEET (MODAL) --- */}
-                    {isAdding && (
-                        <AddDataSheet 
-                            onClose={() => setIsAdding(false)} 
-                            targetUid={targetUid} 
-                            db={db}
-                            prices={globalPrices}
-                            editRecord={records.find(r => r.id === editRecordId)}
-                            theme={theme}
-                            onSuccess={() => showToast("บันทึกข้อมูลเรียบร้อย!")}
-                        />
-                    )}
-
-                    {/* --- SALE MODAL --- */}
+                    {rewardData && <RewardPopup data={rewardData} onClose={() => setRewardData(null)} />}
+                    {showDeleteConfirm && <ConfirmModal title="ลบรายการนี้?" message="ข้อมูลประวัติรอบนี้จะหายไปและไม่สามารถกู้คืนได้" onConfirm={handleConfirmDeleteHistory} onCancel={() => { setShowDeleteConfirm(false); setDeleteTargetId(null); }} isProcessing={isDeleting} />}
                     {showSaleModal && (
                         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setShowSaleModal(false)}>
                             <div className={`max-w-md w-full p-8 rounded-[2.5rem] shadow-2xl border relative ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-stone-200'}`} onClick={e => e.stopPropagation()}>
@@ -429,9 +938,7 @@
                                             value={saleFormData.quantity} 
                                             onChange={e => {
                                                 const val = e.target.value;
-                                                // Allow empty string or digits only
                                                 if (val === '' || /^\d*$/.test(val)) {
-                                                    // Optional: Prevent entering more than maxSaleQty
                                                     if (val !== '' && parseInt(val) > maxSaleQty) {
                                                         setSaleFormData(p => ({...p, quantity: maxSaleQty.toString()}));
                                                     } else {
@@ -448,7 +955,10 @@
                                             type="text" 
                                             inputMode="numeric" 
                                             value={saleFormData.price} 
-                                            onFocus={(e) => e.target.select()}
+                                            onFocus={(e) => {
+                                                const defaultPrice = globalPrices[saleItem === 'spell' ? 'purpleStonePrice' : 'contMagicPrice'].toString();
+                                                if(e.target.value === defaultPrice) setSaleFormData(p => ({...p, price: ''}));
+                                            }}
                                             onChange={e => handleNumberInput(e, 'price', setSaleFormData)}
                                             className={`w-full p-4 rounded-xl font-bold outline-none text-xl ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-stone-100 text-stone-800'}`} 
                                         />
@@ -459,661 +969,77 @@
                         </div>
                     )}
 
+                    <div className="max-w-md mx-auto min-h-screen relative">
+                        {/* PAGES */}
+                        {activeTab === 'home' && <HomeView records={records} prices={globalPrices} userStats={userStats} goToTab={goToTab} />}
+                        {activeTab === 'history' && <HistoryView records={records} onEdit={(r) => { setEditRecordId(r.id); setActiveTab('add'); }} onDelete={(id) => {
+                             setDeleteTargetId(id);
+                             setShowDeleteConfirm(true);
+                        }} />}
+                        {activeTab === 'inventory' && <InventoryView records={records} prices={globalPrices} manualSales={manualSales} onSell={(item, maxQty) => { setSaleItem(item); setMaxSaleQty(maxQty); setSaleFormData({ quantity: maxQty.toString(), price: globalPrices[item === 'spell' ? 'purpleStonePrice' : 'contMagicPrice'].toString() }); setShowSaleModal(true); }} goToTab={goToTab} />}
+                        {activeTab === 'profile' && <ProfileView stats={userStats} records={records} db={db} uid={targetUid} showToast={showToast} goToTab={goToTab} />}
+                        {activeTab === 'settings' && <SettingsView uid={targetUid} prices={globalPrices} theme={theme} setTheme={setTheme} setTargetUid={setTargetUid} authError={authError} showToast={showToast} db={db} />}
+                        
+                        {/* ADD PAGE */}
+                        {activeTab === 'add' && (
+                            <AddDataView 
+                                onClose={() => setActiveTab('home')} 
+                                targetUid={targetUid} 
+                                db={db} 
+                                prices={globalPrices} 
+                                editRecord={records.find(r => r.id === editRecordId)} 
+                                theme={theme} 
+                                onSuccess={(reward) => { 
+                                    showToast("บันทึกข้อมูลเรียบร้อย!"); 
+                                    if(reward) setRewardData(reward);
+                                    setActiveTab('home'); 
+                                }} 
+                                userStats={userStats} 
+                                allRecords={records} 
+                                setGlobalIsSaving={setIsSaving}
+                                setIsFormValid={setIsFormValid}
+                            />
+                        )}
+
+                    </div>
+
+                    {/* BOTTOM NAV - Hide when on Add page */}
+                    {activeTab !== 'add' && (
+                        <nav className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto border-t pb-safe pt-2 px-4 flex justify-between items-center z-40 ${theme === 'dark' ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'} backdrop-blur-md text-[9px] font-bold`}>
+                            <NavButton icon="Home" label="หน้าหลัก" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+                            <NavButton icon="History" label="ประวัติ" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
+                            <div className="relative -top-6">
+                                <button onClick={() => { setEditRecordId(null); setActiveTab('add'); setIsFormValid(false); }} className="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/40 flex items-center justify-center transform transition-transform active:scale-95">
+                                    <Icon name="Plus" size={28} />
+                                </button>
+                            </div>
+                            <NavButton icon="Box" label="คลัง" active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} />
+                            <NavButton icon="Settings" label="ตั้งค่า" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                        </nav>
+                    )}
+
+                    {/* BOTTOM NAV (ADD MODE) */}
+                    {activeTab === 'add' && (
+                        <nav className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto border-t pb-safe pt-2 px-4 flex justify-between items-center z-40 ${theme === 'dark' ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'} backdrop-blur-md text-[9px] font-bold`}>
+                            <NavButton icon="Home" label="หน้าหลัก" onClick={() => setActiveTab('home')} />
+                            <NavButton icon="History" label="ประวัติ" onClick={() => setActiveTab('history')} />
+                            <div className="relative -top-6">
+                                <button 
+                                    type="submit" 
+                                    form="add-data-form" 
+                                    disabled={!isFormValid || isSaving}
+                                    className={`w-14 h-14 rounded-full flex items-center justify-center transform transition-transform active:scale-95 text-white ${!isFormValid || isSaving ? 'bg-slate-600' : 'bg-gradient-to-tr from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/40'}`}
+                                >
+                                    {isSaving ? <Icon name="Loader" size={24} className="animate-spin" /> : <Icon name="Save" size={24} />}
+                                </button>
+                            </div>
+                            <NavButton icon="Box" label="คลัง" onClick={() => setActiveTab('inventory')} />
+                            <NavButton icon="Settings" label="ตั้งค่า" onClick={() => setActiveTab('settings')} />
+                        </nav>
+                    )}
                 </div>
             );
         }
-
-        // --- SUB-COMPONENTS ---
-
-        const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center gap-1 w-12 transition-colors ${active ? 'text-purple-500' : 'opacity-40 hover:opacity-70'}`}>
-                <Icon name={icon} size={20} />
-                <span className="text-[9px] font-bold">{label}</span>
-            </button>
-        );
-
-        const HomeView = ({ records, prices }) => {
-            const totalProfit = records.reduce((acc, r) => acc + (r.profit || 0), 0);
-            const totalRuns = records.length;
-            const chartData = [...records].reverse().slice(-7).map(r => ({ name: r.date.split('/')[0], profit: r.profit }));
-
-            return (
-                <div className="p-6 space-y-6 animate-fade-in pb-24">
-                    <header className="flex justify-between items-center">
-                        <div>
-                            <h1 className="text-2xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">OGHza</h1>
-                            <p className="text-[10px] opacity-50 font-bold tracking-widest">MOBILE EDITION</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-[10px] opacity-50 uppercase font-bold">Total Profit</p>
-                            <p className="text-xl font-black text-emerald-500">{formatMoney(totalProfit)}</p>
-                        </div>
-                    </header>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="glass-panel p-4 rounded-3xl">
-                            <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center mb-2"><Icon name="TrendingUp" size={16}/></div>
-                            <p className="text-2xl font-black">{totalRuns}</p>
-                            <p className="text-[10px] opacity-50 font-bold">รอบการลง</p>
-                        </div>
-                        <div className="glass-panel p-4 rounded-3xl">
-                             <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center mb-2"><Icon name="History" size={16}/></div>
-                            <p className="text-2xl font-black">{records.length > 0 ? records[0].date : '-'}</p>
-                            <p className="text-[10px] opacity-50 font-bold">ล่าสุด</p>
-                        </div>
-                    </div>
-                    <div className="glass-panel p-4 rounded-3xl h-48 relative overflow-hidden">
-                         <p className="text-xs font-bold opacity-50 mb-2 absolute top-4 left-4 z-10">แนวโน้มกำไร (7 รอบล่าสุด)</p>
-                         <div className="absolute inset-0 pt-8 pl-0 pr-0">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData}>
-                                    <defs><linearGradient id="colorP" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/><stop offset="95%" stopColor="#a855f7" stopOpacity={0}/></linearGradient></defs>
-                                    <Area type="monotone" dataKey="profit" stroke="#a855f7" strokeWidth={3} fill="url(#colorP)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                         </div>
-                    </div>
-                    
-                    {/* Recent Feed */}
-                     <div className="space-y-2">
-                        <p className="text-xs font-bold opacity-50 px-2">RECENT ACTIVITY</p>
-                        {records.slice(0, 3).map(r => (
-                            <div key={r.id} className="glass-panel p-3 rounded-2xl flex justify-between items-center">
-                                <div className="flex gap-3 items-center">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[8px] font-black uppercase ${r.mode === 'aogh' ? 'bg-rose-500 text-white' : 'bg-purple-500 text-white'}`}>{r.mode}</div>
-                                    <div>
-                                        <p className="font-bold text-xs">{r.date}</p>
-                                        <p className="text-[10px] opacity-50">{r.purpleStoneCount} Spell {r.contMagicCount > 0 && `• ${r.contMagicCount} Magic`}</p>
-                                    </div>
-                                </div>
-                                <span className="font-black text-emerald-500 text-sm">+{formatMoney(r.profit)}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        const HistoryView = ({ records, onEdit, onDelete }) => (
-            <div className="p-4 pb-24 animate-fade-in">
-                <h2 className="text-lg font-black mb-4 px-2">ประวัติการฟาร์ม</h2>
-                <div className="space-y-3">
-                    {records.map((r) => (
-                        <div key={r.id} className="glass-panel p-4 rounded-3xl flex justify-between items-center relative group overflow-hidden">
-                            <div className="flex gap-4 items-center relative z-10">
-                                <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-[10px] font-black uppercase ${r.mode === 'aogh' ? 'bg-rose-500 text-white' : 'bg-purple-500 text-white'}`}>
-                                    <span>{r.mode}</span>
-                                </div>
-                                <div>
-                                    <p className="font-bold text-sm">{r.date}</p>
-                                    <div className="flex gap-2 text-[10px] opacity-60 mt-0.5">
-                                        <span className="flex items-center gap-1"><SVGs.Spell className="w-3 h-3"/> {r.purpleStoneCount || 0}</span>
-                                        {r.contMagicCount > 0 && <span className="flex items-center gap-1"><SVGs.Magic className="w-3 h-3"/> {r.contMagicCount}</span>}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="text-right relative z-10">
-                                <p className="font-black text-emerald-500 text-lg">{formatMoney(r.profit)}</p>
-                                <div className="flex justify-end gap-3 mt-1">
-                                    <button onClick={() => onEdit(r)} className="opacity-40 hover:opacity-100"><Icon name="Edit" size={14}/></button>
-                                    <button onClick={() => onDelete(r.id)} className="opacity-40 hover:opacity-100 hover:text-rose-500"><Icon name="Trash" size={14}/></button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                    {records.length === 0 && <div className="text-center py-10 opacity-30 font-bold">ยังไม่มีข้อมูล</div>}
-                </div>
-            </div>
-        );
-
-        const InventoryView = ({ records, prices, manualSales, onSell }) => {
-            const soldSpell = records.reduce((acc, r) => acc + (r.isSellingSpell ? Number(r.purpleStoneCount) : 0), 0);
-            const totalSpell = records.reduce((acc, r) => acc + Number(r.purpleStoneCount || 0), 0);
-            const stockSpell = Math.max(0, totalSpell - soldSpell);
-
-            const soldMagic = records.reduce((acc, r) => acc + (r.isSellingMagic ? Number(r.contMagicCount) : 0), 0);
-            const totalMagic = records.reduce((acc, r) => acc + Number(r.contMagicCount || 0), 0);
-            const stockMagic = Math.max(0, totalMagic - soldMagic);
-
-            // Manual sales adjustment
-            const manualSoldSpell = manualSales.filter(s => s.item === 'spell').reduce((acc, s) => acc + Number(s.quantity || 0), 0);
-            const manualSoldMagic = manualSales.filter(s => s.item === 'magic').reduce((acc, s) => acc + Number(s.quantity || 0), 0);
-
-            const finalStockSpell = Math.max(0, stockSpell - manualSoldSpell);
-            const finalStockMagic = Math.max(0, stockMagic - manualSoldMagic);
-            
-            // Usage limit logic
-            const [analysisResult, setAnalysisResult] = useState(null);
-            const [analyzing, setAnalyzing] = useState(false);
-            const [usageInfo, setUsageInfo] = useState({ count: 0, remaining: 10 });
-            const [hasCustomKey, setHasCustomKey] = useState(false);
-
-            useEffect(() => {
-                const checkAiQuota = () => {
-                    const customKey = localStorage.getItem('ogh_gemini_key');
-                    if (customKey) {
-                        setHasCustomKey(true);
-                        return;
-                    }
-                    
-                    const today = new Date().toISOString().split('T')[0];
-                    const usageData = JSON.parse(localStorage.getItem('ogh_ai_quota') || '{"date":"", "count":0}');
-                    
-                    if (usageData.date !== today) {
-                        setUsageInfo({ count: 0, remaining: 10 });
-                    } else {
-                        setUsageInfo({ count: usageData.count, remaining: 10 - usageData.count });
-                    }
-                };
-                checkAiQuota();
-            }, []);
-
-            const incrementAiQuota = () => {
-                const today = new Date().toISOString().split('T')[0];
-                const usageData = JSON.parse(localStorage.getItem('ogh_ai_quota') || '{"date":"", "count":0}');
-                
-                let newCount = 1;
-                if (usageData.date === today) {
-                    newCount = usageData.count + 1;
-                }
-                
-                localStorage.setItem('ogh_ai_quota', JSON.stringify({ date: today, count: newCount }));
-                setUsageInfo({ count: newCount, remaining: 10 - newCount });
-            };
-
-            const handleAnalysis = async () => {
-                // If no custom key and quota exceeded
-                if (!hasCustomKey && usageInfo.remaining <= 0) {
-                    setAnalysisResult("QUOTA_EXCEEDED");
-                    return;
-                }
-
-                setAnalyzing(true);
-                const recent = records.slice(0, 10);
-                const prompt = `Analyze these Ragnarok Online OGH stats for last 10 runs (JSON): ${JSON.stringify(recent)}. 
-                Current prices: Spell=${prices.purpleStonePrice}, Magic=${prices.contMagicPrice}.
-                Analyze Drop Luck and Zeny Efficiency. 
-                Respond in Thai language, friendly tone, short and concise (max 2 sentences). Add emoji.`;
-                
-                const result = await callGemini(prompt);
-                
-                if (result && result !== "QUOTA_EXCEEDED" && !hasCustomKey) {
-                    incrementAiQuota();
-                }
-                
-                setAnalysisResult(result);
-                setAnalyzing(false);
-            };
-
-            return (
-                <div className="p-6 pb-24 animate-fade-in">
-                    <h2 className="text-lg font-black mb-6">คลังสมบัติ</h2>
-                    <div className="space-y-4">
-                        <div className="glass-panel p-6 rounded-3xl flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-purple-500/20 rounded-2xl flex items-center justify-center"><SVGs.Spell className="w-10 h-10"/></div>
-                                <div>
-                                    <p className="text-xs opacity-50 font-bold uppercase">หินม่วงคงเหลือ</p>
-                                    <p className="text-3xl font-black">{finalStockSpell}</p>
-                                    <p className="text-[10px] opacity-40">ได้มา {totalSpell} - ขายไป {soldSpell + manualSoldSpell}</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <div className="text-right"><p className="text-[10px] opacity-50 mb-1">มูลค่าประมาณ</p><p className="text-sm font-bold text-purple-400">{formatMoney(finalStockSpell * prices.purpleStonePrice)} z</p></div>
-                                <button onClick={() => onSell('spell', finalStockSpell)} className="bg-purple-500 hover:bg-purple-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-md transition-all active:scale-95">ขาย</button>
-                            </div>
-                        </div>
-                        <div className="glass-panel p-6 rounded-3xl flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-rose-500/20 rounded-2xl flex items-center justify-center"><SVGs.Magic className="w-10 h-10"/></div>
-                                <div>
-                                    <p className="text-xs opacity-50 font-bold uppercase">หินแดงคงเหลือ</p>
-                                    <p className="text-3xl font-black">{finalStockMagic}</p>
-                                    <p className="text-[10px] opacity-40">ได้มา {totalMagic} - ขายไป {soldMagic + manualSoldMagic}</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <div className="text-right"><p className="text-[10px] opacity-50 mb-1">มูลค่าประมาณ</p><p className="text-sm font-bold text-rose-400">{formatMoney(finalStockMagic * prices.contMagicPrice)} z</p></div>
-                                <button onClick={() => onSell('magic', finalStockMagic)} className="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-md transition-all active:scale-95">ขาย</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {/* Gemini AI Merchant Insight */}
-                    <div className="mt-8">
-                        <div className="glass-panel p-5 rounded-3xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><Icon name="Sparkles" size={60} /></div>
-                            <h3 className="text-sm font-black mb-2 flex items-center gap-2"><Icon name="Sparkles" size={16} className="text-yellow-400"/> AI Merchant Insight</h3>
-                            
-                            {!analysisResult ? (
-                                <div className="text-center py-4">
-                                    <p className="text-xs opacity-60 mb-4">ให้ AI ช่วยวิเคราะห์ดวงและกำไรของคุณ</p>
-                                    <button 
-                                        onClick={handleAnalysis} 
-                                        disabled={analyzing || (!hasCustomKey && usageInfo.remaining <= 0)}
-                                        className={`bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-2 mx-auto ${(!hasCustomKey && usageInfo.remaining <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    >
-                                        {analyzing ? "กำลังร่ายเวทย์..." : "✨ วิเคราะห์ผลประกอบการ"}
-                                    </button>
-                                    {!hasCustomKey && (
-                                        <p className="text-[10px] mt-2 opacity-40">โควต้าวันนี้: {usageInfo.remaining}/10 ครั้ง</p>
-                                    )}
-                                    {hasCustomKey && (
-                                        <p className="text-[10px] mt-2 text-emerald-500 font-bold">Personal Key Active (Unlimited)</p>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="animate-fade-in">
-                                    {analysisResult === "QUOTA_EXCEEDED" ? (
-                                        <div className="bg-rose-500/10 p-4 rounded-2xl border border-rose-500/20 text-center">
-                                            <p className="text-rose-500 font-bold text-xs mb-2">โควต้าฟรีประจำวันหมดแล้ว!</p>
-                                            <p className="text-[10px] opacity-70 mb-3">คุณสามารถใส่ API Key ส่วนตัวเพื่อใช้งานต่อได้ไม่จำกัด</p>
-                                            <button onClick={() => document.querySelector('button[aria-label="Settings"]').click()} className="bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold">ไปตั้งค่า API Key</button>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <p className="text-xs font-medium leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/5">
-                                                "{analysisResult}"
-                                            </p>
-                                            <div className="flex justify-between items-center mt-3">
-                                                {!hasCustomKey && <p className="text-[10px] opacity-40">เหลือโควต้า: {usageInfo.remaining}/10</p>}
-                                                <button onClick={() => setAnalysisResult(null)} className="text-[10px] font-bold opacity-50 hover:opacity-100 uppercase">รีเซ็ต</button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const SettingsView = ({ uid, prices, theme, setTheme, setTargetUid, authError, showToast, db }) => {
-            const [localPrices, setLocalPrices] = useState(prices);
-            const [restoreCode, setRestoreCode] = useState('');
-            const [localKey, setLocalKey] = useState('');
-            const [showKeyGuide, setShowKeyGuide] = useState(false);
-            const [showRestore, setShowRestore] = useState(false);
-            const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, success
-            const [isDeleting, setIsDeleting] = useState(false);
-
-            useEffect(() => {
-                setLocalKey(localStorage.getItem('ogh_gemini_key') || '');
-            }, []);
-
-            const handleSavePrices = async () => {
-                if(!uid) { alert("กรุณารอการเชื่อมต่อสักครู่..."); return; }
-                setSaveStatus('saving');
-                const { doc, setDoc } = window.firebaseModules;
-                await setDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', uid, 'config', 'prices'), localPrices, { merge: true });
-                await new Promise(r => setTimeout(r, 500)); // UX delay
-                setSaveStatus('success');
-                setTimeout(() => setSaveStatus('idle'), 2000);
-            };
-            const handleRestore = () => {
-                if(restoreCode.length < 5) return;
-                localStorage.setItem('ogh_restore_uid', restoreCode);
-                window.location.reload();
-            };
-            const copyUid = () => { navigator.clipboard.writeText(uid); alert('Copied UID'); };
-            
-            const saveApiKey = () => {
-                localStorage.setItem('ogh_gemini_key', localKey);
-                alert("บันทึก Gemini API Key เรียบร้อย");
-                window.location.reload(); 
-            };
-
-            const deleteAllData = async () => {
-                // Double Confirmation for safety
-                if(!confirm('⚠️ คำเตือน: คุณกำลังจะลบข้อมูลทั้งหมด!\n\n- ประวัติการฟาร์มทั้งหมดจะหายไป\n- ประวัติการขายทั้งหมดจะหายไป\n- ข้อมูลไม่สามารถกู้คืนได้\n\nกด "ตกลง" เพื่อยืนยันการลบถาวร')) return;
-                
-                setIsDeleting(true);
-                const { collection, getDocs, deleteDoc, doc } = window.firebaseModules;
-                
-                try {
-                    // 1. Delete Records
-                    const recordsRef = collection(db, 'artifacts', 'ogh-tracker-v2', 'users', uid, 'records');
-                    const recordsSnap = await getDocs(recordsRef);
-                    const deleteRecordsPromises = recordsSnap.docs.map(d => deleteDoc(d.ref));
-                    
-                    // 2. Delete Sales
-                    const salesRef = collection(db, 'artifacts', 'ogh-tracker-v2', 'users', uid, 'sales');
-                    const salesSnap = await getDocs(salesRef);
-                    const deleteSalesPromises = salesSnap.docs.map(d => deleteDoc(d.ref));
-                    
-                    await Promise.all([...deleteRecordsPromises, ...deleteSalesPromises]);
-                    
-                    showToast("ลบข้อมูลทั้งหมดเรียบร้อยแล้ว");
-                } catch(e) {
-                    console.error(e);
-                    alert("เกิดข้อผิดพลาดในการลบ: " + e.message);
-                } finally {
-                    setIsDeleting(false);
-                }
-            };
-
-            const priceConfig = [
-                { key: 'purpleStonePrice', label: 'Coagulated Spell', icon: <SVGs.Spell className="w-4 h-4" /> },
-                { key: 'contMagicPrice', label: 'Contaminated Magic', icon: <SVGs.Magic className="w-4 h-4" /> },
-                { key: 'gumBoxPrice', label: 'Bubble Gum (Box)', icon: <SVGs.GumBox className="w-4 h-4" /> },
-                { key: 'silvervineBoxPrice', label: 'Silvervine (Box)', icon: <SVGs.SilvervineBox className="w-4 h-4" /> }
-            ];
-
-            return (
-                <div className="p-6 pb-24 animate-fade-in space-y-8">
-                    <h2 className="text-lg font-black">ตั้งค่า</h2>
-                    
-                    {/* Error Alert */}
-                    {authError && (
-                        <div className="bg-rose-500/10 border border-rose-500/30 p-4 rounded-2xl flex items-center gap-3 text-rose-500">
-                            <Icon name="AlertTriangle" size={24} />
-                            <div>
-                                <p className="text-xs font-bold uppercase">Connection Error</p>
-                                <p className="text-[10px] opacity-70 break-all">{authError}</p>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="glass-panel p-5 rounded-3xl">
-                        <div className="flex justify-between items-center mb-2">
-                             <p className="text-[10px] font-bold opacity-50 uppercase">User ID (Backup Code)</p>
-                             <button onClick={() => setShowRestore(!showRestore)} className="text-[10px] text-blue-500 font-bold hover:underline flex items-center gap-1">
-                                <Icon name="RefreshCw" size={12} /> กู้คืนข้อมูล (Restore)
-                             </button>
-                        </div>
-                       
-                        <div className="flex gap-2">
-                            <code className={`p-3 rounded-xl text-xs font-mono flex-1 overflow-hidden ${uid ? 'bg-black/20' : 'bg-amber-500/20 text-amber-500'}`}>{uid || 'กำลังเชื่อมต่อ...'}</code>
-                            {uid ? <button onClick={copyUid} className="bg-slate-500/20 p-3 rounded-xl"><Icon name="Copy" size={16}/></button> : <button onClick={() => window.location.reload()} className="bg-slate-500/20 p-3 rounded-xl"><Icon name="RefreshCw" size={16}/></button>}
-                        </div>
-
-                        {showRestore && (
-                            <div className="mt-3 p-4 rounded-2xl bg-slate-500/10 animate-fade-in">
-                                <p className="text-[10px] font-bold opacity-70 mb-2">กรอกรหัส UID เดิมเพื่อกู้คืนข้อมูล:</p>
-                                <div className="flex gap-2">
-                                    <input 
-                                        type="text" 
-                                        placeholder="วางรหัสที่นี่..." 
-                                        value={restoreCode} 
-                                        onChange={e => setRestoreCode(e.target.value)} 
-                                        className="flex-1 bg-black/10 rounded-xl px-3 text-xs outline-none h-10" 
-                                    />
-                                    <button onClick={handleRestore} className="px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-bold">Restore</button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Gemini API Key Section */}
-                    <div className="glass-panel p-5 rounded-3xl">
-                        <div className="flex justify-between items-center mb-2">
-                            <p className="text-[10px] font-bold opacity-50 uppercase">Gemini API Key (Optional)</p>
-                            <button onClick={() => setShowKeyGuide(!showKeyGuide)} className="text-[10px] text-blue-500 font-bold hover:underline flex items-center gap-1">
-                                <Icon name="HelpCircle" size={12} /> วิธีรับ Key ฟรี
-                            </button>
-                        </div>
-                        
-                        <div className="flex gap-2 mb-2">
-                            <input 
-                                type="password" 
-                                placeholder="Paste your API Key here..." 
-                                value={localKey} 
-                                onChange={e => setLocalKey(e.target.value)} 
-                                className={`flex-1 ${theme === 'dark' ? 'bg-black/20' : 'bg-slate-100'} rounded-2xl px-4 text-xs outline-none h-10`} 
-                            />
-                            <button onClick={saveApiKey} className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-3 rounded-xl text-[10px] font-bold shadow-lg">SAVE</button>
-                        </div>
-                        <p className="text-[10px] opacity-40">ใส่ Key ของคุณเองเพื่อปลดล็อกการใช้งาน AI แบบไม่จำกัด</p>
-
-                        {showKeyGuide && (
-                            <div className={`mt-3 p-4 rounded-2xl text-xs ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-50'} animate-fade-in`}>
-                                <ol className="list-decimal pl-4 space-y-2 opacity-80">
-                                    <li>ไปที่เว็บ <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-blue-500 underline font-bold">Google AI Studio</a></li>
-                                    <li>ล็อกอินด้วย Google Account</li>
-                                    <li>กดปุ่ม <span className="font-bold">Create API Key</span></li>
-                                    <li>เลือก <span className="font-bold">Create API key in new project</span></li>
-                                    <li>คัดลอกรหัสที่ได้ (ที่ขึ้นต้นด้วย AIza...) มาวางในช่องด้านบน</li>
-                                </ol>
-                            </div>
-                        )}
-                    </div>
-                    
-                    <div className="space-y-4">
-                        <p className="text-xs font-bold opacity-50 uppercase">ราคากลาง (Market Prices)</p>
-                        <div className="grid grid-cols-2 gap-4">
-                            {priceConfig.map(item => (
-                                <div key={item.key} className="glass-panel p-3 rounded-2xl">
-                                     <div className="flex items-center gap-2 mb-2 opacity-70">
-                                         {item.icon}
-                                         <label className="text-[10px] font-bold uppercase truncate">{item.label}</label>
-                                     </div>
-                                    <input 
-                                        type="text" 
-                                        inputMode="numeric" 
-                                        value={localPrices[item.key] || ''} 
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            if (val === '' || /^\d*$/.test(val)) {
-                                                setLocalPrices({...localPrices, [item.key]: val === '' ? '' : Number(val)})
-                                            }
-                                        }}
-                                        className="w-full bg-transparent font-bold outline-none" 
-                                        placeholder="0" 
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                        <button 
-                            onClick={handleSavePrices} 
-                            disabled={saveStatus !== 'idle'}
-                            className={`w-full py-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${saveStatus === 'success' ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-white'}`}
-                        >
-                            {saveStatus === 'saving' && <Icon name="Loader" size={16} className="animate-spin"/>}
-                            {saveStatus === 'success' && <Icon name="Check" size={16}/>}
-                            {saveStatus === 'idle' && "บันทึกราคา"}
-                            {saveStatus === 'saving' && "กำลังบันทึก..."}
-                            {saveStatus === 'success' && "เรียบร้อย!"}
-                        </button>
-                    </div>
-
-                    <div className="space-y-4 pt-4 border-t border-slate-500/20">
-                         <button 
-                            onClick={deleteAllData} 
-                            disabled={isDeleting}
-                            className={`w-full py-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${isDeleting ? 'bg-rose-500/50 cursor-not-allowed' : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white'}`}
-                        >
-                             {isDeleting ? <Icon name="Loader" size={16} className="animate-spin"/> : <Icon name="Trash" size={16}/>}
-                             {isDeleting ? "กำลังลบ..." : "Delete All Data (ลบข้อมูลทั้งหมด)"}
-                         </button>
-                         <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="w-full py-3 border border-slate-500/20 rounded-2xl text-xs font-bold flex items-center justify-center gap-2">
-                             {theme === 'dark' ? <Icon name="Sun" size={16}/> : <Icon name="Moon" size={16}/>} เปลี่ยนธีม
-                         </button>
-                    </div>
-                </div>
-            );
-        };
-
-        const AddDataSheet = ({ onClose, targetUid, db, prices, editRecord, theme, onSuccess }) => {
-            const [form, setForm] = useState(editRecord ? {
-                ...editRecord,
-                otherCosts: editRecord.otherCosts || [] 
-            } : {
-                date: new Date().toISOString().split('T')[0],
-                runMode: 'ogh',
-                trashAmount: '',
-                gumUsed: 0,
-                useSilvervine: true,
-                purpleStoneCount: 0,
-                contMagicCount: 0,
-                isSellingSpell: false,
-                isSellingMagic: false,
-                minutesUsed: '60',
-                otherCosts: [],
-                notes: ''
-            });
-
-            const [isSaving, setIsSaving] = useState(false);
-
-            const save = async (e) => {
-                e.preventDefault();
-                if(!targetUid) { alert("ระบบกำลังเชื่อมต่อ กรุณารอสักครู่..."); return; }
-                
-                setIsSaving(true);
-                const { addDoc, collection, updateDoc, doc } = window.firebaseModules;
-                const finalData = {
-                    ...form,
-                    trashAmount: Number(form.trashAmount) || 0,
-                    minutesUsed: Number(form.minutesUsed) || 60,
-                    timestamp: Date.now(),
-                    profit: calculateProfit(form, prices)
-                };
-                
-                // Simulate UX delay
-                await new Promise(r => setTimeout(r, 600));
-
-                if(editRecord) {
-                     await updateDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records', editRecord.id), finalData);
-                } else {
-                     await addDoc(collection(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records'), finalData);
-                }
-                
-                onClose();
-                onSuccess && onSuccess();
-            };
-
-            const addCost = () => setForm(p => ({...p, otherCosts: [...p.otherCosts, {id: Date.now(), name: '', amount: ''}]}));
-            const removeCost = (id) => setForm(p => ({...p, otherCosts: p.otherCosts.filter(c => c.id !== id)}));
-            const updateCost = (id, field, val) => setForm(p => ({...p, otherCosts: p.otherCosts.map(c => c.id === id ? {...c, [field]: val} : c)}));
-
-            const isValid = form.trashAmount !== '' && targetUid;
-
-            return (
-                <div className="fixed inset-0 z-50 flex items-end justify-center">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className={`relative w-full max-w-md rounded-t-[2.5rem] p-6 pb-safe shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto ${theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-stone-900'}`}>
-                        <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
-                        <form onSubmit={save} className="space-y-6 pb-20"> 
-                            <div className="flex justify-between items-center">
-                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
-                                    <button type="button" onClick={() => setForm(p => ({...p, runMode: 'ogh'}))} className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${form.runMode === 'ogh' ? 'bg-purple-600 text-white shadow' : 'text-slate-400'}`}>OGH</button>
-                                    <button type="button" onClick={() => setForm(p => ({...p, runMode: 'aogh'}))} className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${form.runMode === 'aogh' ? 'bg-rose-600 text-white shadow' : 'text-slate-400'}`}>AOGH</button>
-                                </div>
-                                <input type="date" value={form.date} onChange={e => setForm(p => ({...p, date: e.target.value}))} className="bg-transparent font-bold text-sm outline-none text-right" />
-                            </div>
-                            <div className="text-center py-4">
-                                <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mb-2">ยอดขายขยะ (Trash Sales)</p>
-                                <input 
-                                    type="text" 
-                                    inputMode="decimal" 
-                                    value={form.trashAmount} 
-                                    onChange={e => handleNumberInput(e, 'trashAmount', setForm)} 
-                                    placeholder="0" 
-                                    className={`w-full text-center text-6xl font-black bg-transparent outline-none placeholder-slate-700 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`} 
-                                    autoFocus 
-                                />
-                            </div>
-                            <div className={`${form.runMode === 'aogh' ? 'grid grid-cols-2 gap-4' : ''}`}>
-                                <div className="glass-panel p-4 rounded-3xl space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="flex items-center gap-2 text-xs font-bold"><SVGs.Spell className="w-5 h-5"/> หินม่วง</span>
-                                        <button type="button" onClick={() => setForm(p => ({...p, isSellingSpell: !p.isSellingSpell}))} className={`px-2 py-0.5 rounded text-[9px] font-bold ${form.isSellingSpell ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>{form.isSellingSpell ? 'ขายเลย' : 'เก็บ'}</button>
-                                    </div>
-                                    <NumberStepper value={form.purpleStoneCount} onChange={val => setForm(p => ({...p, purpleStoneCount: val}))} theme={theme} />
-                                    {form.isSellingSpell && 
-                                        <input 
-                                            type="text" 
-                                            inputMode="decimal" 
-                                            placeholder={prices.purpleStonePrice} 
-                                            className="w-full bg-transparent text-center border-b border-slate-500/20 text-sm font-bold pb-1" 
-                                            onChange={(e) => handleNumberInput(e, 'customSpellPrice', setForm)} 
-                                            value={form.customSpellPrice} 
-                                        />
-                                    }
-                                </div>
-                                {form.runMode === 'aogh' && (
-                                    <div className="glass-panel p-4 rounded-3xl space-y-3 animate-fade-in">
-                                        <div className="flex justify-between items-center">
-                                            <span className="flex items-center gap-2 text-xs font-bold"><SVGs.Magic className="w-5 h-5"/> หินแดง</span>
-                                            <button type="button" onClick={() => setForm(p => ({...p, isSellingMagic: !p.isSellingMagic}))} className={`px-2 py-0.5 rounded text-[9px] font-bold ${form.isSellingMagic ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>{form.isSellingMagic ? 'ขายเลย' : 'เก็บ'}</button>
-                                        </div>
-                                        <NumberStepper value={form.contMagicCount} onChange={val => setForm(p => ({...p, contMagicCount: val}))} theme={theme} />
-                                        {form.isSellingMagic && 
-                                            <input 
-                                                type="text" 
-                                                inputMode="decimal" 
-                                                placeholder={prices.contMagicPrice} 
-                                                className="w-full bg-transparent text-center border-b border-slate-500/20 text-sm font-bold pb-1" 
-                                                onChange={(e) => handleNumberInput(e, 'customMagicPrice', setForm)} 
-                                                value={form.customMagicPrice} 
-                                            />
-                                        }
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex gap-3 overflow-x-auto no-scrollbar">
-                                <div className="glass-panel px-4 py-2 rounded-2xl flex items-center gap-3 min-w-fit">
-                                    <span className="text-[10px] font-bold opacity-50">GUM</span>
-                                    <div className="flex gap-1">
-                                        {[0,1,2].map(n => <button key={n} type="button" onClick={() => setForm(p => ({...p, gumUsed: n}))} className={`w-6 h-6 rounded-full text-xs font-black transition-all ${form.gumUsed === n ? 'bg-blue-500 text-white' : 'bg-slate-200 dark:bg-slate-700'}`}>{n}</button>)}
-                                    </div>
-                                </div>
-                                <button type="button" onClick={() => setForm(p => ({...p, useSilvervine: !p.useSilvervine}))} className={`glass-panel px-4 py-2 rounded-2xl flex items-center gap-2 min-w-fit transition-all ${!form.useSilvervine && 'opacity-50 grayscale'}`}>
-                                    <SVGs.Silvervine className="w-4 h-4" />
-                                    <span className="text-[10px] font-bold uppercase">Silvervine</span>
-                                </button>
-                                <div className="glass-panel px-4 py-2 rounded-2xl flex items-center gap-2 min-w-fit">
-                                    <input 
-                                        type="text" 
-                                        inputMode="numeric" 
-                                        value={form.minutesUsed} 
-                                        onChange={e => { 
-                                            let v = e.target.value; 
-                                            if(v === '' || /^\d*$/.test(v)) {
-                                                 if(v !== '' && parseInt(v) > 60) v = "60";
-                                                 setForm(p => ({...p, minutesUsed: v}));
-                                            }
-                                        }} 
-                                        className="w-8 bg-transparent font-black text-center outline-none" 
-                                    />
-                                    <span className="text-[10px] font-bold opacity-50">Min</span>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-[10px] font-bold opacity-50 uppercase">Other Costs</span>
-                                    <button type="button" onClick={addCost} className="text-xs text-purple-500 font-bold flex items-center gap-1"><Icon name="Plus" size={14}/> เพิ่ม</button>
-                                </div>
-                                <div className="space-y-2">
-                                    {form.otherCosts.map(c => (
-                                        <div key={c.id} className="flex gap-2">
-                                            <input type="text" placeholder="รายการ..." value={c.name} onChange={e => updateCost(c.id, 'name', e.target.value)} className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-xl px-3 h-10 text-xs font-bold outline-none" />
-                                            <input 
-                                                type="text" 
-                                                inputMode="numeric" 
-                                                placeholder="0" 
-                                                value={c.amount} 
-                                                onChange={e => updateCost(c.id, 'amount', e.target.value)} 
-                                                className="w-20 bg-slate-100 dark:bg-slate-800 rounded-xl px-3 h-10 text-xs font-bold outline-none text-right" 
-                                            />
-                                            <button type="button" onClick={() => removeCost(c.id)} className="p-2 text-rose-500"><Icon name="Trash" size={16}/></button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            
-                            <div className="relative">
-                                <textarea placeholder="Note..." value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} className="w-full h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 text-xs font-bold outline-none resize-none"></textarea>
-                            </div>
-                            
-                            <button type="submit" disabled={!isValid || isSaving} className={`w-full h-14 rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 ${isValid ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/20' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}>
-                                {isSaving ? <Icon name="Loader" size={20} className="animate-spin"/> : null}
-                                {isSaving ? "กำลังบันทึก..." : (targetUid ? "บันทึกข้อมูล" : "กำลังเชื่อมต่อ...")}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            );
-        };
 
         const container = document.getElementById('root');
         const root = ReactDOM.createRoot(container);
