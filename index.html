@@ -2,8 +2,8 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OGH TRACKER - SDekza RO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>OGHza</title>
     
     <!-- App Icon -->
     <link rel="icon" type="image/png" href="icon.png">
@@ -18,17 +18,17 @@
     <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- HTML2Canvas -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged, signInWithCustomToken, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         window.firebaseModules = {
-            initializeApp, getAuth, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut, onAuthStateChanged, signInWithCustomToken, updateProfile,
+            initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
             getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc
         };
         
@@ -38,81 +38,42 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Kanit:wght@300;400;500;700;900&display=swap');
         
-        html {
-            font-size: clamp(14px, 0.85vw + 10px, 18px);
-            touch-action: manipulation;
-        }
+        html { font-size: clamp(14px, 0.85vw + 10px, 16px); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', 'Kanit', sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; padding-bottom: 110px; /* Space for Bottom Nav + Safe Area */ }
+        
+        /* Dark Mode Override */
+        body.dark { background-color: #0f172a; color: #f1f5f9; }
 
-        body {
-            font-family: 'Inter', 'Kanit', sans-serif;
-            margin: 0;
-            padding: 0;
-            transition: background-color 0.5s ease, color 0.5s ease;
-            line-height: 1.5;
-            overflow-x: hidden;
-        }
+        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .dark .glass-panel { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); }
 
-        .glass-card {
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
-
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #6366f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+
+        /* Animations */
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade-in { animation: fadeIn 0.2s ease-in-out forwards; }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type=number] { -moz-appearance: textfield; }
-
-        .fade-content { transition: opacity 0.5s ease-in-out; }
-        
-        .date-full-trigger::-webkit-calendar-picker-indicator {
-            background: transparent;
-            bottom: 0;
-            color: transparent;
-            cursor: pointer;
-            height: auto;
-            left: 0;
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: auto;
-        }
-        
-        .share-gradient-dark-capture {
-             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%) !important;
-             background-color: #0f172a !important;
-        }
-        .share-gradient-light-capture {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
-            background-color: #f8fafc !important;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(139, 92, 246, 0.3);
-            border-radius: 10px;
+        /* iOS Safe Area Fixes */
+        .pb-safe {
+            padding-bottom: 20px; /* Default Fallback */
+            padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
         }
     </style>
 </head>
-<body>
+<body class="dark"> <!-- Default Dark Mode -->
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef, Fragment } = React;
-        const { LineChart, Line, ResponsiveContainer, Tooltip, YAxis, AreaChart, Area } = window.Recharts || {};
-
-        const YT_AVATAR_URL = "https://yt3.googleusercontent.com/vlD4rkRPBg-HIUX6kAbuW1AHgE1FzYa4cs7W3ZD1AV0z4Xg_vM42d1r_slf8SVPhjmJXPslvcg=s160-c-k-c0x00ffffff-no-rj";
-        const APP_VERSION = "Ver.01.50"; 
+        const { LineChart, Line, ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } = window.Recharts || {};
 
         const MANUAL_FIREBASE_CONFIG = {
             apiKey: "AIzaSyAbWzr8o_OhkjGbEetBYq_nzYmVZ2fTf40",
@@ -124,129 +85,44 @@
             measurementId: "G-04JN1ERQ4T"
         };
 
-        const RO_JOBS = [
-            { key: "knight", nameTh: "Lord Knight", desc: "Frontline Tanker" },
-            { key: "crusader", nameTh: "Paladin", desc: "Holy Protector" },
-            { key: "assassin", nameTh: "Assassin Cross", desc: "Deadly Striker" },
-            { key: "rogue", nameTh: "Stalker", desc: "Master Thief" },
-            { key: "priest", nameTh: "High Priest", desc: "Divine Supporter" },
-            { key: "monk", nameTh: "Champion", desc: "Ultimate Fighter" },
-            { key: "wizard", nameTh: "High Wizard", desc: "Elemental Master" },
-            { key: "sage", nameTh: "Professor", desc: "Arcane scholar" },
-            { key: "hunter", nameTh: "Sniper", desc: "Master Archer" },
-            { key: "bard", nameTh: "Clown", desc: "Musical Artist" },
-            { key: "dancer", nameTh: "Gypsy", desc: "Graceful Performer" },
-            { key: "blacksmith", nameTh: "Whitesmith", desc: "Master Refiner" },
-            { key: "alchemist", nameTh: "Creator", desc: "Potion Expert" }
-        ];
-
-        let auth, db, googleProvider;
-        
-        const i18n = {
-            th: {
-                dashboard: "OLD GLAST HEIM", welcomeSub: "ระบบบันทึกสถิติและวิเคราะห์กำไร", loginBtn: "เข้าสู่ระบบด้วย Gmail", guestBtn: "ใช้งานแบบบุคคลทั่วไป",
-                exit: "Logout", home: "หน้าแรก", addData: "เพิ่มข้อมูล", netProfit: "กำไรสุทธิ", totalBothModes: "ยอดรวมทั้งสองโหมด", avgRev: "รายได้เฉลี่ยต่อรอบ",
-                avgMin: "รายได้เฉลี่ยต่อนาที", inventory: "คลังสมบัติ", stats: "กราฟสถิติ", history: "ประวัติการฟาร์ม", prices: "ราคาตลาดปัจจุบัน",
-                timer: "นาฬิกาจับเวลา", install: "วิธีการติดตั้งแอป", newRecord: "บันทึกข้อมูลใหม่", editRecord: "แก้ไขข้อมูล", date: "วันที่", duration: "เวลาที่ใช้",
-                trashSale: "ยอดขายขยะ (Zeny)", gum: "บับเบิ้ลกั้ม", silvervine: "มะละกอ", etc: "ต้นทุนอื่นๆ", notes: "บันทึกช่วยจำ", save: "บันทึกข้อมูล",
-                cancel: "ยกเลิก", subs: "140+ Subs", profit: "กำไร", revenue: "รายได้", mode: "โหมด", guestLogin: "Login mode: Guest", gmailLogin: "Login mode: Gmail",
-                itemSpell: "หินม่วง", itemMagic: "หินแดง", itemGum: "บับเบิ้ลกั้ม", itemGumBox: "กล่องบับเบิ้ลกั้ม", itemSilvervine: "มะละกอ", itemSilvervineBox: "กล่องมะละกอ",
-                unit: "ชิ้น", langName: "English", revSource: "ที่มาของรายได้", costBreakdown: "รายละเอียดต้นทุน", stone: "หิน", trash: "ขยะ",
-                selectionMode: "เลือกโหมดการเล่น", max: "สูงสุด", min: "ต่ำสุด", currentValue: "มูลค่าปัจจุบัน", sell: "ขาย", sellPopup: "ขายไอเทมจากคลัง",
-                sellQuantity: "จำนวนที่จะขาย", sellPrice: "ราคาขายต่อชิ้น", confirmSell: "ยืนยันการขาย", fromSpell: "จากการขายหินม่วง", fromMagic: "จากการขายหินแดง",
-                priceWarning: "กรุณาระบุราคาตลาดปัจจุบันให้ครบถ้วนก่อนเพิ่มข้อมูล", gumShort: "กั้ม", viewDetails: "คลิกเพื่อดูรายละเอียดกราฟ",
-                range1W: "1 สัปดาห์", range1M: "30 วัน", range3M: "3 เดือน", range1Y: "1 ปี", assetTrend: "มูลค่าทรัพย์สินที่ได้รับ", theme: "เปลี่ยนธีม",
-                deleteAll: "ลบทั้งหมด", confirmDeleteAll: "ยืนยันการลบข้อมูลทั้งหมดหรือไม่?", deleteWarn: "การกระทำนี้จะลบประวัติการฟาร์มและรายการขายทั้งหมดและไม่สามารถกู้คืนได้",
-                share: "แชร์ผลลัพธ์", saveImage: "บันทึกรูปภาพ", copyText: "คัดลอกข้อความ", shareSuccess: "คัดลอกเรียบร้อย!",
-                zPerMin: "Zeny/Min", totalRevenue: "ยอดขายรวม", totalCost: "ต้นทุนรวม", action: "จัดการ", store: "เก็บ", storeShort: "เก็บ", drops: "ดรอป",
-                searchPlaceholder: "เลือกวันที่...", allModes: "ทั้งหมด", page: "หน้า", of: "จาก", noData: "ไม่มีข้อมูล", shareTitle: "OGH RUN SUMMARY",
-                goal: "เป้าหมาย", goalReached: "GOAL REACHED!",
-                fillRequired: "กรุณากรอกข้อมูลให้ครบถ้วน",
-                selectAvatar: "เลือกตัวละครของคุณ",
-                installGuideTitle: "วิธีใช้งาน OGH Tracker ให้เหมือนแอปจริง",
-                installiOS: "สำหรับ iOS (Safari): กดปุ่ม 'แชร์' แล้วเลือก 'เพิ่มไปยังหน้าจอโฮม'",
-                installAndroid: "สำหรับ Android (Chrome): กดปุ่ม 'เมนู' (3 จุด) แล้วเลือก 'ติดตั้งแอป' หรือ 'เพิ่มลงในหน้าจอหลัก'"
-            },
-            en: {
-                dashboard: "OLD GLAST HEIM", welcomeSub: "Statistics & Profit Analytics System", loginBtn: "Login with Gmail", guestBtn: "Use as Guest",
-                exit: "Logout", home: "Home", addData: "Add Data", netProfit: "Net Profit", totalBothModes: "Total for both modes", avgRev: "Avg. Revenue / Round",
-                avgMin: "Avg. Revenue / Min", inventory: "Inventory", stats: "Statistics", history: "History", prices: "Market Prices",
-                timer: "Farm Timer", install: "Installation Guide", newRecord: "New Record", editRecord: "Edit Record", date: "Date", duration: "Duration",
-                trashSale: "Trash Sales (Zeny)", gum: "Bubble Gum", silvervine: "Silvervine", etc: "Other Costs (etc.)", notes: "Notes (Memo)", save: "Save Data",
-                cancel: "Cancel", subs: "140+ Subs", profit: "Profit", revenue: "Revenue", mode: "Mode", guestLogin: "Guest", gmailLogin: "Gmail User",
-                itemSpell: "Coagulated Spell", itemMagic: "Contaminated Magic", itemGum: "Bubble Gum", itemGumBox: "Bubble Gum Box", itemSilvervine: "Silvervine",
-                itemSilvervineBox: "Silvervine Box", unit: "ea.", langName: "ภาษาไทย", revSource: "Revenue Source", costBreakdown: "Costs Breakdown",
-                stone: "Stone", trash: "Trash", selectionMode: "Select Run Mode", max: "Max", min: "Min", currentValue: "Current Value", sell: "Sell",
-                sellPopup: "Sell Item from Stock", sellQuantity: "Quantity to Sell", sellPrice: "Price per ea.", confirmSell: "Confirm Sale",
-                fromSpell: "from Coagulated Spell sales", fromMagic: "from Contaminated Magic sales", priceWarning: "Please fill in all market prices before adding data",
-                gumShort: "Gum", viewDetails: "Click to view chart details", range1W: "1 Week", range1M: "30 Days", range3M: "3 Months", range1Y: "1 Year",
-                assetTrend: "Acquired Asset Value", theme: "Change Theme",
-                deleteAll: "Delete All", confirmDeleteAll: "Confirm delete all data?", deleteWarn: "This will permanently remove all farm records and sales history.",
-                share: "Share Result", saveImage: "Save Image", copyText: "Copy Text", shareSuccess: "Copied!",
-                zPerMin: "Zeny/Min", totalRevenue: "Total Sales", totalCost: "Total Cost", action: "Action", store: "Store", storeShort: "Store", drops: "Drops",
-                searchPlaceholder: "Search date...", allModes: "All", page: "Page", of: "of", noData: "No Data", shareTitle: "OGH RUN SUMMARY",
-                goal: "Goal", goalReached: "GOAL REACHED!",
-                fillRequired: "Please fill in all required fields",
-                selectAvatar: "Select Your Class",
-                installGuideTitle: "Install as an App",
-                installiOS: "iOS (Safari): Tap 'Share' icon and 'Add to Home Screen'",
-                installAndroid: "Android (Chrome): Tap 'Menu' (3 dots) and 'Install App' or 'Add to Home Screen'"
-            }
-        };
-
+        // --- ICONS & ASSETS ---
         const SVGs = {
-            Spell: ({className, style}) => <svg viewBox="0 0 32 32" className={className} style={style} shapeRendering="crispEdges"><path d="M16 4 L24 12 L24 22 L16 28 L8 22 L8 12 Z" fill="#7E57C2" /><path d="M16 6 L22 12 L22 20 L16 26 L10 20 L10 12 Z" fill="#9575CD" /><rect x="13" y="10" width="2" height="2" fill="#EDE7F6" /></svg>,
-            Magic: ({className, style}) => <svg viewBox="0 0 32 32" className={className} style={style} shapeRendering="crispEdges"><circle cx="16" cy="16" r="10" fill="#EF5350" /><circle cx="16" cy="16" r="6" fill="#B71C1C" /><path d="M16 6 L18 10 L22 10 L20 14 L22 18 L18 18 L16 22 L14 18 L10 18 L12 14 L10 10 L14 10 Z" fill="#FFCDD2" opacity="0.5"/></svg>,
-            GumBox: ({className, style}) => <svg viewBox="0 0 32 32" className={className} style={style} shapeRendering="crispEdges"><rect x="4" y="10" width="24" height="18" rx="2" fill="#42A5F5" /><rect x="4" y="10" width="24" height="6" rx="2" fill="#1E88E5" /><circle cx="16" cy="19" r="5" fill="#F06292" /><path d="M12 10 L12 6 L20 6 L20 10" fill="none" stroke="#BBDEFB" strokeWidth="2" /></svg>,
-            SilvervineBox: ({className, style}) => <svg viewBox="0 0 32 32" className={className} style={style} shapeRendering="crispEdges"><rect x="4" y="10" width="24" height="18" fill="#8D6E63" /><path d="M4 10 L16 14 L28 10" fill="none" stroke="#5D4037" strokeWidth="2" /><path d="M16 4 L14 10 L18 10 Z" fill="#4CAF50" /><rect x="12" y="18" width="8" height="2" fill="#FFD600" /></svg>,
-            SilvervineFruit: ({className, style}) => (
-                <svg viewBox="0 0 32 32" className={className} style={style}>
-                    <path d="M16 4c-5 0-9 6-9 14s4 12 9 12 9-4 9-12-4-14-9-14z" fill="#81C784"/>
-                    <path d="M16 4c0 0-3 6-3 14s3 12 3 12" fill="none" stroke="#4CAF50" strokeWidth="2"/>
-                    <path d="M16 2v4" stroke="#5D4037" strokeWidth="3" strokeLinecap="round"/>
-                </svg>
-            ),
-            Google: () => <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
-            Camera: ({size, className}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
-            Youtube: ({size}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>,
-            Monitor: ({size}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
-            Smartphone: ({size}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            Spell: ({className}) => <svg viewBox="0 0 32 32" className={className}><path d="M16 4 L24 12 L24 22 L16 28 L8 22 L8 12 Z" fill="#7E57C2" /><path d="M16 6 L22 12 L22 20 L16 26 L10 20 L10 12 Z" fill="#9575CD" /><rect x="13" y="10" width="2" height="2" fill="#EDE7F6" /></svg>,
+            Magic: ({className}) => <svg viewBox="0 0 32 32" className={className}><path d="M16 4 L24 12 L24 22 L16 28 L8 22 L8 12 Z" fill="#b91c1c" /><path d="M16 6 L22 12 L22 20 L16 26 L10 20 L10 12 Z" fill="#ef4444" /><rect x="13" y="10" width="2" height="2" fill="#fecaca" /></svg>,
+            Gum: ({className}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><rect x="6" y="10" width="12" height="10" rx="2" /><path d="M10 10V6a2 2 0 0 1 4 0v4" /></svg>,
+            GumBox: ({className}) => <svg viewBox="0 0 32 32" className={className} shapeRendering="crispEdges"><rect x="4" y="10" width="24" height="18" rx="2" fill="#42A5F5" /><rect x="4" y="10" width="24" height="6" rx="2" fill="#1E88E5" /><circle cx="16" cy="19" r="5" fill="#F06292" /><path d="M12 10 L12 6 L20 6 L20 10" fill="none" stroke="#BBDEFB" strokeWidth="2" /></svg>,
+            Silvervine: ({className}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#10b981" fill="#10b981" fillOpacity="0.2"/></svg>,
+            SilvervineBox: ({className}) => <svg viewBox="0 0 32 32" className={className} shapeRendering="crispEdges"><rect x="4" y="10" width="24" height="18" fill="#8D6E63" /><path d="M4 10 L16 14 L28 10" fill="none" stroke="#5D4037" strokeWidth="2" /><path d="M16 4 L14 10 L18 10 Z" fill="#4CAF50" /><rect x="12" y="18" width="8" height="2" fill="#FFD600" /></svg>,
+            SilvervineFruit: ({className, style}) => ( <svg viewBox="0 0 32 32" className={className} style={style}> <path d="M16 4c-5 0-9 6-9 14s4 12 9 12 9-4 9-12-4-14-9-14z" fill="#81C784"/> <path d="M16 4c0 0-3 6-3 14s3 12 3 12" fill="none" stroke="#4CAF50" strokeWidth="2"/> <path d="M16 2v4" stroke="#5D4037" strokeWidth="3" strokeLinecap="round"/> </svg> ),
+            Zeny: ({className}) => <span className={`font-black ${className}`}>Z</span>
         };
 
-        const Icon = ({ name, size = 16, className = "" }) => {
+        const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
-                Wallet: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2"/><path d="M18 12h4"/><circle cx="16" cy="12" r="2"/></svg>,
-                TrendingUp: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
-                TrendingDown: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>,
-                Archive: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>,
-                History: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
-                Trash2: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
-                PlusCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
-                MinusCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
-                HelpCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
-                X: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-                LogOut: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-                User: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-                Check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
-                Pencil: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>,
-                LayoutDashboard: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>,
-                Share2: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
-                Download: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12.01" y2="3"/></svg>,
+                Home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+                History: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+                Box: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
+                Settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+                Plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+                X: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+                Trash: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
+                Edit: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
                 Copy: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1-2-2h9a2 2 0 0 1 2 2v1"/></svg>,
-                Menu: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>,
-                Sun: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
+                Check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
                 Moon: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
-                Languages: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"/></svg>,
-                Calendar: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-                Clock: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-                Youtube: <SVGs.Youtube size={size} />,
-                Monitor: <SVGs.Monitor size={size} />,
-                Smartphone: <SVGs.Smartphone size={size} />
+                Sun: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
+                TrendingUp: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+                MinusCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
+                PlusCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
+                RefreshCw: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             };
             return icons[name] || null;
-        }
+        };
 
-        const blockInvalidChar = e => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault();
+        const formatMoney = (n) => new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(n);
+        const formatFullMoney = (n) => new Intl.NumberFormat('th-TH').format(n);
+        
+        let auth, db;
 
         const NumberStepper = ({ value, onChange, min = 0, max = 999, step = 1, theme }) => {
             const handleStep = (amount) => {
@@ -256,648 +132,450 @@
                 if (next > max) next = max;
                 onChange(next);
             };
-
             return (
                 <div className={`flex items-center gap-1 w-full rounded-xl p-1 h-[52px] transition-colors ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                    <button type="button" onClick={() => handleStep(-step)} className={`w-12 h-full rounded-lg flex items-center justify-center transition-all active:scale-95 ${theme === 'dark' ? 'bg-slate-700 text-white hover:bg-rose-600' : 'bg-white text-stone-600 hover:bg-rose-500 hover:text-white shadow-sm'}`}>
-                        <Icon name="MinusCircle" size={20} />
-                    </button>
-                    <input 
-                        type="number" 
-                        inputMode="numeric" 
-                        pattern="[0-9]*" 
-                        value={value} 
-                        onFocus={(e) => e.target.select()} 
-                        onKeyDown={blockInvalidChar}
-                        onChange={(e) => {
-                            let val = parseInt(e.target.value);
-                            if (isNaN(val)) val = "";
-                            else if (val < min) val = min;
-                            else if (val > max) val = max;
-                            onChange(val);
-                        }}
-                        className={`flex-1 text-center font-black text-2xl bg-transparent outline-none ${theme === 'dark' ? 'text-white' : 'text-stone-800'}`} 
-                        placeholder="0"
-                    />
-                    <button type="button" onClick={() => handleStep(step)} className={`w-12 h-full rounded-lg flex items-center justify-center transition-all active:scale-95 ${theme === 'dark' ? 'bg-slate-700 text-white hover:bg-emerald-600' : 'bg-white text-stone-600 hover:bg-emerald-500 hover:text-white shadow-sm'}`}>
-                        <Icon name="PlusCircle" size={20} />
-                    </button>
+                    <button type="button" onClick={() => handleStep(-step)} className={`w-12 h-full rounded-lg flex items-center justify-center transition-all active:scale-95 ${theme === 'dark' ? 'bg-slate-700 text-white hover:bg-rose-600' : 'bg-white text-stone-600 hover:bg-rose-500 hover:text-white shadow-sm'}`}><Icon name="MinusCircle" size={20} /></button>
+                    <input type="number" inputMode="numeric" pattern="[0-9]*" value={value} onFocus={(e) => e.target.select()} onChange={(e) => { let val = parseInt(e.target.value); if (isNaN(val)) val = ""; else if (val < min) val = min; else if (val > max) val = max; onChange(val); }} className={`flex-1 text-center font-black text-2xl bg-transparent outline-none ${theme === 'dark' ? 'text-white' : 'text-stone-800'}`} placeholder="0" />
+                    <button type="button" onClick={() => handleStep(step)} className={`w-12 h-full rounded-lg flex items-center justify-center transition-all active:scale-95 ${theme === 'dark' ? 'bg-slate-700 text-white hover:bg-emerald-600' : 'bg-white text-stone-600 hover:bg-emerald-500 hover:text-white shadow-sm'}`}><Icon name="PlusCircle" size={20} /></button>
                 </div>
             );
         };
 
-        function WelcomeScreen({ onLogin, onGuest, lang, setLang, theme }) {
-            const t = i18n[lang];
-            const itemHeightClass = "h-14 md:h-16"; 
-            return (
-                <div className={`min-h-screen flex flex-col items-center justify-start pt-12 md:pt-20 p-6 text-center overflow-x-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-[#e5e2da] text-stone-900'}`}>
-                    {/* Background Orbs */}
-                    <div className={`absolute top-1/4 left-1/4 w-64 h-64 rounded-full blur-[120px] animate-pulse ${theme === 'dark' ? 'bg-purple-600/10' : 'bg-purple-600/5'}`}></div>
-                    <div className={`absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-[120px] animate-pulse ${theme === 'dark' ? 'bg-blue-600/10' : 'bg-blue-600/5'}`}></div>
-                    
-                    {/* Brand Section */}
-                    <div className="relative mb-10 transform hover:scale-105 transition-transform duration-500 font-black">
-                        <div className={`w-40 h-40 md:w-48 md:h-48 rounded-[3.5rem] flex items-center justify-center shadow-2xl border-2 rotate-3 ${theme === 'dark' ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700/50' : 'bg-[#f4f2ee] border-stone-300'}`}>
-                            <SVGs.Spell className="w-24 h-24 md:w-28 md:h-28 drop-shadow-2xl" />
-                        </div>
-                        <div className={`absolute -bottom-2 -right-2 px-3 py-1.5 rounded-lg shadow-lg border-2 transform -rotate-6 text-[10px] font-bold tracking-widest ${theme === 'dark' ? 'bg-white text-slate-900 border-slate-200' : 'bg-stone-800 text-white border-stone-700'}`}>
-                            {APP_VERSION}
-                        </div>
-                    </div>
-                    
-                    <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-purple-500 to-pink-500 mb-4 tracking-tighter italic uppercase">OGH TRACKER</h1>
-                    <p className={`text-xs md:text-sm mb-10 font-medium leading-relaxed max-w-xs mx-auto ${theme === 'dark' ? 'text-slate-400' : 'text-stone-600'}`}>{t.welcomeSub}<br/><span className="text-[10px] mt-1 block uppercase tracking-widest italic font-bold tracking-[0.2em]">RO Classic / GGT</span></p>
-                    
-                    {/* Main Actions */}
-                    <div className="space-y-3 w-full max-w-xs relative z-10 font-black mb-16">
-                        <button onClick={onLogin} className={`w-full ${itemHeightClass} flex items-center justify-center gap-3 px-6 rounded-2xl font-bold shadow-xl hover:translate-y-[-2px] transition-all ${theme === 'dark' ? 'bg-white text-slate-900' : 'bg-stone-800 text-white'}`}><SVGs.Google /> <span className="font-bold">{t.loginBtn}</span></button>
-                        <button onClick={onGuest} className={`w-full ${itemHeightClass} flex items-center justify-center gap-2 px-6 rounded-2xl font-semibold text-sm hover:translate-y-[-2px] transition-all border ${theme === 'dark' ? 'bg-transparent text-slate-500 border-slate-800 hover:bg-slate-900 hover:text-white' : 'bg-white text-stone-500 border-stone-300 hover:bg-[#eceae4] hover:text-stone-800'}`}><Icon name="User" size={16} /> <span className="font-bold">{t.guestBtn}</span></button>
-                        
-                        <a href="https://www.youtube.com/@SDekza-RO" target="_blank" rel="noreferrer" className={`w-full ${itemHeightClass} flex items-center justify-between px-4 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${theme === 'dark' ? 'bg-stone-900 border-stone-800' : 'bg-white border-stone-200 shadow-sm'}`}><div className="flex items-center gap-3 overflow-hidden"><div className="w-9 h-9 rounded-full bg-cover shadow-sm border-2 border-red-600 shrink-0" style={{backgroundImage: `url('${YT_AVATAR_URL}')`}}></div><div className="text-left overflow-hidden font-black"><p className={`text-[11px] font-bold uppercase leading-none truncate ${theme === 'dark' ? 'text-white' : 'text-stone-900'}`}>SDekza RO</p><p className={`text-[9px] mt-0.5 ${theme === 'dark' ? 'text-stone-400' : 'text-stone-500'}`}>{t.subs}</p></div></div><div className="bg-red-600 text-white text-[8px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md shrink-0"><Icon name="Youtube" size={10} /><span>SUB</span></div></a>
-                        
-                        <button onClick={() => setLang(lang === 'th' ? 'en' : 'th')} className={`flex items-center gap-2 mx-auto pt-4 text-[10px] font-black uppercase tracking-widest transition-colors ${theme === 'dark' ? 'text-slate-600 hover:text-white' : 'text-stone-400 hover:text-stone-800'}`}><Icon name="Languages" size={14} /> <span className="font-black">{t.langName}</span></button>
-                    </div>
+        const calculateProfit = (f, p) => {
+            let rev = Number(f.trashAmount) || 0;
+            const sp = f.isSellingSpell ? (Number(f.customSpellPrice) || p.purpleStonePrice) : 0;
+            const mp = (f.runMode === 'aogh' && f.isSellingMagic) ? (Number(f.customMagicPrice) || p.contMagicPrice) : 0;
+            
+            rev += (f.purpleStoneCount * sp) + (f.contMagicCount * mp);
+            
+            const costGum = f.gumUsed * (p.gumBoxPrice / 10);
+            const costSv = f.useSilvervine ? (2 * (p.silvervineBoxPrice / 10)) : 0;
+            const costOther = f.otherCosts.reduce((a, c) => a + (Number(c.amount) || 0), 0);
+            
+            return rev - (costGum + costSv + costOther);
+        };
 
-                    {/* Install Guide Section (Moved from Popup to Bottom) */}
-                    <div className={`w-full max-w-md p-6 rounded-3xl mb-8 animate-in slide-in-from-bottom-5 duration-700 transition-colors border-0 glass-card ${theme === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}>
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                            <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-500">
-                                <Icon name="Smartphone" size={18} />
-                            </div>
-                            <h3 className={`text-xs md:text-sm font-black uppercase tracking-widest ${theme === 'dark' ? 'text-slate-300' : 'text-stone-600'}`}>
-                                {t.installGuideTitle}
-                            </h3>
-                        </div>
-                        
-                        <div className="space-y-4 text-left font-medium">
-                            <div className="flex gap-4">
-                                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border ${theme === 'dark' ? 'border-slate-700 bg-slate-800 text-slate-400' : 'border-stone-200 bg-stone-100 text-stone-500'}`}>1</div>
-                                <p className={`text-[11px] md:text-[12px] leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-stone-500'}`}>
-                                    {t.installiOS}
-                                </p>
-                            </div>
-                            <div className={`h-px w-full ${theme === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}></div>
-                            <div className="flex gap-4">
-                                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border ${theme === 'dark' ? 'border-slate-700 bg-slate-800 text-slate-400' : 'border-stone-200 bg-stone-100 text-stone-500'}`}>2</div>
-                                <p className={`text-[11px] md:text-[12px] leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-stone-500'}`}>
-                                    {t.installAndroid}
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <div className={`mt-6 pt-4 border-t ${theme === 'dark' ? 'border-white/5' : 'border-black/5'} flex justify-center gap-6 opacity-30`}>
-                            <Icon name="Monitor" size={16} />
-                            <Icon name="Smartphone" size={16} />
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
+        // --- MAIN APP ---
         function App() {
-            const [lang, setLang] = useState('th');
-            const [theme, setTheme] = useState('dark'); 
             const [user, setUser] = useState(null);
-            const [displayName, setDisplayName] = useState('');
-            const [displayAvatar, setDisplayAvatar] = useState(null);
-            const [isGuestMode, setIsGuestMode] = useState(false);
-            const [records, setRecords] = useState([]);
-            const [manualSales, setManualSales] = useState([]); 
-            const [globalPrices, setGlobalPrices] = useState({ purpleStonePrice: 0, contMagicPrice: 0, gumBoxPrice: 0, silvervineBoxPrice: 0 });
-            const [activeTab, setActiveTab] = useState('ogh');
+            const [activeTab, setActiveTab] = useState('home'); 
             const [isAdding, setIsAdding] = useState(false);
-            const [editingId, setEditingId] = useState(null);
-            const [sortOrder, setSortOrder] = useState('date-desc');
-            const [expandedId, setExpandedId] = useState(null);
-            const [priceValidationPulse, setPriceValidationPulse] = useState(false); 
-            const [priceWarningActive, setPriceWarningActive] = useState(false);
-            const [slideIndex, setSlideIndex] = useState(0); 
-            const [timeInMs, setTimeInMs] = useState(0);
-            const [isTimerActive, setIsTimerActive] = useState(false);
-            const [isTimerPaused, setIsTimerPaused] = useState(true);
-            const [isLoading, setIsLoading] = useState(true);
-            const [showSaleModal, setShowSaleModal] = useState(false);
-            const [saleItem, setSaleItem] = useState(null); 
-            const [saleFormData, setSaleFormData] = useState({ quantity: "", price: "" });
-            const [showShareModal, setShowShareModal] = useState(false);
-            const [shareData, setShareData] = useState(null);
-            const [showEditModal, setShowEditModal] = useState(false);
-            const [editModalData, setEditModalData] = useState(null);
-            const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
-            const [shareSuccess, setShareSuccess] = useState(false);
-            const [filterMode, setFilterMode] = useState('all');
-            const [searchDate, setSearchDate] = useState('');
-            const [currentPage, setCurrentPage] = useState(1);
-            const [firebaseInitialized, setFirebaseInitialized] = useState(false);
-            const [showNameModal, setShowNameModal] = useState(false);
-            const [showAvatarModal, setShowAvatarModal] = useState(false);
-            const [showMobileMenu, setShowMobileMenu] = useState(false);
-            const [tempName, setTempName] = useState("");
-            const [inventoryGoal, setInventoryGoal] = useState(100);
-            const [showGoalModal, setShowGoalModal] = useState(false);
-            const [tempGoal, setTempGoal] = useState(100);
+            const [records, setRecords] = useState([]);
+            const [globalPrices, setGlobalPrices] = useState({ purpleStonePrice: 0, contMagicPrice: 0, gumBoxPrice: 0, silvervineBoxPrice: 0 });
+            const [targetUid, setTargetUid] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [theme, setTheme] = useState('dark');
+            const [editRecordId, setEditRecordId] = useState(null);
 
-            const timerRef = useRef(null);
-            const slideTimerRef = useRef(null);
-            const isMobile = window.innerWidth < 768;
-            const itemsPerPage = isMobile ? 4 : 10;
-            const t = i18n[lang];
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'ogh-tracker-default';
-
-            const getLocalDate = () => {
-                const d = new Date();
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
-
-            const [formData, setFormData] = useState({
-                date: getLocalDate(), 
-                gumUsed: 0, trashAmount: "", purpleStoneCount: "", contMagicCount: "",
-                isSellingSpell: false, isSellingMagic: false, useSilvervine: true,
-                minutesUsed: 60, notes: "", otherCosts: [], runMode: 'ogh',
-                customSpellPrice: "", customMagicPrice: ""
-            });
-
-            const tableData = useMemo(() => {
-                const runsPerDate = {}; records.forEach(r => { if (r.useSilvervine) runsPerDate[r.date] = (runsPerDate[r.date] || 0) + 1; });
-                return records.map(r => {
-                    const p = r.prices || globalPrices; const sp = r.isSellingSpell ? (r.customSpellPrice || p.purpleStonePrice) : 0; const mp = (r.mode === 'aogh' && r.isSellingMagic) ? (r.customMagicPrice || p.contMagicPrice) : 0;
-                    const rev = Number(r.trashAmount || 0) + (Number(r.purpleStoneCount || 0) * sp) + (Number(r.contMagicCount || 0) * mp); const gumCost = (r.gumUsed * (p.gumBoxPrice / 10)); const svCost = r.useSilvervine ? (2 * (p.silvervineBoxPrice / 10)) / (runsPerDate[r.date] || 1) : 0; const etcCost = (r.otherCosts || []).reduce((a, b) => a + Number(b.amount || 0), 0); const totalCost = gumCost + svCost + etcCost; const stoneValue = (Number(r.purpleStoneCount || 0) * p.purpleStonePrice) + (r.mode === 'aogh' ? (Number(r.contMagicCount || 0) * p.contMagicPrice) : 0);
-                    return { ...r, id: r.id, revenue: rev, gumCost, silvervineCost: svCost, etcCost, totalCost, profit: rev - totalCost, revenuePerMinute: r.minutesUsed > 0 ? rev / r.minutesUsed : 0, stoneValue };
-                }).sort((a, b) => sortOrder === 'date-desc' ? b.timestamp - a.timestamp : a.timestamp - b.timestamp);
-            }, [records, globalPrices, sortOrder]);
-
-            const stats = useMemo(() => {
-                const totalFarmProfit = tableData.reduce((a, b) => a + b.profit, 0); const manualSellRev = manualSales.reduce((a, b) => a + (Number(b.quantity) * Number(b.price)), 0);
-                const totalFarmedSpell = tableData.reduce((a, b) => a + Number(b.purpleStoneCount || 0), 0); const totalSoldSpell = tableData.reduce((a, b) => a + (b.isSellingSpell ? Number(b.purpleStoneCount || 0) : 0), 0) + manualSales.filter(s => s.item === 'spell').reduce((a, b) => a + Number(b.quantity), 0);
-                const totalFarmedMagic = tableData.reduce((a, b) => a + Number(b.contMagicCount || 0), 0); const totalSoldMagic = tableData.reduce((a, b) => a + (b.isSellingMagic ? Number(b.contMagicCount || 0) : 0), 0) + manualSales.filter(s => s.item === 'magic').reduce((a, b) => a + Number(b.quantity), 0);
-                const inventoryValue = (Math.max(0, totalFarmedSpell - totalSoldSpell) * globalPrices.purpleStonePrice) + (Math.max(0, totalFarmedMagic - totalSoldMagic) * globalPrices.contMagicPrice);
-                return { totalNetProfit: totalFarmProfit + manualSellRev, stockSpell: Math.max(0, totalFarmedSpell - totalSoldSpell), stockMagic: Math.max(0, totalFarmedMagic - totalSoldMagic), inventoryValue: Math.max(0, inventoryValue), spellTotalRev: (tableData.reduce((a, b) => a + (b.isSellingSpell ? (Number(b.purpleStoneCount || 0) * (b.customSpellPrice || b.prices?.purpleStonePrice || globalPrices.purpleStonePrice)) : 0), 0)) + (manualSales.filter(s => s.item === 'spell').reduce((a, b) => a + (Number(b.quantity) * Number(b.price)), 0)), magicTotalRev: (tableData.reduce((a, b) => a + (b.mode === 'aogh' && b.isSellingMagic ? (Number(b.contMagicCount || 0) * (b.customMagicPrice || b.prices?.contMagicPrice || globalPrices.contMagicPrice)) : 0), 0)) + (manualSales.filter(s => s.item === 'magic').reduce((a, b) => a + (Number(b.quantity) * Number(b.price)), 0)) };
-            }, [tableData, manualSales, globalPrices]);
-
-            const chartDataOGH = useMemo(() => [...records].filter(r => (r.mode || 'ogh') === 'ogh').sort((a, b) => a.timestamp - b.timestamp).slice(-10).map(r => ({ name: r.date, profit: r.profit })), [records]);
-            const chartDataAOGH = useMemo(() => [...records].filter(r => (r.mode || 'ogh') === 'aogh').sort((a, b) => a.timestamp - b.timestamp).slice(-10).map(r => ({ name: r.date, profit: r.profit })), [records]);
-            
-            const filteredData = tableData.filter(r => (filterMode === 'all' || r.mode === filterMode) && (!searchDate || r.date === searchDate.split('-').reverse().join('/')));
-            const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-            const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-            const getStatsForMode = (mode) => { const filtered = tableData.filter(r => (r.mode || 'ogh') === mode); const runs = filtered.length; if (runs === 0) return { avgRevenue: 0, maxRevenue: 0, minRevenue: 0, avgRevMin: 0 }; return { avgRevenue: filtered.reduce((a, b) => a + b.revenue, 0) / runs, maxRevenue: Math.max(...filtered.map(r => r.revenue)), minRevenue: Math.min(...filtered.map(r => r.revenue)), avgRevMin: filtered.reduce((a, b) => a + (b.revenue / (b.minutesUsed || 1)), 0) / runs, }; };
-            const oghStats = useMemo(() => getStatsForMode('ogh'), [tableData]);
-            const aoghStats = useMemo(() => getStatsForMode('aogh'), [tableData]);
-
-            const getProgressColor = (current, max) => current >= max ? 'bg-gradient-to-r from-yellow-300 to-yellow-500 animate-pulse' : 'bg-purple-500';
-            const getProgressColorMagic = (current, max) => current >= max ? 'bg-gradient-to-r from-yellow-300 to-yellow-500 animate-pulse' : 'bg-rose-500';
-            
-            const formatUnitZeny = (n) => { const absN = Math.abs(n || 0); if (absN >= 1000000) return (n / 1000000).toFixed(2) + " Mz"; if (absN >= 1000) return (n / 1000).toFixed(1) + " Kz"; return new Intl.NumberFormat('th-TH').format(Math.round(n)) + " Z"; };
-            const ZenyDisplay = ({ amount, className = "" }) => { const formatted = formatUnitZeny(amount || 0); const parts = formatted.split(" "); return <span className={className}>{parts[0]} <span className="text-[0.6em] font-medium opacity-60 uppercase" style={{ verticalAlign: 'baseline' }}>{parts[1]}</span></span>; };
-            const formatTimer = (ms) => { const m = Math.floor(ms / 60000).toString().padStart(2, '0'); const s = Math.floor((ms % 60000) / 1000).toString().padStart(2, '0'); return `${m}:${s}`; };
-            
-            const renderAvatar = (src, className) => {
-                if (src && src.startsWith('preset:')) {
-                    const jobName = src.split(':')[1];
-                    return (
-                        <img 
-                            src={`${jobName}.png`} 
-                            className={`${className} object-cover`} 
-                            alt={jobName} 
-                            onError={(e) => { e.target.src = YT_AVATAR_URL; }} 
-                        />
-                    );
-                }
-                return (
-                    <img 
-                        src={src || YT_AVATAR_URL} 
-                        className={`${className} object-cover`} 
-                        alt="avatar" 
-                        onError={(e) => { e.target.src = YT_AVATAR_URL; }} 
-                    />
-                );
-            };
-
-            const updatePrice = (key, val) => setGlobalPrices(prev => ({ ...prev, [key]: val === "" ? "" : Math.max(0, Number(val)) }));
-            const validatePrices = () => { const isValid = globalPrices.purpleStonePrice > 0 && globalPrices.contMagicPrice > 0 && globalPrices.gumBoxPrice > 0 && globalPrices.silvervineBoxPrice > 0; if (!isValid) { setPriceWarningActive(true); setPriceValidationPulse(true); setTimeout(() => setPriceValidationPulse(false), 500); window.scrollTo({ top: 0, behavior: 'smooth' }); return false; } setPriceWarningActive(false); return true; };
-            const isFormValid = useMemo(() => { return formData.minutesUsed > 0 && formData.trashAmount !== "" && formData.trashAmount >= 0; }, [formData]);
-            
-            const handleAddDataToggle = () => { if (isAdding) { setIsAdding(false); setEditingId(null); setPriceWarningActive(false); return; } if (validatePrices()) { setIsAdding(true); } };
-            const handleShare = (record) => { setShareData(record); setShowShareModal(true); };
-            const captureAndDownload = () => { const element = document.getElementById('share-capture-area'); if (!element) return; const bg = theme === 'dark' ? '#0f172a' : '#f8fafc'; html2canvas(element, { backgroundColor: bg, scale: 3, useCORS: true, logging: false }).then(canvas => { const link = document.createElement('a'); link.download = `ogh-run-${shareData.date}.png`; link.href = canvas.toDataURL('image/png'); link.click(); }); };
-            const handleCopyText = () => { if (!shareData) return; const text = `[OGH RUN SUMMARY]\n` + `📅 วันที่: ${shareData.date}\n` + `👤 ผู้เล่น: @${displayName}\n` + `💎 โหมด: ${shareData.mode.toUpperCase()}\n` + `---------------------------\n` + `💰 กำไรสุทธิ: ${shareData.profit.toLocaleString()} Zeny\n` + `⏱️ เวลาที่ใช้: ${shareData.minutesUsed} นาที\n` + `💸 ต้นทุนรวม: ${shareData.totalCost.toLocaleString()} Zeny\n` + `📈 EFF.: ${(shareData.profit / (shareData.minutesUsed || 1)).toLocaleString(undefined, {maximumFractionDigits: 0})} Z/นาที\n` + `---------------------------\n` + `📦 รายการไอเทม:\n` + `- หินม่วง: ${shareData.purpleStoneCount || 0} ชิ้น\n` + (shareData.mode === 'aogh' ? `- หินแดง: ${shareData.contMagicCount || 0} ชิ้น\n` : '') + `- บับเบิ้ลกั้ม: ${shareData.gumUsed} ชิ้น\n` + `- มะละกอ: ${shareData.useSilvervine ? '✓ ใช้งาน' : '✕ ไม่ใช้งาน'}\n` + (shareData.notes ? `📝 บันทึก: ${shareData.notes}\n` : '') + `---------------------------\n` + `Created by SDekza-RO`; const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select(); document.execCommand('copy'); document.body.removeChild(textArea); setShareSuccess(true); setTimeout(() => setShareSuccess(false), 2000); };
-            
-            const enterOfflineMode = () => { const savedName = localStorage.getItem('ogh_display_name') || 'Guest'; const savedAvatar = localStorage.getItem('ogh_avatar') || null; const savedGoal = localStorage.getItem('ogh_inventory_goal'); setUser({ uid: 'offline', displayName: savedName, photoURL: savedAvatar, isAnonymous: true, isOffline: true }); setDisplayName(savedName); setDisplayAvatar(savedAvatar); if (savedGoal) setInventoryGoal(parseInt(savedGoal)); setIsGuestMode(true); setIsLoading(false); };
-            const handleLogin = async () => { if (!firebaseInitialized) return; const { getAuth, signInWithPopup, GoogleAuthProvider } = window.firebaseModules; try { await signInWithPopup(getAuth(), new GoogleAuthProvider()); } catch (e) { console.error("Login Failed: " + e.message); } };
-            const handleGuest = () => enterOfflineMode();
-            const handleLogout = async () => { if (user?.isOffline) { setUser(null); setIsGuestMode(false); setRecords([]); setManualSales([]); setDisplayName(''); setDisplayAvatar(null); setInventoryGoal(100); return; } if (!auth) return; const { signOut } = window.firebaseModules; await signOut(auth); setRecords([]); setManualSales([]); setDisplayName(''); setDisplayAvatar(null); setInventoryGoal(100); };
-            const handleUpdateName = async () => { if (!tempName.trim()) return; const newName = tempName.trim(); setDisplayName(newName); if (user?.isOffline) { localStorage.setItem('ogh_display_name', newName); setUser(prev => ({ ...prev, displayName: newName })); } else if (auth && auth.currentUser) { try { const { updateProfile } = window.firebaseModules; await updateProfile(auth.currentUser, { displayName: newName }); setUser(prev => ({ ...prev, displayName: newName })); } catch (e) {} } setShowNameModal(false); };
-            const handleSaveGoal = async () => { const newGoal = parseInt(tempGoal); if (isNaN(newGoal) || newGoal <= 0) return; setInventoryGoal(newGoal); if (user?.isOffline) { localStorage.setItem('ogh_inventory_goal', newGoal); } else { if (db && user) { const { setDoc, doc } = window.firebaseModules; await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'config', 'settings'), { inventoryGoal: newGoal }, { merge: true }); } } setShowGoalModal(false); };
-            const handleSelectAvatar = async (jobName) => { const avatarValue = `preset:${jobName}`; setDisplayAvatar(avatarValue); if (user?.isOffline) { localStorage.setItem('ogh_avatar', avatarValue); setUser(prev => ({ ...prev, photoURL: avatarValue })); } else if (auth && auth.currentUser) { try { const { updateProfile } = window.firebaseModules; await updateProfile(auth.currentUser, { photoURL: avatarValue }); setUser(prev => ({ ...prev, photoURL: avatarValue })); } catch (e) {} } setShowAvatarModal(false); };
-            const handleSaveInternal = async (e) => { e.preventDefault(); if (!isFormValid) return; const entryMode = formData.runMode || activeTab; const [y, m, d] = formData.date.split('-'); const formattedDate = `${d}/${m}/${y}`; const entry = { ...formData, date: formattedDate, timestamp: Date.now(), mode: entryMode, prices: { ...globalPrices } }; if (user?.isOffline) { localStorage.setItem('ogh_prices', JSON.stringify(globalPrices)); if (editingId) { const updatedRecords = records.map(r => r.id === editingId ? { ...entry, id: editingId } : r); setRecords(updatedRecords); localStorage.setItem('ogh_records', JSON.stringify(updatedRecords)); } else { const newRecord = { ...entry, id: 'local_' + Date.now() }; const newRecords = [...records, newRecord]; setRecords(newRecords); localStorage.setItem('ogh_records', JSON.stringify(newRecords)); } } else { if (!db || !user || !window.firebaseModules) return; const { collection, addDoc, updateDoc, doc, setDoc } = window.firebaseModules; const configRef = doc(db, 'artifacts', appId, 'users', user.uid, 'config', 'prices'); await setDoc(configRef, globalPrices, { merge: true }); if (editingId) { const recordRef = doc(db, 'artifacts', appId, 'users', user.uid, 'records', editingId); await updateDoc(recordRef, entry); } else { await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'records'), entry); } } setIsAdding(false); setEditingId(null); setFormData({ date: getLocalDate(), gumUsed: 0, trashAmount: "", purpleStoneCount: "", contMagicCount: "", isSellingSpell: false, isSellingMagic: false, useSilvervine: true, minutesUsed: 60, notes: "", otherCosts: [], runMode: 'ogh', customSpellPrice: "", customMagicPrice: "" }); };
-            const handleDelete = async (id) => { if (user?.isOffline) { const newRecords = records.filter(r => r.id !== id); setRecords(newRecords); localStorage.setItem('ogh_records', JSON.stringify(newRecords)); return; } if (!db || !user || !window.firebaseModules) return; const { deleteDoc, doc } = window.firebaseModules; await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', id)); };
-            const handleClearAllHistory = async () => { if (user?.isOffline) { setRecords([]); setManualSales([]); localStorage.removeItem('ogh_records'); localStorage.removeItem('ogh_sales'); setShowDeleteAllModal(false); return; } if (!db || !user || !window.firebaseModules) return; const { deleteDoc, doc } = window.firebaseModules; const deletePromises = [ ...records.map(r => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', r.id))), ...manualSales.map(s => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'sales', s.id))) ]; await Promise.all(deletePromises); setShowDeleteAllModal(false); };
-            const handleManualSellSubmit = async () => { const q = Number(saleFormData.quantity); const p = Number(saleFormData.price); if (isNaN(q) || q <= 0 || isNaN(p) || p < 0) return; const saleData = { item: saleItem, quantity: q, price: p, timestamp: Date.now() }; if (user?.isOffline) { const newSale = { ...saleData, id: 'sale_' + Date.now() }; const newSales = [...manualSales, newSale]; setManualSales(newSales); localStorage.setItem('ogh_sales', JSON.stringify(newSales)); } else { if (!db || !user || !window.firebaseModules) return; const { addDoc, collection } = window.firebaseModules; await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'sales'), saleData); } setShowSaleModal(false); setSaleFormData({ quantity: "", price: "" }); };
-            const openEditModal = (record) => { setEditModalData({ ...record }); setEditingId(record.id); setShowEditModal(true); };
-            const submitEditModal = async () => { const { id, revenue, profit, gumCost, silvervineCost, etcCost, totalCost, revenuePerMinute, stoneValue, timestamp, ...dataToSave } = editModalData; if (user?.isOffline) { const updatedRecords = records.map(r => r.id === editingId ? { ...r, ...dataToSave } : r); setRecords(updatedRecords); localStorage.setItem('ogh_records', JSON.stringify(updatedRecords)); localStorage.setItem('ogh_prices', JSON.stringify(globalPrices)); } else { if (!db || !user || !window.firebaseModules) return; const { updateDoc, doc, setDoc } = window.firebaseModules; const configRef = doc(db, 'artifacts', appId, 'users', user.uid, 'config', 'prices'); await setDoc(configRef, globalPrices, { merge: true }); const recordRef = doc(db, 'artifacts', appId, 'users', user.uid, 'records', editModalData.id); await updateDoc(recordRef, dataToSave); } setShowEditModal(false); setEditingId(null); };
-            const resetSlideTimer = () => { if (slideTimerRef.current) clearInterval(slideTimerRef.current); slideTimerRef.current = setInterval(() => { setSlideIndex(prev => prev === 0 ? 1 : 0); }, 7000); };
-            const toggleModeNext = () => { setSlideIndex(prev => prev === 0 ? 1 : 0); resetSlideTimer(); };
-
-            useEffect(() => { 
-                const initialize = async () => { 
-                    if (!window.firebaseModules) { 
-                        window.addEventListener('firebase-ready', () => initialize()); 
-                        return; 
-                    } 
-                    const { initializeApp, getAuth, onAuthStateChanged, getFirestore, signInWithCustomToken, signInAnonymously } = window.firebaseModules; 
-                    let firebaseConfig;
+            useEffect(() => {
+                const init = async () => {
+                    if (!window.firebaseModules) { window.addEventListener('firebase-ready', init); return; }
+                    const { initializeApp, getAuth, getFirestore, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.firebaseModules;
+                    
                     try {
-                        firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-                    } catch (e) { console.log("Cannot parse env config"); }
-                    if (!firebaseConfig) { firebaseConfig = MANUAL_FIREBASE_CONFIG; }
-                    try { 
-                        const app = initializeApp(firebaseConfig); 
-                        auth = getAuth(app); 
-                        db = getFirestore(app); 
-                        setFirebaseInitialized(true); 
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { 
-                            try { await signInWithCustomToken(auth, __initial_auth_token); } catch (authError) { await signInAnonymously(auth); }
-                        } else { await signInAnonymously(auth); }
-                        onAuthStateChanged(auth, (currentUser) => { 
-                            setUser(currentUser); 
-                            if (currentUser) { 
-                                setIsGuestMode(currentUser.isAnonymous); 
-                                setDisplayName(currentUser.displayName || (currentUser.isAnonymous ? "Guest" : "User")); 
-                                setDisplayAvatar(currentUser.photoURL || null); 
-                            } 
-                            setIsLoading(false); 
-                        }); 
-                    } catch (err) { 
-                        console.error("Firebase init error:", err); 
-                        setIsLoading(false); 
-                    } 
-                }; 
-                initialize(); 
+                        const config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : MANUAL_FIREBASE_CONFIG;
+                        const app = initializeApp(config);
+                        auth = getAuth(app);
+                        db = getFirestore(app);
+                        
+                        const savedUid = localStorage.getItem('ogh_restore_uid');
+                        
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                             await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                             await signInAnonymously(auth);
+                        }
+                        
+                        onAuthStateChanged(auth, (u) => {
+                            setUser(u);
+                            if(u) setTargetUid(savedUid || u.uid);
+                            setLoading(false);
+                        });
+                    } catch(e) { console.error(e); setLoading(false); }
+                };
+                init();
             }, []);
 
-            useEffect(() => { if (!user || !firebaseInitialized || !window.firebaseModules || !db) return; const { collection, onSnapshot, doc } = window.firebaseModules; const unsubRecords = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'records'), (snap) => setRecords(snap.docs.map(d => ({ ...d.data(), id: d.id })))); const unsubSales = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'sales'), (snap) => setManualSales(snap.docs.map(d => ({ ...d.data(), id: d.id })))); const unsubConfig = onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'config', 'prices'), (d) => { if (d.exists()) setGlobalPrices(d.data()); }); const unsubSettings = onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'config', 'settings'), (d) => { if (d.exists() && d.data().inventoryGoal) setInventoryGoal(d.data().inventoryGoal); }); return () => { unsubRecords(); unsubSales(); unsubConfig(); unsubSettings(); }; }, [user, firebaseInitialized]);
-            useEffect(() => { resetSlideTimer(); return () => clearInterval(slideTimerRef.current); }, []);
-            useEffect(() => { if (!isTimerActive || isTimerPaused) { if (timerRef.current) clearInterval(timerRef.current); return; } timerRef.current = setInterval(() => { setTimeInMs(prev => prev + 1000); }, 1000); return () => clearInterval(timerRef.current); }, [isTimerActive, isTimerPaused]);
+            useEffect(() => {
+                if(!targetUid || !db) return;
+                const { collection, onSnapshot, doc, query, orderBy } = window.firebaseModules;
+                
+                const q = query(collection(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records'), orderBy('timestamp', 'desc'));
+                const unsubRecords = onSnapshot(q, snap => setRecords(snap.docs.map(d => ({...d.data(), id: d.id}))));
+                const unsubConfig = onSnapshot(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'config', 'prices'), d => { if(d.exists()) setGlobalPrices(d.data()); });
+                
+                return () => { unsubRecords(); unsubConfig(); };
+            }, [targetUid]);
 
-            const themeClasses = { bg: theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-[#e5e2da] text-stone-900', card: theme === 'dark' ? 'bg-slate-900/60 border-slate-800 shadow-2xl' : 'bg-[#faf9f6]/95 border-stone-300 shadow-md', textDim: theme === 'dark' ? 'text-slate-400' : 'text-stone-500', textMain: theme === 'dark' ? 'text-white' : 'text-stone-900', btnGhost: theme === 'dark' ? 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-white' : 'bg-[#faf9f6] border-stone-300 text-stone-500 hover:text-stone-900 shadow-sm' };
+            useEffect(() => {
+                document.body.className = theme;
+            }, [theme]);
 
-            if (isLoading) return <div className={`min-h-screen flex items-center justify-center ${themeClasses.bg}`}><div className="flex flex-col items-center gap-4 animate-pulse"><div className="w-16 h-16 rounded-full bg-slate-200/20"></div><div className="h-4 w-32 bg-slate-200/20 rounded"></div></div></div>;
+            if(loading) return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white animate-pulse">Loading OGHza...</div>;
 
             return (
-                <div className={`min-h-screen p-0 m-0 transition-colors duration-500 ${themeClasses.bg}`}>
-                    {!user ? <WelcomeScreen onLogin={handleLogin} onGuest={handleGuest} lang={lang} setLang={setLang} theme={theme} /> : (
-                        <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-8 font-black relative pb-24 text-center">
-                            {!isAdding && <button onClick={handleAddDataToggle} className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-2xl shadow-purple-600/40 flex items-center justify-center md:hidden active:scale-90 transition-transform animate-in zoom-in duration-300"><Icon name="PlusCircle" size={28} /></button>}
-                            
-                            <header className={`border p-4 md:p-6 rounded-[2rem] backdrop-blur-md shadow-2xl flex flex-wrap justify-between items-center gap-4 ${themeClasses.card} relative z-40`}>
-                                <div className="flex flex-row justify-between items-center gap-4 w-full">
-                                    <div className="flex items-center gap-4">
-                                        <div onClick={() => setShowAvatarModal(true)} className="relative shrink-0 w-12 h-12 md:w-16 md:h-16 rounded-full bg-purple-600/20 border-2 border-purple-500/30 flex items-center justify-center overflow-hidden shadow-lg font-black cursor-pointer group hover:border-purple-400 transition-all">
-                                            {renderAvatar(displayAvatar, "w-full h-full")}
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><SVGs.Camera className="w-5 h-5 text-white" /></div>
-                                        </div>
-                                        <div className="text-left font-black">
-                                            <div className="flex items-center gap-2"><h4 className={`text-sm md:text-lg font-black leading-none uppercase ${themeClasses.textMain}`}>@{displayName}</h4><button onClick={() => { setTempName(displayName); setShowNameModal(true); }} className={`opacity-50 hover:opacity-100 transition-opacity p-1 rounded-full ${theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-stone-200'}`}><Icon name="Pencil" size={12} /></button></div>
-                                            <p className={`text-[10px] md:text-[12px] font-bold mt-1 opacity-60 ${themeClasses.textDim}`}>{isGuestMode ? (user.isOffline ? "Offline Mode" : t.guestLogin) : t.gmailLogin}</p>
-                                        </div>
-                                    </div>
-                                    <div className="hidden md:flex items-center gap-1.5 md:gap-3 flex-wrap justify-end font-black">
-                                        <a href="https://www.youtube.com/@SDekza-RO" target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-1.5 px-3 rounded-xl bg-red-600/10 border border-red-600/20 hover:bg-red-600/20 transition-all group font-black`}><div className="w-7 h-7 rounded-full bg-cover shadow-sm border border-red-600/30 font-black" style={{backgroundImage: `url('${YT_AVATAR_URL}')`}}></div><div className="hidden sm:block text-left"><p className="text-[10px] font-black leading-none text-red-600 uppercase font-black">SDekza RO</p></div><div className="bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow-lg active:scale-95 transition-transform font-black">Sub</div></a>
-                                        <div className="flex gap-1 md:gap-2 font-black">
-                                            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className={`flex items-center justify-center w-10 h-10 md:w-11 md:h-11 rounded-xl border transition-all ${themeClasses.btnGhost}`}><Icon name={theme === 'dark' ? 'Sun' : 'Moon'} size={18} /></button>
-                                            <button onClick={() => setLang(lang === 'th' ? 'en' : 'th')} className={`flex items-center gap-1.5 md:gap-2 text-[10px] md:text-[12px] font-medium uppercase tracking-widest px-2 md:px-3 py-1.5 md:py-2.5 rounded-xl border transition-all ${themeClasses.btnGhost}`}><Icon name="Languages" size={12} /> <span className="hidden sm:inline font-medium">{lang === 'th' ? 'EN' : 'TH'}</span></button>
-                                            <button onClick={handleLogout} className={`flex items-center gap-1.5 md:gap-2 text-[10px] md:text-[12px] font-medium uppercase tracking-widest px-2 md:px-3 py-1.5 md:py-2.5 rounded-xl border transition-all ${theme === 'dark' ? 'bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-400' : 'bg-[#fff1f2] border-rose-200 text-rose-600 hover:bg-[#ffe4e6] shadow-sm'}`}><Icon name="LogOut" size={12}/> <span className="font-medium font-black">{t.exit}</span></button>
-                                        </div>
-                                        <div className="flex items-center ml-1 md:ml-2 pl-2 md:pl-4 border-l border-stone-300 dark:border-slate-800 font-black">
-                                            <button onClick={handleAddDataToggle} className={`px-3 md:px-6 py-2 md:py-3.5 rounded-xl font-black flex items-center justify-center gap-1.5 md:gap-2 shadow-lg active:scale-95 transition-all text-[11px] md:text-[13px] uppercase tracking-wider ${isAdding ? (theme === 'dark' ? 'bg-stone-800 text-white' : 'bg-stone-700 text-white') : 'bg-purple-600 hover:bg-purple-700 text-white'}`}>{isAdding ? <><Icon name="LayoutDashboard" size={14} /> {t.home}</> : <><Icon name="PlusCircle" size={14} /> {t.addData}</>}</button>
-                                        </div>
-                                    </div>
-                                    <div className="md:hidden relative">
-                                        <button onClick={() => setShowMobileMenu(!showMobileMenu)} className={`p-3 rounded-2xl border transition-all active:scale-95 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-stone-200 text-stone-700'} ${showMobileMenu ? 'ring-2 ring-purple-500 border-transparent' : ''}`}><Icon name={showMobileMenu ? "X" : "Menu"} size={20} /></button>
-                                        {showMobileMenu && ( 
-                                            <Fragment>
-                                                <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]" onClick={() => setShowMobileMenu(false)}></div>
-                                                <div className={`absolute right-0 top-full mt-4 w-56 p-4 rounded-3xl shadow-2xl border z-50 flex flex-col gap-3 animate-in slide-in-from-top-5 duration-200 ${theme === 'dark' ? 'bg-slate-900/95 border-slate-700 backdrop-blur-xl' : 'bg-white/95 border-stone-200 backdrop-blur-xl'}`}>
-                                                    <a href="https://www.youtube.com/@SDekza-RO" target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${theme === 'dark' ? 'bg-black/30 border-red-900/30' : 'bg-red-50 border-red-100'}`}>
-                                                        <div className="w-8 h-8 rounded-full bg-cover shadow-sm border border-red-600/30" style={{backgroundImage: `url('${YT_AVATAR_URL}')`}}></div>
-                                                        <div className="text-left flex-1">
-                                                            <p className={`text-[10px] font-black leading-none uppercase ${theme === 'dark' ? 'text-white' : 'text-stone-900'}`}>SDekza RO</p>
-                                                            <p className={`text-[9px] mt-0.5 text-red-500 font-bold`}>Subscribe</p>
-                                                        </div>
-                                                        <Icon name="ChevronRight" size={14} className="text-red-500" />
-                                                    </a>
-                                                    <div className="h-px w-full bg-gradient-to-r from-transparent via-stone-500/20 to-transparent my-1"></div>
-                                                    <button onClick={() => { setTheme(theme === 'dark' ? 'light' : 'dark'); setShowMobileMenu(false); }} className={`flex items-center justify-between p-3 rounded-2xl transition-all ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-stone-100 text-stone-600'}`}>
-                                                        <div className="flex items-center gap-3">
-                                                            <Icon name={theme === 'dark' ? 'Sun' : 'Moon'} size={18} />
-                                                            <span className="text-xs font-bold uppercase">{t.theme}</span>
-                                                        </div>
-                                                        <span className="text-[10px] font-black opacity-50">{theme.toUpperCase()}</span>
-                                                    </button>
-                                                    <button onClick={() => { setLang(lang === 'th' ? 'en' : 'th'); setShowMobileMenu(false); }} className={`flex items-center justify-between p-3 rounded-2xl transition-all ${theme === 'dark' ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-stone-100 text-stone-600'}`}>
-                                                        <div className="flex items-center gap-3">
-                                                            <Icon name="Languages" size={18} />
-                                                            <span className="text-xs font-bold uppercase">{t.langName}</span>
-                                                        </div>
-                                                        <span className="text-[10px] font-black opacity-50">{lang.toUpperCase()}</span>
-                                                    </button>
-                                                    <div className="h-px w-full bg-gradient-to-r from-transparent via-stone-500/20 to-transparent my-1"></div>
-                                                    <button onClick={() => { handleLogout(); setShowMobileMenu(false); }} className={`flex items-center gap-3 p-3 rounded-2xl transition-all text-rose-500 ${theme === 'dark' ? 'hover:bg-rose-500/10' : 'hover:bg-rose-50'}`}>
-                                                        <Icon name="LogOut" size={18} />
-                                                        <span className="text-xs font-bold uppercase">{t.exit}</span>
-                                                    </button>
-                                                </div>
-                                            </Fragment>
-                                        )}
-                                    </div>
-                                </div>
-                            </header>
+                <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                    
+                    <div className="max-w-md mx-auto min-h-screen relative">
+                        
+                        {activeTab === 'home' && <HomeView records={records} prices={globalPrices} />}
 
-                            {priceWarningActive && !isAdding && ( <div className="bg-rose-500/10 border border-rose-500/30 p-4 rounded-2xl flex items-center justify-between animate-in slide-in-from-top-4 duration-300 font-black"><div className="flex items-center gap-3 text-rose-500 font-black"><Icon name="AlertCircle" size={20} /><span className="text-xs md:text-sm uppercase tracking-tight font-black">{t.priceWarning}</span></div><button onClick={() => setPriceWarningActive(false)} className="text-rose-500/60 hover:text-rose-500 font-black"><Icon name="X" size={18}/></button></div> )}
+                        {activeTab === 'history' && <HistoryView records={records} onEdit={(r) => { setEditRecordId(r.id); setIsAdding(true); }} onDelete={async(id) => {
+                             const { deleteDoc, doc } = window.firebaseModules;
+                             if(confirm('ลบรายการนี้?')) await deleteDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records', id));
+                        }} />}
 
-                            {isAdding ? (
-                                <div className={`max-w-xl mx-auto rounded-[2.5rem] p-6 md:p-10 shadow-2xl animate-in fade-in zoom-in duration-200 ${themeClasses.card} border-0`}>
-                                    <form onSubmit={handleSaveInternal} className="space-y-6 font-black">
-                                        <div className="flex justify-between items-center pb-4 border-b border-gray-200/10"><h2 className="text-2xl font-black text-purple-400 italic uppercase">{editingId ? t.editRecord : t.newRecord}</h2></div>
-                                        <div className="flex gap-3">
-                                            <div className={`flex p-1 rounded-2xl flex-[2] ${theme === 'dark' ? 'bg-slate-800' : 'bg-stone-200'}`}>
-                                                <button type="button" onClick={() => setFormData(p => ({...p, runMode: 'ogh'}))} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${formData.runMode === 'ogh' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-500'}`}><SVGs.Spell className="w-5 h-5"/> OGH</button>
-                                                <button type="button" onClick={() => setFormData(p => ({...p, runMode: 'aogh'}))} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black transition-all ${formData.runMode === 'aogh' ? 'bg-rose-600 text-white shadow-lg' : 'text-gray-500'}`}><SVGs.Magic className="w-5 h-5"/> AOGH</button>
-                                            </div>
-                                            <button type="button" onClick={() => setFormData(p => ({...p, useSilvervine: !p.useSilvervine}))} className={`flex-1 flex flex-col items-center justify-center gap-1 cursor-pointer p-2 rounded-2xl transition-all border-2 ${formData.useSilvervine ? (theme === 'dark' ? 'bg-emerald-900/20 border-emerald-500 text-emerald-400' : 'bg-emerald-50 border-emerald-500 text-emerald-600') : (theme === 'dark' ? 'bg-slate-800 border-slate-700 text-slate-500' : 'bg-stone-100 border-stone-200 text-stone-400')}`}>
-                                                <span className="text-[10px] font-bold uppercase tracking-wider">{t.silvervine}</span>
-                                                <SVGs.SilvervineFruit className={`w-6 h-6 transition-all ${formData.useSilvervine ? 'scale-110 drop-shadow-lg' : 'grayscale opacity-50'}`} />
-                                            </button>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4 text-left">
-                                            <div className="space-y-2">
-                                                <label className={`text-[10px] font-bold uppercase tracking-widest ${themeClasses.textDim}`}>{t.date}</label>
-                                                <input type="date" value={formData.date} onChange={e => setFormData(p => ({...p, date: e.target.value}))} className={`w-full h-12 rounded-xl px-4 font-bold outline-none ${theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-900'}`} />
-                                            </div>
-                                            <div className="space-y-2 text-left">
-                                                <label className={`text-[10px] font-bold uppercase tracking-widest ${themeClasses.textDim}`}>{t.gum}</label>
-                                                <div className={`flex h-12 rounded-xl p-1 ${theme === 'dark' ? 'bg-slate-900' : 'bg-slate-100'}`}>
-                                                    {[0, 1, 2].map(n => ( <button key={n} type="button" onClick={() => setFormData(p => ({...p, gumUsed: n}))} className={`flex-1 rounded-lg text-sm font-black transition-all ${formData.gumUsed === n ? 'bg-blue-600 text-white shadow' : 'text-gray-500'}`}>{n}</button> ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2 text-left">
-                                            <div className="flex justify-between items-center">
-                                                <label className={`text-[10px] font-bold uppercase tracking-widest ${themeClasses.textDim}`}>{t.duration} (Min)</label>
-                                                <div className="flex gap-2">
-                                                    {[30, 45, 60].map(m => ( <button key={m} type="button" onClick={() => setFormData(p => ({...p, minutesUsed: m}))} className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${formData.minutesUsed === m ? 'bg-blue-600 text-white border-blue-600' : 'border-transparent bg-gray-500/10 text-gray-500 hover:bg-gray-500/20'}`}>{m}</button> ))}
-                                                </div>
-                                            </div>
-                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={formData.minutesUsed} onFocus={(e) => e.target.select()} onKeyDown={blockInvalidChar} onChange={e => { let val = parseInt(e.target.value); if (isNaN(val)) val = ""; else setFormData(p => ({...p, minutesUsed: val})); }} className={`w-full h-14 rounded-xl px-4 font-black text-xl outline-none text-center ${theme === 'dark' ? 'bg-slate-900 text-white focus:ring-2 ring-blue-500' : 'bg-slate-100 text-slate-900 focus:ring-2 ring-blue-400'}`} />
-                                        </div>
-                                        <div className={`p-4 rounded-2xl space-y-4 ${theme === 'dark' ? 'bg-slate-900/50' : 'bg-slate-50'}`}>
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between items-center">
-                                                    <label className={`text-xs font-bold uppercase flex items-center gap-2 ${themeClasses.textDim}`}><SVGs.Spell className="w-4 h-4"/> {t.itemSpell}</label>
-                                                    <div className={`flex bg-gray-500/10 rounded-lg p-0.5`}>
-                                                        <button type="button" onClick={() => setFormData(p => ({...p, isSellingSpell: false}))} className={`px-3 py-1 rounded text-[10px] font-bold transition-all ${!formData.isSellingSpell ? 'bg-emerald-500 text-white shadow' : 'text-gray-500'}`}>เก็บ</button>
-                                                        <button type="button" onClick={() => setFormData(p => ({...p, isSellingSpell: true}))} className={`px-3 py-1 rounded text-[10px] font-bold transition-all ${formData.isSellingSpell ? 'bg-rose-500 text-white shadow' : 'text-gray-500'}`}>ขาย</button>
-                                                    </div>
-                                                </div>
-                                                <NumberStepper value={formData.purpleStoneCount} onChange={val => setFormData(p => ({...p, purpleStoneCount: val}))} theme={theme} />
-                                            </div>
-                                            {formData.runMode === 'aogh' && (
-                                                <div className="space-y-2 animate-in slide-in-from-top-2">
-                                                    <div className="flex justify-between items-center">
-                                                        <label className="text-xs font-bold uppercase flex items-center gap-2 text-rose-400"><SVGs.Magic className="w-4 h-4"/> {t.itemMagic}</label>
-                                                        <div className={`flex bg-gray-500/10 rounded-lg p-0.5`}>
-                                                            <button type="button" onClick={() => setFormData(p => ({...p, isSellingMagic: false}))} className={`px-3 py-1 rounded text-[10px] font-bold transition-all ${!formData.isSellingMagic ? 'bg-emerald-500 text-white shadow' : 'text-gray-500'}`}>เก็บ</button>
-                                                            <button type="button" onClick={() => setFormData(p => ({...p, isSellingMagic: true}))} className={`px-3 py-1 rounded text-[10px] font-bold transition-all ${formData.isSellingMagic ? 'bg-rose-500 text-white shadow' : 'text-gray-500'}`}>ขาย</button>
-                                                        </div>
-                                                    </div>
-                                                    <NumberStepper value={formData.contMagicCount} onChange={val => setFormData(p => ({...p, contMagicCount: val}))} theme={theme} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="space-y-2 text-left">
-                                            <label className={`text-[10px] font-bold uppercase tracking-widest ${themeClasses.textDim}`}>{t.trashSale}</label>
-                                            <input type="number" inputMode="decimal" pattern="[0-9]*" value={formData.trashAmount} onFocus={(e) => e.target.select()} onKeyDown={blockInvalidChar} onChange={e => { let val = parseInt(e.target.value); if (isNaN(val)) val = ""; else setFormData(p => ({...p, trashAmount: val})); }} className={`w-full h-16 rounded-xl px-4 font-black text-3xl outline-none text-right tracking-tight ${theme === 'dark' ? 'bg-slate-950 text-emerald-400 focus:ring-2 ring-emerald-500' : 'bg-slate-100 text-emerald-600 focus:ring-2 ring-emerald-400'}`} placeholder="0" />
-                                        </div>
-                                        <div className="flex gap-3 pt-2">
-                                            <button type="button" onClick={() => setIsAdding(false)} className={`flex-1 py-4 rounded-xl font-bold uppercase text-xs transition-all ${theme === 'dark' ? 'bg-slate-800 text-gray-400' : 'bg-gray-200 text-gray-500'}`}>{t.cancel}</button>
-                                            <button type="submit" disabled={!isFormValid} className={`flex-[2] py-4 rounded-xl font-black uppercase text-xs shadow-xl transition-all flex items-center justify-center gap-2 ${isFormValid ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white active:scale-95' : 'bg-gray-500/20 text-gray-500 cursor-not-allowed grayscale'}`}>{t.save} {!isFormValid && <Icon name="AlertCircle" size={14} />}</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            ) : (
-                                <div className="space-y-6">
-                                    <section className={`border p-5 md:p-6 rounded-[2rem] shadow-xl backdrop-blur-sm transition-all duration-300 ${themeClasses.card} ${priceValidationPulse ? 'border-rose-500 animate-bounce' : ''}`}>
-                                        <h3 className={`text-xl font-black uppercase flex items-center gap-2 italic mb-5 ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'} font-black`}><Icon name="TrendingUp" size={16} /> {t.prices}</h3>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 font-black">
-                                             {[
-                                                { key: 'purpleStonePrice', icon: <SVGs.Spell className="w-4 h-4"/>, label: t.itemSpell },
-                                                { key: 'contMagicPrice', icon: <SVGs.Magic className="w-4 h-4"/>, label: t.itemMagic },
-                                                { key: 'gumBoxPrice', icon: <SVGs.GumBox className="w-4 h-4"/>, label: t.itemGumBox },
-                                                { key: 'silvervineBoxPrice', icon: <SVGs.SilvervineBox className="w-4 h-4"/>, label: t.itemSilvervineBox }
-                                            ].map(item => (
-                                                <div key={item.key} className={`p-4 rounded-2xl border flex flex-col gap-1.5 transition-colors font-black ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-white' : 'bg-[#e9e6dc] border-stone-200 text-stone-900 shadow-sm'}`}>
-                                                    <span className={`text-[10px] md:text-[12px] font-medium flex items-center gap-2 ${themeClasses.textDim}`}>{item.icon} {item.label}</span>
-                                                    <div className="flex items-center gap-1 font-black">
-                                                        <input type="number" inputMode="decimal" pattern="[0-9]*" value={globalPrices[item.key]} onFocus={(e) => e.target.select()} onKeyDown={blockInvalidChar} onChange={e => updatePrice(item.key, e.target.value)} className={`bg-transparent text-base md:text-lg font-medium outline-none w-full ${themeClasses.textMain}`} placeholder="0" />
-                                                        <span className={`text-[11px] font-medium ${themeClasses.textDim}`}>Z</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </section>
+                        {activeTab === 'inventory' && <InventoryView records={records} prices={globalPrices} />}
 
-                                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 px-4 -mx-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:pb-0 lg:px-0 lg:mx-0 no-scrollbar font-black">
-                                        <div className={`border rounded-[2rem] shadow-xl transition-all overflow-hidden flex flex-col h-[280px] md:h-[320px] lg:h-[350px] ${themeClasses.card} min-w-[85vw] sm:min-w-[45vw] lg:min-w-0 snap-center`}>
-                                            <div className="p-5 pb-0 flex justify-between items-start font-black">
-                                                <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500"><Icon name="Wallet" size={24} /></div>
-                                                <h3 className={`text-xl font-bold mt-1 ${themeClasses.textDim}`}>{t.netProfit}</h3>
-                                            </div>
-                                            <div className="p-6 flex-grow flex flex-col justify-center font-black">
-                                                <div className="cursor-pointer group">
-                                                    <p className={`text-4xl md:text-5xl font-black ${themeClasses.textMain} tracking-tighter`}><ZenyDisplay amount={stats.totalNetProfit} /></p>
-                                                    <p className={`text-[10px] uppercase font-bold mt-1 opacity-50 ${themeClasses.textDim}`}>Total Accrued Earnings</p>
-                                                </div>
-                                            </div>
-                                            <div className={`mt-auto border-t p-4 px-6 grid grid-cols-2 gap-2 h-[80px] items-center ${theme === 'dark' ? 'bg-slate-950/20 border-slate-800' : 'bg-stone-50 border-stone-100'} font-black`}>
-                                                <div className="flex flex-col text-left">
-                                                    <div className="flex items-center gap-1.5 opacity-60 font-black"><SVGs.Spell className="w-3.5 h-3.5"/> <span className="text-[9px] font-bold uppercase tracking-tight">Spell Rev</span></div>
-                                                    <p className="text-sm font-black text-purple-500"><ZenyDisplay amount={stats.spellTotalRev} /></p>
-                                                </div>
-                                                <div className="flex flex-col border-l pl-3 font-black text-left">
-                                                    <div className="flex items-center gap-1.5 opacity-60 font-black"><SVGs.Magic className="w-3.5 h-3.5"/> <span className="text-[9px] font-bold uppercase tracking-tight">Magic Rev</span></div>
-                                                    <p className="text-sm font-black text-rose-500"><ZenyDisplay amount={stats.magicTotalRev} /></p>
-                                                </div>
-                                            </div>
-                                        </div>
+                        {activeTab === 'settings' && <SettingsView uid={targetUid} prices={globalPrices} theme={theme} setTheme={setTheme} setTargetUid={setTargetUid} />}
 
-                                        <div className={`border rounded-[2rem] shadow-xl transition-all overflow-hidden flex flex-col h-[280px] md:h-[320px] lg:h-[350px] ${themeClasses.card} min-w-[85vw] sm:min-w-[45vw] lg:min-w-0 snap-center font-black relative`}>
-                                            <div className="p-5 pb-0 flex justify-between items-start font-black z-10 relative">
-                                                <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-500"><Icon name="TrendingUp" size={24} /></div>
-                                                <div className="flex items-center gap-3">
-                                                    <h3 className={`text-xl font-bold mt-1 ${themeClasses.textDim}`}>{t.avgRev}</h3>
-                                                    <button onClick={toggleModeNext} className={`p-1.5 rounded-full border transition-all ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700' : 'bg-white border-stone-200 hover:bg-stone-50'} active:scale-90 font-black`}><Icon name="ChevronRight" size={16}/></button>
-                                                </div>
-                                            </div>
-                                            <div className="flex-grow relative overflow-hidden font-black z-10">
-                                                <div className={`absolute inset-0 p-6 flex flex-col justify-center fade-content ${slideIndex === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                                                    <div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-500 mb-1">OGH Mode</p><p className={`text-4xl md:text-5xl font-black ${themeClasses.textMain} tracking-tighter`}><ZenyDisplay amount={oghStats.avgRevenue} /></p></div>
-                                                </div>
-                                                <div className={`absolute inset-0 p-6 flex flex-col justify-center fade-content ${slideIndex === 1 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                                                    <div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 mb-1">AOGH Mode</p><p className={`text-4xl md:text-5xl font-black ${themeClasses.textMain} tracking-tighter`}><ZenyDisplay amount={aoghStats.avgRevenue} /></p></div>
-                                                </div>
-                                            </div>
-                                            <div className="absolute bottom-[80px] left-0 right-0 h-16 opacity-30 pointer-events-none z-0">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <AreaChart data={slideIndex === 0 ? chartDataOGH : chartDataAOGH}>
-                                                        <defs><linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={slideIndex === 0 ? "#a855f7" : "#e11d48"} stopOpacity={0.8}/><stop offset="95%" stopColor={slideIndex === 0 ? "#a855f7" : "#e11d48"} stopOpacity={0}/></linearGradient></defs>
-                                                        <Area type="monotone" dataKey="profit" stroke={slideIndex === 0 ? "#a855f7" : "#e11d48"} fillOpacity={1} fill="url(#colorProfit)" strokeWidth={2} />
-                                                    </AreaChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                            <div className={`mt-auto border-t p-4 px-6 grid grid-cols-2 gap-2 h-[80px] items-center ${theme === 'dark' ? 'bg-slate-950/20 border-slate-800' : 'bg-stone-50 border-stone-100'} font-black z-10 relative text-left`}>
-                                                <div className="flex flex-col"><span className={`text-[9px] font-bold uppercase tracking-tight ${themeClasses.textDim}`}>{t.avgMin}</span><span className="text-sm font-black text-blue-500"><ZenyDisplay amount={slideIndex === 0 ? oghStats.avgRevMin : aoghStats.avgRevMin} /></span></div>
-                                                <div className="flex flex-col border-l pl-3"><div className="flex flex-col gap-0.5 text-[9px] font-black"><span className="text-emerald-500 flex items-center gap-1 font-bold"><Icon name="TrendingUp" size={8} /> <ZenyDisplay amount={slideIndex === 0 ? oghStats.maxRevenue : aoghStats.maxRevenue} /></span><span className="text-rose-500 flex items-center gap-1 font-bold"><Icon name="TrendingDown" size={8} /> <ZenyDisplay amount={slideIndex === 0 ? oghStats.minRevenue : aoghStats.minRevenue} /></span></div></div>
-                                            </div>
-                                        </div>
+                    </div>
 
-                                        <div className={`border rounded-[2rem] shadow-xl transition-all overflow-hidden flex flex-col h-[280px] md:h-[320px] lg:h-[350px] ${themeClasses.card} min-w-[85vw] sm:min-w-[45vw] lg:min-w-0 snap-center font-black`}>
-                                            <div className="p-5 pb-0 flex justify-between items-start font-black">
-                                                <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-500"><Icon name="Archive" size={24} /></div>
-                                                <h3 className={`text-xl font-bold mt-1 ${themeClasses.textDim}`}>{t.inventory}</h3>
-                                            </div>
-                                            <div className="p-6 flex-grow flex flex-col justify-center font-black">
-                                                <div className="group text-center">
-                                                    <p className={`text-4xl md:text-5xl font-black ${themeClasses.textMain} tracking-tighter text-center`}><ZenyDisplay amount={stats.inventoryValue} /></p>
-                                                    <p className={`text-[10px] uppercase font-bold mt-1 opacity-50 ${themeClasses.textDim} text-center`}>Current Asset Value</p>
-                                                </div>
-                                            </div>
-                                            <div className={`mt-auto border-t p-4 px-6 space-y-3 h-[90px] flex flex-col justify-center ${theme === 'dark' ? 'bg-slate-950/20 border-slate-800' : 'bg-stone-50 border-stone-100'} font-black`}>
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="flex items-center justify-between text-xs">
-                                                        <div className="flex items-center gap-2 text-left"><SVGs.Spell className="w-4 h-4"/><span className={`${themeClasses.textMain} font-bold`}>{stats.stockSpell.toLocaleString()}</span></div>
-                                                        <div className="flex gap-2 items-center"><button onClick={() => { setTempGoal(inventoryGoal); setShowGoalModal(true); }} className={`text-[9px] font-bold uppercase transition-all ${stats.stockSpell >= inventoryGoal ? 'text-yellow-500 animate-pulse' : 'opacity-50 hover:opacity-100'}`}>{stats.stockSpell >= inventoryGoal ? t.goalReached : `${t.goal}: ${inventoryGoal}`}</button><button onClick={() => { setSaleItem('spell'); setSaleFormData({ quantity: stats.stockSpell.toString(), price: globalPrices.purpleStonePrice.toString() }); setShowSaleModal(true); }} className="bg-purple-600/10 hover:bg-purple-600 text-purple-600 hover:text-white px-2 py-0.5 rounded text-[9px] font-black uppercase transition-all">ขาย</button></div>
-                                                    </div>
-                                                    <div className="w-full bg-slate-200/20 rounded-full h-1.5 overflow-hidden"><div className={`${getProgressColor(stats.stockSpell, inventoryGoal)} h-1.5 rounded-full transition-all duration-500`} style={{width: `${Math.min((stats.stockSpell / inventoryGoal) * 100, 100)}%`}}></div></div>
-                                                </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="flex items-center justify-between text-xs text-left">
-                                                        <div className="flex items-center gap-2"><SVGs.Magic className="w-4 h-4"/><span className={`${themeClasses.textMain} font-bold`}>{stats.stockMagic.toLocaleString()}</span></div>
-                                                        <div className="flex gap-2 items-center"><button onClick={() => { setTempGoal(inventoryGoal); setShowGoalModal(true); }} className={`text-[9px] font-bold uppercase transition-all ${stats.stockMagic >= inventoryGoal ? 'text-yellow-500 animate-pulse' : 'opacity-50 hover:opacity-100'}`}>{stats.stockMagic >= inventoryGoal ? t.goalReached : `${t.goal}: ${inventoryGoal}`}</button><button onClick={() => { setSaleItem('magic'); setSaleFormData({ quantity: stats.stockMagic.toString(), price: globalPrices.contMagicPrice.toString() }); setShowSaleModal(true); }} className="bg-rose-600/10 hover:bg-rose-600 text-rose-600 hover:text-white px-2 py-0.5 rounded text-[9px] font-black uppercase transition-all">ขาย</button></div>
-                                                    </div>
-                                                    <div className="w-full bg-slate-200/20 rounded-full h-1.5 overflow-hidden"><div className={`${getProgressColorMagic(stats.stockMagic, inventoryGoal)} h-1.5 rounded-full transition-all duration-500`} style={{width: `${Math.min((stats.stockMagic / inventoryGoal) * 100, 100)}%`}}></div></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300 font-black">
-                                        <div className="lg:col-span-2 space-y-4 font-black">
-                                            <div className={`border rounded-[2rem] overflow-hidden shadow-xl transition-all ${themeClasses.card} h-[500px] flex flex-col`}>
-                                                <div className={`p-4 border-b flex flex-col md:flex-row gap-4 justify-between items-start md:items-center transition-all ${theme === 'dark' ? 'bg-slate-950/20 border-slate-800' : 'bg-stone-50/50 border-stone-200'} font-black`}>
-                                                    <h2 className="text-xl font-bold text-blue-600 italic flex items-center gap-2 uppercase tracking-widest"><Icon name="History" size={20} /> {t.history}</h2>
-                                                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto font-black">
-                                                        <div className={`flex p-1 rounded-xl border ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-[#e9e6dc] border-stone-200 shadow-inner'}`}>
-                                                            <button onClick={() => { setFilterMode('all'); setCurrentPage(1); }} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${filterMode === 'all' ? 'bg-blue-600 text-white shadow-md' : 'text-stone-500'}`}>{t.allModes}</button>
-                                                            <button onClick={() => { setFilterMode('ogh'); setCurrentPage(1); }} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${filterMode === 'ogh' ? 'bg-purple-600 text-white shadow-md' : 'text-stone-500'}`}>OGH</button>
-                                                            <button onClick={() => { setFilterMode('aogh'); setCurrentPage(1); }} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${filterMode === 'aogh' ? 'bg-rose-600 text-white shadow-md' : 'text-stone-500'}`}>AOGH</button>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            {searchDate && (
-                                                                <button onClick={() => { setSearchDate(''); setCurrentPage(1); }} className="text-rose-500 p-2 hover:bg-rose-500/10 rounded-lg transition-all active:scale-90"><Icon name="X" size={16}/></button>
-                                                            )}
-                                                            <div className={`relative w-10 h-10 flex items-center justify-center rounded-xl border transition-all overflow-hidden ${searchDate ? 'bg-blue-600 border-blue-500 text-white' : (theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-400' : 'bg-white border-stone-200 text-stone-400 shadow-sm')}`}>
-                                                                <Icon name="Calendar" size={18} />
-                                                                <input 
-                                                                    type="date" 
-                                                                    value={searchDate} 
-                                                                    onChange={(e) => { setSearchDate(e.target.value); setCurrentPage(1); }} 
-                                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 date-full-trigger" 
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="overflow-x-auto max-h-[500px] overflow-y-auto relative font-black">
-                                                    <table className="hidden md:table w-full text-left text-[11px] md:text-[13px]">
-                                                        <thead className={`sticky top-0 z-10 ${theme === 'dark' ? 'bg-slate-900' : 'bg-[#e9e6dc] shadow-sm'}`}>
-                                                            <tr>
-                                                                <th className={`px-6 py-4 font-medium uppercase tracking-widest ${themeClasses.textDim}`}>{t.date}</th>
-                                                                <th className={`px-6 py-4 font-medium uppercase tracking-widest ${themeClasses.textDim}`}>{t.mode}</th>
-                                                                <th className={`px-6 py-4 font-medium uppercase tracking-widest ${themeClasses.textDim}`}>{t.drops}</th>
-                                                                <th className={`px-6 py-4 font-medium uppercase tracking-widest ${themeClasses.textDim}`}>{t.itemGum} / {t.itemSilvervine}</th>
-                                                                <th className={`px-6 py-4 text-right font-medium uppercase tracking-widest ${themeClasses.textDim}`}>{t.netProfit}</th>
-                                                                <th className={`px-6 py-4 text-center font-black uppercase tracking-widest ${themeClasses.textDim}`}>จัดการ</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className={`divide-y transition-all ${theme === 'dark' ? 'divide-slate-800/40' : 'divide-stone-300'}`}>
-                                                            {paginatedData.map(record => (
-                                                                <React.Fragment key={record.id}>
-                                                                    <tr className={`hover:bg-stone-400/5 cursor-pointer transition-colors ${theme === 'dark' ? '' : 'text-stone-700'}`} onClick={() => setExpandedId(expandedId === record.id ? null : record.id)}>
-                                                                        <td className="px-6 py-4 whitespace-nowrap">{record.date}</td>
-                                                                        <td className="px-6 py-4"><span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${record.mode === 'aogh' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 'bg-purple-500/10 text-purple-500 border-purple-500/20'}`}>{record.mode || 'ogh'}</span></td>
-                                                                        <td className="px-6 py-4"><div className="flex flex-col gap-1.5"><div className="flex items-center gap-1.5"><SVGs.Spell className="w-3.5 h-3.5"/><span>{record.purpleStoneCount || 0}</span></div>{(record.mode === 'aogh' || (record.contMagicCount && record.contMagicCount > 0)) && (<div className="flex items-center gap-1.5"><SVGs.Magic className="w-3.5 h-3.5"/><span>{record.contMagicCount || 0}</span></div>)}</div></td>
-                                                                        <td className="px-6 py-4 whitespace-nowrap font-medium"><div className="flex gap-2 items-center text-left"><span className="bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded font-bold border border-blue-500/10 flex items-center gap-1.5"><SVGs.GumBox className="w-3.5 h-3.5"/> {record.gumUsed}</span><span className={`px-2 py-0.5 rounded font-bold border flex items-center gap-1.5 ${record.useSilvervine ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10' : 'bg-slate-500/10 text-slate-500 border-slate-500/10 opacity-30'}`}><SVGs.SilvervineBox className="w-3.5 h-3.5"/> {record.useSilvervine ? '✓' : '✕'}</span></div></td>
-                                                                        <td className={`px-6 py-4 text-right font-bold text-base ${record.profit >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>{formatUnitZeny(record.profit)}</td>
-                                                                        <td className="px-5 py-4 text-center"><div className="flex items-center justify-center gap-2"><button onClick={(e) => { e.stopPropagation(); handleShare(record); }} className={`text-blue-500 hover:text-blue-400 transition-colors p-2.5 rounded-lg hover:bg-blue-500/10`} title="Share"><Icon name="Share2" size={16}/></button><button onClick={(e) => { e.stopPropagation(); openEditModal(record); }} className={`text-amber-500 hover:text-amber-400 transition-colors p-2.5 rounded-lg hover:bg-amber-500/10`} title="Edit"><Icon name="Pencil" size={16}/></button><button onClick={(e) => { e.stopPropagation(); handleDelete(record.id); }} className={`${themeClasses.textDim} hover:text-rose-600 transition-colors p-2.5 rounded-lg hover:bg-rose-500/10`}><Icon name="Trash2" size={16}/></button></div></td>
-                                                                    </tr>
-                                                                    {expandedId === record.id && ( <tr className={`border-l-4 border-purple-500 animate-in slide-in-from-left-1 transition-all ${theme === 'dark' ? 'bg-slate-950/40' : 'bg-[#f4f2ee]'}`}><td colSpan="6" className="px-6 py-6 font-medium font-black"><div className="grid grid-cols-1 md:grid-cols-4 gap-8"><div><p className={`font-black mb-3 uppercase text-[11px] tracking-widest ${themeClasses.textDim}`}>{t.costBreakdown}</p><p className="flex justify-between py-1 font-medium font-black">{t.itemGum}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.gumCost} /></span></p><p className="flex justify-between py-1 font-medium font-black">{t.itemSilvervine}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.silvervineCost} /></span></p><p className="flex justify-between py-1 font-medium font-black">{t.etc}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.etcCost} /></span></p></div><div><p className={`font-black mb-3 uppercase text-[11px] tracking-widest ${themeClasses.textDim}`}>{t.revSource}</p><p className="flex justify-between py-1 font-medium font-black text-left">ขยะ: <span className={themeClasses.textMain}><ZenyDisplay amount={record.trashAmount} /></span></p><p className="flex justify-between py-1 font-medium font-black text-left">{t.stone}: <span className={themeClasses.textMain}><ZenyDisplay amount={record.revenue - record.trashAmount} /></span></p></div><div className="md:col-span-2 font-black text-left"><p className={`font-black mb-3 uppercase text-[11px] tracking-widest ${themeClasses.textDim}`}>{t.notes}</p><p className={`italic p-5 rounded-2xl min-h-[80px] whitespace-pre-wrap border text-sm font-medium ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-400' : 'bg-white border-stone-300 text-stone-600 shadow-inner'}`}>{record.notes || '-'}</p></div></div></td></tr> )}
-                                                                </React.Fragment>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                                <div className={`p-4 border-t flex justify-between items-center ${theme === 'dark' ? 'bg-slate-950/40' : 'bg-stone-50 border-stone-100'}`}><p className={`text-[10px] uppercase font-bold ${themeClasses.textDim}`}>{t.page} {currentPage} {t.of} {totalPages}</p><div className="flex gap-2"><button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} className={`p-3 rounded-lg border transition-all ${currentPage === 1 ? 'opacity-30 pointer-events-none' : 'hover:bg-blue-600 hover:text-white'} ${themeClasses.btnGhost}`}><Icon name="ChevronLeft" size={16}/></button><button disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} className={`p-3 rounded-lg border transition-all ${currentPage === totalPages || totalPages === 0 ? 'opacity-30 pointer-events-none' : 'hover:bg-blue-600 hover:text-white'} ${themeClasses.btnGhost}`}><Icon name="ChevronRight" size={16}/></button></div></div>
-                                            </div>
-                                        </div>
-                                        <aside className="space-y-6">
-                                            <div className={`border p-6 rounded-[2rem] shadow-xl border-t-rose-500/20 transition-all h-full flex flex-col ${themeClasses.card} h-[500px]`}>
-                                                <div className="flex justify-between items-start mb-4 text-left"><div className="p-3 bg-rose-500/10 rounded-2xl text-rose-500"><Icon name="Clock" size={24} /></div><h3 className={`text-xl font-bold mt-1 ${themeClasses.textDim}`}>{t.timer}</h3></div>
-                                                <div className="flex-grow flex flex-col justify-center py-6"><div className={`text-5xl font-black tabular-nums text-center transition-all ${themeClasses.textMain}`}>{formatTimer(timeInMs)}</div></div>
-                                                <div className="grid grid-cols-2 gap-4 mt-auto font-black">{!isTimerActive || isTimerPaused ? ( <button onClick={() => { setIsTimerActive(true); setIsTimerPaused(false); }} className="bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"><Icon name="Play" size={14} />เริ่ม</button> ) : ( <button onClick={() => setIsTimerPaused(true)} className="bg-amber-600 hover:bg-amber-500 text-white py-4 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"><Icon name="Pause" size={14} />พัก</button> )}<button onClick={() => { if (validatePrices()) { setFormData(p => ({...p, minutesUsed: Math.ceil(timeInMs / 60000) || 1})); setIsTimerActive(false); setIsTimerPaused(true); setIsAdding(true); } }} className={`py-4 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 transition-all active:scale-95 group shadow-lg ${theme === 'dark' ? 'bg-slate-800 hover:bg-rose-600 text-white' : 'bg-stone-300 hover:bg-rose-600 hover:text-white text-stone-700'}`}><Icon name="Square" size={14} className="group-hover:text-white" />หยุด</button><button onClick={() => { setTimeInMs(0); setIsTimerActive(false); setIsTimerPaused(true); }} className={`col-span-2 py-2 text-[10px] font-black uppercase transition-colors ${themeClasses.textDim} hover:text-rose-600`}>Reset Timer</button></div>
-                                            </div>
-                                        </aside>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Modal Implementations */}
-                            {showShareModal && shareData && ( 
-                                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setShowShareModal(false)}>
-                                    <div className="max-w-xl w-full" onClick={e => e.stopPropagation()}>
-                                        <div id="share-capture-area" className={`rounded-3xl overflow-hidden shadow-2xl relative border ${theme === 'dark' ? 'border-slate-800 share-gradient-dark-capture' : 'border-stone-300 share-gradient-light-capture'}`}>
-                                            <div className="relative z-10 p-10 md:p-14 text-center font-black">
-                                                <div className="flex flex-col items-center gap-1 mb-10 opacity-70">
-                                                    <div className={`flex items-center gap-3 text-xs font-bold uppercase tracking-[0.3em] ${theme === 'dark' ? 'text-slate-300' : 'text-stone-500'}`}>
-                                                        <span>@{displayName}</span>
-                                                        <span className={`w-1 h-1 rounded-full ${theme === 'dark' ? 'bg-slate-500' : 'bg-stone-400'}`}></span>
-                                                        <span>{shareData.date}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="mb-12">
-                                                    <span className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.6em] block mb-4">NET PROFIT</span>
-                                                    <div className={`text-6xl md:text-7xl font-black tracking-tighter ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                                                        <ZenyDisplay amount={shareData.profit} />
-                                                    </div>
-                                                </div>
-                                                <div className="mt-8 text-right font-black"><span className="text-[9px] text-slate-600 font-bold uppercase tracking-[0.3em]">Created by SDekza-RO</span></div>
-                                            </div>
-                                        </div>
-                                        <div className="mt-8 flex gap-4">
-                                            <button onClick={() => setShowShareModal(false)} className="flex-1 py-4 rounded-2xl bg-slate-800 text-white font-black uppercase text-xs">Close</button>
-                                            <button onClick={captureAndDownload} className="flex-[2] py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-black uppercase text-xs shadow-xl flex items-center justify-center gap-2"><Icon name="Download" size={16} /> Save Image</button>
-                                        </div>
-                                    </div>
-                                </div> 
-                            )}
+                    <nav className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto border-t pb-safe pt-2 px-6 flex justify-between items-center z-40 ${theme === 'dark' ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'} backdrop-blur-md`}>
+                        <NavButton icon="Home" label="หน้าหลัก" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+                        <NavButton icon="History" label="ประวัติ" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
+                        
+                        <div className="relative -top-6">
+                            <button onClick={() => { setEditRecordId(null); setIsAdding(true); }} className="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/40 flex items-center justify-center transform transition-transform active:scale-95">
+                                <Icon name="Plus" size={28} />
+                            </button>
                         </div>
+
+                        <NavButton icon="Box" label="คลัง" active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} />
+                        <NavButton icon="Settings" label="ตั้งค่า" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                    </nav>
+
+                    {isAdding && (
+                        <AddDataSheet 
+                            onClose={() => setIsAdding(false)} 
+                            targetUid={targetUid} 
+                            db={db}
+                            prices={globalPrices}
+                            editRecord={records.find(r => r.id === editRecordId)}
+                            theme={theme}
+                        />
                     )}
+
                 </div>
             );
         }
+
+        const NavButton = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 w-12 transition-colors ${active ? 'text-purple-500' : 'opacity-40 hover:opacity-70'}`}>
+                <Icon name={icon} size={20} />
+                <span className="text-[9px] font-bold">{label}</span>
+            </button>
+        );
+
+        const HomeView = ({ records, prices }) => {
+            const totalProfit = records.reduce((acc, r) => acc + (r.profit || 0), 0);
+            const totalRuns = records.length;
+            const chartData = [...records].reverse().slice(-7).map(r => ({ name: r.date.split('/')[0], profit: r.profit }));
+
+            return (
+                <div className="p-6 space-y-6 animate-fade-in pb-24">
+                    <header className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">OGHza</h1>
+                            <p className="text-[10px] opacity-50 font-bold tracking-widest">MOBILE EDITION</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] opacity-50 uppercase font-bold">Total Profit</p>
+                            <p className="text-xl font-black text-emerald-500">{formatMoney(totalProfit)}</p>
+                        </div>
+                    </header>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="glass-panel p-4 rounded-3xl">
+                            <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center mb-2"><Icon name="TrendingUp" size={16}/></div>
+                            <p className="text-2xl font-black">{totalRuns}</p>
+                            <p className="text-[10px] opacity-50 font-bold">รอบการลง</p>
+                        </div>
+                        <div className="glass-panel p-4 rounded-3xl">
+                             <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center mb-2"><Icon name="History" size={16}/></div>
+                            <p className="text-2xl font-black">{records.length > 0 ? records[0].date : '-'}</p>
+                            <p className="text-[10px] opacity-50 font-bold">ล่าสุด</p>
+                        </div>
+                    </div>
+                    <div className="glass-panel p-4 rounded-3xl h-48 relative overflow-hidden">
+                         <p className="text-xs font-bold opacity-50 mb-2 absolute top-4 left-4 z-10">แนวโน้มกำไร (7 รอบล่าสุด)</p>
+                         <div className="absolute inset-0 pt-8 pl-0 pr-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData}>
+                                    <defs><linearGradient id="colorP" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/><stop offset="95%" stopColor="#a855f7" stopOpacity={0}/></linearGradient></defs>
+                                    <Area type="monotone" dataKey="profit" stroke="#a855f7" strokeWidth={3} fill="url(#colorP)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                         </div>
+                    </div>
+                    
+                    {/* Recent Feed */}
+                     <div className="space-y-2">
+                        <p className="text-xs font-bold opacity-50 px-2">RECENT ACTIVITY</p>
+                        {records.slice(0, 3).map(r => (
+                            <div key={r.id} className="glass-panel p-3 rounded-2xl flex justify-between items-center">
+                                <div className="flex gap-3 items-center">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[8px] font-black uppercase ${r.mode === 'aogh' ? 'bg-rose-500 text-white' : 'bg-purple-500 text-white'}`}>{r.mode}</div>
+                                    <div>
+                                        <p className="font-bold text-xs">{r.date}</p>
+                                        <p className="text-[10px] opacity-50">{r.purpleStoneCount} Spell {r.contMagicCount > 0 && `• ${r.contMagicCount} Magic`}</p>
+                                    </div>
+                                </div>
+                                <span className="font-black text-emerald-500 text-sm">+{formatMoney(r.profit)}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const HistoryView = ({ records, onEdit, onDelete }) => (
+            <div className="p-4 pb-24 animate-fade-in">
+                <h2 className="text-lg font-black mb-4 px-2">ประวัติการฟาร์ม</h2>
+                <div className="space-y-3">
+                    {records.map((r) => (
+                        <div key={r.id} className="glass-panel p-4 rounded-3xl flex justify-between items-center relative group overflow-hidden">
+                            <div className="flex gap-4 items-center relative z-10">
+                                <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-[10px] font-black uppercase ${r.mode === 'aogh' ? 'bg-rose-500 text-white' : 'bg-purple-500 text-white'}`}>
+                                    <span>{r.mode}</span>
+                                </div>
+                                <div>
+                                    <p className="font-bold text-sm">{r.date}</p>
+                                    <div className="flex gap-2 text-[10px] opacity-60 mt-0.5">
+                                        <span className="flex items-center gap-1"><SVGs.Spell className="w-3 h-3"/> {r.purpleStoneCount || 0}</span>
+                                        {r.contMagicCount > 0 && <span className="flex items-center gap-1"><SVGs.Magic className="w-3 h-3"/> {r.contMagicCount}</span>}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-right relative z-10">
+                                <p className="font-black text-emerald-500 text-lg">{formatMoney(r.profit)}</p>
+                                <div className="flex justify-end gap-3 mt-1">
+                                    <button onClick={() => onEdit(r)} className="opacity-40 hover:opacity-100"><Icon name="Edit" size={14}/></button>
+                                    <button onClick={() => onDelete(r.id)} className="opacity-40 hover:opacity-100 hover:text-rose-500"><Icon name="Trash" size={14}/></button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {records.length === 0 && <div className="text-center py-10 opacity-30 font-bold">ยังไม่มีข้อมูล</div>}
+                </div>
+            </div>
+        );
+
+        const InventoryView = ({ records, prices }) => {
+            const soldSpell = records.reduce((acc, r) => acc + (r.isSellingSpell ? Number(r.purpleStoneCount) : 0), 0);
+            const totalSpell = records.reduce((acc, r) => acc + Number(r.purpleStoneCount || 0), 0);
+            const stockSpell = Math.max(0, totalSpell - soldSpell);
+            const soldMagic = records.reduce((acc, r) => acc + (r.isSellingMagic ? Number(r.contMagicCount) : 0), 0);
+            const totalMagic = records.reduce((acc, r) => acc + Number(r.contMagicCount || 0), 0);
+            const stockMagic = Math.max(0, totalMagic - soldMagic);
+            return (
+                <div className="p-6 pb-24 animate-fade-in">
+                    <h2 className="text-lg font-black mb-6">คลังสมบัติ</h2>
+                    <div className="space-y-4">
+                        <div className="glass-panel p-6 rounded-3xl flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-purple-500/20 rounded-2xl flex items-center justify-center"><SVGs.Spell className="w-10 h-10"/></div>
+                                <div><p className="text-xs opacity-50 font-bold uppercase">หินม่วงคงเหลือ</p><p className="text-3xl font-black">{stockSpell}</p></div>
+                            </div>
+                            <div className="text-right"><p className="text-[10px] opacity-50 mb-1">มูลค่าประมาณ</p><p className="text-sm font-bold text-purple-400">{formatMoney(stockSpell * prices.purpleStonePrice)} z</p></div>
+                        </div>
+                        <div className="glass-panel p-6 rounded-3xl flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-rose-500/20 rounded-2xl flex items-center justify-center"><SVGs.Magic className="w-10 h-10"/></div>
+                                <div><p className="text-xs opacity-50 font-bold uppercase">หินแดงคงเหลือ</p><p className="text-3xl font-black">{stockMagic}</p></div>
+                            </div>
+                            <div className="text-right"><p className="text-[10px] opacity-50 mb-1">มูลค่าประมาณ</p><p className="text-sm font-bold text-rose-400">{formatMoney(stockMagic * prices.contMagicPrice)} z</p></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SettingsView = ({ uid, prices, theme, setTheme, setTargetUid }) => {
+            const [localPrices, setLocalPrices] = useState(prices);
+            const [restoreCode, setRestoreCode] = useState('');
+            const handleSavePrices = async () => {
+                if(!uid) { alert("กรุณารอการเชื่อมต่อสักครู่..."); return; }
+                const { doc, setDoc } = window.firebaseModules;
+                await setDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', uid, 'config', 'prices'), localPrices, { merge: true });
+                alert('บันทึกราคาเรียบร้อย');
+            };
+            const handleRestore = () => {
+                if(restoreCode.length < 5) return;
+                localStorage.setItem('ogh_restore_uid', restoreCode);
+                window.location.reload();
+            };
+            const copyUid = () => { navigator.clipboard.writeText(uid); alert('Copied UID'); };
+
+            const priceConfig = [
+                { key: 'purpleStonePrice', label: 'Coagulated Spell', icon: <SVGs.Spell className="w-4 h-4" /> },
+                { key: 'contMagicPrice', label: 'Contaminated Magic', icon: <SVGs.Magic className="w-4 h-4" /> },
+                { key: 'gumBoxPrice', label: 'Bubble Gum (Box)', icon: <SVGs.GumBox className="w-4 h-4" /> },
+                { key: 'silvervineBoxPrice', label: 'Silvervine (Box)', icon: <SVGs.SilvervineBox className="w-4 h-4" /> }
+            ];
+
+            return (
+                <div className="p-6 pb-24 animate-fade-in space-y-8">
+                    <h2 className="text-lg font-black">ตั้งค่า</h2>
+                    <div className="glass-panel p-5 rounded-3xl">
+                        <p className="text-[10px] font-bold opacity-50 uppercase mb-2">User ID (Backup Code)</p>
+                        <div className="flex gap-2">
+                            <code className={`p-3 rounded-xl text-xs font-mono flex-1 overflow-hidden ${uid ? 'bg-black/20' : 'bg-amber-500/20 text-amber-500'}`}>{uid || 'กำลังเชื่อมต่อ...'}</code>
+                            {uid ? <button onClick={copyUid} className="bg-slate-500/20 p-3 rounded-xl"><Icon name="Copy" size={16}/></button> : <button onClick={() => window.location.reload()} className="bg-slate-500/20 p-3 rounded-xl"><Icon name="RefreshCw" size={16}/></button>}
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <p className="text-xs font-bold opacity-50 uppercase">ราคากลาง (Market Prices)</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            {priceConfig.map(item => (
+                                <div key={item.key} className="glass-panel p-3 rounded-2xl">
+                                     <div className="flex items-center gap-2 mb-2 opacity-70">
+                                         {item.icon}
+                                         <label className="text-[10px] font-bold uppercase truncate">{item.label}</label>
+                                     </div>
+                                    <input type="number" inputMode="decimal" value={localPrices[item.key] || ''} onChange={e => setLocalPrices({...localPrices, [item.key]: Number(e.target.value)})} className="w-full bg-transparent font-bold outline-none" placeholder="0" />
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={handleSavePrices} className="w-full py-3 bg-slate-800 text-white rounded-2xl text-xs font-bold">บันทึกราคา</button>
+                    </div>
+                    <div className="space-y-4 pt-4 border-t border-slate-500/20">
+                         <div className="flex gap-2">
+                            <input type="text" placeholder="วางรหัส Restore ที่นี่..." value={restoreCode} onChange={e => setRestoreCode(e.target.value)} className="flex-1 bg-black/10 rounded-2xl px-4 text-xs outline-none" />
+                            <button onClick={handleRestore} className="px-6 py-3 bg-purple-600 text-white rounded-2xl text-xs font-bold">Restore</button>
+                         </div>
+                         <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="w-full py-3 border border-slate-500/20 rounded-2xl text-xs font-bold flex items-center justify-center gap-2">
+                             {theme === 'dark' ? <Icon name="Sun" size={16}/> : <Icon name="Moon" size={16}/>} เปลี่ยนธีม
+                         </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const AddDataSheet = ({ onClose, targetUid, db, prices, editRecord, theme }) => {
+            const [form, setForm] = useState(editRecord ? {
+                ...editRecord,
+                otherCosts: editRecord.otherCosts || [] 
+            } : {
+                date: new Date().toISOString().split('T')[0],
+                runMode: 'ogh',
+                trashAmount: '',
+                gumUsed: 0,
+                useSilvervine: true,
+                purpleStoneCount: 0,
+                contMagicCount: 0,
+                isSellingSpell: false,
+                isSellingMagic: false,
+                minutesUsed: '60',
+                otherCosts: [],
+                notes: ''
+            });
+
+            const save = async (e) => {
+                e.preventDefault();
+                if(!targetUid) { alert("ระบบกำลังเชื่อมต่อ กรุณารอสักครู่..."); return; }
+                
+                const { addDoc, collection, updateDoc, doc } = window.firebaseModules;
+                const finalData = {
+                    ...form,
+                    trashAmount: Number(form.trashAmount) || 0,
+                    minutesUsed: Number(form.minutesUsed) || 60,
+                    timestamp: Date.now(),
+                    profit: calculateProfit(form, prices)
+                };
+                if(editRecord) {
+                     await updateDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records', editRecord.id), finalData);
+                } else {
+                     await addDoc(collection(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records'), finalData);
+                }
+                onClose();
+            };
+
+            const addCost = () => setForm(p => ({...p, otherCosts: [...p.otherCosts, {id: Date.now(), name: '', amount: ''}]}));
+            const removeCost = (id) => setForm(p => ({...p, otherCosts: p.otherCosts.filter(c => c.id !== id)}));
+            const updateCost = (id, field, val) => setForm(p => ({...p, otherCosts: p.otherCosts.map(c => c.id === id ? {...c, [field]: val} : c)}));
+
+            // Logic to check validity for button state
+            const isValid = form.trashAmount !== '' && targetUid;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-end justify-center">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
+                    <div className={`relative w-full max-w-md rounded-t-[2.5rem] p-6 pb-safe shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto ${theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-stone-900'}`}>
+                        <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
+                        <form onSubmit={save} className="space-y-6 pb-20"> {/* Added pb-20 for safety space */}
+                            <div className="flex justify-between items-center">
+                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+                                    <button type="button" onClick={() => setForm(p => ({...p, runMode: 'ogh'}))} className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${form.runMode === 'ogh' ? 'bg-purple-600 text-white shadow' : 'text-slate-400'}`}>OGH</button>
+                                    <button type="button" onClick={() => setForm(p => ({...p, runMode: 'aogh'}))} className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${form.runMode === 'aogh' ? 'bg-rose-600 text-white shadow' : 'text-slate-400'}`}>AOGH</button>
+                                </div>
+                                <input type="date" value={form.date} onChange={e => setForm(p => ({...p, date: e.target.value}))} className="bg-transparent font-bold text-sm outline-none text-right" />
+                            </div>
+                            <div className="text-center py-4">
+                                <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mb-2">ยอดขายขยะ (Trash Sales)</p>
+                                <input type="number" inputMode="decimal" value={form.trashAmount} onChange={e => setForm(p => ({...p, trashAmount: e.target.value}))} placeholder="0" className={`w-full text-center text-6xl font-black bg-transparent outline-none placeholder-slate-700 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`} autoFocus />
+                            </div>
+                            <div className={`${form.runMode === 'aogh' ? 'grid grid-cols-2 gap-4' : ''}`}>
+                                <div className="glass-panel p-4 rounded-3xl space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="flex items-center gap-2 text-xs font-bold"><SVGs.Spell className="w-5 h-5"/> หินม่วง</span>
+                                        <button type="button" onClick={() => setForm(p => ({...p, isSellingSpell: !p.isSellingSpell}))} className={`px-2 py-0.5 rounded text-[9px] font-bold ${form.isSellingSpell ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>{form.isSellingSpell ? 'ขายเลย' : 'เก็บ'}</button>
+                                    </div>
+                                    <NumberStepper value={form.purpleStoneCount} onChange={val => setForm(p => ({...p, purpleStoneCount: val}))} theme={theme} />
+                                    {form.isSellingSpell && <input type="number" inputMode="decimal" placeholder={prices.purpleStonePrice} className="w-full bg-transparent text-center border-b border-slate-500/20 text-sm font-bold pb-1" onChange={(e) => setForm(p => ({...p, customSpellPrice: e.target.value}))} value={form.customSpellPrice} />}
+                                </div>
+                                {form.runMode === 'aogh' && (
+                                    <div className="glass-panel p-4 rounded-3xl space-y-3 animate-fade-in">
+                                        <div className="flex justify-between items-center">
+                                            <span className="flex items-center gap-2 text-xs font-bold"><SVGs.Magic className="w-5 h-5"/> หินแดง</span>
+                                            <button type="button" onClick={() => setForm(p => ({...p, isSellingMagic: !p.isSellingMagic}))} className={`px-2 py-0.5 rounded text-[9px] font-bold ${form.isSellingMagic ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>{form.isSellingMagic ? 'ขายเลย' : 'เก็บ'}</button>
+                                        </div>
+                                        <NumberStepper value={form.contMagicCount} onChange={val => setForm(p => ({...p, contMagicCount: val}))} theme={theme} />
+                                        {form.isSellingMagic && <input type="number" inputMode="decimal" placeholder={prices.contMagicPrice} className="w-full bg-transparent text-center border-b border-slate-500/20 text-sm font-bold pb-1" onChange={(e) => setForm(p => ({...p, customMagicPrice: e.target.value}))} value={form.customMagicPrice} />}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex gap-3 overflow-x-auto no-scrollbar">
+                                <div className="glass-panel px-4 py-2 rounded-2xl flex items-center gap-3 min-w-fit">
+                                    <span className="text-[10px] font-bold opacity-50">GUM</span>
+                                    <div className="flex gap-1">
+                                        {[0,1,2].map(n => <button key={n} type="button" onClick={() => setForm(p => ({...p, gumUsed: n}))} className={`w-6 h-6 rounded-full text-xs font-black transition-all ${form.gumUsed === n ? 'bg-blue-500 text-white' : 'bg-slate-200 dark:bg-slate-700'}`}>{n}</button>)}
+                                    </div>
+                                </div>
+                                <button type="button" onClick={() => setForm(p => ({...p, useSilvervine: !p.useSilvervine}))} className={`glass-panel px-4 py-2 rounded-2xl flex items-center gap-2 min-w-fit transition-all ${!form.useSilvervine && 'opacity-50 grayscale'}`}>
+                                    <SVGs.Silvervine className="w-4 h-4" />
+                                    <span className="text-[10px] font-bold uppercase">Silvervine</span>
+                                </button>
+                                <div className="glass-panel px-4 py-2 rounded-2xl flex items-center gap-2 min-w-fit">
+                                    <input type="number" inputMode="numeric" value={form.minutesUsed} onChange={e => { let v = parseInt(e.target.value); if(v > 60) v=60; setForm(p => ({...p, minutesUsed: v})) }} className="w-8 bg-transparent font-black text-center outline-none" />
+                                    <span className="text-[10px] font-bold opacity-50">Min</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-[10px] font-bold opacity-50 uppercase">Other Costs</span>
+                                    <button type="button" onClick={addCost} className="text-xs text-purple-500 font-bold flex items-center gap-1"><Icon name="Plus" size={14}/> เพิ่ม</button>
+                                </div>
+                                <div className="space-y-2">
+                                    {form.otherCosts.map(c => (
+                                        <div key={c.id} className="flex gap-2">
+                                            <input type="text" placeholder="รายการ..." value={c.name} onChange={e => updateCost(c.id, 'name', e.target.value)} className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-xl px-3 h-10 text-xs font-bold outline-none" />
+                                            <input type="number" inputMode="numeric" placeholder="0" value={c.amount} onChange={e => updateCost(c.id, 'amount', e.target.value)} className="w-20 bg-slate-100 dark:bg-slate-800 rounded-xl px-3 h-10 text-xs font-bold outline-none text-right" />
+                                            <button type="button" onClick={() => removeCost(c.id)} className="p-2 text-rose-500"><Icon name="Trash" size={16}/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <textarea placeholder="Note..." value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} className="w-full h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 text-xs font-bold outline-none resize-none"></textarea>
+                            
+                            {/* Save Button with disabled state if no UID */}
+                            <button type="submit" disabled={!isValid} className={`w-full h-14 rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all ${isValid ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/20' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}>
+                                {targetUid ? "บันทึกข้อมูล" : "กำลังเชื่อมต่อ..."}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
 
         const container = document.getElementById('root');
         const root = ReactDOM.createRoot(container);
