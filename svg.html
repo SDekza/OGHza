@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic Item Collection with Sidebar</title>
+    <title>Magic Item Database - GitHub Edition</title>
     <style>
         :root {
             --sidebar-width: 260px;
@@ -14,6 +14,7 @@
             --inv-bg: #b99d7f; 
             --inv-border: #715842;
             --input-bg: rgba(255, 255, 255, 0.08);
+            --success-green: #4ade80;
         }
 
         body {
@@ -21,7 +22,7 @@
             min-height: 100vh;
             margin: 0;
             background-color: var(--bg-dark);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', 'Kanit', sans-serif;
             color: white;
             overflow-x: hidden;
         }
@@ -49,6 +50,7 @@
             font-size: 20px;
             color: var(--accent-color);
             letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         .menu-group {
@@ -98,7 +100,7 @@
             align-items: center;
         }
 
-        .section-title h1 { margin: 0; font-size: 28px; }
+        .section-title h1 { margin: 0; font-size: 28px; font-weight: 300; }
 
         .item-grid {
             display: grid;
@@ -115,7 +117,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: transform 0.3s, background 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
         }
 
@@ -123,6 +125,7 @@
             transform: translateY(-8px);
             background: rgba(255, 255, 255, 0.08);
             border-color: rgba(124, 92, 219, 0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
         .svg-display {
@@ -138,6 +141,7 @@
             margin: 0 0 15px 0;
             font-size: 17px;
             color: #eee;
+            text-align: center;
         }
 
         .btn-copy {
@@ -153,11 +157,12 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            outline: none;
         }
 
-        .btn-copy:active { transform: scale(0.98); }
+        .btn-copy:active { transform: scale(0.95); }
 
-        /* เฉดสีปุ่ม */
+        /* Buttons Colors */
         .btn-green { background: #8cc63f; color: #1a3300; }
         .btn-purple { background: #b392f0; color: #2e1a4a; }
         .btn-blue { background: #72c1f0; color: #0a2d45; }
@@ -165,56 +170,65 @@
         .btn-red { background: #d13d3d; color: white; }
         .btn-gold { background: #d4af37; color: #332200; }
         .btn-pink { background: #ff9aa2; color: #4a0010; }
-        .btn-warp { background: var(--warp-blue); color: #003344; box-shadow: 0 0 15px rgba(78, 234, 246, 0.4); }
         .btn-brown { background: #96714c; color: white; }
+        .btn-warp { background: var(--warp-blue); color: #003344; box-shadow: 0 0 15px rgba(78, 234, 246, 0.4); }
 
         .msg-toast {
             font-size: 12px;
-            color: #4ade80;
+            color: var(--success-green);
             margin-top: 10px;
             height: 16px;
             opacity: 0;
             transition: opacity 0.3s;
+            text-align: center;
         }
         .msg-toast.show { opacity: 1; }
 
         .hidden { display: none; }
 
-        /* --- Add Item Form Style --- */
+        /* Form Controls */
         .form-container {
-            max-width: 600px;
+            max-width: 700px;
             background: rgba(255,255,255,0.03);
-            padding: 30px;
-            border-radius: 20px;
+            padding: 40px;
+            border-radius: 24px;
             border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 40px;
         }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; color: rgba(255,255,255,0.6); font-size: 14px; }
-        .form-group input, .form-group textarea, .form-group select {
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; margin-bottom: 10px; color: rgba(255,255,255,0.5); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .form-group input, .form-group textarea {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background: var(--input-bg);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
+            border-radius: 12px;
             color: white;
             font-family: inherit;
             box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s;
         }
-        .form-group textarea { height: 150px; resize: vertical; font-family: 'Courier New', Courier, monospace; font-size: 12px; }
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+        .form-group textarea { height: 180px; resize: vertical; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; }
 
         .preview-area {
-            margin-top: 20px;
-            padding: 20px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 15px;
+            margin-top: 25px;
+            padding: 30px;
+            background: rgba(0,0,0,0.3);
+            border: 2px dashed rgba(255,255,255,0.1);
+            border-radius: 16px;
             text-align: center;
-            min-height: 100px;
+            min-height: 150px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* --- Inventory Components Styles --- */
+        /* Inventory Slot Visualization */
         .inventory-preview {
             background: #e9d5b7;
             padding: 15px;
@@ -225,7 +239,6 @@
             gap: 8px;
             box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
         }
-
         .inv-slot {
             position: relative;
             width: 60px;
@@ -238,7 +251,6 @@
             justify-content: center;
             box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3);
         }
-
         .inv-count {
             position: absolute;
             bottom: 2px;
@@ -247,73 +259,69 @@
             color: #4a3424;
             font-weight: bold;
             text-shadow: 1px 1px 0 rgba(255,255,255,0.3);
-            pointer-events: none;
         }
 
-        /* Animation for Warp */
-        @keyframes rotateWarp {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        @keyframes pulseWarp {
-            0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.05); }
-        }
-        .warp-rotate { animation: rotateWarp 10s linear infinite; transform-origin: center; }
-        .warp-pulse { animation: pulseWarp 3s ease-in-out infinite; }
+        /* Animations */
+        @keyframes rotateWarp { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulseWarp { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+        .warp-rotate { animation: rotateWarp 15s linear infinite; transform-origin: center; }
+        .warp-pulse { animation: pulseWarp 4s ease-in-out infinite; }
         
+        /* Responsive Design */
         @media (max-width: 768px) {
             .sidebar { width: 70px; }
             .sidebar-header h2, .menu-label, .menu-item .label-text { display: none; }
             .main-content { margin-left: 70px; padding: 20px; }
-            .menu-item { justify-content: center; padding: 15px; font-size: 24px; }
+            .menu-item { justify-content: center; padding: 20px; font-size: 24px; }
+            .section-title h1 { font-size: 22px; }
         }
     </style>
 </head>
 <body>
 
+    <!-- Navigation Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <h2>ITEM DB</h2>
+            <h2>Item DB</h2>
         </div>
+        
         <div class="menu-group">
             <div class="menu-label">Categories</div>
-            <div class="menu-item active" onclick="showSection('consumables', this)">
+            <div class="menu-item active" data-section="consumables" onclick="showSection('consumables', this)">
                 <span>📦</span>
                 <span class="label-text">Consumables</span>
             </div>
-            <div class="menu-item" onclick="showSection('treasures', this)">
+            <div class="menu-item" data-section="treasures" onclick="showSection('treasures', this)">
                 <span>💎</span>
                 <span class="label-text">Treasures</span>
             </div>
-            <div class="menu-item" onclick="showSection('user-items', this)">
+            <div class="menu-item" data-section="user-items" onclick="showSection('user-items', this)">
                 <span>⭐</span>
                 <span class="label-text">User Collection</span>
             </div>
         </div>
+
         <div class="menu-group">
-            <div class="menu-label">Manager</div>
-            <div class="menu-item" onclick="showSection('add-item', this)">
+            <div class="menu-label">Toolbox</div>
+            <div class="menu-item" data-section="add-item" onclick="showSection('add-item', this)">
                 <span>➕</span>
                 <span class="label-text">Add New Item</span>
             </div>
-        </div>
-        <div class="menu-group">
-            <div class="menu-label">Assets</div>
-            <div class="menu-item" onclick="showSection('icons', this)">
+            <div class="menu-item" data-section="icons" onclick="showSection('icons', this)">
                 <span>🎨</span>
-                <span class="label-text">Icons & Utils</span>
+                <span class="label-text">Assets & Utils</span>
             </div>
         </div>
     </div>
 
+    <!-- Main Content Area -->
     <div class="main-content">
         
-        <!-- Consumables -->
+        <!-- Section: Consumables -->
         <div id="section-consumables" class="content-section">
             <div class="section-title"><h1>Consumables</h1></div>
             <div class="item-grid">
-                <!-- Silvervine HD -->
+                <!-- Silvervine Fruit HD -->
                 <div class="item-card">
                     <h3>Silvervine Fruit</h3>
                     <div class="svg-display" id="svg-silvervine">
@@ -356,7 +364,7 @@
             </div>
         </div>
 
-        <!-- Treasures -->
+        <!-- Section: Treasures -->
         <div id="section-treasures" class="content-section hidden">
             <div class="section-title"><h1>Treasures</h1></div>
             <div class="item-grid">
@@ -384,108 +392,134 @@
             </div>
         </div>
 
-        <!-- Add New Item -->
+        <!-- Section: Add New Item -->
         <div id="section-add-item" class="content-section hidden">
-            <div class="section-title"><h1>Add New Magic Item</h1></div>
+            <div class="section-title"><h1>Create Magic Item</h1></div>
             <div class="form-container">
                 <div class="form-group">
-                    <label>Item Name</label>
-                    <input type="text" id="new-item-name" placeholder="เช่น Dragon Soul, Phoenix Feather...">
+                    <label>ไอเทมชื่อ (Item Name)</label>
+                    <input type="text" id="new-item-name" placeholder="Ex. Mythic Sword, Dragon Heart...">
                 </div>
                 <div class="form-group">
-                    <label>SVG Code</label>
-                    <textarea id="new-item-svg" placeholder="วางโค้ด <svg>...</svg> ที่นี่" oninput="updatePreview()"></textarea>
+                    <label>โค้ด SVG (SVG Code)</label>
+                    <textarea id="new-item-svg" placeholder="Paste your <svg>...</svg> code here" oninput="updatePreview()"></textarea>
                 </div>
                 <div class="preview-area" id="item-preview">
-                    <span style="color: rgba(255,255,255,0.3)">SVG Preview will appear here</span>
+                    <span style="color: rgba(255,255,255,0.2)">Item preview will be shown here</span>
                 </div>
-                <div style="margin-top: 25px;">
+                <div style="margin-top: 30px;">
                     <button class="btn-copy btn-dark-p" onclick="saveCustomItem()">
                         <span>✨</span> Add to Collection
                     </button>
                 </div>
-                <div id="msg-form" class="msg-toast" style="text-align: center;">เพิ่มไอเทมสำเร็จ! ไปดูที่ User Collection</div>
+                <div id="msg-form" class="msg-toast">เพิ่มไอเทมเข้า User Collection สำเร็จ!</div>
             </div>
         </div>
 
-        <!-- User Collection -->
+        <!-- Section: User Collection -->
         <div id="section-user-items" class="content-section hidden">
             <div class="section-title">
                 <h1>User Collection</h1>
-                <span style="font-size: 14px; color: var(--accent-color);">Your custom assets</span>
+                <span style="font-size: 14px; color: var(--accent-color);">Your created assets</span>
             </div>
             <div class="item-grid" id="user-items-grid">
-                <!-- Custom items will be injected here -->
-                <div style="grid-column: 1/-1; text-align: center; padding: 50px; opacity: 0.3;">
-                    <p>ยังไม่มีไอเทมที่สร้างเอง... ลองเพิ่มที่เมนู Add New Item ดูสิ!</p>
+                <div style="grid-column: 1/-1; text-align: center; padding: 60px; opacity: 0.3;">
+                    <p>ไม่มีไอเทมที่สร้างเอง... ลองเพิ่มผ่านเมนู Add New Item</p>
                 </div>
             </div>
         </div>
 
-        <!-- Assets & Utils -->
+        <!-- Section: Assets & Utilities -->
         <div id="section-icons" class="content-section hidden">
             <div class="section-title"><h1>Assets & Utilities</h1></div>
             <div class="item-grid">
                 <div class="item-card">
-                    <h3>RPG Inventory Slot (SVG)</h3>
-                    <div class="svg-display" id="svg-inv-slot">
+                    <h3>RPG Inventory Slot</h3>
+                    <div class="svg-display" id="svg-inv-slot-util">
                         <svg width="100" height="100" viewBox="0 0 100 100">
                             <rect x="5" y="5" width="90" height="90" rx="10" fill="#b99d7f" stroke="#715842" stroke-width="3"/>
                             <rect x="10" y="10" width="80" height="80" rx="6" fill="none" stroke="black" stroke-opacity="0.2" stroke-width="4"/>
                         </svg>
                     </div>
-                    <button class="btn-copy btn-brown" onclick="copyCode('svg-inv-slot', 'msg-inv-slot')">Copy Slot SVG</button>
-                    <div id="msg-inv-slot" class="msg-toast">คัดลอกสำเร็จ!</div>
+                    <button class="btn-copy btn-brown" onclick="copyCode('svg-inv-slot-util', 'msg-inv-util')">Copy Slot SVG</button>
+                    <div id="msg-inv-util" class="msg-toast">คัดลอกสำเร็จ!</div>
+                </div>
+
+                <div class="item-card">
+                    <h3>Inventory Grid Example</h3>
+                    <div class="svg-display">
+                        <div class="inventory-preview">
+                            <div class="inv-slot"><span class="inv-count">1</span></div>
+                            <div class="inv-slot"><span class="inv-count">99</span></div>
+                            <div class="inv-slot"></div>
+                            <div class="inv-slot"></div>
+                            <div class="inv-slot"></div>
+                            <div class="inv-slot"></div>
+                        </div>
+                    </div>
+                    <button class="btn-copy btn-gold" style="opacity: 0.5; cursor: default;">Utility Preview Only</button>
                 </div>
             </div>
         </div>
 
     </div>
 
+    <!-- Application Logic -->
     <script>
-        const userItems = [];
+        // State management
+        const userItems = JSON.parse(localStorage.getItem('userMagicItems')) || [];
+
+        window.onload = () => {
+            renderUserItems();
+        };
 
         function showSection(sectionName, menuItem) {
-            document.querySelectorAll('.content-section').forEach(section => { section.classList.add('hidden'); });
+            // Update Visibility
+            document.querySelectorAll('.content-section').forEach(section => section.classList.add('hidden'));
             document.getElementById('section-' + sectionName).classList.remove('hidden');
-            document.querySelectorAll('.menu-item').forEach(item => { item.classList.remove('active'); });
+            
+            // Update Active Link
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
             menuItem.classList.add('active');
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function updatePreview() {
-            const svgCode = document.getElementById('new-item-svg').value;
-            const previewArea = document.getElementById('item-preview');
-            if(svgCode.trim() === "") {
-                previewArea.innerHTML = '<span style="color: rgba(255,255,255,0.3)">SVG Preview will appear here</span>';
+            const code = document.getElementById('new-item-svg').value;
+            const preview = document.getElementById('item-preview');
+            if(!code.trim()) {
+                preview.innerHTML = '<span style="color: rgba(255,255,255,0.2)">Item preview will be shown here</span>';
                 return;
             }
-            previewArea.innerHTML = svgCode;
+            preview.innerHTML = code;
         }
 
         function saveCustomItem() {
-            const name = document.getElementById('new-item-name').value;
-            const svg = document.getElementById('new-item-svg').value;
+            const nameInput = document.getElementById('new-item-name');
+            const svgInput = document.getElementById('new-item-svg');
             const msg = document.getElementById('msg-form');
 
-            if(!name || !svg) {
-                alert("กรุณากรอกชื่อและวางโค้ด SVG");
+            if(!nameInput.value.trim() || !svgInput.value.trim()) {
+                alert("กรุณาระบุชื่อไอเทมและโค้ด SVG");
                 return;
             }
 
             const newItem = {
-                id: 'user-item-' + Date.now(),
-                name: name,
-                svg: svg
+                id: 'custom-' + Date.now(),
+                name: nameInput.value,
+                svg: svgInput.value
             };
 
             userItems.push(newItem);
+            localStorage.setItem('userMagicItems', JSON.stringify(userItems));
             renderUserItems();
 
-            // Clear form
-            document.getElementById('new-item-name').value = '';
-            document.getElementById('new-item-svg').value = '';
-            document.getElementById('item-preview').innerHTML = '<span style="color: rgba(255,255,255,0.3)">SVG Preview will appear here</span>';
-
+            // Clear & Notify
+            nameInput.value = '';
+            svgInput.value = '';
+            updatePreview();
             msg.classList.add('show');
             setTimeout(() => msg.classList.remove('show'), 3000);
         }
@@ -497,28 +531,46 @@
             grid.innerHTML = userItems.map(item => `
                 <div class="item-card">
                     <h3>${item.name}</h3>
-                    <div class="svg-display" id="${item.id}">
-                        ${item.svg}
+                    <div class="svg-display" id="${item.id}">${item.svg}</div>
+                    <div style="display: flex; gap: 8px; width: 100%;">
+                        <button class="btn-copy btn-purple" onclick="copyCode('${item.id}', 'msg-${item.id}')">Copy</button>
+                        <button class="btn-copy btn-red" onclick="deleteItem('${item.id}')" style="width: 50px;">🗑️</button>
                     </div>
-                    <button class="btn-copy btn-purple" onclick="copyCode('${item.id}', 'msg-${item.id}')">Copy SVG</button>
-                    <div id="msg-${item.id}" class="msg-toast">คัดลอกสำเร็จ!</div>
+                    <div id="msg-${item.id}" class="msg-toast">คัดลอกแล้ว!</div>
                 </div>
             `).join('');
+        }
+
+        function deleteItem(id) {
+            const index = userItems.findIndex(i => i.id === id);
+            if(index > -1) {
+                userItems.splice(index, 1);
+                localStorage.setItem('userMagicItems', JSON.stringify(userItems));
+                renderUserItems();
+                if(userItems.length === 0) {
+                    document.getElementById('user-items-grid').innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 60px; opacity: 0.3;">
+                            <p>ไม่มีไอเทมที่สร้างเอง... ลองเพิ่มผ่านเมนู Add New Item</p>
+                        </div>`;
+                }
+            }
         }
 
         function copyCode(elementId, msgId) {
             const content = document.getElementById(elementId).innerHTML;
             const cleanContent = content.replace(/^\s+|\s+$/g, '');
-            const el = document.createElement('textarea');
-            el.value = cleanContent;
-            document.body.appendChild(el);
-            el.select();
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = cleanContent;
+            document.body.appendChild(textarea);
+            textarea.select();
             document.execCommand('copy');
-            document.body.removeChild(el);
-            const msg = document.getElementById(msgId);
-            if(msg) {
-                msg.classList.add('show');
-                setTimeout(() => msg.classList.remove('show'), 2000);
+            document.body.removeChild(textarea);
+
+            const toast = document.getElementById(msgId);
+            if(toast) {
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2000);
             }
         }
     </script>
