@@ -440,7 +440,7 @@
                 </div>
 
                 <div class="import-dropzone" onclick="document.getElementById('file-input').click()">
-                    <p id="dropzone-text">คลิกหรือวางไฟล์ภาพที่นี่ (PNG, JPG, SVG)</p>
+                    <p id="dropzone-text">คลิก, วางไฟล์ภาพ หรือกด Ctrl+V ที่นี่ (PNG, JPG, SVG)</p>
                     <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFileSelect(event)">
                 </div>
 
@@ -500,7 +500,7 @@
                 toastRestoreErr: "ข้อมูลผิดรูปแบบ!", toastMovedTrash: "ย้ายไปที่ถังขยะแล้ว",
                 toastItemAdded: "เพิ่มไอเทมสำเร็จ!", toastCatAdded: "เพิ่มหมวดหมู่ใหม่แล้ว!",
                 moveSuccess: "ย้ายหมวดหมู่สำเร็จ!", import: "นำเข้าไอคอน/รูปภาพ",
-                dropzone: "คลิกหรือวางไฟล์ภาพที่นี่ (PNG, JPG, SVG)", lblImportName: "ชื่อไอเทม", lblImportCat: "หมวดหมู่"
+                dropzone: "คลิก, วางไฟล์ภาพ หรือกด Ctrl+V ที่นี่ (PNG, JPG, SVG)", lblImportName: "ชื่อไอเทม", lblImportCat: "หมวดหมู่"
             },
             en: {
                 categories: "Categories", manage: "Management", addItem: "Add New Item",
@@ -516,7 +516,7 @@
                 toastRestoreErr: "Invalid JSON format!", toastMovedTrash: "Moved to trash",
                 toastItemAdded: "Item added successfully!", toastCatAdded: "New category added!",
                 moveSuccess: "Item moved!", import: "Import Icon/Image",
-                dropzone: "Click or Drop image here (PNG, JPG, SVG)", lblImportName: "Item Name", lblImportCat: "Category"
+                dropzone: "Click, Drop image or Ctrl+V here (PNG, JPG, SVG)", lblImportName: "Item Name", lblImportCat: "Category"
             }
         };
 
@@ -539,6 +539,32 @@
             renderSidebar();
             renderCategorySelect();
             renderItems();
+            setupPasteListener();
+        }
+
+        function setupPasteListener() {
+            window.addEventListener('paste', (e) => {
+                // Check if the import section is visible
+                const importSection = document.getElementById('section-import-image');
+                if (importSection.classList.contains('hidden')) return;
+
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let index in items) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.indexOf('image') !== -1) {
+                        const blob = item.getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = (re) => {
+                            const dataUrl = re.target.result;
+                            document.getElementById('img-preview').src = dataUrl;
+                            document.getElementById('import-preview-area').classList.remove('hidden');
+                            processFile(dataUrl);
+                        };
+                        reader.readAsDataURL(blob);
+                        break;
+                    }
+                }
+            });
         }
 
         function setLanguage(lang) {
@@ -606,9 +632,8 @@
             importMode = mode;
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`mode-${mode}`).classList.add('active');
-            // Re-process current image if exists
             const img = document.getElementById('img-preview');
-            if (img.src) processFile(img.src);
+            if (img.src && img.src.length > 0) processFile(img.src);
         }
 
         function handleFileSelect(e) {
@@ -626,13 +651,11 @@
 
         function processFile(dataUrl) {
             if (importMode === 'embed') {
-                // Method 1: Embedding
                 currentGeneratedSvg = `<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                     <image href="${dataUrl}" x="0" y="0" width="200" height="200" preserveAspectRatio="xMidYMid meet" />
                 </svg>`;
                 document.getElementById('svg-preview-cont').innerHTML = currentGeneratedSvg;
             } else {
-                // Method 2: Tracing using Potrace
                 const img = new Image();
                 img.src = dataUrl;
                 img.onload = () => {
@@ -654,6 +677,7 @@
             toast(translations[currentLang].toastItemAdded);
             document.getElementById('import-preview-area').classList.add('hidden');
             document.getElementById('import-item-name').value = '';
+            document.getElementById('img-preview').src = '';
             init();
         }
 
