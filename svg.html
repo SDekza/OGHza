@@ -2,1358 +2,653 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic Item Manager - GitHub Sync Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Magic Item Manager - Muji Style</title>
     
     <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer.min.js"></script>
 
     <style>
         :root {
+            /* --- Muji Palette --- */
+            --bg-body: #f7f7f2;         /* Creamy White background */
+            --bg-sidebar: #ebe9e1;      /* Warm Beige sidebar */
+            --bg-card: #ffffff;         /* Pure White cards */
+            --bg-input: #f2f2ed;        /* Light input background */
+            
+            --primary: #8c7b70;         /* Muted Earth/Wood */
+            --primary-hover: #6d5e53;
+            --secondary: #a8a29e;       /* Stone Gray */
+            
+            --text-main: #4a4540;       /* Soft Dark Gray/Brown */
+            --text-muted: #9ca3af;
+            
+            --danger: #ef4444;          
+            --success: #65a30d;         
+            --warning: #d97706;         
+            
+            --border-color: #e5e5e5;
+            
             --sidebar-width: 260px;
-            --bg-dark: #121026;
-            --card-bg: rgba(255, 255, 255, 0.05);
-            --accent-color: #7c5cdb;
-            --warp-blue: #4eeaf6;
-            --input-bg: rgba(255, 255, 255, 0.08);
-            --danger-color: #ef4444;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --ai-color: #a855f7;
-            --github-color: #24292e;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; outline: none; }
 
         body {
-            display: flex;
-            min-height: 100vh;
-            margin: 0;
-            background-color: var(--bg-dark);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: white;
+            margin: 0; padding: 0;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 14px;
             overflow-x: hidden;
+            display: flex;
+            height: 100vh;
         }
 
-        /* --- LOGIN SCREEN STYLE --- */
+        /* --- UTILS --- */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .gap-2 { gap: 0.5rem; }
+        .w-full { width: 100%; }
+
+        /* --- LOGIN --- */
         #login-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #0b091a;
-            z-index: 9999;
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(247, 247, 242, 0.98);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.5s;
         }
         .login-box {
-            background: #1a1635;
-            padding: 40px;
-            border-radius: 20px;
-            border: 1px solid var(--accent-color);
-            text-align: center;
-            width: 300px;
-            box-shadow: 0 0 50px rgba(124, 92, 219, 0.2);
+            background: white; padding: 40px; border-radius: 12px;
+            border: 1px solid var(--border-color); text-align: center; width: 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
-        .login-title { font-size: 20px; margin-bottom: 20px; color: var(--accent-color); font-weight: bold; letter-spacing: 1px; }
+        .login-title { font-size: 20px; margin-bottom: 20px; color: var(--primary); letter-spacing: 2px; font-weight: 600; }
         .login-input {
             width: 100%; padding: 12px; margin-bottom: 15px;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px; color: white; text-align: center; font-size: 16px;
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 6px; color: var(--text-main); text-align: center; font-size: 16px;
         }
-        .login-input:focus { border-color: var(--accent-color); outline: none; }
+        .login-input:focus { border-color: var(--primary); background: white; }
         .login-btn {
-            width: 100%; padding: 12px;
-            background: var(--accent-color); color: white; border: none;
-            border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px;
-            transition: 0.3s;
+            width: 100%; padding: 12px; background: var(--primary); color: white; border: none;
+            border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
         }
-        .login-btn:hover { background: #6a4eb3; transform: translateY(-2px); }
-        .login-error { color: var(--danger-color); font-size: 12px; margin-top: 10px; min-height: 1.2em; }
-        
-        .blur-content { filter: blur(5px); pointer-events: none; }
+        .login-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
 
-        /* Sidebar Navigation */
+        .blur-content { filter: blur(4px); pointer-events: none; }
+
+        /* --- SIDEBAR --- */
         .sidebar {
-            width: var(--sidebar-width);
-            background-color: #1a1635;
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            height: 100vh;
-            z-index: 100;
+            width: var(--sidebar-width); background: var(--bg-sidebar);
+            border-right: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column;
+            position: fixed; top: 0; bottom: 0; left: 0; z-index: 50;
+            transition: transform 0.3s ease;
         }
-
+        
         .sidebar-header {
-            padding: 25px 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
+            padding: 25px 20px; text-align: center; border-bottom: 1px solid rgba(0,0,0,0.05);
         }
+        .sidebar-header h2 { margin: 0; font-size: 18px; color: var(--text-main); font-weight: 500; letter-spacing: 1px; }
 
-        .sidebar-header h2 {
-            margin: 0;
-            font-size: 18px;
-            color: var(--accent-color);
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-
-        .lang-toggle {
-            display: flex;
-            justify-content: center;
-            gap: 5px;
-        }
-
+        .lang-toggle { margin-top: 10px; display: flex; justify-content: center; gap: 5px; }
         .btn-lang {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 5px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: 0.3s;
+            background: transparent; border: 1px solid #d1d5db; color: var(--text-muted);
+            padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; transition: 0.2s;
         }
+        .btn-lang.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        .btn-lang.active {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
+        .menu-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+        .menu-group { margin-bottom: 25px; }
+        .menu-label { 
+            padding: 0 10px 8px; font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 1px; 
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.03); margin-bottom: 5px;
         }
-
-        .menu-scroll {
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        .menu-group { padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .menu-label { padding: 10px 25px; font-size: 11px; text-transform: uppercase; color: rgba(255, 255, 255, 0.4); letter-spacing: 2px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-
-        .btn-add-cat { cursor: pointer; color: var(--accent-color); font-size: 16px; transition: 0.2s; }
-        .btn-add-cat:hover { transform: scale(1.2); }
+        .btn-add-cat { cursor: pointer; font-size: 16px; color: var(--primary); }
+        .btn-add-cat:hover { transform: scale(1.1); }
 
         .menu-item {
-            padding: 12px 25px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            border-left: 3px solid transparent;
+            padding: 10px 12px; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: space-between;
+            border-radius: 6px; margin-bottom: 4px; color: var(--text-main); font-size: 14px;
         }
+        .menu-item:hover { background: rgba(255,255,255,0.5); }
+        .menu-item.active { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.03); color: var(--primary); font-weight: 500; }
+        .menu-item.drag-over-cat { background: #e0f2fe; color: #0284c7; }
+        .nav-icon { width: 24px; text-align: center; margin-right: 8px; display: inline-block; }
 
-        .menu-item:hover, .menu-item.active {
-            background: rgba(124, 92, 219, 0.1);
-            color: white;
-            border-left-color: var(--accent-color);
-        }
-
-        .menu-item.drag-over-cat {
-            background: rgba(78, 234, 246, 0.1);
-            border-left-color: var(--warp-blue);
-            transform: translateX(5px);
-        }
-
-        /* Sidebar Footer (GitHub Controls) */
-        .sidebar-footer {
-            padding: 15px;
-            background: rgba(0,0,0,0.2);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            margin-top: auto;
-            display: flex;
-            gap: 10px;
-        }
-        
+        .sidebar-footer { padding: 15px; background: rgba(0,0,0,0.02); display: flex; gap: 8px; border-top: 1px solid rgba(0,0,0,0.05); }
         .footer-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
+            flex: 1; padding: 8px; border: none; border-radius: 6px; cursor: pointer;
+            font-size: 12px; font-weight: 600; transition: 0.2s; color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; gap: 5px;
         }
-        
-        .btn-push { background: var(--success-color); color: #003322; }
-        .btn-pull { background: var(--warp-blue); color: #003344; }
-        .footer-btn:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        .btn-push { background: var(--success); }
+        .btn-pull { background: var(--secondary); }
+        .footer-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
-        /* Main Content Display */
+        /* --- MAIN CONTENT --- */
         .main-content {
-            flex: 1;
-            margin-left: var(--sidebar-width);
-            padding: 40px;
-            transition: all 0.3s;
+            flex: 1; margin-left: var(--sidebar-width); padding: 30px 40px;
+            transition: all 0.3s; width: calc(100% - var(--sidebar-width));
         }
 
         .section-title {
-            margin-bottom: 30px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
-            padding-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 15px;
         }
+        .section-title h1 { margin: 0; font-size: 24px; color: var(--text-main); font-weight: 400; }
 
-        .section-title h1 { margin: 0; font-size: 28px; }
-
-        /* Improved Grid Layout */
+        /* --- GRID --- */
         .item-grid {
             display: grid;
-            /* Adaptive columns: min 220px, fit as many as possible */
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 25px;
-            width: 100%;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px; width: 100%;
         }
 
-        /* Card Elements */
         .item-card {
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: transform 0.3s, background 0.3s, opacity 0.3s;
-            position: relative;
-            cursor: grab;
+            background: var(--bg-card); border-radius: 12px; padding: 15px;
+            display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid transparent;
+            transition: all 0.2s; cursor: grab; height: 100%; position: relative;
         }
-
+        .item-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); border-color: #e5e5e5; }
         .item-card:active { cursor: grabbing; }
-        .item-card.dragging { opacity: 0.4; transform: scale(0.95); }
-
-        .item-card:hover {
-            transform: translateY(-8px);
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(124, 92, 219, 0.3);
-        }
 
         .svg-display {
-            height: 140px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            margin-bottom: 15px;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            pointer-events: none;
-            overflow: hidden;
+            height: 140px; width: 100%; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 10px; overflow: hidden; border-radius: 8px; background: #fafafa;
         }
-
-        .svg-display svg { 
-            width: 100% !important; 
-            height: 100% !important; 
-            max-width: 100%; 
-            max-height: 100%;
-            object-fit: contain;
-        }
+        .svg-display svg { width: 100%; height: 100%; object-fit: contain; }
         .svg-display.flipped { transform: scaleX(-1); }
 
         .item-card h3 { 
-            margin: 0 0 10px 0; 
-            font-size: 16px; 
-            color: #eee; 
-            text-align: center; 
-            pointer-events: none;
-            white-space: nowrap; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-            width: 100%;
+            margin: 0 0 10px 0; font-size: 14px; color: var(--text-main); text-align: center; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: 500;
         }
 
-        .btn-row { display: flex; gap: 8px; width: 100%; margin-top: auto; }
-        
-        .btn-action {
-            border: none;
-            padding: 8px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            position: relative;
+        .btn-row { display: flex; gap: 6px; width: 100%; margin-top: auto; justify-content: center; }
+        .btn-icon {
+            border: 1px solid #f0f0f0; background: white; color: var(--text-muted);
+            width: 30px; height: 30px; border-radius: 6px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s; font-size: 12px;
+        }
+        .btn-icon:hover { background: #f9fafb; color: var(--primary); border-color: var(--primary); }
+        .btn-icon.del:hover { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
+
+        /* --- EMPTY STATE --- */
+        .empty-state {
+            grid-column: 1/-1;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 80px 0; color: var(--text-muted); text-align: center;
+            border: 2px dashed #e5e5e5; border-radius: 16px;
+            background: #fafafa;
+        }
+        .empty-icon { font-size: 48px; margin-bottom: 15px; opacity: 0.5; }
+        .empty-text { font-size: 16px; font-weight: 500; }
+
+        /* --- FORMS & PANELS --- */
+        .content-card {
+            background: var(--bg-card); border-radius: 12px; padding: 30px;
+            width: 100%; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid var(--border-color);
         }
 
-        .btn-copy-main { flex: 1; background: var(--accent-color); color: white; }
-        .btn-flip { width: 35px; background: rgba(255,255,255,0.1); color: white; }
-        .btn-edit { width: 35px; background: rgba(255,255,255,0.1); color: var(--warning-color); }
-        .btn-delete { width: 35px; background: rgba(239, 68, 68, 0.1); color: var(--danger-color); }
-        
-        .btn-delete:hover { background: var(--danger-color); color: white; }
-        .btn-edit:hover { background: #fbbf24; color: #1a1635; }
-        .btn-flip:hover { background: rgba(255,255,255,0.2); }
-
-        .btn-restore { background: var(--success-color); color: white; flex: 1; }
-        .btn-permanent { background: var(--danger-color); color: white; flex: 1; }
-        .btn-warning { background: var(--warning-color); color: white; flex: 1; }
-        .btn-ai-gen { background: var(--ai-color); color: white; flex: 2; }
-        .btn-cancel-ai { background: rgba(255,255,255,0.1); color: white; flex: 1; min-width: 80px; }
-        .btn-github { background: var(--github-color); color: white; }
-
-        /* Form Card Styles (Wider and Cleaner) */
-        .form-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 40px;
-            width: 100%;
-            max-width: 100%; /* Fill available space */
-            margin-bottom: 30px;
+        .tab-header { display: flex; gap: 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+        .tab-btn {
+            padding: 10px 0; background: none; border: none; font-size: 14px; color: var(--text-muted);
+            cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s;
         }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
 
-        /* Import Section */
-        .import-dropzone {
-            border: 2px dashed rgba(255,255,255,0.1);
-            padding: 80px 40px;
-            text-align: center;
-            border-radius: 20px;
-            cursor: pointer;
-            background: rgba(255,255,255,0.01);
-            transition: 0.3s;
-            margin-bottom: 20px;
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 13px; font-weight: 500; }
+        .form-control {
+            width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 8px; color: var(--text-main); font-size: 14px; transition: 0.2s;
         }
+        .form-control:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(140, 123, 112, 0.1); }
 
-        .import-dropzone:hover, .import-dropzone.drag-active {
-            border-color: var(--accent-color);
-            background: rgba(124, 92, 219, 0.08);
-            transform: scale(1.01);
+        .main-btn {
+            width: 100%; padding: 12px; background: var(--primary); color: white; border: none;
+            border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;
+            transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+        .main-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
 
-        .preview-container {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-            flex-wrap: wrap;
+        .btn-outline {
+            width: 100%; padding: 12px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);
+            border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s;
         }
+        .btn-outline:hover { border-color: var(--text-main); color: var(--text-main); }
+        .btn-outline.active { border-color: var(--primary); color: var(--primary); background: #fcfbf9; }
 
-        .preview-box {
-            flex: 1;
-            background: rgba(0,0,0,0.2);
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            position: relative;
-            min-height: 250px;
-            min-width: 300px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+        /* Import Dropzone */
+        .dropzone {
+            border: 2px dashed #d1d5db; border-radius: 12px; padding: 60px 20px;
+            text-align: center; background: #f9fafb; cursor: pointer; transition: 0.3s; color: var(--text-muted);
         }
+        .dropzone:hover { border-color: var(--primary); background: #fcfbf9; color: var(--primary); }
 
-        .preview-box label { display: block; margin-bottom: 10px; color: rgba(255,255,255,0.5); font-size: 12px; }
+        /* AI Section */
+        .ai-box { background: #faf5ff; border: 1px solid #e9d5ff; padding: 20px; border-radius: var(--radius-lg); margin-bottom: 20px; }
+        .ai-loader { height: 4px; background: #e9d5ff; border-radius: 2px; margin-top: 20px; overflow: hidden; display: none; }
+        .ai-progress { height: 100%; background: #a855f7; width: 50%; animation: scan 1.5s infinite ease-in-out; }
+        @keyframes scan { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
 
-        .preview-box img, .preview-box svg {
-            max-width: 100%;
-            max-height: 200px;
-            object-fit: contain;
-            margin: auto;
-        }
-
-        .mode-toggle {
-            display: flex;
-            background: var(--input-bg);
-            border-radius: 10px;
-            padding: 5px;
-            margin-bottom: 20px;
-        }
-
-        .mode-btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            background: transparent;
-            color: rgba(255,255,255,0.5);
-            cursor: pointer;
-            transition: 0.3s;
-            font-weight: 600;
-        }
-
-        .mode-btn.active {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .import-controls {
-            display: flex;
-            gap: 15px;
-            margin-top: 25px;
-            flex-wrap: wrap;
-        }
-
-        .btn-gen { background: var(--warp-blue); color: #003344; flex: 2; min-width: 150px; padding: 15px; }
-        .btn-rbg { background: #6366f1; color: white; flex: 1; min-width: 120px; padding: 15px; }
-        .btn-cancel-import { background: rgba(255,255,255,0.1); color: white; flex: 1; min-width: 100px; padding: 15px; }
-
-        /* AI SVG Styles */
-        .ai-gen-box {
-            background: rgba(168, 85, 247, 0.05);
-            border: 1px solid rgba(168, 85, 247, 0.2);
-            padding: 30px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-        }
-        .ai-loading-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 20px; overflow: hidden; display: none; }
-        .ai-loading-progress { height: 100%; background: var(--ai-color); width: 50%; animation: loadingScan 1.5s infinite ease-in-out; }
-        @keyframes loadingScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
-
-        /* Toast & Modals */
+        /* --- TOAST --- */
         .msg-toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--accent-color);
-            padding: 12px 25px;
-            border-radius: 10px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            z-index: 10000;
-            opacity: 0;
-            pointer-events: none;
-            transition: 0.3s;
+            position: fixed; bottom: 30px; right: 30px; background: var(--text-main); color: white;
+            padding: 12px 25px; border-radius: var(--radius-md); box-shadow: var(--shadow-md);
+            z-index: 10000; opacity: 0; pointer-events: none; transition: 0.3s; font-size: 13px;
         }
         .msg-toast.show { opacity: 1; transform: translateY(-10px); }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-content { background: #1a1635; padding: 30px; border-radius: 20px; width: 450px; border: 1px solid rgba(255,255,255,0.1); box-sizing: border-box; }
+        /* --- MODAL --- */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 200; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 420px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+        .modal-content h3 { margin-top: 0; color: var(--text-main); font-weight: 500; }
 
-        .hidden { display: none; }
-
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; color: rgba(255,255,255,0.6); font-size: 14px; }
-        .form-group input, .form-group textarea, .form-group select {
-            width: 100%;
-            padding: 15px;
-            background: var(--input-bg);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            color: white;
-            font-family: inherit;
-            box-sizing: border-box;
-            font-size: 16px;
+        /* Emoji Grid */
+        .emoji-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 8px;
+            max-height: 180px; overflow-y: auto; padding: 10px; background: var(--bg-input);
+            border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 20px;
         }
+        .emoji-item {
+            cursor: pointer; font-size: 20px; text-align: center; padding: 6px;
+            border-radius: 6px; transition: background 0.2s;
+        }
+        .emoji-item:hover { background: rgba(0,0,0,0.05); }
+        .emoji-item.selected { background: var(--primary); color: white; }
 
+        .menu-toggle { display: none; font-size: 20px; background: none; border: none; cursor: pointer; color: var(--text-main); margin-right: 15px; }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .sidebar { width: 70px; }
-            .sidebar-header h2, .menu-label, .menu-item .label-text { display: none; }
-            .sidebar-footer { flex-direction: column; }
-            .footer-btn { font-size: 10px; padding: 8px 5px; }
-            .main-content { margin-left: 70px; padding: 20px; }
-            .menu-item { justify-content: center; padding: 15px; font-size: 24px; }
-            .item-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+            .sidebar { transform: translateX(-100%); width: 280px; box-shadow: 5px 0 20px rgba(0,0,0,0.05); }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 45; display: none; }
+            .sidebar-overlay.show { display: block; }
+            .main-content { margin-left: 0; padding: 20px; width: 100%; }
+            .menu-toggle { display: block !important; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Login Overlay -->
+    <!-- Login -->
     <div id="login-overlay">
         <div class="login-box">
-            <div class="login-title">🔒 LOCKED</div>
-            <input type="password" id="login-pass" class="login-input" placeholder="Enter Password" onkeypress="handleLoginEnter(event)">
-            <button class="login-btn" onclick="checkLogin()">LOGIN</button>
-            <div id="login-error" class="login-error"></div>
+            <div style="font-size: 40px; margin-bottom: 10px;">🍃</div>
+            <div class="login-title">MAGIC ITEM</div>
+            <input type="password" id="login-pass" class="login-input" placeholder="Passcode" onkeypress="handleLoginEnter(event)">
+            <div id="login-error" style="color:var(--danger); font-size:12px; margin-top:5px; height:20px;"></div>
+            <button class="login-btn" onclick="checkLogin()">Enter</button>
         </div>
     </div>
 
-    <!-- Main App Container -->
-    <div id="app-container" class="blur-content">
+    <!-- Mobile Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-        <!-- Modals -->
-        <div id="modal-category" class="modal-overlay">
-            <div class="modal-content">
-                <h3 id="modal-cat-title">สร้างหมวดหมู่ใหม่</h3>
-                <div class="form-group">
-                    <label id="lbl-cat-name">ชื่อหมวดหมู่</label>
-                    <input type="text" id="cat-name-input" placeholder="...">
-                </div>
-                <div class="form-group">
-                    <label id="lbl-cat-icon">ไอคอน (Emoji)</label>
-                    <input type="text" id="cat-icon-input" placeholder="⚔️">
-                </div>
-                <div class="btn-row">
-                    <button class="btn-action btn-copy-main" onclick="saveCategory()" id="btn-save-cat">บันทึก</button>
-                    <button class="btn-action btn-flip" onclick="closeModal('modal-category')" id="btn-cancel-cat">ยกเลิก</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- GitHub Config Modal -->
-        <div id="modal-github" class="modal-overlay">
-            <div class="modal-content">
-                <h3>ตั้งค่า GitHub Sync</h3>
-                <div style="font-size:12px; color: #fbbf24; margin-bottom:15px;">*Token จะถูกเก็บในเครื่องของคุณเท่านั้น (Local Storage)</div>
-                <div class="form-group">
-                    <label>GitHub Username</label>
-                    <input type="text" id="gh-user" value="sdekzaaa-source" placeholder="e.g. yourname">
-                </div>
-                <div class="form-group">
-                    <label>Repository Name</label>
-                    <input type="text" id="gh-repo" value="magic-items-db" placeholder="e.g. magic-items">
-                </div>
-                <div class="form-group">
-                    <label>Personal Access Token (Repo scope)</label>
-                    <input type="password" id="gh-token" value="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" placeholder="ghp_...">
-                </div>
-                <div class="form-group">
-                    <label>Filename (Path)</label>
-                    <input type="text" id="gh-path" value="magic-items-db.json">
-                </div>
-                <div class="btn-row">
-                    <button class="btn-action btn-copy-main" onclick="syncToGitHub('push')">💾 Save Config</button>
-                    <button class="btn-action btn-flip" onclick="closeModal('modal-github')">ปิด</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="modal-restore" class="modal-overlay">
-            <div class="modal-content">
-                <h3 id="modal-restore-title">กู้คืนข้อมูล</h3>
-                <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 15px;" id="restore-warn">คำเตือน: ข้อมูลจะถูกนำมารวมกับข้อมูลที่มีอยู่ (Merge)</p>
-                <div class="form-group">
-                    <label id="lbl-restore-json">วางรหัส Backup JSON</label>
-                    <textarea id="restore-input" style="height: 150px; font-family: monospace;" placeholder='{"categories": [...], "items": [...]}'></textarea>
-                </div>
-                <div class="btn-row">
-                    <button class="btn-action btn-warning" onclick="processRestore()" id="btn-do-restore">กู้คืน</button>
-                    <button class="btn-action btn-flip" onclick="closeModal('modal-restore')" id="btn-close-restore">ปิด</button>
-                </div>
-            </div>
-        </div>
-
+    <div id="app-container" class="blur-content flex h-screen">
+        
         <!-- Sidebar -->
-        <div class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2>ITEM DB</h2>
-                <div class="lang-toggle">
-                    <button class="btn-lang active" id="lang-th" onclick="setLanguage('th')">TH</button>
-                    <button class="btn-lang" id="lang-en" onclick="setLanguage('en')">EN</button>
+                <h2>Magic Item Manager</h2>
+                <div class="header-controls">
+                    <span class="version-tag">v1.1</span>
+                    <div class="lang-toggle">
+                        <button class="btn-lang active" id="lang-th" onclick="setLanguage('th')">TH</button>
+                        <button class="btn-lang" id="lang-en" onclick="setLanguage('en')">EN</button>
+                    </div>
                 </div>
             </div>
+            
             <div class="menu-scroll">
                 <div class="menu-group">
                     <div class="menu-label">
                         <span id="label-categories">หมวดหมู่</span>
-                        <span class="btn-add-cat" onclick="openModal('modal-category')" title="Add Category">⊕</span>
+                        <span class="btn-add-cat" onclick="openModal('modal-category')">＋</span>
                     </div>
                     <div id="sidebar-categories"></div>
                 </div>
 
                 <div class="menu-group">
-                    <div class="menu-label" id="label-manage">จัดการไอเทม</div>
-                    <div class="menu-item" onclick="showSection('add-item', this)">
-                        <span>➕</span>
-                        <span class="label-text" id="menu-add-item">เพิ่มไอเทม</span>
-                    </div>
-                    <div class="menu-item" onclick="showSection('import-image', this)">
-                        <span>🖼️</span>
-                        <span class="label-text" id="menu-import">นำเข้าไอคอน/รูปภาพ</span>
+                    <div class="menu-label" id="label-manage">จัดการ</div>
+                    <div class="menu-item" onclick="showSection('import-unified', this)">
+                        <div class="menu-item-content"><span class="nav-icon">📥</span> <span id="menu-import">นำเข้า (Import)</span></div>
                     </div>
                     <div class="menu-item" onclick="showSection('ai-gen', this)">
-                        <span>✨</span>
-                        <span class="label-text" id="menu-aigen">AI SVG Creator</span>
+                        <div class="menu-item-content"><span class="nav-icon">✨</span> <span id="menu-aigen">AI Creator</span></div>
                     </div>
                     <div class="menu-item" onclick="showSection('trash-bin', this)">
-                        <span>🗑️</span>
-                        <span class="label-text" id="menu-trash">ถังขยะ</span>
+                        <div class="menu-item-content"><span class="nav-icon">🗑️</span> <span id="menu-trash">ถังขยะ</span></div>
                     </div>
                 </div>
 
                 <div class="menu-group">
-                    <div class="menu-label" id="label-backup">ระบบสำรองข้อมูล</div>
+                    <div class="menu-label">SYSTEM</div>
                     <div class="menu-item" onclick="openGithubModal()">
-                        <span>⚙️</span>
-                        <span class="label-text" id="menu-github">GitHub Config</span>
+                        <div class="menu-item-content"><span class="nav-icon">⚙️</span> <span>Config GitHub</span></div>
                     </div>
                     <div class="menu-item" onclick="backupAll()">
-                        <span>💾</span>
-                        <span class="label-text" id="menu-backup">Backup</span>
+                        <div class="menu-item-content"><span class="nav-icon">💾</span> <span id="menu-backup">Backup JSON</span></div>
                     </div>
                     <div class="menu-item" onclick="openModal('modal-restore')">
-                        <span>🔄</span>
-                        <span class="label-text" id="menu-restore">Restore</span>
+                        <div class="menu-item-content"><span class="nav-icon">📤</span> <span id="menu-restore">Restore JSON</span></div>
+                    </div>
+                    <div class="menu-item" onclick="downloadDB()">
+                         <div class="menu-item-content"><span class="nav-icon">⬇️</span> <span id="menu-download">Download DB</span></div>
                     </div>
                 </div>
             </div>
-            <!-- Sidebar Footer (Buttons) -->
-            <div class="sidebar-footer">
-                <button class="footer-btn btn-push" onclick="syncToGitHub('push')">
-                    🚀 Push
-                </button>
-                <button class="footer-btn btn-pull" onclick="syncToGitHub('pull')">
-                    📥 Pull
-                </button>
-            </div>
-        </div>
 
-        <!-- Main -->
-        <div class="main-content">
+            <div class="sidebar-footer">
+                <button class="footer-btn btn-push" onclick="syncToGitHub('push')">🚀 PUSH</button>
+                <button class="footer-btn btn-pull" onclick="syncToGitHub('pull')">☁️ PULL</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="section-title">
+                <div style="display:flex; align-items:center;">
+                    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                    <h1 id="view-title">รายการไอเทม</h1>
+                </div>
+            </header>
+
+            <!-- Items Grid -->
             <div id="section-category-view" class="content-section">
-                <div class="section-title"><h1 id="view-title">รายการไอเทม</h1></div>
                 <div class="item-grid" id="items-display-grid"></div>
             </div>
 
-            <div id="section-add-item" class="hidden content-section">
-                <div class="section-title"><h1 id="title-add-new">เพิ่มไอเทมใหม่</h1></div>
-                <div class="form-card">
-                    <div class="form-group">
-                        <label id="lbl-item-name">ชื่อไอเทม</label>
-                        <input type="text" id="new-item-name" placeholder="...">
-                    </div>
-                    <div class="form-group">
-                        <label id="lbl-item-svg">โค้ด SVG</label>
-                        <textarea id="new-item-svg" style="height: 150px; font-family: monospace;" placeholder="<svg>...</svg>"></textarea>
-                    </div>
-                    <button class="btn-action btn-copy-main" onclick="createNewItem()" id="btn-save-item">✨ บันทึก</button>
-                </div>
-            </div>
-
-            <!-- Import Section -->
-            <div id="section-import-image" class="hidden content-section">
-                <div class="section-title"><h1 id="title-import">นำเข้าไอคอน/รูปภาพ</h1></div>
-                <div class="form-card">
-                    <div class="mode-toggle">
-                        <button class="mode-btn active" id="mode-embed" onclick="setImportMode('embed')">Embed (รักษาสี)</button>
-                        <button class="mode-btn" id="mode-trace" onclick="setImportMode('trace')">Trace (Vector)</button>
+            <!-- Unified Import (Code + Image) -->
+            <div id="section-import-unified" class="content-section hidden">
+                <div class="content-card">
+                    <div class="tab-header">
+                        <button class="tab-btn active" onclick="switchImportTab('img', this)" id="tab-img-btn">รูปภาพ (Image)</button>
+                        <button class="tab-btn" onclick="switchImportTab('code', this)" id="tab-code-btn">โค้ด (SVG Code)</button>
                     </div>
 
-                    <div class="import-dropzone" id="import-dropzone" onclick="document.getElementById('file-input').click()" 
-                         ondragover="handleImportDragOver(event)" ondragleave="handleImportDragLeave(event)" ondrop="handleImportDrop(event)">
-                        <p id="dropzone-text">คลิก, ลากไฟล์รูปมาวาง หรือกด Ctrl+V ที่นี่</p>
-                        <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFileSelect(event)">
-                    </div>
+                    <!-- Image Tab -->
+                    <div id="tab-img-content">
+                        <div style="display:flex; gap:10px; margin-bottom:20px;">
+                            <button class="btn-outline active mode-btn" id="mode-embed" onclick="setImportMode('embed')">Embed (สีเดิม)</button>
+                            <button class="btn-outline mode-btn" id="mode-trace" onclick="setImportMode('trace')">Vector (ลายเส้น)</button>
+                        </div>
+                        
+                        <div class="dropzone" id="import-dropzone" 
+                             onclick="document.getElementById('file-input').click()"
+                             ondragover="handleImportDragOver(event)" 
+                             ondragleave="handleImportDragLeave(event)" 
+                             ondrop="handleImportDrop(event)">
+                             <div style="font-size:32px; margin-bottom:10px; opacity:0.5;">🖼️</div>
+                             <p id="dropzone-text">คลิกเลือกรูป หรือลากวางที่นี่ (Ctrl+V)</p>
+                             <input type="file" id="file-input" class="hidden" accept="image/*" onchange="handleFileSelect(event)">
+                        </div>
 
-                    <div id="import-preview-area" class="hidden">
-                        <div class="preview-container">
-                            <div class="preview-box">
-                                <label id="lbl-orig-preview">ต้นฉบับ</label>
-                                <div style="display: flex; align-items: center; justify-content: center; height: 180px;">
-                                    <img id="img-preview" src="">
+                        <div id="import-preview-area" class="hidden" style="margin-top:20px;">
+                            <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                                <div style="flex:1; text-align:center; background:#fcfbf9; padding:10px; border-radius:8px; border:1px solid #eee;">
+                                    <label>Original</label><br>
+                                    <img id="img-preview" style="max-width:100%; max-height:150px; object-fit:contain;">
+                                </div>
+                                <div style="flex:1; text-align:center; background:#fcfbf9; padding:10px; border-radius:8px; border:1px solid #eee;">
+                                    <label>Result SVG</label><br>
+                                    <div id="svg-preview-cont" style="display:flex; justify-content:center; height:150px;"></div>
                                 </div>
                             </div>
-                            <div class="preview-box">
-                                <label id="lbl-gen-preview">ผลลัพธ์ SVG</label>
-                                <div id="svg-preview-cont" style="display: flex; align-items: center; justify-content: center; height: 180px;"></div>
+                            <div style="display:flex; gap:10px; margin-top:15px;">
+                                <button class="btn-outline" style="flex:1" onclick="removeBackgroundSimple()">✂️ ลบพื้นหลังสีขาว</button>
+                                <button class="btn-outline" style="flex:1" onclick="generateSVG()">⚡ สร้างใหม่</button>
                             </div>
-                        </div>
-
-                        <div class="import-controls">
-                            <button class="btn-action btn-rbg" onclick="removeBackgroundSimple()" id="btn-remove-bg">✂️ ลบพื้นหลัง (สีขาว)</button>
-                            <button class="btn-action btn-gen" onclick="generateSVG()" id="btn-generate">🔨 Generate SVG</button>
-                            <button class="btn-action btn-cancel-import" onclick="resetImport()" id="btn-cancel-import">❌ ยกเลิก</button>
-                        </div>
-
-                        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                            <div class="form-group">
-                                <label id="lbl-import-name">ชื่อไอเทม</label>
-                                <input type="text" id="import-item-name" placeholder="...">
+                            
+                            <div class="form-group" style="margin-top:20px;">
+                                <label>ชื่อไอเทม</label>
+                                <input type="text" id="import-img-name" class="form-control" placeholder="ตั้งชื่อไอเทม...">
                             </div>
-                            <button class="btn-action btn-copy-main" onclick="saveImportedItem()" id="btn-save-imported">✅ บันทึก</button>
+                            <button class="main-btn" onclick="saveImportedItem()">บันทึก (Save)</button>
                         </div>
+                    </div>
+
+                    <!-- Code Tab -->
+                    <div id="tab-code-content" class="hidden">
+                        <div class="form-group">
+                            <label>ชื่อไอเทม</label>
+                            <input type="text" id="code-item-name" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>SVG Code</label>
+                            <textarea id="code-item-svg" class="form-control" style="height:200px; font-family:monospace;" placeholder="<svg>...</svg>"></textarea>
+                        </div>
+                        <button class="main-btn" onclick="saveCodeItem()">บันทึก (Save)</button>
                     </div>
                 </div>
             </div>
 
-            <!-- AI Gen Section -->
-            <div id="section-ai-gen" class="hidden content-section">
-                <div class="section-title"><h1 id="title-aigen">AI SVG Creator</h1></div>
-                <div class="form-card">
-                    <div class="ai-gen-box">
+            <!-- AI Gen -->
+            <div id="section-ai-gen" class="content-section hidden">
+                <div class="content-card">
+                    <div class="ai-box">
                         <div class="form-group">
-                            <label id="lbl-ai-prompt">คำสั่ง (Prompt)</label>
-                            <textarea id="ai-prompt-input" rows="3" placeholder="เช่น ดาบวิเศษสีฟ้าด้ามทอง, ยาขวดสีแดงมีฟอง..."></textarea>
+                            <label id="lbl-ai-name" style="color:#6b21a8;">Item Name</label>
+                            <input type="text" id="ai-prompt-name" class="form-control" placeholder="e.g. Dragon Sword">
                         </div>
-                        <div class="btn-row">
-                            <button class="btn-action btn-ai-gen" onclick="generateAiSvg()" id="btn-run-ai">✨ สร้างรูป SVG ด้วย AI</button>
-                            <button class="btn-action btn-cancel-ai" onclick="resetAiGen()" id="btn-cancel-ai">❌ ยกเลิก</button>
+                        <div class="form-group">
+                            <label id="lbl-ai-ref" style="color:#6b21a8;">Ref. (Game/Anime)</label>
+                            <input type="text" id="ai-prompt-ref" class="form-control" placeholder="e.g. Ragnarok Online, Zelda">
                         </div>
-                        <div id="ai-loading" class="ai-loading-bar">
-                            <div class="ai-loading-progress"></div>
+                        <div class="form-group">
+                            <label id="lbl-ai-detail" style="color:#6b21a8;">Detail</label>
+                            <textarea id="ai-prompt-detail" class="form-control" rows="3" placeholder="e.g. Glowing blue blade with gold hilt..."></textarea>
+                        </div>
+
+                        <div style="display:flex; gap:10px;">
+                            <button class="main-btn" style="background:#9333ea;" onclick="generateAiSvg()">✨ Generate</button>
+                            <button class="btn-outline" style="width:auto;" onclick="resetAiGen()">Clear</button>
+                        </div>
+                        <div id="ai-loading" class="hidden" style="margin-top:20px; text-align:center; color:#9333ea;">
+                            AI is creating...
                         </div>
                     </div>
 
                     <div id="ai-result-area" class="hidden">
-                        <div class="preview-box" style="margin-bottom: 20px;">
-                            <label>AI Result</label>
-                            <div id="ai-svg-output" style="display: flex; align-items: center; justify-content: center; height: 200px;"></div>
+                        <div style="background:#fcfbf9; padding:20px; text-align:center; border-radius:8px; margin-bottom:20px; border:1px solid #eee;">
+                            <div id="ai-svg-output" style="height:150px; display:flex; justify-content:center; align-items:center;"></div>
                         </div>
-
                         <div class="form-group">
-                            <label id="lbl-ai-item-name">ชื่อไอเทม</label>
-                            <input type="text" id="ai-item-name" placeholder="...">
+                            <label>ชื่อไอเทม (แก้ไขได้)</label>
+                            <input type="text" id="ai-item-name" class="form-control">
                         </div>
-                        <button class="btn-action btn-copy-main" onclick="saveAiItem()" id="btn-save-ai">✅ บันทึกลงคลัง</button>
+                        <button class="main-btn" onclick="saveAiItem()">บันทึก (Save)</button>
                     </div>
                 </div>
             </div>
 
-            <div id="section-trash-bin" class="hidden content-section">
-                <div class="section-title"><h1 id="title-trash">ถังขยะ</h1></div>
+            <!-- Trash Bin -->
+            <div id="section-trash-bin" class="content-section hidden">
                 <div class="item-grid" id="trash-display-grid"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Common Modals -->
+    <div id="modal-category" class="modal-overlay">
+        <div class="modal-content">
+            <h3>สร้างหมวดหมู่ใหม่</h3>
+            <div class="form-group"><label>ชื่อ</label><input type="text" id="cat-name-input" class="form-control"></div>
+            <div class="form-group"><label>ไอคอน (เลือกด้านล่าง)</label>
+                <div id="emoji-selection" class="emoji-grid"></div>
+            </div>
+            <!-- Hidden real input -->
+            <input type="hidden" id="cat-icon-input">
+            
+            <div style="display:flex; gap:10px;">
+                <button class="main-btn" onclick="saveCategory()">สร้าง</button>
+                <button class="btn-outline" onclick="closeModal('modal-category')">ยกเลิก</button>
             </div>
         </div>
     </div>
 
-    <div id="toast" class="msg-toast">สำเร็จ!</div>
+    <div id="modal-github" class="modal-overlay">
+        <div class="modal-content">
+            <h3>GitHub Config</h3>
+            <div class="form-group"><label>User</label><input type="text" id="gh-user" class="form-control"></div>
+            <div class="form-group"><label>Repo</label><input type="text" id="gh-repo" class="form-control"></div>
+            <div class="form-group"><label>Token</label><input type="password" id="gh-token" class="form-control"></div>
+            <div class="form-group"><label>File Path</label><input type="text" id="gh-path" class="form-control" value="magic-items-db.json"></div>
+            <div style="display:flex; gap:10px;">
+                <button class="main-btn" onclick="syncToGitHub('push')">บันทึก & Push</button>
+                <button class="btn-outline" onclick="closeModal('modal-github')">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-restore" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Restore JSON</h3>
+            <div class="form-group"><textarea id="restore-input" class="form-control" style="height:150px;"></textarea></div>
+            <div style="display:flex; gap:10px;">
+                <button class="main-btn" style="background:var(--warning);" onclick="processRestore()">Merge & Restore</button>
+                <button class="btn-outline" onclick="closeModal('modal-restore')">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="msg-toast">Message</div>
 
     <script>
-        // --- 1. SECURITY & AUTH ---
-        // Password split into 3 parts for basic obfuscation
-        const _p1 = "sdek";
-        const _p2 = "zasvg";
-        const _p3 = "1234";
-        
-        const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 Days in ms
-
-        function checkLogin() {
-            const input = document.getElementById('login-pass').value;
-            if (!input) return;
-            
-            const correctPass = _p1 + _p2 + _p3;
-            
-            if (input === correctPass) {
-                localStorage.setItem('auth_token', Date.now().toString());
-                hideLogin();
-            } else {
-                document.getElementById('login-error').innerText = "รหัสผ่านไม่ถูกต้อง";
-                document.getElementById('login-pass').value = '';
-            }
-        }
-
-        function handleLoginEnter(e) { if(e.key === 'Enter') checkLogin(); }
-
-        function checkSession() {
-            const token = localStorage.getItem('auth_token');
-            if (token) {
-                const now = Date.now();
-                const sessionTime = parseInt(token);
-                if (now - sessionTime < SESSION_DURATION) {
-                    hideLogin();
-                } else {
-                    localStorage.removeItem('auth_token');
-                    showLogin();
-                }
-            } else {
-                showLogin();
-            }
-        }
-
-        function showLogin() {
-            document.getElementById('login-overlay').style.opacity = '1';
-            document.getElementById('login-overlay').style.pointerEvents = 'auto';
-            document.getElementById('app-container').classList.add('blur-content');
-        }
-
-        function hideLogin() {
-            document.getElementById('login-overlay').style.opacity = '0';
-            document.getElementById('login-overlay').style.pointerEvents = 'none';
-            document.getElementById('app-container').classList.remove('blur-content');
-        }
-
-        // --- 2. HELPERS (Declared first) ---
-        function normalizeSVG(svgString) {
-            if (!svgString) return '';
-            try {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(svgString, "image/svg+xml");
-                const svg = doc.querySelector("svg");
-                if (!svg) return svgString;
-                if (!svg.hasAttribute("viewBox")) {
-                    const w = svg.getAttribute("width") || 100;
-                    const h = svg.getAttribute("height") || 100;
-                    svg.setAttribute("viewBox", `0 0 ${parseFloat(w)} ${parseFloat(h)}`);
-                }
-                svg.setAttribute("width", "100%");
-                svg.setAttribute("height", "100%");
-                svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-                svg.style.width = ""; svg.style.height = ""; svg.style.maxWidth = ""; svg.style.maxHeight = "";
-                return new XMLSerializer().serializeToString(svg);
-            } catch (e) { return svgString; }
-        }
-
-        function minifySVG(svg) {
-            if (!svg) return '';
-            let clean = svg.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ');
-            clean = clean.replace(/<!--[\s\S]*?-->/g, '');
-            clean = clean.replace(/(\d+\.\d{2,})/g, (match) => parseFloat(match).toFixed(1));
-            clean = clean.replace(/<\?xml.*?\?>/g, '');
-            clean = clean.replace(/<!DOCTYPE.*?>/g, '');
-            return clean.trim();
-        }
-
-        function copyToClipboard(text) { 
-            const el = document.createElement('textarea'); 
-            el.value = text; 
-            document.body.appendChild(el); 
-            el.select(); 
-            document.execCommand('copy'); 
-            document.body.removeChild(el); 
-        }
-
-        function toast(msg) { 
-            const t = document.getElementById('toast'); 
-            if(t) {
-                t.innerText = msg; 
-                t.classList.add('show'); 
-                setTimeout(() => t.classList.remove('show'), 2000);
-            }
-        }
-        
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-        // --- 3. App State ---
-        const _pool = [
-            { k1: "AIzaSyCGlXcUwyk5tHZ0cwcn", k2: "-98aw19R2XuiF_Y" },
-            { k1: "AIzaSyBmYB-nlMaFNkPxI-BWRQ8k", k2: "n02wbE5ybB8" }
-        ];
+        // --- 1. CONFIG & AUTH ---
+        const _p1="sdek", _p2="zasvg", _p3="1234";
+        const SESSION_MS = 7*24*60*60*1000;
+        const _pool = [{ k1: "AIzaSyCGlXcUwyk5tHZ0cwcn", k2: "-98aw19R2XuiF_Y" }, { k1: "AIzaSyBmYB-nlMaFNkPxI-BWRQ8k", k2: "n02wbE5ybB8" }];
         let activeKeyIndex = 0;
+
+        // --- EMOJIS FOR CATEGORIES ---
+        const categoryEmojis = [
+            "🎒", "📦", "👜", "💼", "🪵", "🪨", "💎", "🧶", "🧵", "🛠️",
+            "⚔️", "🗡️", "🏹", "🛡️", "🪓", "🔨", "🔫", "💣", "🧨", "🧱",
+            "🔮", "🪄", "📜", "🏺", "⚗️", "🧿", "💍", "👑", "⚱️", "🗿",
+            "🌿", "🍄", "🌷", "🌹", "🌻", "🌲", "🌵", "🍁", "🍂", "🍃",
+            "🔥", "💧", "🌪️", "⚡", "❄️", "☀️", "🌙", "⭐", "🌈", "☁️"
+        ];
+
+        // --- 2. STATE ---
         let currentLang = 'th';
-        
         let categories = [
+            { id: 'cat-imports', name: 'Imports', icon: '📥' },
             { id: 'cat-ai-gen', name: 'AI Gen', icon: '✨' },
-            { id: 'cat-import-code', name: 'Import Code', icon: '💻' },
-            { id: 'cat-import-img', name: 'Import Img', icon: '🖼️' },
-            { id: 'cat-restore', name: 'Restore', icon: '♻️' },
-            { id: 'cat-consumables', name: 'ไอเทมกดใช้', icon: '📦' }, 
-            { id: 'cat-treasures', name: 'สมบัติล้ำค่า', icon: '💎' }
+            { id: 'cat-consumables', name: 'Consumables', icon: '📦' },
+            { id: 'cat-treasures', name: 'Treasures', icon: '💎' },
+            { id: 'cat-restore', name: 'Restore', icon: '📦' }
         ];
         let items = [];
         let trash = [];
-        let currentCatId = 'cat-ai-gen';
-        let draggedItemId = null;
+        let currentCatId = 'cat-imports';
         let importMode = 'embed';
-        let currentGeneratedSvg = '';
-        let originalImgData = '';
-        let currentAiSvg = '';
+        let currentGeneratedSvg = '', originalImgData = '', currentAiSvg = '';
+        let draggedItemId = null;
+        let selectedEmoji = '📁';
 
-        const translations = {
-            th: {
-                categories: "หมวดหมู่", manage: "จัดการไอเทม", addItem: "เพิ่มไอเทม", trash: "ถังขยะ", backup: "Backup",
-                viewTitle: "รายการไอเทม", noItems: "ยังไม่มีไอเทม", trashEmpty: "ถังขยะว่างเปล่า", addTitle: "เพิ่มไอเทมใหม่",
-                restoreTitle: "กู้คืนข้อมูล", save: "บันทึก", cancel: "ยกเลิก", close: "ปิด", lblItemName: "ชื่อไอเทม",
-                lblItemSvg: "โค้ด SVG", lblCatName: "ชื่อหมวดหมู่", lblCatIcon: "ไอคอน (Emoji)", copy: "คัดลอก", restore: "กู้คืน",
-                delForever: "ลบถาวร", toastSuccess: "สำเร็จ!", toastCopy: "คัดลอก SVG แล้ว!", toastBackup: "Backup แล้ว!",
-                toastRestore: "กู้คืนข้อมูลสำเร็จ!", toastItemAdded: "เพิ่มไอเทมสำเร็จ!", toastCatAdded: "เพิ่มหมวดหมู่แล้ว!",
-                moveSuccess: "ย้ายหมวดหมู่แล้ว!", import: "นำเข้าไอคอน/รูปภาพ", dropzone: "คลิก, ลากไฟล์รูปมาวาง หรือกด Ctrl+V ที่นี่",
-                lblImportName: "ชื่อไอเทม", btnGen: "🔨 Generate SVG", btnRbg: "✂️ ลบพื้นหลัง (สีขาว)",
-                lblOrig: "ต้นฉบับ", lblGen: "ผลลัพธ์ SVG", toastGenerating: "กำลังประมวลผล...", toastRbgSuccess: "ลบพื้นหลังสำเร็จ!",
-                menuAiGen: "AI SVG Creator", titleAiGen: "AI SVG Creator", lblAiPrompt: "คำสั่ง (Prompt)", btnRunAi: "✨ สร้างรูป SVG ด้วย AI",
-                toastAiGenStart: "AI กำลังวาดรูปให้คุณ...", toastAiGenSuccess: "AI วาดเสร็จแล้ว!", backupBtn: "Backup (คัดลอกทั้งหมด)",
-                restoreBtn: "Restore ข้อมูล", btnCancelAi: "❌ ยกเลิก", fallbackTrace: "ImageTracer ไม่โหลด ใช้โหมด Pixel Art แทน",
-                btnEdit: "✏️", toastNameUpdated: "แก้ไขชื่อเรียบร้อย", menuGithub: "GitHub Config",
-                toastPushSuccess: "🚀 Push สำเร็จ! ข้อมูลถูกอัปโหลดแล้ว", toastPullSuccess: "📥 Pull สำเร็จ! ข้อมูลถูกอัปเดตแล้ว"
-            },
-            en: {
-                categories: "Categories", manage: "Manager", addItem: "Add Item", trash: "Trash", backup: "Backup",
-                viewTitle: "Item List", noItems: "No items", trashEmpty: "Empty", addTitle: "Add Item",
-                restoreTitle: "Restore", save: "Save", cancel: "Cancel", close: "Close", lblItemName: "Name",
-                lblItemSvg: "SVG Code", lblCatName: "Name", lblCatIcon: "Icon", copy: "Copy", restore: "Restore",
-                delForever: "Delete Forever", toastSuccess: "Success!", toastCopy: "SVG Copied!", toastBackup: "Backed up!",
-                toastRestore: "Restored!", toastItemAdded: "Added!", toastCatAdded: "Category added!",
-                moveSuccess: "Moved!", import: "Import Image", dropzone: "Click, Drop or Paste image",
-                lblImportName: "Name", btnGen: "🔨 Generate SVG", btnRbg: "✂️ Remove BG (Simple)",
-                lblOrig: "Original", lblGen: "Generated SVG", toastGenerating: "Processing...", toastRbgSuccess: "Background removed!",
-                menuAiGen: "AI SVG Creator", titleAiGen: "AI SVG Creator", lblAiPrompt: "Prompt", btnRunAi: "✨ Generate SVG with AI",
-                toastAiGenStart: "AI is drawing...", toastAiGenSuccess: "AI Finished!", backupBtn: "Backup All (Copy)",
-                restoreBtn: "Restore System", btnCancelAi: "❌ Cancel", fallbackTrace: "ImageTracer failed. Using Pixel Mode.",
-                btnEdit: "✏️", toastNameUpdated: "Name updated", menuGithub: "GitHub Config",
-                toastPushSuccess: "🚀 Push Success!", toastPullSuccess: "📥 Pull Success!"
-            }
-        };
-
-        // --- 4. Logic Functions (Declared before init) ---
-        function handleFileSelect(e) { if (e.target.files[0]) handleImageFile(e.target.files[0]); }
-        
-        function handleImageFile(file) {
-            const reader = new FileReader();
-            reader.onload = (re) => {
-                originalImgData = re.target.result;
-                document.getElementById('img-preview').src = originalImgData;
-                document.getElementById('import-preview-area').classList.remove('hidden');
-                document.getElementById('svg-preview-cont').innerHTML = '';
-                currentGeneratedSvg = '';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function setupPasteListener() {
-            window.addEventListener('paste', (e) => {
-                if (document.getElementById('section-import-image').classList.contains('hidden')) return;
-                const clipItems = (e.clipboardData || e.originalEvent.clipboardData).items;
-                for (let i of clipItems) if (i.type.indexOf('image') !== -1) { handleImageFile(i.getAsFile()); break; }
-            });
-        }
-        
-        function handleImportDragOver(e) { e.preventDefault(); document.getElementById('import-dropzone').classList.add('drag-active'); }
-        function handleImportDragLeave(e) { e.preventDefault(); document.getElementById('import-dropzone').classList.remove('drag-active'); }
-        function handleImportDrop(e) {
-            e.preventDefault(); document.getElementById('import-dropzone').classList.remove('drag-active');
-            if (e.dataTransfer.files[0]) handleImageFile(e.dataTransfer.files[0]);
-        }
-
-        function createNewItem() {
-            const name = document.getElementById('new-item-name').value;
-            const svg = document.getElementById('new-item-svg').value;
-            if(!name || !svg) return;
-            const normalizedSVG = normalizeSVG(svg);
-            items.unshift({ id: 'item-' + Date.now(), catId: 'cat-import-code', name, svg: normalizedSVG });
-            saveToLocal();
-            document.getElementById('new-item-name').value = '';
-            document.getElementById('new-item-svg').value = '';
-            toast(translations[currentLang].toastItemAdded);
-            init();
-        }
-
-        function saveImportedItem() {
-            const name = document.getElementById('import-item-name').value;
-            if (!name || !currentGeneratedSvg) return;
-            items.unshift({ id: 'item-' + Date.now(), catId: 'cat-import-img', name, svg: currentGeneratedSvg });
-            saveToLocal();
-            toast(translations[currentLang].toastItemAdded);
-            resetImport();
-            init();
-        }
-
-        function saveAiItem() {
-            const name = document.getElementById('ai-item-name').value || "AI Item";
-            if(!currentAiSvg) return;
-            items.unshift({ id: 'item-' + Date.now(), catId: 'cat-ai-gen', name, svg: currentAiSvg });
-            saveToLocal();
-            toast(translations[currentLang].toastItemAdded);
-            resetAiGen();
-            init();
-        }
-
-        function editItemName(id) {
-            const item = items.find(i => i.id === id);
-            if (item) {
-                const newName = prompt("Edit Name:", item.name);
-                if (newName) {
-                    item.name = newName;
-                    saveToLocal();
-                    renderItems();
-                    toast(translations[currentLang].toastNameUpdated);
-                }
-            }
-        }
-
-        function moveToTrash(id) { 
-            const idx = items.findIndex(i => i.id === id);
-            if (idx !== -1) {
-                trash.push(items.splice(idx, 1)[0]); 
-                saveToLocal();
-                renderItems(); 
-                toast(translations[currentLang].toastMovedTrash); 
-            }
-        }
-
-        function restoreFromTrash(id) { 
-            const idx = trash.findIndex(i => i.id === id);
-            if (idx !== -1) {
-                const item = trash.splice(idx, 1)[0];
-                item.catId = 'cat-restore';
-                items.push(item); 
-                saveToLocal();
-                renderTrash(); 
-                toast(translations[currentLang].toastRestore); 
-            }
-        }
-
-        function permanentDelete(id) { 
-            if(confirm("Delete Forever?")) {
-                const idx = trash.findIndex(i => i.id === id);
-                if (idx !== -1) {
-                    trash.splice(idx, 1); 
-                    saveToLocal();
-                    renderTrash(); 
-                    toast(translations[currentLang].toastSuccess); 
-                }
-            }
-        }
-
-        function saveCategory() {
-            const name = document.getElementById('cat-name-input').value;
-            const icon = document.getElementById('cat-icon-input').value || '📁';
-            if(!name) return;
-            categories.push({ id: 'cat-' + Date.now(), name, icon });
-            saveToLocal();
-            document.getElementById('cat-name-input').value = '';
-            closeModal('modal-category');
-            toast(translations[currentLang].toastCatAdded);
-            renderSidebar();
-        }
-
-        function processRestore() {
-            try {
-                const data = JSON.parse(document.getElementById('restore-input').value);
-                if(data.items) {
-                    let count = 0;
-                    if(data.categories) {
-                        data.categories.forEach(c => {
-                            if(!categories.find(ex => ex.id === c.id)) categories.push(c);
-                        });
-                    }
-                    const existingIds = new Set(items.map(i => i.id));
-                    data.items.forEach(item => {
-                        if (!existingIds.has(item.id)) {
-                            if(!item.catId) item.catId = 'cat-restore';
-                            item.svg = normalizeSVG(item.svg);
-                            items.push(item);
-                            count++;
-                        }
-                    });
-                    saveToLocal();
-                    renderSidebar();
-                    renderItems();
-                    closeModal('modal-restore');
-                    toast(translations[currentLang].toastRestore + ` (+${count})`);
-                }
-            } catch (e) { toast("Error Restore"); }
-        }
-
-        function resetAiGen() {
-            document.getElementById('ai-prompt-input').value = '';
-            document.getElementById('ai-result-area').classList.add('hidden');
-            document.getElementById('ai-svg-output').innerHTML = '';
-            document.getElementById('ai-loading').style.display = 'none';
-            currentAiSvg = '';
-        }
-
-        function removeBackgroundSimple() {
-            const img = document.getElementById('img-preview');
-            if(!img.src) return;
-            const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-            canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-            ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            for (let i = 0; i < imageData.data.length; i += 4) { if (imageData.data[i] > 230 && imageData.data[i+1] > 230 && imageData.data[i+2] > 230) imageData.data[i+3] = 0; }
-            ctx.putImageData(imageData, 0, 0); originalImgData = canvas.toDataURL(); img.src = originalImgData;
-            toast(translations[currentLang].toastRbgSuccess);
-        }
-
-        function pixelArtTrace(imgSrc) {
-            const img = new Image(); img.src = imgSrc;
-            img.onload = () => {
-                const w = 64; const h = 64; const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-                const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
-                const data = ctx.getImageData(0,0,w,h).data;
-                let svg = `<svg width="200" height="200" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`;
-                for(let y=0; y<h; y++) { for(let x=0; x<w; x++) { const i = (y*w + x) * 4; const a = data[i+3]; if(a > 128) { const hex = "#" + ((1 << 24) + (data[i] << 16) + (data[i+1] << 8) + data[i+2]).toString(16).slice(1); svg += `<rect x="${x}" y="${y}" width="1" height="1" fill="${hex}" />`; } } }
-                svg += `</svg>`;
-                currentGeneratedSvg = minifySVG(svg);
-                document.getElementById('svg-preview-cont').innerHTML = currentGeneratedSvg;
-                toast(translations[currentLang].toastSuccess);
-            };
-        }
-
-        function generateSVG() {
-            toast("Generating...");
-            if (importMode === 'embed') {
-                currentGeneratedSvg = normalizeSVG(`<svg width="200" height="200"><image href="${originalImgData}" width="100%" height="100%" /></svg>`);
-                document.getElementById('svg-preview-cont').innerHTML = currentGeneratedSvg;
-            } else {
-                if (typeof ImageTracer !== 'undefined') {
-                    const options = { ltres:1, qtres:1, scale:1, strokewidth:0, viewbox:true };
-                    try {
-                        ImageTracer.imageToSVG(originalImgData, function(svgstr) {
-                            currentGeneratedSvg = minifySVG(svgstr);
-                            document.getElementById('svg-preview-cont').innerHTML = currentGeneratedSvg;
-                            toast(translations[currentLang].toastSuccess);
-                        }, options);
-                    } catch(e) {
-                        console.warn("Trace failed, using fallback");
-                        pixelArtTrace(originalImgData);
-                    }
-                } else {
-                    toast(translations[currentLang].fallbackTrace);
-                    pixelArtTrace(originalImgData);
-                }
-            }
-        }
-
-        function handleDragStart(e, id) { draggedItemId = id; e.target.classList.add('dragging'); }
-        function handleDragEnd(e) { e.target.classList.remove('dragging'); draggedItemId = null; }
-        function handleDragOverCat(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over-cat'); }
-        function handleDragLeaveCat(e) { e.currentTarget.classList.remove('drag-over-cat'); }
-        function handleDropCat(e, catId) {
-            e.preventDefault(); e.currentTarget.classList.remove('drag-over-cat');
-            if (draggedItemId) {
-                const item = items.find(i => i.id === draggedItemId);
-                if (item && item.catId !== catId) { item.catId = catId; saveToLocal(); renderItems(); renderSidebar(); toast(translations[currentLang].moveSuccess); }
-            }
-        }
-
-        // --- GitHub Sync Logic ---
-        function openGithubModal() {
-            const config = localStorage.getItem('gh_config');
-            if (config) {
-                const c = JSON.parse(config);
-                document.getElementById('gh-user').value = c.user;
-                document.getElementById('gh-repo').value = c.repo;
-                document.getElementById('gh-token').value = c.token;
-                if(c.path) document.getElementById('gh-path').value = c.path;
-            }
-            openModal('modal-github');
-        }
-
-        async function syncToGitHub(action) {
-            const user = document.getElementById('gh-user').value;
-            const repo = document.getElementById('gh-repo').value;
-            const token = document.getElementById('gh-token').value;
-            const path = document.getElementById('gh-path').value || 'magic-items-db.json';
-
-            if(!user || !repo || !token) { 
-                // If fields are empty, try loading from local storage first (for Quick Push/Pull)
-                const storedConfig = localStorage.getItem('gh_config');
-                if (storedConfig) {
-                    const c = JSON.parse(storedConfig);
-                    return executeGitHubSync(c.user, c.repo, c.token, c.path, action);
-                }
-                openGithubModal(); 
-                return; 
-            }
-
-            // Save config if fields are populated
-            localStorage.setItem('gh_config', JSON.stringify({ user, repo, token, path }));
-            closeModal('modal-github');
-            executeGitHubSync(user, repo, token, path, action);
-        }
-
-        async function executeGitHubSync(user, repo, token, path, action) {
-            toast("Connecting to GitHub...");
-
-            const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
-
-            try {
-                // 1. Get current file data (SHA and Content)
-                let sha = null;
-                let remoteContent = null;
-                
-                const getRes = await fetch(apiUrl, {
-                    headers: { 'Authorization': `token ${token}` }
-                });
-
-                if (getRes.status === 401) {
-                    alert("Token ไม่ถูกต้อง (401)"); return;
-                }
-
-                if (getRes.ok) {
-                    const fileData = await getRes.json();
-                    sha = fileData.sha;
-                    remoteContent = fileData.content; // Base64
-                }
-
-                // --- ACTION: PULL ---
-                if (action === 'pull') {
-                    if (!remoteContent) { toast("ไม่พบไฟล์บน GitHub"); return; }
-                    
-                    // Decode Base64
-                    const jsonStr = decodeURIComponent(escape(atob(remoteContent)));
-                    const data = JSON.parse(jsonStr);
-
-                    // Merge Logic
-                    if(data.categories) {
-                        data.categories.forEach(c => {
-                             if(!categories.find(ex => ex.id === c.id)) categories.push(c);
-                        });
-                    }
-                    if(data.items) {
-                        const existingIds = new Set(items.map(i => i.id));
-                        data.items.forEach(item => {
-                            if (!existingIds.has(item.id)) {
-                                items.push(item);
-                            }
-                        });
-                    }
-
-                    saveToLocal();
-                    renderSidebar();
-                    renderItems();
-                    toast(translations[currentLang].toastPullSuccess);
-                    return;
-                }
-
-                // --- ACTION: PUSH ---
-                const content = JSON.stringify({ categories, items: [...items, ...trash] }, null, 2);
-                const contentBase64 = btoa(unescape(encodeURIComponent(content)));
-
-                const putBody = {
-                    message: "Update db from Magic Item Manager",
-                    content: contentBase64
-                };
-                if (sha) putBody.sha = sha;
-
-                const putRes = await fetch(apiUrl, {
-                    method: 'PUT',
-                    headers: { 
-                        'Authorization': `token ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(putBody)
-                });
-
-                if (putRes.ok) {
-                    toast(translations[currentLang].toastPushSuccess);
-                } else {
-                    const err = await putRes.json();
-                    alert("Upload Failed: " + err.message);
-                }
-            } catch (e) {
-                console.error(e);
-                toast("Connection Error");
-            }
-        }
-
-        function backupAll() { copyToClipboard(JSON.stringify({ categories, items })); toast(translations[currentLang].toastBackup); }
-        
-        async function fetchWithRetry(url, options, maxRetries = 5) {
-            let lastRes;
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    lastRes = await fetch(url, options);
-                    if (lastRes.ok || [429, 403, 400].includes(lastRes.status)) return lastRes;
-                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
-                } catch (e) { if (i === maxRetries - 1) throw e; await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000)); }
-            }
-            return lastRes;
-        }
-
-        async function generateAiSvg(isRetry = false) {
-            const prompt = document.getElementById('ai-prompt-input').value;
-            if(!prompt) { toast("กรุณาใส่คำสั่ง"); return; }
-
-            const loader = document.getElementById('ai-loading');
-            loader.style.display = 'block';
-            if(!isRetry) toast(translations[currentLang].toastAiGenStart);
-
-            const currentKey = _pool[activeKeyIndex].k1 + _pool[activeKeyIndex].k2;
-            const systemPrompt = "You are an expert SVG artist. Create a clean, flat-style, game icon SVG code based on the user's prompt. Return ONLY the raw <svg> code. Minimize the code size: use integer coordinates where possible, remove comments, and use short hex codes. Do not use markdown blocks.";
-            
-            const payload = {
-                contents: [{ parts: [{ text: systemPrompt + "\nUser Prompt: " + prompt }] }]
-            };
-
-            try {
-                let response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentKey}`, {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (response.status === 429 || response.status === 403) {
-                    if (activeKeyIndex < _pool.length - 1) {
-                        activeKeyIndex++;
-                        return generateAiSvg(true);
-                    } else throw new Error("API Quota Exceeded");
-                }
-
-                let result = await response.json();
-                let text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                
-                if(text) {
-                    text = text.replace(/```xml/g, '').replace(/```svg/g, '').replace(/```/g, '');
-                    const start = text.indexOf('<svg');
-                    const end = text.lastIndexOf('</svg>') + 6;
-                    if(start !== -1 && end !== -1) {
-                        currentAiSvg = text.substring(start, end);
-                        currentAiSvg = minifySVG(currentAiSvg);
-                        document.getElementById('ai-svg-output').innerHTML = currentAiSvg;
-                        document.getElementById('ai-result-area').classList.remove('hidden');
-                        toast(translations[currentLang].toastAiGenSuccess);
-                    } else throw new Error("AI output invalid SVG");
-                } else throw new Error("No output from AI");
-
-            } catch(e) {
-                console.error(e);
-                toast("AI Error: " + e.message);
-            } finally {
-                loader.style.display = 'none';
-            }
-        }
-        
-        function flipItem(id) { const el = document.getElementById(`svg-cont-${id}`); if (el) el.classList.toggle('flipped'); }
-        function copySVG(id) { const el = document.getElementById(`svg-cont-${id}`); if (el) { copyToClipboard(el.innerHTML.trim()); toast(translations[currentLang].toastCopy); } }
-        function setImportMode(mode) { importMode = mode; document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active')); document.getElementById(`mode-${mode}`).classList.add('active'); }
-
-        function applyLanguage() {
-            const t = translations[currentLang];
-            const ids = {
-                'label-categories': t.categories, 'label-manage': t.manage, 'menu-add-item': t.addItem,
-                'menu-import': t.import, 'menu-trash': t.trash, 'label-backup': t.backup,
-                'menu-backup': t.backup, 'menu-restore': t.restore, 'title-add-new': t.addTitle,
-                'title-import': t.import, 'title-trash': t.trash, 'lbl-item-name': t.lblItemName,
-                'lbl-item-svg': t.lblItemSvg, 'btn-save-item': "✨ " + t.save,
-                'modal-cat-title': t.categories, 'lbl-cat-name': t.lblCatName, 'lbl-cat-icon': t.lblCatIcon,
-                'btn-save-cat': t.save, 'btn-cancel-cat': t.cancel, 'modal-restore-title': t.restoreTitle,
-                'restore-warn': t.restoreWarn, 'lbl-restore-json': t.lblRestoreJson, 'btn-do-restore': t.restore,
-                'btn-close-restore': t.close, 'dropzone-text': t.dropzone, 'lbl-import-name': t.lblItemName,
-                'btn-generate': t.btnGen, 'btn-remove-bg': t.btnRbg, 'btn-save-imported': "✅ " + t.save,
-                'menu-aigen': t.menuAiGen, 'title-aigen': t.titleAiGen, 'lbl-ai-prompt': t.lblAiPrompt,
-                'btn-run-ai': t.btnRunAi, 'lbl-ai-item-name': t.lblItemName, 'btn-save-ai': "✅ " + t.save, 'btn-cancel-ai': t.cancel,
-                'menu-github': t.menuGithub
-            };
-            for (let id in ids) if (document.getElementById(id)) document.getElementById(id).innerText = ids[id];
-        }
-
-        function setLanguage(lang) {
-            currentLang = lang;
-            document.querySelectorAll('.btn-lang').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`lang-${lang}`).classList.add('active');
+        // --- 3. INIT ---
+        window.onload = function() {
+            checkSession();
+            loadLocal();
             applyLanguage();
             renderSidebar();
             renderItems();
-        }
+            renderEmojiPicker();
+            setupPasteListener();
+        };
 
-        function renderSidebar() {
-            const container = document.getElementById('sidebar-categories');
-            container.innerHTML = categories.map(cat => `
-                <div class="menu-item ${cat.id === currentCatId ? 'active' : ''}" 
-                     onclick="selectCategory('${cat.id}', this)"
-                     ondragover="handleDragOverCat(event)" ondragleave="handleDragLeaveCat(event)" ondrop="handleDropCat(event, '${cat.id}')">
-                    <span>${cat.icon}</span><span class="label-text">${cat.name}</span>
-                </div>
-            `).join('');
+        // --- 4. CORE FUNCTIONS ---
+        function checkSession() {
+            const t = localStorage.getItem('auth_token');
+            if(t && Date.now() - t < SESSION_MS) hideLogin(); else showLogin();
         }
-
-        function selectCategory(id, el) {
-            currentCatId = id; showSection('category-view', el);
-            const cat = categories.find(c => c.id === id);
-            document.getElementById('view-title').innerText = cat ? `${cat.icon} ${cat.name}` : translations[currentLang].viewTitle;
-            renderItems();
+        function checkLogin() {
+            if(document.getElementById('login-pass').value === _p1+_p2+_p3) {
+                localStorage.setItem('auth_token', Date.now()); hideLogin();
+            } else { document.getElementById('login-error').innerText = "Wrong Password"; }
         }
+        function showLogin() { document.getElementById('login-overlay').style.display='flex'; document.getElementById('app-container').classList.add('blur-content'); }
+        function hideLogin() { document.getElementById('login-overlay').style.display='none'; document.getElementById('app-container').classList.remove('blur-content'); }
+        function handleLoginEnter(e) { if(e.key === 'Enter') checkLogin(); }
 
-        function showSection(name, menuItem) {
-            document.querySelectorAll('.content-section').forEach(s => s.classList.add('hidden'));
-            document.getElementById(`section-${name}`).classList.remove('hidden');
-            if (menuItem) {
-                document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-                menuItem.classList.add('active');
+        function loadLocal() {
+            const d = localStorage.getItem('muji_db_v2');
+            if(d) {
+                try {
+                    const j = JSON.parse(d);
+                    if(j.categories) categories = j.categories;
+                    if(j.items) items = j.items;
+                    if(j.trash) trash = j.trash;
+                } catch(e) {}
             }
-            if(name === 'trash-bin') renderTrash();
+        }
+        function saveLocal() {
+            localStorage.setItem('muji_db_v2', JSON.stringify({categories, items, trash}));
+        }
+
+        // --- 5. RENDER ---
+        function renderSidebar() {
+            const div = document.getElementById('sidebar-categories');
+            div.innerHTML = categories.map(c => {
+                const isSystem = ['cat-imports','cat-ai-gen','cat-restore'].includes(c.id);
+                const delBtn = isSystem ? '' : `<span class="btn-del-cat" onclick="deleteCategory('${c.id}', event)">×</span>`;
+                
+                return `<div class="menu-item ${c.id === currentCatId ? 'active' : ''}" 
+                     onclick="selectCategory('${c.id}', this)"
+                     ondragover="handleDragOverCat(event)" ondragleave="handleDragLeaveCat(event)" ondrop="handleDropCat(event, '${c.id}')">
+                     <div class="menu-item-content"><span class="nav-icon">${c.icon}</span> <span>${c.name}</span></div>
+                     ${delBtn}
+                </div>`;
+            }).join('');
+        }
+
+        function renderEmojiPicker() {
+            const grid = document.getElementById('emoji-selection');
+            grid.innerHTML = categoryEmojis.map(emoji => 
+                `<div class="emoji-item" onclick="selectEmoji('${emoji}', this)">${emoji}</div>`
+            ).join('');
+        }
+
+        function selectEmoji(emoji, el) {
+            selectedEmoji = emoji;
+            document.getElementById('cat-icon-input').value = emoji; // Sync hidden input if needed
+            document.querySelectorAll('.emoji-item').forEach(e => e.classList.remove('selected'));
+            el.classList.add('selected');
         }
 
         function renderItems() {
             const grid = document.getElementById('items-display-grid');
             const filtered = items.filter(i => i.catId === currentCatId);
-            const t = translations[currentLang];
-            if (filtered.length === 0) { grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; opacity: 0.3; padding: 40px;">${t.noItems}</div>`; return; }
-            grid.innerHTML = filtered.map(item => `
-                <div class="item-card" draggable="true" ondragstart="handleDragStart(event, '${item.id}')" ondragend="handleDragEnd(event)">
-                    <h3>${item.name}</h3><div class="svg-display" id="svg-cont-${item.id}">${item.svg}</div>
+            
+            // Empty State
+            if(filtered.length === 0) { 
+                grid.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🍃</div>
+                    <div class="empty-text">No items here yet</div>
+                </div>`; 
+                return; 
+            }
+            
+            grid.innerHTML = filtered.map(i => `
+                <div class="item-card" draggable="true" ondragstart="handleDragStart(event, '${i.id}')" ondragend="handleDragEnd(event)">
+                    <h3>${i.name}</h3>
+                    <div class="svg-display" id="svg-cont-${i.id}">${i.svg}</div>
                     <div class="btn-row">
-                        <button class="btn-action btn-copy-main" onclick="copySVG('${item.id}')">${t.copy}</button>
-                        <button class="btn-action btn-flip" onclick="flipItem('${item.id}')">↔️</button>
-                        <button class="btn-action btn-edit" onclick="editItemName('${item.id}')" title="${t.btnEdit}">✏️</button>
-                        <button class="btn-action btn-delete" onclick="moveToTrash('${item.id}')">🗑️</button>
+                        <button class="btn-icon" onclick="editName('${i.id}')" title="Edit Name">✏️</button>
+                        <button class="btn-icon" onclick="copySVG('${i.id}')" title="Copy SVG">📋</button>
+                        <button class="btn-icon" onclick="flipItem('${i.id}')" title="Flip Horizontal">↔️</button>
+                        <button class="btn-icon del" onclick="moveToTrash('${i.id}')" title="Delete">🗑️</button>
                     </div>
                 </div>
             `).join('');
@@ -1361,45 +656,305 @@
 
         function renderTrash() {
             const grid = document.getElementById('trash-display-grid');
-            const t = translations[currentLang];
-            if (trash.length === 0) { grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; opacity: 0.3; padding: 40px;">${t.trashEmpty}</div>`; return; }
-            grid.innerHTML = trash.map(item => `
-                <div class="item-card">
-                    <h3>${item.name}</h3><div class="svg-display">${item.svg}</div>
+            if(trash.length===0) { 
+                grid.innerHTML=`
+                <div class="empty-state">
+                    <div class="empty-icon">🗑️</div>
+                    <div class="empty-text">Trash is empty</div>
+                </div>`; 
+                return; 
+            }
+            grid.innerHTML = trash.map(i => `
+                <div class="item-card" style="opacity:0.7;">
+                    <h3>${i.name}</h3> <div class="svg-display">${i.svg}</div>
                     <div class="btn-row">
-                        <button class="btn-action btn-restore" onclick="restoreFromTrash('${item.id}')">${t.restore}</button>
-                        <button class="btn-action btn-permanent" onclick="permanentDelete('${item.id}')">${t.delForever}</button>
+                        <button class="btn-outline w-full" style="font-size:12px;" onclick="restoreItem('${i.id}')">Restore</button>
+                        <button class="btn-outline w-full" style="font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="deleteForever('${i.id}')">Delete</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function saveToLocal() {
-            localStorage.setItem('magic_items_local', JSON.stringify({ categories, items, trash }));
-        }
-
-        function init() {
-            // Check Auth First
-            checkSession();
-
-            // Load Local Data
-            const stored = localStorage.getItem('magic_items_local');
-            if (stored) {
-                try {
-                    const data = JSON.parse(stored);
-                    if (data.categories) categories = data.categories;
-                    if (data.items) items = data.items;
-                    if (data.trash) trash = data.trash;
-                } catch(e) { console.error("Load error", e); }
-            }
-
-            applyLanguage();
-            renderSidebar();
+        // --- 6. ACTIONS ---
+        function selectCategory(id, el) {
+            currentCatId = id; showSection('category-view'); 
+            const cat = categories.find(c=>c.id===id);
+            document.getElementById('view-title').innerText = cat ? cat.name : 'Items';
+            document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+            if(el) el.classList.add('active');
             renderItems();
-            setupPasteListener();
         }
 
-        window.onload = init;
+        function showSection(id) {
+            document.querySelectorAll('.content-section').forEach(s=>s.classList.add('hidden'));
+            document.getElementById(`section-${id}`).classList.remove('hidden');
+            
+            let title = "Items";
+            if(id === 'trash-bin') title = "Trash Bin";
+            if(id === 'import-unified') title = "Import";
+            if(id === 'ai-gen') title = "AI Creator";
+            
+            if(id !== 'category-view') document.getElementById('view-title').innerText = title;
+            
+            if(id === 'trash-bin') renderTrash();
+            if(id === 'category-view') renderItems();
+            if(window.innerWidth <= 768) toggleSidebar();
+        }
+
+        function switchImportTab(tab, el) {
+            document.getElementById('tab-img-content').classList.add('hidden');
+            document.getElementById('tab-code-content').classList.add('hidden');
+            document.getElementById('tab-img-btn').classList.remove('active');
+            document.getElementById('tab-code-btn').classList.remove('active');
+            
+            document.getElementById(`tab-${tab}-content`).classList.remove('hidden');
+            if(el) el.classList.add('active');
+            else document.getElementById(`tab-${tab}-btn`).classList.add('active');
+        }
+
+        function saveCodeItem() {
+            const name = document.getElementById('code-item-name').value;
+            const svg = document.getElementById('code-item-svg').value;
+            if(!name || !svg) return;
+            items.unshift({ id:'item-'+Date.now(), catId:'cat-imports', name, svg: normalizeSVG(svg) });
+            saveLocal(); toast('Item Added');
+            document.getElementById('code-item-name').value = ''; document.getElementById('code-item-svg').value = '';
+        }
+
+        function saveImportedItem() {
+            const name = document.getElementById('import-img-name').value;
+            if(!name || !currentGeneratedSvg) return;
+            items.unshift({ id:'item-'+Date.now(), catId:'cat-imports', name, svg: currentGeneratedSvg });
+            saveLocal(); toast('Image Imported'); resetImport();
+        }
+
+        function saveAiItem() {
+            const name = document.getElementById('ai-item-name').value || "AI Item";
+            if(!currentAiSvg) return;
+            items.unshift({ id:'item-'+Date.now(), catId:'cat-ai-gen', name, svg: currentAiSvg });
+            saveLocal(); toast('AI Item Saved'); resetAiGen();
+        }
+
+        function deleteCategory(id, e) {
+            e.stopPropagation();
+            if(confirm("Delete this category? Items will move to trash.")) {
+                items.forEach(i => { if(i.catId === id) { i.isTrash = true; trash.push(i); } }); // Copy to trash logic
+                items = items.filter(i => i.catId !== id); // Remove from active
+                categories = categories.filter(c => c.id !== id);
+                if(currentCatId === id) { currentCatId = 'cat-imports'; selectCategory('cat-imports'); }
+                saveLocal(); renderSidebar(); renderItems();
+            }
+        }
+
+        function editName(id) {
+            const item = items.find(i=>i.id===id);
+            const n = prompt("Rename:", item.name);
+            if(n) { item.name=n; saveLocal(); renderItems(); }
+        }
+        function moveToTrash(id) {
+            const idx = items.findIndex(i=>i.id===id);
+            if(idx>-1) {
+                const item = items.splice(idx,1)[0];
+                item.isTrash = true; trash.push(item);
+                saveLocal(); renderItems(); toast('Moved to Trash');
+            }
+        }
+        function restoreItem(id) {
+            const idx = trash.findIndex(i=>i.id===id);
+            if(idx>-1) {
+                const item = trash.splice(idx,1)[0];
+                item.isTrash = false;
+                if(!categories.find(c=>c.id===item.catId)) item.catId = 'cat-restore';
+                items.push(item);
+                saveLocal(); renderTrash(); toast('Restored');
+            }
+        }
+        function deleteForever(id) {
+            if(confirm("Delete forever?")) {
+                trash = trash.filter(i=>i.id!==id);
+                saveLocal(); renderTrash();
+            }
+        }
+
+        // --- 7. UTILS ---
+        function normalizeSVG(str) {
+            if(!str) return '';
+            try {
+                const p = new DOMParser(); const doc = p.parseFromString(str,'image/svg+xml'); const s = doc.querySelector('svg');
+                if(!s) return str;
+                if(!s.hasAttribute('viewBox')) s.setAttribute('viewBox', '0 0 100 100');
+                s.setAttribute('width','100%'); s.setAttribute('height','100%'); s.setAttribute('preserveAspectRatio','xMidYMid meet');
+                return new XMLSerializer().serializeToString(s);
+            } catch(e){ return str; }
+        }
+        function copySVG(id) { 
+            const el = document.getElementById(`svg-cont-${id}`); 
+            navigator.clipboard.writeText(el.innerHTML).then(()=>toast("Copied!"));
+        }
+        function flipItem(id) { document.getElementById(`svg-cont-${id}`).classList.toggle('flipped'); }
+        function toast(msg) { 
+            const t=document.getElementById('toast'); t.innerText=msg; t.classList.add('show'); 
+            setTimeout(()=>t.classList.remove('show'),2000); 
+        }
+        function openModal(id) { document.getElementById(id).style.display='flex'; }
+        function closeModal(id) { document.getElementById(id).style.display='none'; }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.querySelector('.sidebar-overlay').classList.toggle('show'); }
+
+        // --- 8. AI & IMG ---
+        function setImportMode(m) { importMode=m; document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active')); document.getElementById('mode-'+m).classList.add('active'); }
+        function handleFileSelect(e) { if(e.target.files[0]) processFile(e.target.files[0]); }
+        function handleImportDrop(e) { e.preventDefault(); if(e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); }
+        function handleImportDragOver(e) { e.preventDefault(); } function handleImportDragLeave(e) { e.preventDefault(); }
+        function setupPasteListener() { window.addEventListener('paste', e=>{ if(!document.getElementById('section-import-unified').classList.contains('hidden')) { const f = e.clipboardData.items[0].getAsFile(); if(f) processFile(f); } }); }
+        function processFile(f) {
+            const r = new FileReader(); r.onload=e=>{ originalImgData=e.target.result; document.getElementById('img-preview').src=originalImgData; document.getElementById('import-preview-area').classList.remove('hidden'); }; r.readAsDataURL(f);
+        }
+        function removeBackgroundSimple() {
+            const img=document.getElementById('img-preview'); const cvs=document.createElement('canvas'); const ctx=cvs.getContext('2d');
+            cvs.width=img.naturalWidth; cvs.height=img.naturalHeight; ctx.drawImage(img,0,0);
+            const d=ctx.getImageData(0,0,cvs.width,cvs.height);
+            for(let i=0;i<d.data.length;i+=4) { if(d.data[i]>230 && d.data[i+1]>230 && d.data[i+2]>230) d.data[i+3]=0; }
+            ctx.putImageData(d,0,0); originalImgData=cvs.toDataURL(); img.src=originalImgData;
+        }
+        function generateSVG() {
+            if(importMode==='embed') {
+                currentGeneratedSvg = normalizeSVG(`<svg viewBox="0 0 200 200"><image href="${originalImgData}" width="200" height="200"/></svg>`);
+                document.getElementById('svg-preview-cont').innerHTML = currentGeneratedSvg;
+            } else {
+                if(typeof ImageTracer !== 'undefined') {
+                     ImageTracer.imageToSVG(originalImgData, s=>{
+                         currentGeneratedSvg = normalizeSVG(s);
+                         document.getElementById('svg-preview-cont').innerHTML = currentGeneratedSvg;
+                     }, {ltres:1, qtres:1, scale:1});
+                } else alert("Tracer lib not loaded");
+            }
+        }
+        function resetImport() { document.getElementById('import-preview-area').classList.add('hidden'); document.getElementById('import-img-name').value=''; originalImgData=''; currentGeneratedSvg=''; }
+        
+        async function generateAiSvg() {
+            const name = document.getElementById('ai-prompt-name').value;
+            const ref = document.getElementById('ai-prompt-ref').value;
+            const detail = document.getElementById('ai-prompt-detail').value;
+
+            if(!name && !detail) { toast("Please enter details"); return; }
+            
+            // Build Scope Prompt
+            const prompt = `Item Name: ${name}. Style Ref: ${ref}. Details: ${detail}.`;
+
+            document.getElementById('ai-loading').classList.remove('hidden');
+            const key = _pool[activeKeyIndex].k1 + _pool[activeKeyIndex].k2;
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, {
+                    method:'POST', body:JSON.stringify({contents:[{parts:[{text:"Create SVG icon for game item. " + prompt + " Return raw SVG only. Minimize code."}]}]}), headers:{'Content-Type':'application/json'}
+                });
+                const j = await res.json();
+                let txt = j.candidates[0].content.parts[0].text.replace(/```xml|```svg|```/g,'');
+                currentAiSvg = normalizeSVG(txt.substring(txt.indexOf('<svg'), txt.lastIndexOf('</svg>')+6));
+                document.getElementById('ai-svg-output').innerHTML = currentAiSvg;
+                document.getElementById('ai-result-area').classList.remove('hidden');
+                document.getElementById('ai-item-name').value = name || "New Item";
+            } catch(e) { toast("AI Error"); } finally { document.getElementById('ai-loading').classList.add('hidden'); }
+        }
+        
+        function resetAiGen() { 
+            document.getElementById('ai-result-area').classList.add('hidden'); 
+            currentAiSvg=''; 
+            document.getElementById('ai-prompt-name').value=''; 
+            document.getElementById('ai-prompt-ref').value=''; 
+            document.getElementById('ai-prompt-detail').value=''; 
+        }
+
+        // --- 9. DRAG & DROP ---
+        function handleDragStart(e, id) { draggedItemId = id; e.target.classList.add('dragging'); }
+        function handleDragEnd(e) { e.target.classList.remove('dragging'); draggedItemId = null; }
+        function handleDragOverCat(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over-cat'); }
+        function handleDragLeaveCat(e) { e.currentTarget.classList.remove('drag-over-cat'); }
+        function handleDropCat(e, catId) {
+            e.preventDefault(); e.currentTarget.classList.remove('drag-over-cat');
+            if(draggedItemId) {
+                const item = items.find(i=>i.id===draggedItemId);
+                if(item) { item.catId=catId; saveLocal(); renderItems(); toast('Moved'); }
+            }
+        }
+
+        // --- 10. SYNC ---
+        function openGithubModal() {
+            const c = localStorage.getItem('gh_config');
+            if(c) {
+                const j = JSON.parse(c);
+                document.getElementById('gh-user').value=j.user; document.getElementById('gh-repo').value=j.repo;
+                document.getElementById('gh-token').value=j.token; document.getElementById('gh-path').value=j.path;
+            }
+            openModal('modal-github');
+        }
+        async function syncToGitHub(action) {
+            const user=document.getElementById('gh-user').value, repo=document.getElementById('gh-repo').value, token=document.getElementById('gh-token').value, path=document.getElementById('gh-path').value;
+            if(!user||!repo||!token) { openGithubModal(); return; }
+            localStorage.setItem('gh_config', JSON.stringify({user,repo,token,path}));
+            closeModal('modal-github'); toast('Connecting...');
+            
+            const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+            try {
+                let sha=null, content=null;
+                const get = await fetch(url, {headers:{'Authorization':`token ${token}`}});
+                if(get.ok) { const j = await get.json(); sha=j.sha; content=j.content; }
+
+                if(action==='pull') {
+                    if(!content) { toast('No file found'); return; }
+                    const d = JSON.parse(decodeURIComponent(escape(atob(content.replace(/\s/g,'')))));
+                    if(d.categories) d.categories.forEach(c=>{ if(!categories.find(ex=>ex.id===c.id)) categories.push(c); });
+                    if(d.items) { const ids=new Set(items.map(i=>i.id)); d.items.forEach(i=>{ if(!ids.has(i.id)) items.push(i); }); }
+                    saveLocal(); renderSidebar(); renderItems(); toast('Data Pulled');
+                } else {
+                    const b = btoa(unescape(encodeURIComponent(JSON.stringify({categories,items,trash}))));
+                    const body = { message:"Update DB", content:b }; if(sha) body.sha=sha;
+                    const put = await fetch(url, {method:'PUT', headers:{'Authorization':`token ${token}`, 'Content-Type':'application/json'}, body:JSON.stringify(body)});
+                    if(put.ok) toast('Data Pushed'); else alert('Push Failed');
+                }
+            } catch(e) { console.error(e); toast('Error'); }
+        }
+
+        function backupAll() { navigator.clipboard.writeText(JSON.stringify({categories,items})).then(()=>toast('Copied to Clipboard')); }
+        function downloadDB() {
+            const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify({categories,items,trash})], {type:'application/json'}));
+            a.download='db.json'; a.click();
+        }
+        function processRestore() {
+            try {
+                const d = JSON.parse(document.getElementById('restore-input').value);
+                if(d.items) {
+                    if(d.categories) d.categories.forEach(c=>{ if(!categories.find(ex=>ex.id===c.id)) categories.push(c); });
+                    const ids=new Set(items.map(i=>i.id));
+                    d.items.forEach(i=>{ if(!ids.has(i.id)) { i.catId = i.catId || 'cat-restore'; items.push(i); } });
+                    saveLocal(); renderSidebar(); renderItems(); closeModal('modal-restore'); toast('Restored');
+                }
+            } catch(e) { alert('Invalid JSON'); }
+        }
+
+        // --- 11. LANG ---
+        function setLanguage(l) {
+            currentLang=l;
+            document.querySelectorAll('.btn-lang').forEach(b=>b.classList.remove('active'));
+            document.getElementById('lang-'+l).classList.add('active');
+            applyLanguage();
+        }
+        
+        function applyLanguage() {
+            const t = {
+                th: { manage:"จัดการ", backup:"สำรองข้อมูล", system:"ระบบ", restore:"กู้คืน", items:"รายการไอเทม" },
+                en: { manage:"Manage", backup:"Backup", system:"System", restore:"Restore", items:"Item List" }
+            };
+            const lang = t[currentLang];
+            document.getElementById('label-manage').innerText = lang.manage;
+            document.getElementById('view-title').innerText = lang.items;
+        }
+
+        function saveCategory() {
+            const n = document.getElementById('cat-name-input').value;
+            let i = document.getElementById('cat-icon-input').value;
+            if(!i) i = selectedEmoji || '📁';
+            if(n) { categories.push({id:'cat-'+Date.now(), name:n, icon:i}); saveLocal(); renderSidebar(); closeModal('modal-category'); }
+        }
     </script>
 </body>
 </html>
