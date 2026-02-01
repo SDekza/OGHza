@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>OGHza Tracker V4.1 (Full Restore)</title>
+    <title>OGHza Tracker V4.4.2 (Tab Icons Fixed)</title>
+    
+    <!-- App Icon -->
+    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="icon.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -11,18 +15,20 @@
     <!-- Add Prop-Types for Recharts -->
     <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Fixed Babel Version for stability -->
+    <script src="https://unpkg.com/@babel/standalone@7.23.7/babel.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kanit:wght@300;400;500;600&display=swap');
-        
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+
         :root {
             --app-bg: #18181b; /* Zinc-950 */
             --glass-bg: rgba(39, 39, 42, 0.95); /* Zinc-800/95 */
         }
 
         body { 
-            font-family: 'Inter', 'Kanit', sans-serif; 
+            font-family: 'Inter', 'Kanit', 'Noto Color Emoji', sans-serif; 
             background-color: var(--app-bg); 
             color: #f4f4f5; 
             overflow-x: hidden; 
@@ -53,8 +59,8 @@
         @keyframes fadeIn { from { opacity: 0; } to { transform: opacity: 1; } }
         .animate-fade-in { animation: fadeIn 0.2s ease-in-out forwards; }
         
-        @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        .animate-pop-in { animation: popIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
         /* Custom Range Slider */
         input[type=range] {
@@ -99,24 +105,81 @@
             user-select: none;
         }
         
-        /* Delete Button Animation */
+        /* Sunken Slot Effect for Inventory */
+        .sunken-slot {
+            background: #141417;
+            box-shadow: inset 3px 3px 6px #0a0a0b, inset -2px -2px 5px #27272a;
+            border: 1px solid #27272a;
+            transition: all 0.1s;
+        }
+        .sunken-slot:active {
+            filter: brightness(1.5); /* Flash effect */
+            transform: scale(0.98);
+            border-color: #71717a;
+        }
+        
+        /* Rank Styles */
+        .rank-ss {
+            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            background-size: 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: rainbow 3s linear infinite;
+            font-weight: 900;
+            font-style: italic;
+        }
+        @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        
+        .rank-s { color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5); font-weight: 900; }
+        .rank-a { color: #f87171; text-shadow: 0 0 10px rgba(248, 113, 113, 0.5); font-weight: 900; }
+        .rank-b { color: #3b82f6; font-weight: 800; }
+        .rank-c { color: #a1a1aa; font-weight: 700; }
+        .rank-d { color: #71717a; font-weight: 600; }
+        .rank-e { color: #52525b; font-weight: 600; }
+        .rank-f { color: #ef4444; font-weight: 900; }
+
         .delete-progress {
             transition: width linear;
+        }
+
+        /* Header Currency Bar */
+        .rox-currency-bar {
+            background: rgba(24, 24, 27, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #3f3f46;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            height: 50px;
+        }
+        .currency-pill {
+            background: #27272a;
+            border-radius: 12px;
+            padding: 4px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #e4e4e7;
+            border: 1px solid #3f3f46;
         }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module">
+    <script type="text/babel" data-type="module" data-presets="react">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, onSnapshot, addDoc, deleteDoc, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, onSnapshot, addDoc, deleteDoc, getDocs, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const { useState, useEffect, useMemo, useRef } = React;
 
         // --- Configuration ---
-        const APP_VERSION = "Ver.4.1.0 (Full Restore)";
+        const APP_VERSION = "Ver.4.4.2 (Tab Icons Fixed)";
         
         const MANUAL_FIREBASE_CONFIG = {
             apiKey: "AIzaSyAbWzr8o_OhkjGbEetBYq_nzYmVZ2fTf40",
@@ -134,38 +197,35 @@
         };
 
         const SHOP_ITEMS = [
-            { id: 'premium_box', name: 'Premium Box (30d)', duration: 30, type: 'buff_box', icon: 'Premium', desc: 'VIP Buff 30 Days', rarity: 'Rare' },
-            { id: 'kafra_box', name: 'Kafra Buff (7d)', duration: 7, type: 'buff_box', icon: 'Kafra', desc: 'Kafra Buff 7 Days', rarity: 'Uncommon' },
-            { id: 'silvervine_box', name: 'Silvervine Box (10ea)', qty: 10, type: 'consumable_box', subType: 'silvervine', icon: 'SilvervineBox', desc: 'Open to get 10 Silvervines', rarity: 'Uncommon' },
-            { id: 'gum_box', name: 'Bubble Gum Box (10ea)', qty: 10, type: 'consumable_box', subType: 'gum', icon: 'GumBox', desc: 'Open to get 10 Gums', rarity: 'Common' },
-            { id: 'he_gum_box', name: 'HE Bubble Gum Box (5ea)', qty: 5, type: 'consumable_box', subType: 'he_gum', icon: 'HeGumBox', desc: 'Open to get 5 HE Gums', rarity: 'Rare' }
+            { id: 'premium_box', name: 'Premium Box (30d)', duration: 30, type: 'buff_box', icon: 'Premium', desc: 'VIP Buff 30 Days', rarity: 'Rare', category: 'Consumable' },
+            { id: 'kafra_box', name: 'Kafra Buff (7d)', duration: 7, type: 'buff_box', icon: 'Kafra', desc: 'Kafra Buff 7 Days', rarity: 'Uncommon', category: 'Consumable' },
+            { id: 'silvervine_box', name: 'Silvervine Box (10ea)', qty: 10, type: 'consumable_box', subType: 'silvervine', icon: 'SilvervineBox', desc: 'Open to get 10 Silvervines', rarity: 'Uncommon', category: 'Consumable' },
+            { id: 'gum_box', name: 'Bubble Gum Box (10ea)', qty: 10, type: 'consumable_box', subType: 'gum', icon: 'GumBox', desc: 'Open to get 10 Gums', rarity: 'Common', category: 'Consumable' },
+            { id: 'he_gum_box', name: 'HE Bubble Gum Box (5ea)', qty: 5, type: 'consumable_box', subType: 'he_gum', icon: 'HeGumBox', desc: 'Open to get 5 HE Gums', rarity: 'Rare', category: 'Consumable' }
         ];
         
         const ITEM_DETAILS = {
-            'spell': { name: 'Coagulated Spell', desc: 'ผลึกเวทมนตร์สีม่วง', type: 'Etc', rarity: 'Common' },
-            'magic': { name: 'Contaminated Magic', desc: 'พลังงานเวทมนตร์สีแดง', type: 'Etc', rarity: 'Uncommon' },
-            'gum': { name: 'Bubble Gum', desc: 'หมากฝรั่งเพิ่มอัตราการดรอปไอเทม 100% เป็นเวลา 30 นาที', type: 'Consumable', rarity: 'Common' },
-            'he_gum': { name: 'HE Bubble Gum', desc: 'หมากฝรั่งประสิทธิภาพสูง เพิ่มอัตราการดรอปไอเทม 200% เป็นเวลา 15 นาที', type: 'Consumable', rarity: 'Rare' },
-            'silvervine': { name: 'Silvervine', desc: 'ผลไม้แมว ใช้สำหรับแลกเปลี่ยนหรือเปิดใช้งานบริการพิเศษ', type: 'Etc', rarity: 'Common' },
-            'premium_staff': { name: 'Premium Staff', desc: 'คฑาสำหรับสมาชิก VIP ใช้สำหรับเปิดใช้งาน Silvervine Buff', type: 'Tool', rarity: 'Legendary' }
+            'spell': { name: 'Coagulated Spell', desc: 'ผลึกเวทมนตร์สีม่วง', type: 'Etc', rarity: 'Common', category: 'Etc' },
+            'magic': { name: 'Contaminated Magic', desc: 'พลังงานเวทมนตร์สีแดง', type: 'Etc', rarity: 'Uncommon', category: 'Etc' },
+            'gum': { name: 'Bubble Gum', desc: 'หมากฝรั่งเพิ่มอัตราการดรอปไอเทม 100% เป็นเวลา 30 นาที', type: 'Consumable', rarity: 'Common', category: 'Consumable' },
+            'he_gum': { name: 'HE Bubble Gum', desc: 'หมากฝรั่งประสิทธิภาพสูง เพิ่มอัตราการดรอปไอเทม 200% เป็นเวลา 15 นาที', type: 'Consumable', rarity: 'Rare', category: 'Consumable' },
+            'silvervine': { name: 'Silvervine', desc: 'ผลไม้แมว ใช้สำหรับแลกเปลี่ยนหรือเปิดใช้งานบริการพิเศษ', type: 'Etc', rarity: 'Common', category: 'Etc' },
+            'premium_staff': { name: 'Premium Staff', desc: 'คฑาสำหรับสมาชิก VIP ใช้สำหรับเปิดใช้งาน Silvervine Buff', type: 'Tool', rarity: 'Legendary', category: 'Consumable' }
         };
 
         const DROP_TABLE = [
-            { id: 'elu', name: 'Elunium', rate: 0.4, min: 1, max: 2, icon: 'Elunium', desc: 'แร่ธาตุหายากที่มีความแข็งแกร่งเป็นเลิศ ใช้สำหรับตีบวกอุปกรณ์ป้องกัน (Armor)', type: 'Ore', rarity: 'Common' },
-            { id: 'ori', name: 'Oridecon', rate: 0.4, min: 1, max: 2, icon: 'Oridecon', desc: 'แร่ธาตุที่เปี่ยมไปด้วยพลังทำลายล้าง ใช้สำหรับตีบวกอาวุธ (Weapon)', type: 'Ore', rarity: 'Common' },
-            { id: 'card_wk', name: 'White Knight Card', rarity: 'Rare', rate: 0.05, min: 1, max: 1, icon: 'Card', desc: 'การ์ดระดับ Rare ของอัศวินขาว เพิ่มพลังโจมตีมอนสเตอร์ประเภทขนาดกลางและใหญ่ 20%', type: 'Card' },
-            { id: 'card_kk', name: 'Khalitzburg Knight Card', rarity: 'Rare', rate: 0.05, min: 1, max: 1, icon: 'Card', desc: 'การ์ดระดับ Rare ของคาลิทซ์เบิร์ก ลดความเสียหายจากมอนสเตอร์ขนาดกลางและใหญ่ 25%', type: 'Card' },
-            { id: 'card_ogh', name: 'Old Glast Heim Card', rarity: 'Legendary', rate: 0.001, min: 1, max: 1, icon: 'Card', desc: 'การ์ดระดับตำนานของ Glast Heim', type: 'Card' }
+            { id: 'elu', name: 'Elunium', rate: 0.4, min: 1, max: 2, icon: 'Elunium', desc: 'แร่ธาตุหายากที่มีความแข็งแกร่งเป็นเลิศ ใช้สำหรับตีบวกอุปกรณ์ป้องกัน (Armor)', type: 'Ore', rarity: 'Common', category: 'Etc' },
+            { id: 'ori', name: 'Oridecon', rate: 0.4, min: 1, max: 2, icon: 'Oridecon', desc: 'แร่ธาตุที่เปี่ยมไปด้วยพลังทำลายล้าง ใช้สำหรับตีบวกอาวุธ (Weapon)', type: 'Ore', rarity: 'Common', category: 'Etc' },
+            { id: 'card_wk', name: 'White Knight Card', rarity: 'Rare', rate: 0.05, min: 1, max: 1, icon: 'Card', desc: 'การ์ดระดับ Rare ของอัศวินขาว เพิ่มพลังโจมตีมอนสเตอร์ประเภทขนาดกลางและใหญ่ 20%', type: 'Card', category: 'Rare' },
+            { id: 'card_kk', name: 'Khalitzburg Knight Card', rarity: 'Rare', rate: 0.05, min: 1, max: 1, icon: 'Card', desc: 'การ์ดระดับ Rare ของคาลิทซ์เบิร์ก ลดความเสียหายจากมอนสเตอร์ขนาดกลางและใหญ่ 25%', type: 'Card', category: 'Rare' },
+            { id: 'card_ogh', name: 'Old Glast Heim Card', rarity: 'Legendary', rate: 0.001, min: 1, max: 1, icon: 'Card', desc: 'การ์ดระดับตำนานของ Glast Heim', type: 'Card', category: 'Rare' }
         ];
 
         // --- Helper Functions ---
         const formatMoney = (n) => new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(n || 0);
         const formatFullMoney = (n) => new Intl.NumberFormat('th-TH').format(n || 0);
         const getExpReq = (lv) => Math.floor(100 * Math.pow(lv || 1, 1.5));
-        const handleNumberInput = (e, field, setter) => {
-            const val = e.target.value.replace(/[^0-9]/g, '');
-            setter(prev => ({ ...prev, [field]: val }));
-        };
+
         const simulateDrops = () => {
              const drops = [];
              DROP_TABLE.forEach(item => {
@@ -190,184 +250,155 @@
             const dropItem = DROP_TABLE.find(d => d.id === id);
             if (dropItem) return dropItem;
             const shopItem = SHOP_ITEMS.find(s => s.id === id);
-            if (shopItem) return { ...shopItem, type: 'Box', rarity: shopItem.rarity || 'Common' };
+            if (shopItem) return { ...shopItem, type: 'Box', rarity: shopItem.rarity || 'Common', category: shopItem.category || 'Consumable' };
             if (id === 'premium_staff') return { ...ITEM_DETAILS['premium_staff'], icon: 'PremiumStaff' };
             
-            return { name: 'Unknown Item', desc: 'No description available.', type: 'Etc', rarity: 'Common', icon: 'Box' };
+            return { name: 'Unknown Item', desc: 'No description available.', type: 'Etc', rarity: 'Common', icon: 'Box', category: 'Etc' };
+        };
+        
+        const getRankInfo = (profit, averageProfit) => {
+            if (profit < 0) return { rank: 'F', css: 'rank-f', text: 'LOSS' };
+            
+            if (!averageProfit || averageProfit === 0) return { rank: 'B', css: 'rank-b', text: 'NORMAL' };
+
+            const diff = (profit - averageProfit) / averageProfit; 
+
+            if (diff > 0.5) return { rank: 'S', css: 'rank-s', text: 'LUCKY' };
+            if (diff > 0.3) return { rank: 'A', css: 'rank-a', text: 'GOOD' };
+            if (diff >= -0.1 && diff <= 0.1) return { rank: 'B', css: 'rank-b', text: 'NORMAL' };
+            if (diff >= -0.3) return { rank: 'C', css: 'rank-c', text: 'BAD' };
+            if (diff >= -0.5) return { rank: 'D', css: 'rank-d', text: 'POOR' };
+            return { rank: 'E', css: 'rank-e', text: 'AWFUL' };
         };
 
         // --- SVGs & Icons ---
-        const SVGs = {
-             // Basic Fallback Shapes
-            Spell: ({className}) => (<svg viewBox="0 0 32 40" className={className} fill="none"><g fill="#2e1a47"><rect x="10" y="2" width="12" height="1"></rect><rect x="8" y="3" width="2" height="1"></rect> <rect x="22" y="3" width="2" height="1"></rect><rect x="6" y="4" width="2" height="2"></rect> <rect x="24" y="4" width="2" height="2"></rect><rect x="5" y="6" width="1" height="4"></rect> <rect x="26" y="6" width="1" height="4"></rect><rect x="4" y="10" width="1" height="20"></rect> <rect x="27" y="10" width="1" height="20"></rect><rect x="5" y="30" width="1" height="4"></rect> <rect x="26" y="30" width="1" height="4"></rect><rect x="6" y="34" width="2" height="2"></rect> <rect x="24" y="34" width="2" height="2"></rect><rect x="8" y="36" width="2" height="1"></rect> <rect x="22" y="36" width="2" height="1"></rect><rect x="10" y="37" width="12" height="1"></rect></g><g fill="#6b44a3"><rect x="10" y="3" width="12" height="1"></rect><rect x="8" y="4" width="16" height="2"></rect><rect x="6" y="6" width="20" height="4"></rect><rect x="5" y="10" width="22" height="20"></rect><rect x="6" y="30" width="20" height="4"></rect><rect x="8" y="34" width="16" height="2"></rect><rect x="10" y="36" width="12" height="1"></rect></g><g fill="#4c2f75"><rect x="20" y="4" width="4" height="2"></rect><rect x="22" y="6" width="4" height="4"></rect><rect x="24" y="10" width="3" height="20"></rect><rect x="22" y="30" width="4" height="4"></rect><rect x="20" y="34" width="4" height="2"></rect><rect x="8" y="34" width="12" height="2"></rect><rect x="10" y="36" width="12" height="1"></rect><rect x="12" y="22" width="4" height="6"></rect><rect x="16" y="26" width="6" height="4"></rect><rect x="8" y="28" width="6" height="4"></rect></g><g fill="#9e7bd3"><rect x="10" y="3" width="10" height="1"></rect><rect x="8" y="4" width="4" height="2"></rect><rect x="6" y="6" width="4" height="4"></rect><rect x="5" y="10" width="3" height="20"></rect><rect x="6" y="30" width="4" height="4"></rect><rect x="10" y="12" width="6" height="8"></rect><rect x="16" y="8" width="4" height="6"></rect></g><g fill="#ffffff"><rect x="12" y="4" width="6" height="2"></rect><rect x="10" y="6" width="4" height="4"></rect><rect x="8" y="8" width="2" height="6"></rect><rect x="20" y="16" width="2" height="2"></rect></g></svg>),
-            Magic: ({className}) => (<svg viewBox="0 0 32 40" className={className} fill="none"><g id="layer-outline"><rect x="10" y="2" width="12" height="1" fill="#4a0d0d"/><rect x="8" y="3" width="2" height="1" fill="#4a0d0d"/><rect x="22" y="3" width="2" height="1" fill="#4a0d0d"/><rect x="6" y="4" width="2" height="2" fill="#4a0d0d"/><rect x="24" y="4" width="2" height="2" fill="#4a0d0d"/><rect x="5" y="6" width="1" height="4" fill="#4a0d0d"/><rect x="26" y="6" width="1" height="4" fill="#4a0d0d"/><rect x="4" y="10" width="1" height="18" fill="#4a0d0d"/><rect x="27" y="10" width="1" height="18" fill="#4a0d0d"/><rect x="5" y="28" width="1" height="4" fill="#4a0d0d"/><rect x="26" y="28" width="1" height="4" fill="#4a0d0d"/><rect x="6" y="32" width="2" height="2" fill="#4a0d0d"/><rect x="24" y="32" width="2" height="2" fill="#4a0d0d"/><rect x="8" y="34" width="2" height="1" fill="#4a0d0d"/><rect x="22" y="34" width="2" height="1" fill="#4a0d0d"/><rect x="10" y="35" width="12" height="1" fill="#4a0d0d"/></g><g id="layer-base"><rect x="10" y="3" width="12" height="1" fill="#c92a2a"/><rect x="8" y="4" width="16" height="2" fill="#c92a2a"/><rect x="6" y="6" width="20" height="4" fill="#c92a2a"/><rect x="5" y="10" width="22" height="18" fill="#c92a2a"/><rect x="6" y="28" width="20" height="4" fill="#c92a2a"/><rect x="8" y="32" width="16" height="2" fill="#c92a2a"/><rect x="10" y="34" width="12" height="1" fill="#c92a2a"/></g><g id="layer-shadow"><rect x="25" y="10" width="2" height="18" fill="#7f1d1d"/><rect x="22" y="6" width="2" height="4" fill="#7f1d1d"/><rect x="24" y="28" width="2" height="4" fill="#7f1d1d"/><rect x="20" y="32" width="4" height="2" fill="#7f1d1d"/><rect x="10" y="34" width="12" height="1" fill="#7f1d1d"/><rect x="12" y="18" width="8" height="8" fill="#7f1d1d"/><rect x="10" y="22" width="2" height="6" fill="#7f1d1d"/><rect x="20" y="20" width="2" height="4" fill="#7f1d1d"/><rect x="8" y="28" width="6" height="2" fill="#7f1d1d"/><rect x="16" y="28" width="6" height="2" fill="#7f1d1d"/></g><g id="layer-light"><rect x="10" y="4" width="8" height="2" fill="#ff8787"/><rect x="8" y="6" width="4" height="4" fill="#ff8787"/><rect x="6" y="10" width="2" height="10" fill="#ff8787"/><rect x="18" y="8" width="4" height="4" fill="#ff8787"/><rect x="8" y="24" width="2" height="2" fill="#ff8787"/><rect x="22" y="16" width="2" height="2" fill="#ff8787"/></g><g id="layer-highlight"><rect x="10" y="5" width="6" height="3" fill="#ffe3e3"/><rect x="8" y="7" width="2" height="4" fill="#ffe3e3"/><rect x="20" y="10" width="2" height="2" fill="#ffe3e3"/><rect x="6" y="12" width="1" height="4" fill="#ffe3e3"/></g></svg>),
-            Gum: ({className}) => (<svg viewBox="0 0 160 160" className={className} fill="none"><g transform="rotate(15, 80, 100)"><rect x="30" y="80" width="100" height="35" rx="3" fill="#ffb38a" stroke="#d18a66" strokeWidth="1.5"/><rect x="35" y="83" width="90" height="29" rx="2" fill="#ffe0cf"/><circle cx="50" cy="97" r="6" fill="#ff7da1"/></g><g transform="rotate(-30, 80, 70)"><rect x="30" y="45" width="100" height="35" rx="3" fill="#a0d8f5" stroke="#6ba8cc" strokeWidth="1.5"/><rect x="35" y="48" width="90" height="29" rx="2" fill="#def4ff"/><circle cx="55" cy="62" r="5" fill="#ff9aa2"/><circle cx="70" cy="58" r="6" fill="#fff5ba"/><rect x="95" y="55" width="12" height="15" rx="1" fill="#4d3b2c" opacity="0.8"/></g></svg>),
-            HeGum: ({className}) => (
-                <svg viewBox="0 0 200 180" className={className} fill="none">
-                    <defs>
-                        <radialGradient id="heGumGrad" cx="40%" cy="40%" r="60%">
-                            <stop offset="0%" stopColor="#ff6b6b"></stop>
-                            <stop offset="70%" stopColor="#c92a2a"></stop>
-                            <stop offset="100%" stopColor="#862e2e"></stop>
-                        </radialGradient>
-                        <linearGradient id="heShine" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="white" stopOpacity="0.6"></stop>
-                            <stop offset="100%" stopColor="white" stopOpacity="0"></stop>
-                        </linearGradient>
-                    </defs>
-                    <ellipse cx="100" cy="150" rx="70" ry="15" fill="#e2e8f0" opacity="0.5"></ellipse>
-                    <g>
-                        <ellipse cx="70" cy="100" rx="20" ry="14" fill="url(#heGumGrad)" transform="rotate(-15 70 100)"></ellipse>
-                        <ellipse cx="130" cy="100" rx="20" ry="14" fill="url(#heGumGrad)" transform="rotate(15 130 100)"></ellipse>
-                        <ellipse cx="100" cy="85" rx="20" ry="14" fill="url(#heGumGrad)"></ellipse>
-                        <ellipse cx="60" cy="120" rx="22" ry="15" fill="url(#heGumGrad)" transform="rotate(-10 60 120)"></ellipse>
-                        <ellipse cx="140" cy="120" rx="22" ry="15" fill="url(#heGumGrad)" transform="rotate(10 140 120)"></ellipse>
-                        <ellipse cx="100" cy="115" rx="22" ry="15" fill="url(#heGumGrad)"></ellipse>
-                        <ellipse cx="80" cy="130" rx="22" ry="15" fill="url(#heGumGrad)" transform="rotate(-5 80 130)"></ellipse>
-                        <ellipse cx="120" cy="130" rx="22" ry="15" fill="url(#heGumGrad)" transform="rotate(5 120 130)"></ellipse>
-                        <ellipse cx="100" cy="140" rx="25" ry="16" fill="url(#heGumGrad)"></ellipse>
-                        <ellipse cx="65" cy="145" rx="22" ry="15" fill="url(#heGumGrad)" transform="rotate(-20 65 145)"></ellipse>
-                        <ellipse cx="135" cy="145" rx="22" ry="15" fill="url(#heGumGrad)" transform="rotate(20 135 145)"></ellipse>
-                        <ellipse cx="145" cy="160" rx="20" ry="12" fill="url(#heGumGrad)" transform="rotate(10 145 160)"></ellipse>
-                        <ellipse cx="95" cy="132" rx="12" ry="6" fill="url(#heShine)"></ellipse>
-                        <ellipse cx="60" cy="138" rx="10" ry="5" fill="url(#heShine)"></ellipse>
-                        <ellipse cx="135" cy="138" rx="10" ry="5" fill="url(#heShine)"></ellipse>
-                        <ellipse cx="145" cy="155" rx="8" ry="4" fill="url(#heShine)"></ellipse>
-                        <ellipse cx="95" cy="78" rx="8" ry="4" fill="url(#heShine)"></ellipse>
-                    </g>
-                </svg>
-            ),
-
-            GumBox: ({className}) => (<svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>),
-            HeGumBox: ({className}) => (<svg viewBox="0 0 160 160" className={className} fill="none"><rect x="30" y="30" width="100" height="100" rx="10" fill="#fecaca" stroke="#dc2626" strokeWidth="2"/><path d="M30 60 L130 60" stroke="#dc2626" strokeWidth="2"/><path d="M80 60 L80 130" stroke="#dc2626" strokeWidth="2"/><g transform="translate(90, 90) scale(0.4)"><ellipse cx="70" cy="100" rx="30" ry="20" fill="#ff6b6b"/></g></svg>),
-            Silvervine: ({className}) => (<svg viewBox="0 0 120 160" className={className} fill="none"><path d="M60,10 L60,25" stroke="#4a7729" strokeWidth="4"/><path d="M60,25 C75,25 75,45 75,60 C75,80 95,90 95,115 C95,145 75,155 60,155 C45,155 25,145 25,115 C25,90 45,80 45,60 C45,45 45,25 60,25 Z" fill="#8cc63f"/></svg>),
-            SilvervineBox: ({className}) => (<svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>),
-            Premium: ({className}) => (<svg viewBox="0 0 256 256" className={className} preserveAspectRatio="xMidYMid meet"><defs><linearGradient id="boxSide" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#ec4899"/> <stop offset="50%" stopColor="#db2777"/> <stop offset="100%" stopColor="#be185d"/> </linearGradient><linearGradient id="lidTop" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#fbcfe8"/> <stop offset="100%" stopColor="#f472b6"/> </linearGradient><linearGradient id="lidSide" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#f9a8d4"/> <stop offset="100%" stopColor="#db2777"/> </linearGradient><linearGradient id="silverRibbon" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f1f5f9"/> <stop offset="40%" stopColor="#94a3b8"/> <stop offset="60%" stopColor="#cbd5e1"/> <stop offset="100%" stopColor="#475569"/> </linearGradient><radialGradient id="goldCharm" cx="40%" cy="40%" r="60%"><stop offset="0%" stopColor="#fde047"/> <stop offset="100%" stopColor="#ca8a04"/> </radialGradient><filter id="premBoxShadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="6"/><feOffset dx="0" dy="8" result="offsetblur"/><feComponentTransfer><feFuncA type="linear" slope="0.4"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="premGlow"><feGaussianBlur stdDeviation="2" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g filter="url(#premBoxShadow)"><path d="M 128,230 L 128,200 L 210,120 L 210,150 Q 210,190 128,230 Z" fill="url(#boxSide)"/> <path d="M 128,230 L 128,200 L 46,120 L 46,150 Q 46,190 128,230 Z" fill="url(#boxSide)"/> <path d="M 55,160 Q 90,190 128,215 Q 166,190 200,160" fill="none" stroke="#be185d" strokeWidth="1"/> <path d="M 128,200 L 210,120 C 240,90 180,40 128,90 C 76,40 16,90 46,120 Z" fill="#db2777" transform="translate(0, 10)"/> <path d="M 128,190 L 210,110 C 240,80 180,30 128,80 C 76,30 16,80 46,110 Z" fill="url(#lidTop)" stroke="#fbcfe8" strokeWidth="1"/> <path d="M 46,110 L 46,125 L 128,205 L 128,190 Z" fill="url(#lidSide)"/> <path d="M 210,110 L 210,125 L 128,205 L 128,190 Z" fill="url(#lidSide)"/> <path d="M 46,110 L 128,190 L 210,110" fill="none" stroke="#fde047" strokeWidth="2" strokeLinecap="round" opacity="0.6"/> <path d="M 80,60 L 180,160 L 160,175 L 65,75 Z" fill="url(#silverRibbon)" opacity="0.9" clipPath="path('M 128,190 L 210,110 C 240,80 180,30 128,80 C 76,30 16,80 46,110 Z')"/> <path d="M 170,60 L 70,160 L 90,175 L 185,75 Z" fill="url(#silverRibbon)" opacity="0.9" clipPath="path('M 128,190 L 210,110 C 240,80 180,30 128,80 C 76,30 16,80 46,110 Z')"/> <path d="M 120,197 L 120,225 L 136,225 L 136,197" fill="#94a3b8"/> <g transform="translate(128, 90)"> <path d="M -5,5 Q -30,-40 -10,-50 Q 10,-40 0,0" fill="none" stroke="#e2e8f0" strokeWidth="4"/> <path d="M -5,5 Q -30,-40 -10,-50 Q 10,-40 0,0" fill="none" stroke="#64748b" strokeWidth="1.5"/> <path d="M 5,5 Q 30,-40 10,-50 Q -10,-40 0,0" fill="none" stroke="#e2e8f0" strokeWidth="4"/> <path d="M 5,5 Q 30,-40 10,-50 Q -10,-40 0,0" fill="none" stroke="#64748b" strokeWidth="1.5"/> <path d="M -5,5 Q -50,-10 -40,10 Q -20,20 0,5" fill="none" stroke="#e2e8f0" strokeWidth="4"/> <path d="M -5,5 Q -50,-10 -40,10 Q -20,20 0,5" fill="none" stroke="#64748b" strokeWidth="1.5"/> <path d="M 5,5 Q 50,-10 40,10 Q 20,20 0,5" fill="none" stroke="#e2e8f0" strokeWidth="4"/> <path d="M 5,5 Q 50,-10 40,10 Q 20,20 0,5" fill="none" stroke="#64748b" strokeWidth="1.5"/> <path d="M -5,10 Q -20,40 -30,60" fill="none" stroke="#e2e8f0" strokeWidth="3"/> <path d="M -5,10 Q -20,40 -30,60" fill="none" stroke="#64748b" strokeWidth="1"/> <path d="M 5,10 Q 20,40 30,60" fill="none" stroke="#e2e8f0" strokeWidth="3"/> <path d="M 5,10 Q 20,40 30,60" fill="none" stroke="#64748b" strokeWidth="1"/> </g> <g transform="translate(128, 90)"> <circle cx="0" cy="5" r="14" fill="url(#goldCharm)" stroke="#b45309" strokeWidth="1"/> <ellipse cx="-4" cy="0" rx="6" ry="3" fill="white" opacity="0.6" transform="rotate(-45 -4 0)"/> <ellipse cx="-4" cy="3" rx="1.5" ry="2" fill="#713f12"/> <path d="M 3,3 L 6,1" stroke="#713f12" strokeWidth="1.5" strokeLinecap="round"/> <path d="M -5,8 Q 0,13 5,8" fill="none" stroke="#713f12" strokeWidth="1.5" strokeLinecap="round"/> </g> <g filter="url(#premGlow)"> <path d="M 80,60 L 83,68 L 91,71 L 83,74 L 80,82 L 77,74 L 69,71 L 77,68 Z" fill="white" opacity="0.8"/> <path d="M 170,100 L 172,105 L 177,107 L 172,109 L 170,114 L 168,109 L 163,107 L 168,105 Z" fill="white" opacity="0.9"/> <circle cx="100" cy="150" r="1.5" fill="white" opacity="0.6"/> </g> </g></svg>),
-            Kafra: ({className}) => (<svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 2a10 10 0 0 1 10 10h-10z" opacity="0.5"/></svg>),
-            Wish: ({className}) => (<svg viewBox="0 0 120 120" className={className} fill="none"><path d="M60 10 L75 45 L110 50 L85 75 L90 110 L60 95 L30 110 L35 75 L10 50 L45 45 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="4"/><circle cx="60" cy="60" r="10" fill="#fff" fillOpacity="0.4"/></svg>),
-            Zeny: ({className}) => (<svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/></svg>),
-            Oridecon: ({className}) => (<svg viewBox="0 0 100 100" className={className} fill="none"><path d="M50 15L85 50L50 85L15 50Z" fill="#d8b4fe" stroke="#a855f7" strokeWidth="2"/><path d="M50 15L50 85M15 50L85 50" stroke="#f3e8ff" strokeWidth="1" opacity="0.6"/></svg>),
-            Elunium: ({className}) => (<svg viewBox="0 0 100 100" className={className} fill="none"><path d="M50 10L80 30L80 70L50 90L20 70L20 30L50 10Z" fill="#94a3b8" stroke="#475569" strokeWidth="2"/><path d="M50 10L50 90M20 30L80 30M20 70L80 70" stroke="#cbd5e1" strokeWidth="1" opacity="0.5"/></svg>),
-            Card: ({className}) => (<svg viewBox="0 0 80 120" className={className} fill="none"><rect x="10" y="10" width="60" height="100" rx="4" fill="#1e293b" stroke="#fbbf24" strokeWidth="2"/><circle cx="40" cy="95" r="10" fill="#fbbf24" fillOpacity="0.2"/></svg>),
-            Cost: ({className}) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>),
-            Clock: ({className}) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>),
-            RewardPopup: ({className}) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z" /></svg>)
-        };
-
-        const Icon = ({ name, size = 20, className }) => {
-            const icons = {
-                Home: <path d="M21.085,6.758c-.07-.149-.176-.279-.308-.377-.13-.097-.262-.195-.395-.293V3.537c0-.552-.447-1-1-1s-1,.448-1,1v1.1c-2.695-1.912-5.398-3.637-6.383-3.637-1.299,0-5.49,2.927-8.778,5.382-.133,.1-.24,.231-.31,.383-.047,.102-1.154,2.562-1.154,7.578,0,2.165,.202,5.37,.432,6.858,.059,.38,.33,.692,.698,.804,.134,.041,3.346,.995,9.112,.995s8.977-.955,9.11-.995c.367-.112,.639-.424,.697-.804,.231-1.498,.435-4.703,.435-6.858,0-5.059-1.11-7.483-1.157-7.584Zm-11.17,14.196v-4.073c0-1.211,.936-2.196,2.085-2.196s2.085,.985,2.085,2.196v4.073c-.65,.029-1.345,.046-2.085,.046s-1.435-.017-2.085-.046Zm10.002-.711c-.704,.159-2.002,.407-3.832,.576v-3.938c0-2.314-1.832-4.196-4.085-4.196s-4.085,1.882-4.085,4.196v3.938c-1.83-.168-3.129-.417-3.834-.576-.178-1.559-.323-4.132-.323-5.901,0-3.724,.653-5.875,.888-6.527,2.938-2.181,6.457-4.55,7.353-4.804,.893,.258,4.415,2.627,7.358,4.806,.235,.649,.886,2.778,.886,6.525,0,1.763-.146,4.337-.325,5.901Z"/>,
-                Inventory: <g fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round"><path d="M 48,70 Q 38,70 38,90 L 38,200 Q 38,230 68,230 L 188,230 Q 218,230 218,200 L 218,90 Q 218,70 208,70 Z"/><path d="M 28,120 Q 28,110 38,110 L 48,110 L 48,190 L 38,190 Q 28,190 28,180 Z"/><path d="M 228,120 Q 228,110 218,110 L 208,110 L 208,190 L 218,190 Q 228,190 228,180 Z"/><path d="M 88,140 Q 88,135 98,135 L 158,135 Q 168,135 168,140 L 168,200 Q 168,210 158,210 L 98,210 Q 88,210 88,200 Z"/><path d="M 88,140 L 168,140 L 158,160 Q 128,170 98,160 Z"/><circle cx="128" cy="155" r="4"/><path d="M 48,70 Q 48,40 78,40 L 178,40 Q 208,40 208,70 L 218,90 L 208,120 Q 128,150 48,120 L 38,90 Z"/><rect x="80" y="40" width="16" height="100" rx="2"/><rect x="160" y="40" width="16" height="100" rx="2"/><rect x="78" y="110" width="20" height="16" rx="2"/><rect x="84" y="114" width="8" height="8" rx="1"/> <rect x="158" y="110" width="20" height="16" rx="2"/><rect x="164" y="114" width="8" height="8" rx="1"/> <path d="M 58,115 Q 128,140 198,115" strokeDasharray="4 4" opacity="0.5"/><path d="M 60,60 L 196,60" strokeDasharray="4 4" opacity="0.5"/><path d="M 100,40 Q 100,20 128,20 Q 156,20 156,40"/></g>,
-                Shop: <><circle cx="7" cy="22" r="2"/><circle cx="17" cy="22" r="2"/><path d="M22.984,6.018A3.675,3.675,0,0,0,20.364,5H5.654L5.391,2.938A3.328,3.328,0,0,0,2.087,0H1.5A1.5,1.5,0,0,0,0,1.5H0A1.5,1.5,0,0,0,1.5,3h.587a.331.331,0,0,1,.326.3l1.5,11.759A3.327,3.327,0,0,0,7.217,18H17.339a5.5,5.5,0,0,0,5.3-4.042l1.246-4.531A3.489,3.489,0,0,0,22.984,6.018ZM19.75,13.163A2.508,2.508,0,0,1,17.339,15H7.217a.329.329,0,0,1-.325-.3L6.037,8H20.514A.5.5,0,0,1,21,8.632Z"/></>,
-                Dungeon: <><path d="M12.5,9.9c0.3-1.4,1-2.7,2.1-3.8C16.7,4,19.6,3.3,22.3,4"/><path d="M9.2,14.2C8.4,13,8,11.5,8,10c0-3,1.6-5.5,4-6.9"/><path d="M9.9,19.5c-1.4-0.3-2.7-1-3.8-2.1C4,15.3,3.3,12.4,4,9.7"/><path d="M14.2,22.8C13,23.6,11.5,24,10,24c-3,0-5.5-1.6-6.9-4"/><path d="M19.5,22.1c-0.3,1.4-1,2.7-2.1,3.8c-2.1,2.1-5.1,2.8-7.7,2.1"/><path d="M22.8,17.8C23.6,19,24,20.5,24,22c0,3-1.6,5.5-4,6.9"/><path d="M22.1,12.5c1.4,0.3,2.7,1,3.8,2.1c2.1,2.1,2.8,5.1,2.1,7.7"/><path d="M17.8,9.2C19,8.4,20.5,8,22,8c3,0,5.5,1.6,6.9,4"/><circle cx="16" cy="16" r="4"/></>,
-                History: <><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="12" r="3" fill="currentColor"/></>,
-                Plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
-                Trash: <><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></>,
-                ToggleOn: <><rect x="1" y="5" width="22" height="14" rx="7" fill="#10b981"/><circle cx="16" cy="12" r="5" fill="white"/></>, // Zinc-Emerald
-                ToggleOff: <><rect x="1" y="5" width="22" height="14" rx="7" fill="#52525b"/><circle cx="8" cy="12" r="5" fill="white"/></>, // Zinc-600
-                X: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
-                Settings: <><path d="M12,8a4,4,0,1,0,4,4A4,4,0,0,0,12,8Zm0,6a2,2,0,1,1,2-2A2,2,0,0,1,12,14Z"/><path d="M21.294,13.9l-.444-.256a9.1,9.1,0,0,0,0-3.29l.444-.256a3,3,0,1,0-3-5.2l-.445.257A8.977,8.977,0,0,0,15,3.513V3A3,3,0,0,0,9,3v.513A8.977,8.977,0,0,0,6.152,5.159L5.705,4.9a3,3,0,0,0-3,5.2l.444.256a9.1,9.1,0,0,0,0,3.29l-.444.256a3,3,0,1,0,3,5.2l.445-.257A8.977,8.977,0,0,0,9,20.487V21a3,3,0,0,0,6,0v-.513a8.977,8.977,0,0,0,2.848-1.646l.447.258a3,3,0,0,0,3-5.2Zm-2.548-3.776a7.048,7.048,0,0,1,0,3.75,1,1,0,0,0,.464,1.133l1.084.626a1,1,0,0,1-1,1.733l-1.086-.628a1,1,0,0,0-1.215.165,6.984,6.984,0,0,1-3.243,1.875,1,1,0,0,0-.751.969V21a1,1,0,0,1-2,0V19.748a1,1,0,0,0-.751-.969A6.984,6.984,0,0,1,7.006,16.9a1,1,0,0,0-1.215-.165l-1.084.627a1,1,0,1,1-1-1.732l1.084-.626a1,1,0,0,0,.464-1.133,7.048,7.048,0,0,1,0-3.75A1,1,0,0,0,4.79,8.992L3.706,8.366a1,1,0,0,1,1-1.733l1.086.628A1,1,0,0,0,7.006,7.1a6.984,6.984,0,0,1,3.243-1.875A1,1,0,0,0,11,4.252V3a1,1,0,0,1,2,0V4.252a1,1,0,0,0,.751.969A6.984,6.984,0,0,1,16.994,7.1a1,1,0,0,0,1.215.165l1.084-.627a1,1,0,1,1,1,1.732l-1.084.626A1,1,0,0,0,18.746,10.125Z"/></>,
-                Copy: <><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></>,
-                Box: <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-            };
-            
-            const iconDef = icons[name] || icons.Box;
-            let viewBox = "0 0 24 24";
-            if (name === "Inventory") viewBox = "0 0 256 256";
-            if (name === "Dungeon") viewBox = "0 0 32 32";
-            if (name === "Home") viewBox = "0 0 24 24";
-            if (name === "Shop") viewBox = "0 0 24 24";
-            if (name === "Settings") viewBox = "0 0 24 24";
-
-            return <svg width={size} height={size} viewBox={viewBox} fill="none" stroke="currentColor" strokeWidth={name === 'Inventory' ? "16" : "2"} strokeLinecap="round" strokeLinejoin="round" className={className}>{iconDef}</svg>;
-        };
-        
-        // Use SmartIcon to resolve URL or fallback
         const SmartIcon = ({ name, className }) => {
             const [error, setError] = useState(false);
             const BASE_URL = "http://sdekzaaa-source.github.io/ro-farm-app/";
             
             const imgMap = {
-                'Spell': 'Coagulated Spell.png',
-                'Magic': 'Contaminated Magic.png',
-                'Gum': 'Bubble Gum.png',
-                'HeGum': 'HE Bubble Gum.png',
-                'Silvervine': 'Silvervine Fruit.png',
-                'GumBox': 'Bubble Gum Box.png',
-                'HeGumBox': 'HE Bubble Gum Box.png',
-                'SilvervineBox': 'Silvervine Box.png',
-                'Premium': 'Premium Box.png',
-                'Kafra': 'Kafra Buff.png', 
-                'PremiumStaff': 'Premium Service Staff.png',
-                'elu': 'Elunium.png',
-                'ori': 'Oridecon.png',
-                'Zeny': 'Zeny.png',
-                'DEK': 'DEK.png',
-                'OGH_BOSS': 'OGH BOSS.png',
-                'AOGH_BOSS': 'AOGH BOSS.png'
+                'Spell': 'Coagulated Spell.png', 'spell': 'Coagulated Spell.png', 
+                'Magic': 'Contaminated Magic.png', 'magic': 'Contaminated Magic.png', 
+                'Gum': 'Bubble Gum.png', 'gum': 'Bubble Gum.png',
+                'HeGum': 'HE Bubble Gum.png', 'he_gum': 'HE Bubble Gum.png',
+                'Silvervine': 'Silvervine Fruit.png', 'silvervine': 'Silvervine Fruit.png',
+                'GumBox': 'Bubble Gum Box.png', 'HeGumBox': 'HE Bubble Gum Box.png',
+                'SilvervineBox': 'Silvervine Box.png', 'Premium': 'Premium Box.png',
+                'Kafra': 'Kafra Buff.png', 'PremiumStaff': 'Premium Service Staff.png', 'premium_staff': 'Premium Service Staff.png',
+                'Elunium': 'Elunium.png', 'Oridecon': 'Oridecon.png', 'Card': 'Card.png',
+                'elu': 'Elunium.png', 'ori': 'Oridecon.png', 'Zeny': 'Zeny.png', 'DEK': 'DEK.png',
+                'OGH_BOSS': 'OGH BOSS.png', 'AOGH_BOSS': 'AOGH BOSS.png'
             };
 
-            // Custom composite render for Gum Box
-            if (name === 'GumBox') {
-                 return (
-                     <div className={`relative ${className}`}>
-                        <img src={`${BASE_URL}Bubble Gum Box.png`} alt="Box" className="w-full h-full object-contain" />
-                        <img src={`${BASE_URL}Bubble Gum.png`} alt="Gum" className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" />
-                     </div>
-                );
-            }
-            // Custom composite render for HE Gum Box
-            if (name === 'HeGumBox') {
-                return (
-                     <div className={`relative ${className}`}>
-                        <img src={`${BASE_URL}Bubble Gum Box.png`} alt="Box" className="w-full h-full object-contain filter hue-rotate-15" />
-                        <img src={`${BASE_URL}HE Bubble Gum.png`} alt="HE" className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" />
-                     </div>
-                );
-            }
+            if (name === 'GumBox') return (<div className={`relative ${className}`}><img src={`${BASE_URL}Bubble Gum Box.png`} alt="Box" className="w-full h-full object-contain" /><img src={`${BASE_URL}Bubble Gum.png`} alt="Gum" className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>);
+            if (name === 'HeGumBox') return (<div className={`relative ${className}`}><img src={`${BASE_URL}Bubble Gum Box.png`} className="w-full h-full object-contain filter hue-rotate-15" /><img src={`${BASE_URL}HE Bubble Gum.png`} alt="HE" className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>);
+            if (!error && imgMap[name]) return <img src={`${BASE_URL}${imgMap[name]}`} className={`object-contain ${className}`} onError={() => setError(true)} />;
+            
+            return <div className={`w-full h-full bg-zinc-700 rounded-md flex items-center justify-center ${className}`}><span className="text-[8px] text-zinc-500">?</span></div>;
+        };
 
-            if (!error && imgMap[name]) {
-                return <img src={`${BASE_URL}${imgMap[name]}`} alt={name} className={`object-contain ${className}`} onError={() => setError(true)} />;
-            }
+        const Icon = ({ name, size = 20, className }) => {
+            const icons = {
+                // UI & Menu
+                Home: '🏠',
+                Inventory: '🎒', // Changed to Backpack
+                Shop: '🏪', // Storefront
+                Dungeon: '⚔️', // Crossed Swords
+                History: '📜', // Scroll
+                Settings: '🛠️', // Tools
+                
+                // Actions & Status
+                Save: '💾',
+                Trash: '🗑️',
+                Plus: '➕',
+                X: '❌',
+                Check: '✅',
+                Copy: '📋',
+                Info: 'ℹ️',
+                Clock: '⏰',
+                Cost: '💸',
+                TrendingUp: '📈',
+                Box: '📦',
+                ShoppingCart: '🛒',
+                FileText: '📝',
+                Clover: '🍀',
+                Wish: '🌠',
+                
+                // Tabs
+                LayoutGrid: '🎒', // All (using Backpack)
+                Flask: '🧪', // Use
+                Layers: '🍀', // Etc
+                Diamond: '💎', // Rare
+                
+                // Misc
+                Lock: '🔒',
+                DollarSign: '💲',
+                ToggleOn: '🟢',
+                ToggleOff: '⚫'
+            };
+            
+            const iconChar = icons[name] || '❓';
+            const fontSize = typeof size === 'number' ? size : 20;
 
-            const IconComp = Icon;
-            return <IconComp name="Box" className={className} />;
+            return (
+                <span className={`inline-flex items-center justify-center leading-none ${className}`} style={{ fontSize: fontSize }}>
+                    {iconChar}
+                </span>
+            );
         };
 
         // --- Shared Components ---
+        function CurrencyHeader({ stats, activeBuffs }) {
+            return (
+                <div className="rox-currency-bar sticky top-0 z-30">
+                    {/* Buffs Section - Left Side */}
+                    <div className="flex gap-2 mr-auto overflow-x-auto scrollbar-hide max-w-[50%]">
+                        {activeBuffs.map(b => {
+                            const now = new Date(); const end = new Date(b.endDate);
+                            if (end < now) return null;
+                            let icon = 'Check'; if(b.itemId === 'premium_box') icon = 'Premium'; if(b.itemId === 'kafra_box') icon = 'Kafra'; if(b.itemId === 'silvervine_24h') icon = 'Silvervine';
+                            return (
+                                <div key={b.uid} className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex-shrink-0 flex items-center justify-center relative group">
+                                    <SmartIcon name={icon} className="w-6 h-6"/>
+                                    {/* Simple tooltip simulation */}
+                                    <div className="absolute top-10 left-0 bg-black text-xs px-2 py-1 rounded hidden group-hover:block z-50 whitespace-nowrap border border-zinc-700">
+                                        {b.name}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    
+                    {/* Currency Section - Right Side */}
+                    <div className="flex gap-2">
+                        <div className="currency-pill">
+                            <SmartIcon name="Zeny" className="w-4 h-4"/>
+                            <span>{formatMoney(stats.zeny)}</span>
+                        </div>
+                        <div className="currency-pill">
+                            <SmartIcon name="DEK" className="w-4 h-4"/>
+                            <span>{formatMoney(stats.coins)}</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         function DeleteButton({ onDelete }) {
             const [isDeleting, setIsDeleting] = useState(false);
             const timerRef = useRef(null);
 
-            const startDelete = () => {
-                setIsDeleting(true);
-                timerRef.current = setTimeout(() => {
-                    onDelete();
-                    setIsDeleting(false);
-                }, 3000);
-            };
-
-            const cancelDelete = () => {
-                clearTimeout(timerRef.current);
-                setIsDeleting(false);
-            };
+            const startDelete = () => { setIsDeleting(true); timerRef.current = setTimeout(() => { onDelete(); setIsDeleting(false); }, 1000); };
+            const cancelDelete = () => { clearTimeout(timerRef.current); setIsDeleting(false); };
 
             return (
                 <div 
                     className="relative w-full h-8 bg-zinc-800 rounded-lg overflow-hidden cursor-pointer border border-rose-900/30 select-none touch-none mt-2"
-                    onMouseDown={startDelete}
-                    onMouseUp={cancelDelete}
-                    onMouseLeave={cancelDelete}
-                    onTouchStart={(e) => { e.preventDefault(); startDelete(); }}
-                    onTouchEnd={(e) => { e.preventDefault(); cancelDelete(); }}
+                    onMouseDown={startDelete} onMouseUp={cancelDelete} onMouseLeave={cancelDelete} onTouchStart={(e) => { e.preventDefault(); startDelete(); }} onTouchEnd={(e) => { e.preventDefault(); cancelDelete(); }}
                 >
-                    <div 
-                        className={`absolute top-0 left-0 h-full bg-rose-600 delete-progress ${isDeleting ? 'w-full duration-[3000ms]' : 'w-0 duration-100'}`}
-                    ></div>
+                    <div className={`absolute top-0 left-0 h-full bg-rose-600 delete-progress ${isDeleting ? 'w-full duration-[1000ms]' : 'w-0 duration-100'}`}></div>
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <span className={`text-[10px] font-bold uppercase tracking-widest ${isDeleting ? 'text-white animate-pulse' : 'text-rose-400'}`}>
-                            {isDeleting ? "Deleting..." : "Hold Delete"}
-                        </span>
+                        <span className={`text-[10px] font-bold uppercase tracking-widest ${isDeleting ? 'text-white animate-pulse' : 'text-rose-400'}`}>{isDeleting ? "Deleting..." : "Hold Delete"}</span>
                     </div>
                 </div>
             );
@@ -375,23 +406,11 @@
 
         function Toast({ message }) {
             return (
-                <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] animate-slide-down pointer-events-none w-full max-w-sm px-4">
+                <div className="fixed top-14 left-1/2 transform -translate-x-1/2 z-[100] animate-slide-down pointer-events-none w-full max-w-sm px-4">
                     <div className="bg-zinc-800/95 backdrop-blur-md border border-zinc-700 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 justify-center">
                         <div className="bg-emerald-500/20 p-1 rounded-full text-emerald-400"><Icon name="Check" size={14} /></div>
                         <span className="text-xs font-bold tracking-wide">{message}</span>
                     </div>
-                </div>
-            );
-        }
-
-        function NumberStepper({ value, onChange }) {
-            return (
-                <div className="flex items-center justify-between p-1.5 rounded-2xl bg-slate-800">
-                    <button type="button" onClick={() => onChange(Math.max(0, parseInt(value || 0) - 1))} className="w-8 h-8 rounded-xl bg-slate-700 flex items-center justify-center hover:bg-rose-500/20"><span className="text-lg font-black">-</span></button>
-                    <div className="text-center flex-1">
-                        <input type="text" inputMode="numeric" value={value} onChange={e => { const val = e.target.value.replace(/[^0-9]/g, ''); onChange(val === '' ? '' : parseInt(val)); }} className="w-full bg-transparent text-center text-lg font-black outline-none" />
-                    </div>
-                    <button type="button" onClick={() => onChange(parseInt(value || 0) + 1)} className="w-8 h-8 rounded-xl bg-slate-700 flex items-center justify-center hover:bg-emerald-500/20"><span className="text-lg font-black">+</span></button>
                 </div>
             );
         }
@@ -407,231 +426,98 @@
             );
         }
 
+        function InfoModal({ onClose }) {
+             return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+                     <div className="w-full max-w-xs bg-[#18181b] rounded-[2.5rem] p-6 relative border border-zinc-800" onClick={e => e.stopPropagation()}>
+                         <button onClick={onClose} className="absolute top-5 right-5 text-zinc-500 hover:text-white"><Icon name="X" size={20}/></button>
+                         <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Icon name="Clover" className="text-emerald-400"/> Rank Criteria</h3>
+                         <div className="space-y-3 text-sm text-zinc-300">
+                             <div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-ss w-8 text-center">SS</div><div className="flex-1"><span className="text-white font-bold">Godly</span> <br/><span className="text-xs text-zinc-500">Card Drop!</span></div></div>
+                             <div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-s w-8 text-center">S</div><div className="flex-1"><span className="text-white font-bold">Lucky</span> <br/><span className="text-xs text-zinc-500">&gt; Avg +50%</span></div></div>
+                             <div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-a w-8 text-center">A</div><div className="flex-1"><span className="text-white font-bold">Good</span> <br/><span className="text-xs text-zinc-500">&gt; Avg +30%</span></div></div>
+                             <div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-b w-8 text-center">B</div><div className="flex-1"><span className="text-white font-bold">Normal</span> <br/><span className="text-xs text-zinc-500">Within 10% of Avg</span></div></div>
+                             <div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-c w-8 text-center">C</div><div className="flex-1"><span className="text-white font-bold">Bad</span> <br/><span className="text-xs text-zinc-500">&lt; Avg -10%</span></div></div>
+                             <div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-d w-8 text-center">D</div><div className="flex-1"><span className="text-white font-bold">Poor</span> <br/><span className="text-xs text-zinc-500">&lt; Avg -30%</span></div></div>
+                             <div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-e w-8 text-center">E</div><div className="flex-1"><span className="text-white font-bold">Awful</span> <br/><span className="text-xs text-zinc-500">&lt; Avg -50%</span></div></div>
+                             <div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-f w-8 text-center">F</div><div className="flex-1"><span className="text-white font-bold">Loss</span> <br/><span className="text-xs text-zinc-500">Negative Profit</span></div></div>
+                         </div>
+                     </div>
+                 </div>
+            );
+        }
+
+        function RewardPopup({ drops, onClose }) {
+             return (<div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-fade-in" onClick={onClose}><div className="w-full max-w-sm bg-gradient-to-b from-zinc-800 to-black rounded-[2rem] p-8 relative border-2 border-amber-500/50 shadow-[0_0_50px_rgba(251,191,36,0.2)] flex flex-col items-center" onClick={e => e.stopPropagation()}><div className="absolute -top-12"><div className="w-24 h-24 rounded-full bg-amber-500 flex items-center justify-center border-4 border-zinc-900 shadow-xl animate-pop-in"><Icon name="Wish" size={50} /></div></div><h2 className="text-2xl font-black text-amber-400 mt-10 mb-2 tracking-tighter drop-shadow-md">STAGE CLEAR!</h2><p className="text-xs text-zinc-400 mb-6 uppercase tracking-widest font-bold">Rewards Obtained</p><div className="grid grid-cols-4 gap-3 mb-8 w-full">{drops.length > 0 ? drops.map((d, i) => (<div key={i} className="flex flex-col items-center animate-slide-up" style={{animationDelay: `${i*100}ms`}}><div className="w-14 h-14 bg-zinc-900 rounded-xl border border-zinc-700 flex items-center justify-center relative shadow-inner"><SmartIcon name={d.icon} className="w-10 h-10" /><span className="absolute -bottom-1 -right-1 bg-black text-zinc-300 text-[9px] font-black px-1.5 rounded border border-zinc-700">x{d.qty}</span></div></div>)) : <div className="col-span-4 text-center text-zinc-600 italic py-4">No rare drops...</div>}</div><button onClick={onClose} className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl shadow-lg transition-transform active:scale-95">CONTINUE</button></div></div>);
+        }
+
         function ItemDetailModal({ item, onClose, onSell }) {
              const rColors = { Common: "text-zinc-400", Uncommon: "text-emerald-400", Rare: "text-blue-400", Legendary: "text-amber-400" };
              const rBg = { Common: "bg-zinc-800/50", Uncommon: "bg-emerald-500/10", Rare: "bg-blue-500/10", Legendary: "bg-amber-500/10" };
-             
              const info = getItemInfo(item.id || item.itemId);
-             
              const [sellQty, setSellQty] = useState('1');
              const [sellPrice, setSellPrice] = useState('');
-             
-             return (
-                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-                     <div className="w-full max-w-xs bg-[#18181b] rounded-[2.5rem] p-6 relative border border-zinc-800" onClick={e => e.stopPropagation()}>
-                         <button onClick={onClose} className="absolute top-5 right-5 text-zinc-500 hover:text-white"><Icon name="X" size={20}/></button>
-                         
-                         <div className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-4 ${rBg[info.rarity]} border border-white/5 shadow-xl`}>
-                            <SmartIcon name={info.icon} className="w-12 h-12" />
-                         </div>
-                         
-                         <h3 className={`text-lg font-black text-center ${rColors[info.rarity]}`}>{info.name}</h3>
-                         <p className="text-[10px] font-bold text-center opacity-40 uppercase tracking-widest mb-4">{info.type} • {info.rarity}</p>
-                         <p className="text-xs text-center opacity-60 mb-6 italic">"{info.desc}"</p>
-                         
-                         {item.isSellable && (
-                             <div className="bg-zinc-900 p-4 rounded-2xl mb-4 border border-zinc-800">
-                                 <p className="text-[10px] font-bold opacity-40 uppercase mb-2 text-center">Sell Item</p>
-                                 <div className="grid grid-cols-2 gap-2 mb-2">
-                                     <div>
-                                        <label className="text-[8px] font-bold opacity-30 uppercase ml-1">Qty</label>
-                                        <input 
-                                            type="text" 
-                                            inputMode="numeric" 
-                                            value={sellQty} 
-                                            onChange={e => setSellQty(e.target.value.replace(/\D/g,''))} 
-                                            className="w-full bg-slate-800/80 border border-white/10 p-2 rounded-xl text-center font-bold text-sm outline-none focus:ring-1 focus:ring-emerald-500/50 focus:bg-slate-800 transition-all placeholder-white/20"
-                                            placeholder="0"
-                                        />
-                                     </div>
-                                     <div>
-                                        <label className="text-[8px] font-bold opacity-30 uppercase ml-1">Price/Unit</label>
-                                        <input 
-                                            type="text" 
-                                            inputMode="numeric" 
-                                            value={sellPrice} 
-                                            onChange={e => setSellPrice(e.target.value.replace(/\D/g,''))} 
-                                            className="w-full bg-slate-800/80 border border-white/10 p-2 rounded-xl text-center font-bold text-sm outline-none focus:ring-1 focus:ring-emerald-500/50 focus:bg-slate-800 transition-all placeholder-white/20"
-                                            placeholder="0"
-                                        />
-                                     </div>
-                                 </div>
-                                 <button onClick={() => onSell(item, sellQty, sellPrice)} disabled={!sellQty || !sellPrice} className="w-full py-2 bg-emerald-600 rounded-xl text-xs font-black uppercase hover:bg-emerald-500 transition-colors disabled:opacity-50">Confirm Sell</button>
-                             </div>
-                         )}
-                         
-                         {!item.isSellable && (
-                             <div className="text-center">
-                                 <p className="text-xs font-bold opacity-50">Owned: {item.count || item.qty}</p>
-                             </div>
-                         )}
-                     </div>
-                 </div>
-             );
+             return (<div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-fade-in" onClick={onClose}><div className="w-full max-w-xs bg-[#18181b] rounded-[2.5rem] p-6 relative border border-zinc-800" onClick={e => e.stopPropagation()}><button onClick={onClose} className="absolute top-5 right-5 text-zinc-500 hover:text-white"><Icon name="X" size={20}/></button><div className={`w-24 h-24 mx-auto rounded-3xl flex items-center justify-center mb-4 ${rBg[info.rarity]} border border-white/5 shadow-xl`}><SmartIcon name={info.icon} className="w-16 h-16" /></div><h3 className={`text-lg font-black text-center ${rColors[info.rarity]}`}>{info.name}</h3><p className="text-[10px] font-bold text-center opacity-40 uppercase tracking-widest mb-4">{info.type} • {info.rarity}</p><p className="text-xs text-center opacity-60 mb-6 italic">"{info.desc}"</p>{item.isSellable ? (<div className="bg-zinc-900 p-4 rounded-2xl mb-4 border border-zinc-800"><p className="text-[10px] font-bold opacity-40 uppercase mb-2 text-center">Sell Item</p><div className="grid grid-cols-2 gap-2 mb-2"><div><label className="text-[8px] font-bold opacity-30 uppercase ml-1">Qty</label><input type="text" inputMode="numeric" value={sellQty} onChange={e => setSellQty(e.target.value.replace(/\D/g,''))} className="w-full bg-slate-800/80 border border-white/10 p-2 rounded-xl text-center font-bold text-sm outline-none placeholder-white/20"/></div><div><label className="text-[8px] font-bold opacity-30 uppercase ml-1">Price/Unit</label><input type="text" inputMode="numeric" value={sellPrice} onChange={e => setSellPrice(e.target.value.replace(/\D/g,''))} className="w-full bg-slate-800/80 border border-white/10 p-2 rounded-xl text-center font-bold text-sm outline-none placeholder-white/20"/></div></div><button onClick={() => onSell(item, sellQty, sellPrice)} disabled={!sellQty || !sellPrice} className="w-full py-2 bg-emerald-600 rounded-xl text-xs font-black uppercase hover:bg-emerald-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"><Icon name="DollarSign" size={14}/> Confirm Sell</button></div>) : (<div className="text-center"><p className="text-xs font-bold opacity-50">Owned: {item.count || item.qty}</p></div>)}</div></div>);
         }
+
+        const TabButton = ({ label, icon: IconName, active, onClick }) => (
+            <button 
+                onClick={onClick} 
+                className={`flex-1 py-2 text-[10px] font-black uppercase transition-all rounded-xl flex flex-col items-center justify-center gap-1 ${active ? 'bg-zinc-700 text-white shadow-lg ring-1 ring-zinc-600' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+                <Icon name={IconName} size={16} />
+                {label}
+            </button>
+        );
 
         // --- VIEWS ---
         function HomeView({ records, stats, goToTab, onOpenSettings, activeBuffs }) {
-            const totalProfit = records.reduce((acc, r) => acc + (r.profit || 0), 0);
-            const { ResponsiveContainer, AreaChart, Area } = window.Recharts || {};
-            const chartData = [...records].reverse().slice(-7).map((r, i) => ({ name: `Run ${i+1}`, profit: r.profit }));
-
-            return (
+             const { ResponsiveContainer, AreaChart, Area } = window.Recharts || {}; // Fixed destructuring here
+             const totalProfit = records.reduce((acc, r) => acc + (r.profit || 0), 0);
+             const chartData = [...records].reverse().slice(-7).map((r, i) => ({ name: `Run ${i+1}`, profit: r.profit }));
+             const expPercent = Math.min(100, Math.floor((stats.baseExp / getExpReq(stats.baseLv)) * 100));
+             return (
                 <div className="p-6 animate-fade-in view-content">
-                    <header className="flex justify-between items-center mb-6">
-                        <div onClick={() => goToTab('profile')} className="flex items-center gap-3 bg-zinc-800 p-2 rounded-full pr-4 cursor-pointer hover:bg-zinc-700 transition-colors border border-zinc-700">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center font-black bg-zinc-600 text-white shadow-inner">{stats.jobClass ? stats.jobClass.substring(0, 1) : 'N'}</div>
-                            <div><p className="text-[10px] font-bold opacity-50 uppercase tracking-tighter">LV.{stats.baseLv}</p><p className="text-xs font-black text-zinc-300">{stats.jobClass}</p></div>
-                        </div>
-                        <button onClick={onOpenSettings} className="p-3 bg-zinc-800 rounded-2xl hover:bg-zinc-700 transition-all text-zinc-400 border border-zinc-700"><Icon name="Settings" size={20}/></button>
-                    </header>
-                    
-                    {activeBuffs && activeBuffs.length > 0 && (
-                        <div className="mb-6 animate-slide-up">
-                            <h3 className="text-[10px] font-bold opacity-40 uppercase tracking-widest mb-2 ml-1">ACTIVE BUFF</h3>
-                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                                {activeBuffs.map(b => {
-                                    const now = new Date(); const end = b.endDate; const diff = end - now;
-                                    const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                                    const hoursLeft = Math.ceil(diff / (1000 * 60 * 60));
-                                    if (diff < 0) return null;
-                                    let icon = 'Check';
-                                    if(b.itemId === 'premium_box') icon = 'Premium';
-                                    if(b.itemId === 'kafra_box') icon = 'Kafra';
-                                    if(b.itemId === 'silvervine_24h') icon = 'Silvervine';
-                                    return (
-                                        <div key={b.uid} className="flex-shrink-0 bg-zinc-800 p-3 rounded-2xl border border-zinc-700 flex items-center gap-3 min-w-[140px]">
-                                            <div className="text-zinc-400 w-8 h-8 flex items-center justify-center"><SmartIcon name={icon} className="w-6 h-6" /></div>
-                                            <div><p className="text-[10px] font-bold uppercase text-zinc-300 truncate w-20">{b.name}</p><p className="text-xs font-black text-emerald-400">{b.duration === 1 ? `${hoursLeft} Hrs` : `${daysLeft} Days`}</p></div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="text-center mb-8 bg-zinc-800/50 p-6 rounded-[2.5rem] border border-zinc-700/50 relative overflow-hidden">
-                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
-                         <div className="flex items-center justify-center gap-2 mb-1">
-                            <SmartIcon name="Zeny" className="w-5 h-5"/>
-                            <p className="text-[10px] opacity-50 font-bold uppercase tracking-widest">Total Profit</p>
-                         </div>
-                         <p className="text-4xl font-black text-white drop-shadow-sm">{formatMoney(totalProfit)}</p>
-                    </div>
-                    
-                    {window.Recharts && (
-                        <div className="glass-panel p-4 rounded-3xl h-48 mb-6 border-zinc-700 bg-zinc-800/50">
-                            <p className="text-[10px] font-bold opacity-40 mb-2 uppercase">Profit Trend</p>
-                            <ResponsiveContainer width="100%" height="90%">
-                                <AreaChart data={chartData}><Area type="monotone" dataKey="profit" stroke="#10b981" fill="#10b981" fillOpacity={0.1} strokeWidth={3} /></AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    )}
-
-                    <div className="space-y-3">
-                        <h4 className="text-[10px] font-bold opacity-40 px-2 uppercase tracking-widest">Recent Activity</h4>
-                        {records.slice(0, 3).map(r => (
-                            <div key={r.id} className="glass-panel p-4 rounded-3xl flex justify-between items-center border-zinc-700 bg-zinc-800">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden bg-black/20 border border-white/5">
-                                        {r.isSaleRecord ? <div className="font-black text-emerald-500">S</div> : 
-                                            <SmartIcon name={r.runMode === 'aogh' ? 'AOGH_BOSS' : 'OGH_BOSS'} className="w-8 h-8 object-cover"/>
-                                        }
-                                    </div>
-                                    <div><p className="font-bold text-sm text-zinc-200">{r.date}</p><p className="text-[10px] opacity-40 uppercase font-bold tracking-widest text-zinc-500">{r.isSaleRecord ? 'Sale' : r.runMode?.toUpperCase() || 'OGH'}</p></div>
-                                </div>
-                                <p className={`font-black ${r.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatMoney(r.profit)}</p>
-                            </div>
-                        ))}
-                    </div>
+                    <header className="flex justify-between items-center mb-6"><div onClick={() => goToTab('profile')} className="flex items-center gap-3 bg-zinc-800 p-2 rounded-full pr-4 cursor-pointer hover:bg-zinc-700 transition-colors border border-zinc-700 relative overflow-hidden group"><div className="w-10 h-10 rounded-full flex items-center justify-center font-black bg-zinc-600 text-white shadow-inner relative z-10">{stats.jobClass ? stats.jobClass.substring(0, 1) : 'N'}</div><div className="relative z-10"><p className="text-[10px] font-bold opacity-50 uppercase tracking-tighter">LV.{stats.baseLv}</p><p className="text-xs font-black text-zinc-300">{stats.jobClass}</p></div><div className="absolute bottom-0 left-0 h-1 bg-emerald-500 transition-all duration-500" style={{width: `${expPercent}%`}}></div></div><button onClick={onOpenSettings} className="p-3 bg-zinc-800 rounded-2xl hover:bg-zinc-700 transition-all text-zinc-400 border border-zinc-700"><Icon name="Settings" size={20}/></button></header>
+                    <div className="text-center mb-8 bg-zinc-800/50 p-6 rounded-[2.5rem] border border-zinc-700/50 relative overflow-hidden"><div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div><div className="flex items-center justify-center gap-2 mb-1"><SmartIcon name="Zeny" className="w-5 h-5"/><p className="text-[10px] opacity-50 font-bold uppercase tracking-widest">Total Profit</p></div><p className="text-4xl font-black text-white drop-shadow-sm">{formatMoney(totalProfit)}</p></div>
+                    {window.Recharts && (<div className="glass-panel p-4 rounded-3xl h-48 mb-6 border-zinc-700 bg-zinc-800/50"><p className="text-[10px] font-bold opacity-40 mb-2 uppercase flex items-center gap-2"><Icon name="TrendingUp" size={14}/> Profit Trend</p><ResponsiveContainer width="100%" height="90%"><AreaChart data={chartData}><Area type="monotone" dataKey="profit" stroke="#10b981" fill="#10b981" fillOpacity={0.1} strokeWidth={3} /></AreaChart></ResponsiveContainer></div>)}
+                    <div className="space-y-3"><h4 className="text-[10px] font-bold opacity-40 px-2 uppercase tracking-widest">Recent Activity</h4>{records.slice(0, 3).map(r => (<div key={r.id} className="glass-panel p-4 rounded-3xl flex justify-between items-center border-zinc-700 bg-zinc-800"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden bg-black/20 border border-white/5">{r.isSaleRecord ? <div className="font-black text-emerald-500">S</div> : <SmartIcon name={r.runMode === 'aogh' ? 'AOGH_BOSS' : 'OGH_BOSS'} className="w-8 h-8 object-cover"/>}</div><div><p className="font-bold text-sm text-zinc-200">{r.date}</p><p className="text-[10px] opacity-40 uppercase font-bold tracking-widest text-zinc-500">{r.isSaleRecord ? 'Sale' : r.runMode?.toUpperCase() || 'OGH'}</p></div></div><p className={`font-black ${r.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatMoney(r.profit)}</p></div>))}</div>
                 </div>
             );
         }
 
         function ShopView({ db, uid, showToast }) {
-            const [selectedItem, setSelectedItem] = useState(null);
-            const [price, setPrice] = useState('');
-            const [qty, setQty] = useState('1');
-
+            const [selectedItem, setSelectedItem] = useState(null); const [price, setPrice] = useState(''); const [qty, setQty] = useState('1');
             const handleItemClick = (item) => { setSelectedItem(item); setPrice(''); setQty('1'); };
             const handleBuy = async () => {
                 if (!price || !selectedItem) return;
-                const buyPrice = parseInt(price);
-                const quantity = parseInt(qty) || 1;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
-                const promises = [];
-                for(let i=0; i<quantity; i++) {
-                     promises.push(addDoc(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), {
-                        itemId: selectedItem.id, name: selectedItem.name, type: selectedItem.type, subType: selectedItem.subType || null, duration: selectedItem.duration || null,
-                        qty: selectedItem.qty || 1, buyPrice: buyPrice, timestamp: Date.now() + i, status: 'unused'
-                    }));
-                }
-                await Promise.all(promises);
-                showToast(`Bought ${quantity} ${selectedItem.name}`); setSelectedItem(null); setPrice(''); setQty('1');
+                const buyPrice = parseInt(price); const quantity = parseInt(qty) || 1; const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker'; const promises = [];
+                for(let i=0; i<quantity; i++) { promises.push(addDoc(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), { itemId: selectedItem.id, name: selectedItem.name, type: selectedItem.type, subType: selectedItem.subType || null, duration: selectedItem.duration || null, qty: selectedItem.qty || 1, buyPrice: buyPrice, timestamp: Date.now() + i, status: 'unused', category: selectedItem.category || 'Consumable' })); }
+                await Promise.all(promises); showToast(`Bought ${quantity} ${selectedItem.name}`); setSelectedItem(null); setPrice(''); setQty('1');
             };
-
             return (
                 <div className="p-6 animate-fade-in view-content space-y-6">
                     <h2 className="text-2xl font-black italic tracking-tighter text-zinc-200 flex items-center gap-2"><SmartIcon name="Zeny" className="w-8 h-8"/> Cash Shop</h2>
-                    <div className="bg-zinc-900/50 p-4 rounded-[2rem] border border-zinc-800 min-h-[200px]">
-                        <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mb-4 text-zinc-400">Shelves</p>
-                        <div className="grid grid-cols-4 gap-3">
-                            {SHOP_ITEMS.map(item => (
-                                <div key={item.id} onClick={() => handleItemClick(item)} className={`aspect-square rounded-2xl flex items-center justify-center transition-all relative cursor-pointer ${selectedItem?.id === item.id ? 'bg-zinc-700 ring-2 ring-emerald-500 scale-105 z-10' : 'bg-zinc-800 border border-zinc-700 active:scale-95 hover:bg-zinc-700/50'}`}>
-                                    <SmartIcon name={item.icon} className="w-8 h-8" />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="glass-panel p-6 rounded-[2.5rem] relative overflow-hidden border-zinc-700">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-600 to-transparent"></div>
-                        <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest mb-4 flex items-center gap-2 text-zinc-400"><Icon name="Shop" size={14}/> Trade Counter</p>
-                        <div className="flex gap-4">
-                            <div className={`w-24 h-24 rounded-3xl flex-shrink-0 flex items-center justify-center border-2 transition-all ${selectedItem ? 'bg-zinc-800 border-emerald-500/50 shadow-xl' : 'bg-zinc-900/50 border-dashed border-zinc-700'}`}>
-                                {selectedItem ? (
-                                     <div className="flex flex-col items-center animate-pop-in"><SmartIcon name={selectedItem.icon} className="w-10 h-10 mb-1" /></div>
-                                ) : (<span className="text-[8px] opacity-20 font-black uppercase text-center text-zinc-500">Select<br/>Item</span>)}
-                            </div>
-                            <div className="flex-1 space-y-2">
-                                <div>
-                                    <div className="flex justify-between items-baseline mb-1"><label className="text-[8px] font-bold opacity-40 uppercase ml-1">Item Name</label>{selectedItem && <span className="text-[10px] font-bold text-emerald-400 truncate">{selectedItem.name}</span>}</div>
-                                    <input type="text" inputMode="numeric" disabled={!selectedItem} value={price} onChange={e => setPrice(e.target.value.replace(/\D/g, ''))} className="slate-input w-full p-2 rounded-xl text-sm font-bold placeholder-zinc-700" placeholder="Price / Unit"/>
-                                </div>
-                                <div>
-                                    <label className="text-[8px] font-bold opacity-40 uppercase ml-1">Quantity</label>
-                                    <div className="flex items-center gap-2">
-                                        <button disabled={!selectedItem} onClick={() => setQty(Math.max(1, parseInt(qty||0)-1).toString())} className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center hover:bg-zinc-700 disabled:opacity-30 text-zinc-400">-</button>
-                                        <input type="text" inputMode="numeric" disabled={!selectedItem} value={qty} onChange={e => setQty(e.target.value.replace(/\D/g, ''))} className="w-full bg-transparent text-center text-sm font-black outline-none text-white"/>
-                                        <button disabled={!selectedItem} onClick={() => setQty((parseInt(qty||0)+1).toString())} className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center hover:bg-zinc-700 disabled:opacity-30 text-zinc-400">+</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
-                            <div><p className="text-[9px] opacity-40 font-bold uppercase">Total Cost</p><p className="text-xl font-black text-white">{formatMoney((parseInt(price) || 0) * (parseInt(qty) || 0))} z</p></div>
-                            <button onClick={handleBuy} disabled={!selectedItem || !price} className="px-6 py-3 bg-zinc-100 text-zinc-900 rounded-xl text-xs font-black uppercase shadow-lg hover:bg-white active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all">Buy Now</button>
-                        </div>
-                    </div>
+                    <div className="bg-zinc-900/50 p-4 rounded-[2rem] border border-zinc-800 min-h-[200px]"><p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mb-4 text-zinc-400">Shelves</p><div className="grid grid-cols-4 gap-3">{SHOP_ITEMS.map(item => (<div key={item.id} onClick={() => handleItemClick(item)} className={`aspect-square rounded-2xl flex items-center justify-center transition-all relative cursor-pointer ${selectedItem?.id === item.id ? 'bg-zinc-700 ring-2 ring-emerald-500 scale-105 z-10' : 'bg-zinc-800 border border-zinc-700 active:scale-95 hover:bg-zinc-700/50'}`}><SmartIcon name={item.icon} className="w-8 h-8" /></div>))}</div></div>
+                    <div className="glass-panel p-6 rounded-[2.5rem] relative overflow-hidden border-zinc-700"><div className="flex gap-4"><div className={`w-24 h-24 rounded-3xl flex-shrink-0 flex items-center justify-center border-2 transition-all ${selectedItem ? 'bg-zinc-800 border-emerald-500/50 shadow-xl' : 'bg-zinc-900/50 border-dashed border-zinc-700'}`}>{selectedItem ? <div className="flex flex-col items-center animate-pop-in"><SmartIcon name={selectedItem.icon} className="w-10 h-10 mb-1" /></div> : <span className="text-[8px] opacity-20 font-black uppercase text-center text-zinc-500">Select<br/>Item</span>}</div><div className="flex-1 space-y-2"><div><div className="flex justify-between items-baseline mb-1"><label className="text-[8px] font-bold opacity-40 uppercase ml-1 flex items-center gap-1"><Icon name="Box" size={10}/> Item Name</label>{selectedItem && <span className="text-[10px] font-bold text-emerald-400 truncate">{selectedItem.name}</span>}</div><input type="text" inputMode="numeric" disabled={!selectedItem} value={price} onChange={e => setPrice(e.target.value.replace(/\D/g, ''))} className="slate-input w-full p-2 rounded-xl text-sm font-bold placeholder-zinc-700" placeholder="Price / Unit"/></div><div><label className="text-[8px] font-bold opacity-40 uppercase ml-1">Quantity</label><div className="flex items-center gap-2"><button disabled={!selectedItem} onClick={() => setQty(Math.max(1, parseInt(qty||0)-1).toString())} className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center hover:bg-zinc-700 disabled:opacity-30 text-zinc-400">-</button><input type="text" inputMode="numeric" disabled={!selectedItem} value={qty} onChange={e => setQty(e.target.value.replace(/\D/g, ''))} className="w-full bg-transparent text-center text-sm font-black outline-none text-white"/><button disabled={!selectedItem} onClick={() => setQty((parseInt(qty||0)+1).toString())} className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center hover:bg-zinc-700 disabled:opacity-30 text-zinc-400">+</button></div></div></div></div><div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center"><div><p className="text-[9px] opacity-40 font-bold uppercase flex items-center gap-1"><SmartIcon name="Zeny" className="w-3 h-3"/> Total Cost</p><p className="text-xl font-black text-white">{formatMoney((parseInt(price) || 0) * (parseInt(qty) || 0))} z</p></div><button onClick={handleBuy} disabled={!selectedItem || !price} className="px-6 py-3 bg-zinc-100 text-zinc-900 rounded-xl text-xs font-black uppercase shadow-lg hover:bg-white active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center gap-2"><Icon name="ShoppingCart" size={14}/> Buy Now</button></div></div>
                 </div>
             );
         }
 
-        function InventoryView({ db, uid, showToast, records, stock }) {
+        function InventoryView({ db, uid, showToast, records, stock, stats }) {
             const [items, setItems] = useState([]);
             const [activeBuffs, setActiveBuffs] = useState([]);
             const [selectedBox, setSelectedBox] = useState(null);
             const [svUseConfirm, setSvUseConfirm] = useState(null);
             const [viewItem, setViewItem] = useState(null); 
-            
+            const [activeTab, setActiveTab] = useState('All');
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
-            const longPressTimer = useRef(null);
-            const isLongPress = useRef(false);
 
+            // Calculations
             const totalSpellsDropped = useMemo(() => records.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (parseInt(r.purpleStoneCount) || 0), 0), [records]);
             const totalMagicsDropped = useMemo(() => records.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (parseInt(r.contMagicCount) || 0), 0), [records]);
             const totalSpellsSold = useMemo(() => records.filter(r => r.isSaleRecord && r.itemId === 'spell').reduce((acc, r) => acc + r.qty, 0), [records]);
             const totalMagicsSold = useMemo(() => records.filter(r => r.isSaleRecord && r.itemId === 'magic').reduce((acc, r) => acc + r.qty, 0), [records]);
-
             const currentSpells = Math.max(0, totalSpellsDropped - totalSpellsSold);
             const currentMagics = Math.max(0, totalMagicsDropped - totalMagicsSold);
             const drops = useMemo(() => { const c = {}; records.forEach(r => { if (r.drops && !r.isSaleRecord) r.drops.forEach(d => c[d.id] = (c[d.id] || 0) + d.qty); }); return c; }, [records]);
@@ -639,11 +525,14 @@
             useEffect(() => {
                 const q = query(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), orderBy('timestamp', 'desc'));
                 const unsub = onSnapshot(q, (snap) => {
-                    const rawItems = snap.docs.map(d => ({ ...d.data(), uid: d.id }));
-                    setItems(rawItems.filter(i => i.status === 'unused'));
-                    const buffs = rawItems.filter(i => i.status === 'active').map(b => {
-                        const endDate = new Date(b.activatedAt); endDate.setDate(endDate.getDate() + b.duration);
-                        if(b.duration === 1) endDate.setTime(new Date(b.activatedAt).getTime() + (24*60*60*1000));
+                    setItems(snap.docs.map(d => ({ ...d.data(), uid: d.id })).filter(i => i.status === 'unused'));
+                    
+                    // FIX: Calculate endDate for active buffs
+                    const buffs = snap.docs.map(d => d.data()).filter(i => i.status === 'active').map(b => {
+                        const endDate = new Date(b.activatedAt);
+                        if(b.duration === 30) endDate.setDate(endDate.getDate() + 30);
+                        else if(b.duration === 7) endDate.setDate(endDate.getDate() + 7);
+                        else if(b.duration === 1) endDate.setTime(endDate.getTime() + (24*60*60*1000));
                         return { ...b, endDate };
                     });
                     setActiveBuffs(buffs);
@@ -651,7 +540,17 @@
                 return () => unsub();
             }, [uid]);
 
+            // Item Use/Sell Handlers (Same as previous versions)
             const handleUseBox = async (item) => {
+                // Prevent duplicate buff activation
+                if (item.itemId === 'premium_box' || item.itemId === 'kafra_box') {
+                    const isActive = activeBuffs.some(b => b.itemId === item.itemId && new Date(b.endDate) > new Date());
+                    if (isActive) {
+                        showToast("Buff is already active!");
+                        return;
+                    }
+                }
+
                 if (item.type === 'buff_box') {
                     await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'inventory', item.uid), { ...item, status: 'active', activatedAt: new Date().toISOString() });
                     showToast(`${item.name} Activated!`);
@@ -665,21 +564,26 @@
                     showToast(`Added ${item.qty} to Stock`);
                 }
                 setSelectedBox(null);
-            };
-            
-            const handleSellAction = async (item, qtyStr, priceStr) => {
+             };
+            const handleSellAction = async (item, qtyStr, priceStr) => { 
                 const qty = parseInt(qtyStr); const price = parseInt(priceStr);
                 if (!qty || !price || qty > item.count) { showToast("Invalid Amount"); return; }
-                const record = { isSaleRecord: true, itemId: item.id, itemName: item.name, qty: qty, pricePerUnit: price, profit: qty * price, date: new Date().toISOString().split('T')[0], timestamp: Date.now() };
+                const profit = qty * price;
+                const earnedDek = Math.floor(profit / 1000);
+                
+                const record = { isSaleRecord: true, itemId: item.id, itemName: item.name, qty: qty, pricePerUnit: price, profit, date: new Date().toISOString().split('T')[0], timestamp: Date.now() };
                 await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'records'), record);
-                showToast(`Sold ${qty} ${item.name}`); setViewItem(null);
+                
+                // Update DEK
+                const newStats = { ...stats };
+                newStats.coins = (newStats.coins || 0) + earnedDek;
+                newStats.zeny = (newStats.zeny || 0) + profit;
+                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), newStats);
+
+                showToast(`Sold! +${earnedDek} DEK`); setViewItem(null);
             };
-            
-            const startPress = (item) => { isLongPress.current = false; longPressTimer.current = setTimeout(() => { isLongPress.current = true; setViewItem(item); }, 500); };
-            const endPress = (item) => { clearTimeout(longPressTimer.current); if (!isLongPress.current) { if (item.isBox) setSelectedBox(item.data); if (item.id === 'premium_staff') setSvUseConfirm(true); } };
-            const cancelPress = () => { clearTimeout(longPressTimer.current); isLongPress.current = false; };
-            const handleUseSilvervineFromStock = async () => {
-                const isActive = activeBuffs.some(b => b.itemId === 'silvervine_24h' && b.endDate > new Date());
+            const handleUseSilvervineFromStock = async () => { 
+                const isActive = activeBuffs.some(b => b.itemId === 'silvervine_24h' && new Date(b.endDate) > new Date());
                 if (isActive) { alert("Active!"); setSvUseConfirm(null); return; }
                 if ((stock.silvervine?.qty || 0) < 2) { alert("Need 2 Silvervine!"); setSvUseConfirm(null); return; }
                 const newStock = { ...stock, silvervine: { ...stock.silvervine, qty: stock.silvervine.qty - 2 } };
@@ -688,69 +592,88 @@
                 await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), buffData);
                 showToast("Activated!"); setSvUseConfirm(null);
             };
-            
-            const hasPremium = activeBuffs.some(b => b.itemId === 'premium_box' && new Date() < b.endDate);
-            const gridItems = [
-                { id: 'spell', iconComp: <SmartIcon name="Spell" className="w-8 h-8"/>, count: Math.max(0, currentSpells), name: 'Purple Stone', isSellable: true },
-                { id: 'magic', iconComp: <SmartIcon name="Magic" className="w-8 h-8"/>, count: Math.max(0, currentMagics), name: 'Red Stone', isSellable: true },
-                { id: 'gum', iconComp: <SmartIcon name="Gum" className="w-8 h-8"/>, count: stock.gum?.qty || 0, name: 'Gum (Stock)' },
-                { id: 'he_gum', iconComp: <SmartIcon name="HeGum" className="w-8 h-8"/>, count: stock.he_gum?.qty || 0, name: 'HE (Stock)' },
-                { id: 'silvervine', iconComp: <SmartIcon name="Silvervine" className="w-8 h-8"/>, count: stock.silvervine?.qty || 0, name: 'SV (Stock)', isStockAction: true },
+
+            // Prepare Data for Grid
+            const allItems = [
+                { id: 'spell', category: 'Etc', iconComp: <SmartIcon name="Spell" className="w-full h-full"/>, count: Math.max(0, currentSpells), name: 'Purple Stone', isSellable: true },
+                { id: 'magic', category: 'Etc', iconComp: <SmartIcon name="Magic" className="w-full h-full"/>, count: Math.max(0, currentMagics), name: 'Red Stone', isSellable: true },
+                { id: 'gum', category: 'Consumable', iconComp: <SmartIcon name="Gum" className="w-full h-full"/>, count: stock.gum?.qty || 0, name: 'Gum (Stock)' },
+                { id: 'he_gum', category: 'Consumable', iconComp: <SmartIcon name="HeGum" className="w-full h-full"/>, count: stock.he_gum?.qty || 0, name: 'HE (Stock)' },
+                { id: 'silvervine', category: 'Etc', iconComp: <SmartIcon name="Silvervine" className="w-full h-full"/>, count: stock.silvervine?.qty || 0, name: 'SV (Stock)', isStockAction: true },
             ];
-            if (hasPremium) gridItems.push({ id: 'premium_staff', iconComp: <SmartIcon name="PremiumStaff" className="w-8 h-8"/>, count: 1, name: 'Staff' });
-            items.forEach(i => gridItems.push({ id: i.uid, iconComp: <SmartIcon name={SHOP_ITEMS.find(s=>s.id===i.itemId)?.icon} className="w-8 h-8" />, count: 1, isBox: true, data: i, name: i.name }));
-            Object.keys(drops).forEach(key => { const def = DROP_TABLE.find(d => d.id === key); if (def) gridItems.push({ id: key, iconComp: <SmartIcon name={def.icon} className="w-8 h-8" />, count: drops[key], name: def.name }); });
+            
+            // Fix: Check premium buff for staff visibility
+            const hasPremium = activeBuffs.some(b => b.itemId === 'premium_box' && new Date(b.endDate) > new Date());
+            if (hasPremium) {
+                allItems.push({ id: 'premium_staff', category: 'Consumable', iconComp: <SmartIcon name="PremiumStaff" className="w-full h-full"/>, count: 1, name: 'Staff' });
+            }
+            
+            items.forEach(i => {
+                let cat = i.category || 'Consumable'; 
+                if (i.itemId.includes('card')) cat = 'Rare'; 
+                allItems.push({ id: i.uid, category: cat, iconComp: <SmartIcon name={SHOP_ITEMS.find(s=>s.id===i.itemId)?.icon} className="w-full h-full" />, count: 1, isBox: true, data: i, name: i.name });
+            });
+            Object.keys(drops).forEach(key => { 
+                const def = DROP_TABLE.find(d => d.id === key); 
+                if (def) allItems.push({ id: key, category: def.category, iconComp: <SmartIcon name={def.icon} className="w-full h-full" />, count: drops[key], name: def.name }); 
+            });
+
+            const filteredItems = activeTab === 'All' ? allItems : allItems.filter(i => i.category === activeTab);
+
+            const onItemClick = (item) => {
+                if(item.isBox) { setSelectedBox(item.data); return; }
+                if(item.id === 'premium_staff') { setSvUseConfirm(true); return; }
+                setViewItem(item);
+            };
 
             return (
                 <div className="p-6 animate-fade-in view-content space-y-6">
-                    <h2 className="text-2xl font-black italic tracking-tighter mb-4 text-zinc-300">Bag</h2>
-                    <div className="bg-zinc-900 p-5 rounded-[2.5rem] border border-zinc-800 min-h-[400px]">
-                        <div className="grid grid-cols-4 gap-3">
-                            {gridItems.map((item, index) => (
-                                <div key={index} onMouseDown={() => startPress(item)} onMouseUp={() => endPress(item)} onMouseLeave={cancelPress} onTouchStart={() => startPress(item)} onTouchEnd={() => endPress(item)} onTouchMove={cancelPress} className={`aspect-square rounded-2xl relative flex items-center justify-center transition-all no-context-menu ${(item.isBox || item.id === 'premium_staff') ? 'bg-zinc-800 border border-zinc-700 cursor-pointer active:scale-95' : 'bg-zinc-900 border border-zinc-800'}`}>
-                                    <div className="w-10 h-10 flex items-center justify-center pointer-events-none">{item.iconComp}</div>
-                                    <span className="absolute bottom-1 right-1.5 text-[10px] font-black text-zinc-400 px-1.5 rounded-md pointer-events-none">{item.count}</span>
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-black italic tracking-tighter text-zinc-300">Bag <span className="text-sm font-normal text-zinc-500">Inventory 🎒</span></h2>
+                        <div className="text-[10px] text-zinc-500 font-mono">{filteredItems.length} Items</div>
+                    </div>
+                    
+                    {/* Tabs */}
+                    <div className="bg-zinc-900 p-1 rounded-2xl flex gap-1 border border-zinc-800">
+                        {['All', 'Consumable', 'Etc', 'Rare'].map(t => {
+                            let label = t;
+                            let iconName = 'LayoutGrid';
+                            if (t === 'Consumable') { label = 'Use'; iconName = 'Flask'; }
+                            if (t === 'Etc') { label = 'Etc'; iconName = 'Layers'; }
+                            if (t === 'Rare') { label = 'Rare'; iconName = 'Diamond'; }
+                            return <TabButton key={t} label={label} icon={iconName} active={activeTab === t} onClick={() => setActiveTab(t)} />;
+                        })}
+                    </div>
+
+                    <div className="bg-zinc-900/50 p-5 rounded-[2.5rem] border border-zinc-800 min-h-[400px]">
+                        <div className="grid grid-cols-4 gap-4">
+                            {filteredItems.map((item, index) => (
+                                <div key={index} onClick={() => onItemClick(item)} className="aspect-square rounded-2xl sunken-slot relative flex items-center justify-center cursor-pointer overflow-hidden group">
+                                    <div className="w-10 h-10 pointer-events-none group-active:scale-90 transition-transform">{item.iconComp}</div>
+                                    <span className="absolute bottom-1 right-1.5 text-[8px] font-black text-zinc-400 bg-black/60 px-1.5 rounded-md pointer-events-none backdrop-blur-sm border border-white/5">{item.count}</span>
                                 </div>
                             ))}
-                            {Array.from({ length: Math.max(0, 20 - gridItems.length) }).map((_, i) => (<div key={`empty-${i}`} className="aspect-square rounded-2xl bg-zinc-900/50 border-2 border-dashed border-zinc-800"></div>))}
+                            {/* Empty Slots */}
+                            {Array.from({ length: Math.max(0, 16 - filteredItems.length) }).map((_, i) => (
+                                <div key={`e-${i}`} className="aspect-square rounded-2xl sunken-slot opacity-30"></div>
+                            ))}
                         </div>
                     </div>
+
                     {viewItem && <ItemDetailModal item={viewItem} onClose={() => setViewItem(null)} onSell={handleSellAction} />}
-                    {selectedBox && (
-                        <Modal onClose={() => setSelectedBox(null)}>
-                            <div className="text-center">
-                                <div className="w-20 h-20 mx-auto bg-zinc-800 rounded-3xl flex items-center justify-center mb-4 border border-zinc-700">
-                                    <SmartIcon name={SHOP_ITEMS.find(s=>s.id===selectedBox.itemId)?.icon} className="w-12 h-12" />
-                                </div>
-                                <h3 className="text-lg font-black text-white mb-1">{selectedBox.name}</h3>
-                                <p className="text-xs opacity-50 mb-6">{SHOP_ITEMS.find(s=>s.id===selectedBox.itemId)?.desc}</p>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setSelectedBox(null)} className="flex-1 py-3 bg-zinc-700 rounded-xl font-bold text-xs">Cancel</button>
-                                    <button onClick={() => handleUseBox(selectedBox)} className="flex-1 py-3 bg-emerald-600 rounded-xl font-bold text-xs text-white">
-                                        {selectedBox.type.includes('buff') ? 'Activate' : 'Open'}
-                                    </button>
-                                </div>
-                            </div>
-                        </Modal>
-                    )}
-                    {svUseConfirm && (
-                        <Modal onClose={() => setSvUseConfirm(null)}>
-                             <div className="text-center">
-                                <div className="w-20 h-20 mx-auto bg-zinc-800 rounded-3xl flex items-center justify-center mb-4 border border-zinc-700"><SmartIcon name="Silvervine" className="w-12 h-12"/></div>
-                                <h3 className="text-lg font-black text-white mb-2">Activate Buff?</h3>
-                                <div className="flex gap-2"><button onClick={() => setSvUseConfirm(null)} className="flex-1 py-3 bg-zinc-700 rounded-xl font-bold text-xs">Cancel</button><button onClick={handleUseSilvervineFromStock} className="flex-1 py-3 bg-emerald-600 rounded-xl font-bold text-xs text-white">Use (2 ea)</button></div>
-                            </div>
-                        </Modal>
-                    )}
+                    {selectedBox && <Modal onClose={() => setSelectedBox(null)}><div className="text-center"><div className="w-20 h-20 mx-auto bg-zinc-800 rounded-3xl flex items-center justify-center mb-4 border border-zinc-700"><SmartIcon name={SHOP_ITEMS.find(s=>s.id===selectedBox.itemId)?.icon} className="w-12 h-12" /></div><h3 className="text-lg font-black text-white mb-1">{selectedBox.name}</h3><div className="flex gap-2 mt-4"><button onClick={() => setSelectedBox(null)} className="flex-1 py-3 bg-zinc-700 rounded-xl font-bold text-xs">Cancel</button><button onClick={() => handleUseBox(selectedBox)} className="flex-1 py-3 bg-emerald-600 rounded-xl font-bold text-xs text-white">Use</button></div></div></Modal>}
+                    {svUseConfirm && <Modal onClose={() => setSvUseConfirm(null)}><div className="text-center"><div className="w-20 h-20 mx-auto bg-zinc-800 rounded-3xl flex items-center justify-center mb-4 border border-zinc-700"><SmartIcon name="Silvervine" className="w-12 h-12"/></div><h3 className="text-lg font-black text-white mb-2">Activate Buff?</h3><div className="flex gap-2"><button onClick={() => setSvUseConfirm(null)} className="flex-1 py-3 bg-zinc-700 rounded-xl font-bold text-xs">Cancel</button><button onClick={handleUseSilvervineFromStock} className="flex-1 py-3 bg-emerald-600 rounded-xl font-bold text-xs text-white">Use (2 ea)</button></div></div></Modal>}
                 </div>
             );
         }
 
-        function DungeonView({ db, uid, stock, activeBuffs, onSuccess, records, prices }) {
+        function DungeonView({ db, uid, stock, activeBuffs, onSuccess, records, prices, stats }) {
             const [form, setForm] = useState({ runMode: 'ogh', normalGumUsed: 0, heGumUsed: 0, useSilvervine: false, purpleStoneCount: 0, contMagicCount: 0, trashAmount: '', minutesUsed: 60, otherCosts: [], notes: '' });
-            const hasPremium = activeBuffs.some(b => b.itemId === 'premium_box' && new Date() < b.endDate);
-            const hasKafra = activeBuffs.some(b => b.itemId === 'kafra_box' && new Date() < b.endDate);
-            const hasSilvervineBuff = activeBuffs.some(b => b.itemId === 'silvervine_24h' && new Date() < b.endDate);
+            const [rewardData, setRewardData] = useState(null);
+            
+            const hasPremium = activeBuffs.some(b => b.itemId === 'premium_box' && new Date(b.endDate) > new Date());
+            const hasKafra = activeBuffs.some(b => b.itemId === 'kafra_box' && new Date(b.endDate) > new Date());
+            const hasSilvervineBuff = activeBuffs.some(b => b.itemId === 'silvervine_24h' && new Date(b.endDate) > new Date());
             const hasGumStock = (stock.gum?.qty || 0) > 0;
             const hasHeGumStock = (stock.he_gum?.qty || 0) > 0; 
             
@@ -759,31 +682,67 @@
             const removeCost = (id) => setForm(p => ({...p, otherCosts: p.otherCosts.filter(c => c.id !== id)}));
 
             const handleSave = async () => {
-                let buffAmortizedCost = 0;
-                if (activeBuffs && records) {
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    const runsToday = records.filter(r => r.date === todayStr && !r.isSaleRecord).length;
-                    const currentRunCount = runsToday + 1; 
-                    activeBuffs.forEach(buff => {
-                         const start = new Date(buff.activatedAt); const end = buff.endDate; const now = new Date();
-                         if (now >= start && now <= end) {
-                             const dailyCost = buff.buyPrice / buff.duration;
-                             buffAmortizedCost += dailyCost / currentRunCount;
-                         }
-                    });
+                let costBreakdown = []; // Only record direct costs here
+                
+                // 1. Consumables (Gum) - Direct Cost
+                let gumCost = 0;
+                if (form.normalGumUsed > 0) {
+                    const cost = form.normalGumUsed * (stock.gum?.avgCost || 0);
+                    gumCost += cost;
+                    costBreakdown.push({ name: `Gum x${form.normalGumUsed}`, amount: cost });
                 }
-                let consumablesCost = 0;
-                if (form.normalGumUsed > 0) consumablesCost += (stock.gum?.avgCost || 0) * form.normalGumUsed;
-                if (form.heGumUsed > 0) { consumablesCost += (stock.he_gum?.avgCost || 0) * form.heGumUsed; }
+                if (form.heGumUsed > 0) {
+                    const cost = form.heGumUsed * (stock.he_gum?.avgCost || 0);
+                    gumCost += cost;
+                    costBreakdown.push({ name: `HE Gum x${form.heGumUsed}`, amount: cost });
+                }
+                
+                // 2. Other Costs
+                form.otherCosts.forEach(c => {
+                    costBreakdown.push({ name: c.name || 'Misc', amount: parseInt(c.amount) || 0 });
+                });
+
+                // NOTE: buffAmortizedCost is intentionally removed from per-run calculation to follow "Daily Summary" logic
+                let consumablesCost = gumCost; 
+                
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
                 let newStock = { ...stock };
                 if (form.normalGumUsed > 0) newStock.gum.qty = Math.max(0, newStock.gum.qty - form.normalGumUsed);
                 if (form.heGumUsed > 0) { if(!newStock.he_gum) newStock.he_gum = { qty: 0, cost: 0 }; newStock.he_gum.qty = Math.max(0, newStock.he_gum.qty - form.heGumUsed); }
                 await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'stock'), newStock);
-                const profit = (parseInt(form.trashAmount) || 0) - consumablesCost - buffAmortizedCost;
-                const record = { ...form, buffCost: buffAmortizedCost, consumablesCost, profit, drops: simulateDrops(), timestamp: Date.now(), date: new Date().toISOString().split('T')[0] };
+                
+                const profit = (parseInt(form.trashAmount) || 0) - consumablesCost; // Profit per run (Operating)
+                const earnedDek = Math.max(0, Math.floor(profit / 1000));
+                
+                const drops = simulateDrops();
+                const record = { ...form, consumablesCost, profit, drops, timestamp: Date.now(), date: new Date().toISOString().split('T')[0], costBreakdown };
+                
                 await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'records'), record);
-                onSuccess(record);
+                
+                // Update DEK & EXP
+                const newStats = { ...stats };
+                newStats.coins = (newStats.coins || 0) + earnedDek;
+                newStats.zeny = (newStats.zeny || 0) + profit;
+                
+                // Simple EXP Logic
+                const expGain = form.minutesUsed * (form.runMode === 'aogh' ? 500 : 300);
+                newStats.baseExp = (newStats.baseExp || 0) + expGain;
+                
+                // Level Up Logic
+                while (newStats.baseExp >= getExpReq(newStats.baseLv)) {
+                    newStats.baseExp -= getExpReq(newStats.baseLv);
+                    newStats.baseLv += 1;
+                }
+                
+                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), newStats);
+
+                setRewardData(drops);
+            };
+
+            const closeReward = () => {
+                setRewardData(null);
+                onSuccess("Saved!");
+                setForm({ runMode: 'ogh', normalGumUsed: 0, heGumUsed: 0, useSilvervine: false, purpleStoneCount: 0, contMagicCount: 0, trashAmount: '', minutesUsed: 60, otherCosts: [], notes: '' });
             };
 
             return (
@@ -801,8 +760,9 @@
                         <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mb-2 text-zinc-400">Trash Sale (Zeny)</p>
                         <input type="text" inputMode="numeric" placeholder="0" value={form.trashAmount} onChange={e => setForm({...form, trashAmount: parseInt(e.target.value) || ''})} className="w-full bg-transparent text-center text-4xl font-black outline-none placeholder-zinc-800 text-white" />
                     </div>
+                    {/* ... Gum selection ... */}
                     <div className="glass-panel p-6 rounded-[2rem] space-y-4 bg-zinc-800/50">
-                        <div className="mb-4">
+                         <div className="mb-4">
                             <div className="flex justify-between items-center mb-2"><span className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-blue-300"><SmartIcon name="Gum" className="w-5 h-5"/> Bubble Gum</span><span className="text-[8px] font-bold opacity-40">Stock: {stock.gum?.qty||0}</span></div>
                             <div className="flex bg-zinc-900 rounded-xl p-1 gap-1">
                                 {[0, 1, 2].map(n => (<button key={n} disabled={!hasGumStock && n>0} onClick={() => setForm({...form, normalGumUsed: n})} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${form.normalGumUsed === n ? (n===0 ? 'bg-zinc-700 text-zinc-400' : 'bg-blue-600 text-white shadow') : 'text-zinc-600 hover:bg-zinc-800'}`}>{n}</button>))}
@@ -815,8 +775,9 @@
                             </div>
                         </div>
                     </div>
+                    {/* ... Time, Stones, Etc Cost ... */}
                     <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800">
-                        <label className="text-[10px] font-bold opacity-40 uppercase mb-2 block text-center">Time Spent (Minutes): <span className="text-emerald-400 text-sm">{form.minutesUsed}</span></label>
+                        <label className="text-[10px] font-bold opacity-40 uppercase mb-2 block text-center flex items-center justify-center gap-2"><Icon name="Clock" size={14}/> Time Spent (Minutes): <span className="text-emerald-400 text-sm">{form.minutesUsed}</span></label>
                         <input type="range" min="1" max="60" value={form.minutesUsed} onChange={e => setForm({...form, minutesUsed: parseInt(e.target.value)})} className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -824,108 +785,134 @@
                          <div className={`bg-zinc-900 p-4 rounded-3xl flex flex-col items-center border border-zinc-800 transition-all ${form.runMode === 'ogh' ? 'opacity-30 grayscale pointer-events-none' : ''}`}><div className="w-8 h-8 mb-2"><SmartIcon name="Magic" className="w-full h-full" /></div><span className="text-[9px] text-zinc-500 uppercase font-bold mb-1">Contaminated Magic</span><input type="text" inputMode="numeric" disabled={form.runMode === 'ogh'} value={form.contMagicCount} onChange={e => setForm({...form, contMagicCount: parseInt(e.target.value)||0})} className="slate-input w-full p-2 rounded-xl text-center font-bold text-xl"/></div>
                     </div>
                     <div>
-                        <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-bold opacity-50 uppercase tracking-widest text-zinc-400">Etc. Costs</span><button type="button" onClick={addCost} className="text-[10px] text-emerald-400 font-black uppercase tracking-tighter">+ Add Cost</button></div>
+                        <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-bold opacity-50 uppercase tracking-widest text-zinc-400 flex items-center gap-1"><Icon name="Cost" size={12}/> Etc. Costs</span><button type="button" onClick={addCost} className="text-[10px] text-emerald-400 font-black uppercase tracking-tighter flex items-center gap-1"><Icon name="Plus" size={10}/> Add Cost</button></div>
                         {form.otherCosts.map(c => (<div key={c.id} className="flex gap-2 mb-2 animate-fade-in"><input type="text" placeholder="Item Name" value={c.name} onChange={e => updateCost(c.id, 'name', e.target.value)} className="slate-input flex-1 p-2 rounded-xl text-xs" /><input type="text" inputMode="numeric" placeholder="0" value={c.amount} onChange={e => updateCost(c.id, 'amount', e.target.value)} className="slate-input w-24 p-2 rounded-xl text-xs text-right" /><button type="button" onClick={() => removeCost(c.id)} className="text-rose-500 p-2"><Icon name="Trash" size={14}/></button></div>))}
                     </div>
                     <div className="bg-zinc-900 p-4 rounded-3xl border border-zinc-800"><textarea placeholder="Memo / Notes..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="w-full bg-transparent text-xs text-white outline-none h-16 resize-none placeholder-zinc-700"></textarea></div>
-                    <button onClick={handleSave} className="w-full py-5 bg-gradient-to-tr from-emerald-600 to-teal-600 rounded-[1.5rem] font-black text-lg shadow-xl shadow-emerald-900/20 active:scale-95 transition-transform text-white">SAVE RECORD</button>
+
+                    <button onClick={handleSave} className="w-full py-5 bg-gradient-to-tr from-emerald-600 to-teal-600 rounded-[1.5rem] font-black text-lg shadow-xl shadow-emerald-900/20 active:scale-95 transition-transform text-white flex items-center justify-center gap-2"><Icon name="Save" size={20}/> SAVE RECORD</button>
+                    
+                    {rewardData && <RewardPopup drops={rewardData} onClose={closeReward} />}
                 </div>
             );
         }
 
-        function HistoryView({ records, db, uid, showToast, prices }) {
+        function HistoryView({ records, db, uid, showToast, prices, activeBuffs }) {
             const [expandedId, setExpandedId] = useState(null);
+            const [showRankInfo, setShowRankInfo] = useState(false);
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
+
+            // Group Records by Date
+            const groupedRecords = useMemo(() => {
+                const groups = {};
+                records.forEach(r => {
+                    if (!groups[r.date]) groups[r.date] = [];
+                    groups[r.date].push(r);
+                });
+                return groups;
+            }, [records]);
+
+            // Calculate Average Profit for Ranking
+            const avgProfit = useMemo(() => {
+                const profits = records.filter(r => !r.isSaleRecord).map(r => r.profit || 0);
+                if(profits.length === 0) return 0;
+                const sum = profits.reduce((a, b) => a + b, 0);
+                return sum / profits.length;
+            }, [records]);
+
             return (
                 <div className="p-6 animate-fade-in view-content space-y-4">
-                    <h2 className="text-2xl font-black italic mb-6 tracking-tighter text-zinc-300">History Logs</h2>
-                    <div className="space-y-3">
-                        {records.map(r => {
-                            const isExpanded = expandedId === r.id;
-                            const profitValue = r.profit || 0;
-                            let totalCost = 0;
-                            if (r.consumablesCost !== undefined) totalCost += r.consumablesCost;
-                            if (r.buffCost !== undefined) totalCost += r.buffCost;
-                            if (r.consumablesCost === undefined) {
-                                if(r.gumType === 1) totalCost += (prices.gumBoxPrice/10);
-                                if(!r.gumType && r.gumUsed) totalCost += r.gumUsed * (prices.gumBoxPrice/10);
-                            }
-                            if (r.otherCosts) totalCost += r.otherCosts.reduce((a,c)=>a+parseInt(c.amount||0),0);
-                            const realizedStoneIncome = (r.purpleStoneCount || 0) * (prices.purpleStonePrice || 0) + (r.contMagicCount || 0) * (prices.contMagicPrice || 0);
-
-                            if (r.isSaleRecord) {
-                                return (
-                                    <div key={r.id} className="glass-panel p-4 rounded-3xl flex justify-between items-center bg-emerald-900/10 border-emerald-500/20">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-emerald-600 text-white shadow-lg">S</div>
-                                            <div><p className="font-bold text-sm text-emerald-300">Sold: {r.itemName}</p><p className="text-[10px] opacity-60 text-zinc-400">Qty: {r.qty} @ {formatMoney(r.pricePerUnit)}</p></div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-black text-emerald-400 text-lg">+{formatMoney(r.profit)}</p>
-                                            <DeleteButton onDelete={() => deleteDoc(doc(db, 'artifacts', appId, 'users', uid, 'records', r.id))} />
-                                        </div>
-                                    </div>
-                                );
-                            }
-
-                            return (
-                                <div key={r.id} className={`glass-panel rounded-[1.5rem] overflow-hidden transition-all border-zinc-800 ${expandedId === r.id ? 'bg-zinc-800 ring-1 ring-zinc-600' : 'bg-zinc-900'}`}>
-                                    <div onClick={() => setExpandedId(expandedId === r.id ? null : r.id)} className="p-4 flex justify-between items-center cursor-pointer">
-                                        <div className="flex gap-3">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-white shadow-lg ${r.runMode === 'aogh' ? 'bg-rose-600' : 'bg-purple-600'}`}>{r.runMode === 'aogh' ? 'A' : 'O'}</div>
-                                            <div><p className="font-bold text-sm text-zinc-200">{r.date}</p><p className="text-[10px] opacity-40 uppercase font-bold tracking-widest text-zinc-500">{r.isSaleRecord ? 'Sale' : r.runMode?.toUpperCase() || 'OGH'}</p></div>
-                                        </div>
-                                        <div className="text-right"><p className={`font-black text-sm ${profitValue >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatMoney(profitValue)}</p><Icon name={expandedId === r.id ? "ChevronUp" : "ChevronDown"} size={14} className="opacity-20 inline-block ml-2"/></div>
-                                    </div>
-                                    {expandedId === r.id && (
-                                        <div className="px-4 pb-4 animate-slide-up bg-black/20 pt-4 border-t border-zinc-700/50 text-center">
-                                            <div className="grid grid-cols-2 gap-3 mb-4 text-left">
-                                                <div className="bg-zinc-900/50 p-2 rounded-xl border border-zinc-700/50">
-                                                    <p className="text-[9px] uppercase opacity-50">Stones</p>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-purple-400 font-bold">{r.purpleStoneCount}</span>
-                                                        {r.runMode === 'aogh' && <span className="text-rose-400 font-bold">/ {r.contMagicCount}</span>}
-                                                        <span className="text-xs text-zinc-500 ml-1">({formatMoney(realizedStoneIncome)})</span>
-                                                    </div>
-                                                </div>
-                                                <div className="bg-zinc-900/50 p-2 rounded-xl border border-zinc-700/50">
-                                                    <p className="text-[9px] uppercase opacity-50">Usage</p>
-                                                    <p className="text-xs font-bold">
-                                                        {(r.normalGumUsed > 0 ? `Gum x${r.normalGumUsed}` : '')}
-                                                        {(r.heGumUsed > 0 ? ` HE x${r.heGumUsed}` : '')}
-                                                        {(r.normalGumUsed === 0 && r.heGumUsed === 0) ? '-' : ''}
-                                                        <span className="text-zinc-500 mx-1">|</span>
-                                                        {r.minutesUsed}m
-                                                    </p>
-                                                </div>
-                                                <div className="col-span-2 bg-zinc-900/50 p-2 rounded-xl border border-zinc-700/50">
-                                                    <div className="flex justify-between">
-                                                        <span className="text-[9px] uppercase opacity-50">Etc. Cost</span>
-                                                        <span className="text-xs text-rose-400 font-bold">-{formatMoney(r.otherCosts?.reduce((a,c)=>a+parseInt(c.amount||0),0)||0)}</span>
-                                                    </div>
-                                                    {r.notes && <p className="text-[10px] italic text-zinc-400 mt-1 border-t border-white/5 pt-1">"{r.notes}"</p>}
-                                                </div>
-                                            </div>
-                                            <DeleteButton onDelete={() => deleteDoc(doc(db, 'artifacts', appId, 'users', uid, 'records', r.id))} />
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-black italic mb-6 tracking-tighter text-zinc-300">History Logs</h2>
+                        <button onClick={() => setShowRankInfo(true)} className="text-zinc-500 hover:text-white transition-colors bg-zinc-800 p-2 rounded-full border border-zinc-700"><Icon name="Info" size={16}/></button>
                     </div>
+                    
+                    {Object.keys(groupedRecords).map(date => {
+                        const dailyRecords = groupedRecords[date];
+                        const dailyOperatingProfit = dailyRecords.reduce((acc, r) => acc + (r.profit || 0), 0);
+                        
+                        // Calculate Fixed Costs for this day (Buffs)
+                        let dailyFixedCost = 0;
+                        activeBuffs.forEach(buff => {
+                            const recDate = new Date(date);
+                            const start = new Date(buff.activatedAt);
+                            const end = new Date(buff.endDate);
+                            const d = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate());
+                            const s = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+                            const e = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+                            if (d >= s && d <= e) {
+                                dailyFixedCost += Math.round(buff.buyPrice / buff.duration);
+                            }
+                        });
+
+                        const dailyNetProfit = dailyOperatingProfit - dailyFixedCost;
+
+                        return (
+                            <div key={date} className="space-y-3 mb-6">
+                                <div className="sticky top-14 z-20 bg-zinc-900/95 backdrop-blur-md p-3 rounded-2xl border border-zinc-700 shadow-xl">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-xs font-bold text-zinc-400 bg-zinc-800 px-2 py-1 rounded-lg">{date}</span>
+                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded ${dailyNetProfit >= 0 ? 'bg-emerald-900/30 text-emerald-400' : 'bg-rose-900/30 text-rose-400'}`}>
+                                            {dailyNetProfit >= 0 ? 'NET PROFIT' : 'NET LOSS'}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 mt-2 divide-x divide-zinc-800">
+                                        <div className="text-center"><p className="text-[8px] text-zinc-500 uppercase">Operating</p><p className={`text-xs font-bold ${dailyOperatingProfit>=0 ? 'text-zinc-300' : 'text-rose-400'}`}>{formatMoney(dailyOperatingProfit)}</p></div>
+                                        <div className="text-center"><p className="text-[8px] text-zinc-500 uppercase">Fixed Cost</p><p className="text-xs font-bold text-rose-400">-{formatMoney(dailyFixedCost)}</p></div>
+                                        <div className="text-center"><p className="text-[8px] text-zinc-500 uppercase">Net</p><p className={`text-xs font-black ${dailyNetProfit>=0?'text-emerald-400':'text-rose-400'}`}>{formatMoney(dailyNetProfit)}</p></div>
+                                    </div>
+                                </div>
+
+                                {dailyRecords.map(r => {
+                                    const isExpanded = expandedId === r.id;
+                                    const profitValue = r.profit || 0;
+                                    let rankInfo = { rank: '-', css: 'text-zinc-500', text: '' };
+                                    if (!r.isSaleRecord) {
+                                        rankInfo = getRankInfo(profitValue, avgProfit);
+                                    }
+
+                                    if (r.isSaleRecord) {
+                                        return (
+                                            <div key={r.id} className="glass-panel p-4 rounded-3xl flex justify-between items-center bg-emerald-900/10 border-emerald-500/20">
+                                                <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-emerald-600 text-white shadow-lg">S</div><div><p className="font-bold text-sm text-emerald-300">Sold: {r.itemName}</p><p className="text-[10px] opacity-60 text-zinc-400">Qty: {r.qty} @ {formatMoney(r.pricePerUnit)}</p></div></div>
+                                                <div className="text-right"><p className="font-black text-emerald-400 text-lg">+{formatMoney(r.profit)}</p><DeleteButton onDelete={() => deleteDoc(doc(db, 'artifacts', appId, 'users', uid, 'records', r.id))} /></div>
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <div key={r.id} className={`glass-panel rounded-[1.5rem] overflow-hidden transition-all border-zinc-800 ${expandedId === r.id ? 'bg-zinc-800 ring-1 ring-zinc-600' : 'bg-zinc-900'}`}>
+                                            <div onClick={() => setExpandedId(expandedId === r.id ? null : r.id)} className="p-4 flex justify-between items-center cursor-pointer">
+                                                <div className="flex gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-white shadow-lg ${r.runMode === 'aogh' ? 'bg-rose-600' : 'bg-purple-600'}`}>{r.runMode === 'aogh' ? 'A' : 'O'}</div><div><p className="font-bold text-sm text-zinc-200">{r.runMode?.toUpperCase() || 'OGH'}</p><p className="text-[10px] opacity-40 uppercase font-bold tracking-widest text-zinc-500 flex items-center gap-1"><Icon name="Clock" size={10}/> {r.minutesUsed}m</p></div></div>
+                                                <div className="text-right flex flex-col items-end"><p className={`font-black text-sm ${profitValue >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatMoney(profitValue)}</p><div className="flex items-center gap-1 mt-1"><Icon name="Clover" size={12} className={rankInfo.css}/><span className={`text-[10px] font-black ${rankInfo.css}`}>{rankInfo.text} : {rankInfo.rank}</span></div></div>
+                                            </div>
+                                            {expandedId === r.id && (
+                                                <div className="px-4 pb-4 animate-slide-up bg-black/20 pt-4 border-t border-zinc-700/50 text-center">
+                                                    <div className="grid grid-cols-2 gap-3 mb-4 text-left">
+                                                        <div className="bg-zinc-900/50 p-2 rounded-xl border border-zinc-700/50"><p className="text-[9px] uppercase opacity-50 mb-1">Stones</p><div className="flex items-center gap-3"><div className="flex items-center gap-1.5 bg-zinc-800 px-2 py-1 rounded-lg border border-zinc-600"><SmartIcon name="Spell" className="w-5 h-5"/><span className="text-purple-400 font-bold text-xs">{r.purpleStoneCount}</span></div>{r.runMode==='aogh' && (<div className="flex items-center gap-1.5 bg-zinc-800 px-2 py-1 rounded-lg border border-zinc-600"><SmartIcon name="Magic" className="w-5 h-5"/><span className="text-rose-400 font-bold text-xs">{r.contMagicCount}</span></div>)}</div></div>
+                                                        <div className="bg-zinc-900/50 p-2 rounded-xl border border-zinc-700/50"><p className="text-[9px] uppercase opacity-50 mb-1">Usage</p><div className="flex flex-wrap gap-2 items-center">{r.normalGumUsed > 0 && <div className="flex items-center gap-1 bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] border border-zinc-600"><SmartIcon name="Gum" className="w-4 h-4"/><span>x{r.normalGumUsed}</span></div>}{r.heGumUsed > 0 && <div className="flex items-center gap-1 bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] border border-zinc-600"><SmartIcon name="HeGum" className="w-4 h-4"/><span>x{r.heGumUsed}</span></div>}<div className="flex items-center gap-1 text-[10px] text-zinc-400 ml-auto bg-black/30 px-2 py-0.5 rounded-full"><Icon name="Clock" size={12} className="text-emerald-500"/> {r.minutesUsed}m</div></div></div>
+                                                        <div className="col-span-2 bg-zinc-900/50 p-3 rounded-xl border border-zinc-700/50 space-y-1"><p className="text-[9px] uppercase opacity-50 font-bold mb-2 flex items-center gap-1"><Icon name="Cost" size={10}/> Expenses Breakdown</p>{r.costBreakdown && r.costBreakdown.length > 0 ? (r.costBreakdown.map((c, i) => (<div key={i} className="flex justify-between text-[10px] text-zinc-400 border-b border-zinc-800/50 pb-1"><span className="truncate w-32">{c.name}</span><span>-{formatMoney(c.amount)}</span></div>))) : ((r.consumablesCost > 0) && (<div className="flex justify-between text-[10px] text-zinc-400 border-b border-zinc-800/50 pb-1"><span>Direct Consumables</span><span>-{formatMoney(r.consumablesCost)}</span></div>))}<div className="pt-1 flex justify-between text-[10px] font-bold text-rose-400 mt-1"><span>Total Direct Cost</span><span>-{formatMoney(r.consumablesCost + (r.otherCosts?.reduce((a,x)=>a+parseInt(x.amount||0),0)||0))}</span></div></div>
+                                                        {r.drops && r.drops.length > 0 && (<div className="col-span-2 bg-zinc-900/50 p-2 rounded-xl border border-zinc-700/50"><p className="text-[9px] uppercase opacity-50 mb-1">Drops</p><div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">{r.drops.map((d, i) => (<div key={i} className="flex-shrink-0 w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center relative border border-zinc-600"><SmartIcon name={d.icon} className="w-6 h-6"/><span className="absolute bottom-0 right-0 text-[8px] bg-black px-1 rounded">{d.qty}</span></div>))}</div></div>)}
+                                                        {r.notes && (<div className="col-span-2 bg-yellow-900/10 p-3 rounded-xl border border-yellow-700/30 relative mt-2"><div className="absolute -top-2.5 left-3 bg-zinc-900 px-2 py-0.5 text-[9px] text-yellow-500 font-bold border border-yellow-700/50 rounded-full flex items-center gap-1 shadow-sm"><Icon name="FileText" size={8}/> NOTE</div><p className="text-[11px] italic text-zinc-300 mt-1">"{r.notes}"</p></div>)}
+                                                    </div>
+                                                    <DeleteButton onDelete={() => deleteDoc(doc(db, 'artifacts', appId, 'users', uid, 'records', r.id))} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })}
+                    {showRankInfo && <InfoModal onClose={() => setShowRankInfo(false)} />}
                 </div>
             );
         }
 
+        // ... SettingsView and App remain largely the same, ensuring ShopView uses categories ...
         function SettingsView({ uid, onResetUid, prices, setPrices, db, showToast, onClose }) {
             const [localPrices, setLocalPrices] = useState(prices);
-            const savePrices = async () => {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
-                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'prices'), localPrices);
-                setPrices(localPrices);
-                showToast("Prices Saved");
-                onClose();
-            };
+            const savePrices = async () => { const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker'; await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'prices'), localPrices); setPrices(localPrices); showToast("Prices Saved"); onClose(); };
             return (
                 <div className="p-6 animate-fade-in view-content space-y-8">
                     <div className="flex justify-between items-center"><h2 className="text-2xl font-black italic tracking-tighter">Settings</h2><button onClick={onClose}><Icon name="X" size={24}/></button></div>
@@ -941,6 +928,7 @@
                         </div>
                         <button onClick={savePrices} className="w-full py-4 bg-emerald-600 rounded-2xl font-black text-lg shadow-xl">SAVE PRICES</button>
                     </div>
+                    <div className="text-center opacity-20 mt-4"><p className="text-[10px] font-mono tracking-widest">{APP_VERSION}</p></div>
                 </div>
             );
         }
@@ -983,8 +971,10 @@
                 const qInv = query(collection(db, 'artifacts', appId, 'users', targetUid, 'inventory'));
                 const unsubBuffs = onSnapshot(qInv, snap => {
                     const buffs = snap.docs.map(d => d.data()).filter(i => i.status === 'active').map(b => {
-                         const endDate = new Date(b.activatedAt); endDate.setDate(endDate.getDate() + b.duration);
-                         if(b.duration === 1) endDate.setTime(new Date(b.activatedAt).getTime() + (24*60*60*1000));
+                         const endDate = new Date(b.activatedAt);
+                         if(b.duration === 30) endDate.setDate(endDate.getDate() + 30);
+                         else if(b.duration === 7) endDate.setDate(endDate.getDate() + 7);
+                         else if(b.duration === 1) endDate.setTime(endDate.getTime() + (24*60*60*1000));
                          return { ...b, endDate };
                     });
                     setActiveBuffs(buffs);
@@ -997,20 +987,19 @@
 
             return (
                 <div className="max-w-md mx-auto relative min-h-screen">
+                    <CurrencyHeader stats={stats} activeBuffs={activeBuffs} />
                     {toast && <Toast message={toast} />}
-                    
                     {showSettings ? (
                         <SettingsView uid={targetUid} defaultUid={authUser?.uid} prices={prices} setPrices={setPrices} db={db} onResetUid={handleResetUid} showToast={showToast} onClose={() => setShowSettings(false)} />
                     ) : (
                         <>
                             {activeTab === 'home' && <HomeView records={records} stats={stats} goToTab={setActiveTab} onOpenSettings={() => setShowSettings(true)} activeBuffs={activeBuffs} />}
-                            {activeTab === 'add' && <DungeonView db={db} uid={targetUid} stock={stock} activeBuffs={activeBuffs} records={records} prices={prices} onSuccess={() => showToast('Saved!')} />}
-                            {activeTab === 'inventory' && <InventoryView db={db} uid={targetUid} showToast={showToast} records={records} stock={stock} />}
+                            {activeTab === 'add' && <DungeonView db={db} uid={targetUid} stock={stock} activeBuffs={activeBuffs} records={records} prices={prices} stats={stats} onSuccess={() => showToast('Saved!')} />}
+                            {activeTab === 'inventory' && <InventoryView db={db} uid={targetUid} showToast={showToast} records={records} stock={stock} stats={stats} />}
                             {activeTab === 'shop' && <ShopView db={db} uid={targetUid} showToast={showToast}/>}
-                            {activeTab === 'history' && <HistoryView records={records} db={db} uid={targetUid} showToast={showToast} prices={prices} />}
+                            {activeTab === 'history' && <HistoryView records={records} db={db} uid={targetUid} showToast={showToast} prices={prices} activeBuffs={activeBuffs} />}
                         </>
                     )}
-
                     {!showSettings && (
                         <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto glass-panel border-t border-white/5 nav-bar-padding pt-2 px-2 flex justify-between items-end z-40 rounded-t-[2rem]">
                             <button onClick={() => setActiveTab('home')} className={`flex-1 flex flex-col items-center gap-1 py-3 ${activeTab === 'home' ? 'text-purple-400' : 'opacity-40'}`}><Icon name="Home" size={24}/><span className="text-[9px] font-bold uppercase">Home</span></button>
