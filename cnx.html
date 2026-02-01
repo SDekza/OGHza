@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ทริปเชียงใหม่ 4-6 ก.พ. | Premium Planner</title>
+    
+    <!-- Meta Tags for Add to Home Screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ทริปเชียงใหม่">
+    
+    <!-- App Icons -->
+    <link rel="apple-touch-icon" href="iconcnx.png">
+    <link rel="icon" type="image/png" href="iconcnx.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -83,7 +93,6 @@
     <!-- Header -->
     <header id="app-header" class="accent-bg text-white p-6 rounded-b-3xl shadow-lg sticky top-0 z-50 transition-all duration-500">
         <div class="max-w-md mx-auto flex justify-between items-center">
-            <!-- App Icon with Fallback to default icon if image not found -->
             <div class="flex items-center">
                 <img src="iconcnx.png" alt="Icon" class="app-icon-img" onerror="this.style.display='none'; document.getElementById('fallback-icon').style.display='flex'">
                 <div id="fallback-icon" style="display:none;" class="w-[42px] h-[42px] bg-white/20 rounded-xl items-center justify-center">
@@ -127,7 +136,7 @@
 
     <!-- Modal: Add Custom Plan -->
     <div id="add-plan-modal" class="modal-view">
-        <div class="bg-card w-full max-w-md mx-auto rounded-t-[2.5rem] p-6 shadow-2xl">
+        <div class="bg-card w-full max-w-md mx-auto rounded-t-[2.5rem] p-6 shadow-2xl border-none">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-bold">✨ แทรกแผนใหม่ (วันที่ <span id="target-day-display">1</span>)</h2>
                 <button onclick="toggleModal('add-plan-modal', false)" class="w-10 h-10 flex items-center justify-center bg-input rounded-full"><i class="fas fa-times"></i></button>
@@ -168,7 +177,7 @@
 
     <!-- Modal: Confirmation Delete -->
     <div id="delete-confirm-modal" class="modal-view">
-        <div class="bg-card w-full max-w-md mx-auto rounded-t-[2.5rem] p-8 shadow-2xl text-center">
+        <div class="bg-card w-full max-w-md mx-auto rounded-t-[2.5rem] p-8 shadow-2xl text-center border-none">
             <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
@@ -189,7 +198,6 @@
                 <button onclick="toggleModal('summary-view', false)" class="w-10 h-10 flex items-center justify-center bg-input rounded-full"><i class="fas fa-times"></i></button>
             </div>
 
-            <!-- Total Card -->
             <div id="total-card" class="accent-bg rounded-3xl p-6 text-white mb-6 shadow-lg">
                 <p class="text-white/80 text-sm mb-1">ยอดรวมรายจ่ายทั้งหมด</p>
                 <h3 class="text-4xl font-bold" id="total-trip-amount">฿0.00</h3>
@@ -201,7 +209,6 @@
                 </div>
             </div>
 
-            <!-- Fuel Entry Section -->
             <div class="bg-input rounded-2xl p-5 mb-6 border-none">
                 <h4 class="text-xs font-bold uppercase tracking-widest mb-4 opacity-70"><i class="fas fa-gas-pump mr-1"></i> บันทึกการเติมน้ำมัน</h4>
                 <div class="flex gap-2 mb-3">
@@ -222,7 +229,7 @@
 
     <!-- Version Info -->
     <footer class="mt-8 mb-4 text-center">
-        <p class="text-slate-400 text-[10px]">Version v1.7.4 (Added App Icon)</p>
+        <p class="text-slate-400 text-[10px]">Version v1.7.5 (Home Screen Icon Ready)</p>
     </footer>
 
     <!-- Bottom Menu -->
