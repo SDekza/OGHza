@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>OGHza Tracker V4.7.0 (Social & Spender)</title>
+    
+    <!-- App Icon -->
+    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Add Prop-Types for Recharts -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+    <!-- Fixed Babel Version for stability -->
+    <script src="https://unpkg.com/@babel/standalone@7.23.7/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kanit:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+
+        :root {
+            --app-bg: #18181b; /* Zinc-950 */
+            --glass-bg: rgba(39, 39, 42, 0.95); /* Zinc-800/95 */
+        }
+
+        body { 
+            font-family: 'Inter', 'Kanit', 'Noto Color Emoji', sans-serif; 
+            background-color: var(--app-bg); 
+            color: #f4f4f5; 
+            overflow-x: hidden; 
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass-panel { 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid #3f3f46; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        .list-panel {
+            background: #27272a; 
+            border: 1px solid #3f3f46;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .view-content {
+            padding-bottom: calc(env(safe-area-inset-bottom) + 100px) !important;
+            -webkit-overflow-scrolling: touch; 
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #3f3f46; border-radius: 20px; }
+
+        .rank-ss { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8); background-size: 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow 3s linear infinite; font-weight: 900; font-style: italic; }
+        @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        .rank-s { color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5); font-weight: 900; }
+        .rank-a { color: #f87171; text-shadow: 0 0 10px rgba(248, 113, 113, 0.5); font-weight: 900; }
+        .rank-b { color: #3b82f6; font-weight: 800; }
+        .rank-c { color: #a1a1aa; font-weight: 700; }
+        .rank-d { color: #71717a; font-weight: 600; }
+        .rank-e { color: #52525b; font-weight: 600; }
+        .rank-f { color: #ef4444; font-weight: 900; }
+
+        .sunken-slot { background: #141417; box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5), inset -1px -1px 3px rgba(255,255,255,0.05); border: 1px solid #27272a; }
+        .sunken-slot:active { filter: brightness(1.2); border-color: #52525b; }
+        
+        .delete-progress { transition: width linear; }
+        
+        .rox-currency-bar { background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid #3f3f46; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; height: 50px; }
+        .currency-pill { background: #27272a; border-radius: 12px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: bold; color: #e4e4e7; border: 1px solid #3f3f46; }
+        .emoji-icon { font-family: 'Noto Color Emoji', sans-serif; line-height: 1; }
+        
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slideUp 0.2s ease-out forwards; }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #10b981; cursor: pointer; margin-top: -8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #3f3f46; border-radius: 2px; }
+        
+        .slate-input { background-color: #09090b; border: 1px solid #3f3f46; color: white; transition: border-color 0.2s; }
+        .slate-input:focus { border-color: #71717a; outline: none; }
+
+        @keyframes levelUpPulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .level-up-glow { animation: levelUpPulse 2s infinite; }
+        
+        /* Share Card Gradient */
+        .share-card-bg {
+            background: linear-gradient(135deg, #1f2937 0%, #000000 100%);
+            position: relative;
+        }
+        .share-card-bg::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module" data-presets="react">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, onSnapshot, addDoc, deleteDoc, getDocs, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        const APP_VERSION = "Ver.4.7.0";
+        const VERSION_HISTORY = [
+            { ver: "Ver.4.7.0", changes: ["Added Share System (Screenshot ready)", "Added DEK Shop (Buy Titles)", "Adventure input now uses placeholders", "Bag item descriptions in Thai"] },
+            { ver: "Ver.4.6.5", changes: ["UI Clean up", "Fixed HE Gum icon", "Removed save toast"] },
+            { ver: "Ver.4.6.4", changes: ["Updated Item DB (Divine-Pride)", "Removed blur from Adventure"] },
+            { ver: "Ver.4.6.3", changes: ["Reward Popup animations", "Profit display in reward"] }
+        ];
+        
+        const MANUAL_FIREBASE_CONFIG = { apiKey: "AIzaSyAbWzr8o_OhkjGbEetBYq_nzYmVZ2fTf40", authDomain: "rocogh-88a38.firebaseapp.com", projectId: "rocogh-88a38", storageBucket: "rocogh-88a38.firebasestorage.app", messagingSenderId: "1025971309206", appId: "1:1025971309206:web:d4f9e0ab6bb016dde590b7" };
+        const INITIAL_STATS = { baseLv: 1, baseExp: 0, jobLv: 1, jobExp: 0, jobClass: 'Novice', coins: 0, zeny: 0, unlockedTitles: ['Novice'] };
+        const SHOP_ITEMS = [ { id: 'premium_box', name: 'Premium Service Box', duration: 30, type: 'buff_box', icon: 'Premium', desc: 'กล่องพรีเมียม 30 วัน', rarity: 'Rare', category: 'Consumable' }, { id: 'kafra_box', name: 'Kafra Buff (7d)', duration: 7, type: 'buff_box', icon: 'Kafra', desc: 'บัฟคลังคาฟร่า 7 วัน', rarity: 'Uncommon', category: 'Consumable' }, { id: 'silvervine_box', name: 'Silvervine Box (10ea)', qty: 10, type: 'consumable_box', subType: 'silvervine', icon: 'SilvervineBox', desc: 'กล่องผลไม้แมว 10 ชิ้น', rarity: 'Uncommon', category: 'Consumable' }, { id: 'gum_box', name: 'Bubble Gum Box (10ea)', qty: 10, type: 'consumable_box', subType: 'gum', icon: 'GumBox', desc: 'กล่องหมากฝรั่ง 10 ชิ้น', rarity: 'Common', category: 'Consumable' }, { id: 'he_gum_box', name: 'HE Bubble Gum Box (5ea)', qty: 5, type: 'consumable_box', subType: 'he_gum', icon: 'HeGumBox', desc: 'กล่องหมากฝรั่ง HE 5 ชิ้น', rarity: 'Rare', category: 'Consumable' } ];
+        
+        // Titles Shop
+        const DEK_TITLES = [
+            { id: 'richman', name: 'Richman', cost: 100, icon: '💰' },
+            { id: 'lucky', name: 'Lucky Guy', cost: 200, icon: '🍀' },
+            { id: 'slayer', name: 'Dragon Slayer', cost: 500, icon: '⚔️' },
+            { id: 'god', name: 'RNG God', cost: 1000, icon: '👑' },
+            { id: 'whale', name: 'The Whale', cost: 5000, icon: '🐳' }
+        ];
+
+        const ITEM_DETAILS = {
+            'spell': { name: 'Coagulated Spell', desc: 'ผลึกเวทมนตร์สีม่วง ใช้สำหรับ Enchant อุปกรณ์', type: 'Etc', rarity: 'Common', category: 'Etc' },
+            'magic': { name: 'Contaminated Magic', desc: 'ผลึกเวทมนตร์สีแดงที่ปนเปื้อนพลังงานชั่วร้าย', type: 'Etc', rarity: 'Uncommon', category: 'Etc' },
+            'gum': { name: 'Bubble Gum', desc: 'เพิ่มอัตราการดรอปไอเทม 100% เป็นเวลา 30 นาที', type: 'Consumable', rarity: 'Common', category: 'Consumable' },
+            'he_gum': { name: 'HE Bubble Gum', desc: 'เพิ่มอัตราการดรอปไอเทม 200% เป็นเวลา 15 นาที', type: 'Consumable', rarity: 'Rare', category: 'Consumable' },
+            'silvervine': { name: 'Silvervine', desc: 'ผลไม้แมว ใช้สำหรับแลกเปลี่ยนหรือเปิดใช้งานบริการพิเศษ', type: 'Etc', rarity: 'Common', category: 'Etc' },
+            'premium_staff': { name: 'Premium Staff', desc: 'คฑาสำหรับสมาชิก VIP ใช้สำหรับเปิดใช้งาน Silvervine Buff', type: 'Tool', rarity: 'Legendary', category: 'Consumable' },
+            'premium_box': { name: 'Premium Service Box', desc: 'กล่องบรรจุบัตร Premium Service 30 วัน', type: 'Consumable', rarity: 'Rare', category: 'Consumable' }
+        };
+
+        const DROP_TABLE = [ { id: 'elu', name: 'Elunium', rate: 0.4, min: 1, max: 2, icon: 'Elunium', desc: 'แร่ธาตุสำหรับตีบวก Armor', type: 'Ore', rarity: 'Common', category: 'Etc' }, { id: 'ori', name: 'Oridecon', rate: 0.4, min: 1, max: 2, icon: 'Oridecon', desc: 'แร่ธาตุสำหรับตีบวก Weapon', type: 'Ore', rarity: 'Common', category: 'Etc' }, { id: 'card_wk', name: 'White Knight Card', rarity: 'Rare', rate: 0.05, min: 1, max: 1, icon: 'Card', desc: 'การ์ด White Knight', type: 'Card', category: 'Rare' }, { id: 'card_kk', name: 'Khalitzburg Knight Card', rarity: 'Rare', rate: 0.05, min: 1, max: 1, icon: 'Card', desc: 'การ์ด Khalitzburg Knight', type: 'Card', category: 'Rare' }, { id: 'card_ogh', name: 'Old Glast Heim Card', rarity: 'Legendary', rate: 0.001, min: 1, max: 1, icon: 'Card', desc: 'การ์ด Old Glast Heim', type: 'Card', category: 'Rare' } ];
+        
+        const formatMoney = (n) => new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(n || 0);
+        const formatFullMoney = (n) => new Intl.NumberFormat('th-TH').format(n || 0);
+        const getExpReq = (lv) => Math.floor(100 * Math.pow(lv || 1, 1.5));
+        const simulateDrops = () => { const drops = []; DROP_TABLE.forEach(item => { if (Math.random() <= item.rate) { const qty = Math.floor(Math.random() * (item.max - item.min + 1)) + item.min; drops.push({ ...item, qty }); } }); return drops; };
+        const copyToClipboard = (text) => { const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select(); try { document.execCommand('copy'); } catch (err) {} document.body.removeChild(textArea); };
+        
+        const getItemInfo = (id) => {
+            if (ITEM_DETAILS[id]) return { ...ITEM_DETAILS[id], icon: id };
+            const dropItem = DROP_TABLE.find(d => d.id === id); if (dropItem) return dropItem;
+            const shopItem = SHOP_ITEMS.find(s => s.id === id); if (shopItem) return { ...shopItem, type: 'Box', rarity: shopItem.rarity || 'Common', category: shopItem.category || 'Consumable' };
+            if (id === 'premium_staff') return { ...ITEM_DETAILS['premium_staff'], icon: 'PremiumStaff' };
+            if (id === 'he_gum') return { ...ITEM_DETAILS['he_gum'], icon: 'HeGum' }; 
+            if (id === 'spell') return { ...ITEM_DETAILS['spell'], icon: 'Spell' };
+            if (id === 'magic') return { ...ITEM_DETAILS['magic'], icon: 'Magic' };
+            return { name: 'Unknown Item', desc: 'No description available.', type: 'Etc', rarity: 'Common', icon: 'Box', category: 'Etc' };
+        };
+        
+        const getRankInfo = (profit, averageProfit) => {
+            if (profit < 0) return { rank: 'F', css: 'rank-f', text: 'LOSS' };
+            if (!averageProfit || averageProfit === 0) return { rank: 'B', css: 'rank-b', text: 'NORMAL' };
+            const diff = (profit - averageProfit) / averageProfit; 
+            if (diff >= 0.5) return { rank: 'S', css: 'rank-s', text: 'LUCKY' };
+            if (diff >= 0.3) return { rank: 'A', css: 'rank-a', text: 'GOOD' };
+            if (diff >= -0.1) return { rank: 'B', css: 'rank-b', text: 'NORMAL' }; 
+            if (diff >= -0.3) return { rank: 'C', css: 'rank-c', text: 'BAD' };   
+            if (diff >= -0.5) return { rank: 'D', css: 'rank-d', text: 'POOR' };  
+            return { rank: 'E', css: 'rank-e', text: 'AWFUL' };                  
+        };
+
+        const SmartIcon = ({ name, className }) => {
+            const [error, setError] = useState(false);
+            const BASE_URL = "http://sdekzaaa-source.github.io/ro-farm-app/";
+            const imgMap = { 'Spell': 'Coagulated Spell.png', 'Magic': 'Contaminated Magic.png', 'Gum': 'Bubble Gum.png', 'HeGum': 'HE Bubble Gum.png', 'Silvervine': 'Silvervine Fruit.png', 'GumBox': 'Bubble Gum Box.png', 'HeGumBox': 'HE Bubble Gum Box.png', 'SilvervineBox': 'Silvervine Box.png', 'Premium': 'Premium Box.png', 'Kafra': 'Kafra Buff.png', 'PremiumStaff': 'Premium Service Staff.png', 'Elunium': 'Elunium.png', 'Oridecon': 'Oridecon.png', 'Card': 'Card.png', 'Zeny': 'Zeny.png', 'DEK': 'DEK.png', 'OGH_BOSS': 'OGH BOSS.png', 'AOGH_BOSS': 'AOGH BOSS.png' };
+            const finalName = imgMap[name] ? name : (Object.keys(imgMap).find(k => k.toLowerCase() === name?.toLowerCase()) || 'Box'); 
+            
+            if (finalName === 'GumBox') return (<div className={`relative ${className}`}><img src={`${BASE_URL}Bubble Gum Box.png`} alt="Box" className="w-full h-full object-contain" /><img src={`${BASE_URL}Bubble Gum.png`} alt="Gum" className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>);
+            if (finalName === 'HeGumBox') return (<div className={`relative ${className}`}><img src={`${BASE_URL}Bubble Gum Box.png`} className="w-full h-full object-contain filter hue-rotate-15" /><img src={`${BASE_URL}HE Bubble Gum.png`} alt="HE" className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>);
+            
+            if (!error && imgMap[finalName]) return <img src={`${BASE_URL}${imgMap[finalName]}`} className={`object-contain ${className}`} onError={() => setError(true)} />;
+            return <div className={`w-full h-full bg-zinc-700 rounded-md flex items-center justify-center ${className}`}><span className="text-[8px] text-zinc-500">?</span></div>;
+        };
+
+        const Icon = ({ name, size = 20, className }) => {
+            const icons = {
+                Home: '🏠', Inventory: '🎒', Shop: '💰', Dungeon: '⚔️', History: '📜', Settings: '🛠️', Profile: '👤',
+                Save: '💾', Trash: '🗑️', Plus: '➕', X: '❌', Check: '✅', Copy: '📋', Info: 'ℹ️',
+                Clock: '⏰', Cost: '💸', TrendingUp: '📈', Box: '📦', ShoppingCart: '🛒', FileText: '📝',
+                Clover: '🍀', Wish: '🌠', Skull: '💀', Share: '📸',
+                LayoutGrid: '🎒', Flask: '🧪', Layers: '🍀', Diamond: '💎',
+                Lock: '🔒', DollarSign: '💲', ToggleOn: '🟢', ToggleOff: '⚫'
+            };
+            return <span className={`inline-flex items-center justify-center leading-none emoji-icon ${className}`} style={{ fontSize: size }}>{icons[name] || '❓'}</span>;
+        };
+
+        // --- Shared Components ---
+        function CurrencyHeader({ stats, activeBuffs }) {
+            const [now, setNow] = useState(new Date());
+            useEffect(() => { const interval = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(interval); }, []);
+            return (
+                <div className="rox-currency-bar sticky top-0 z-30">
+                    <div className="flex gap-2 mr-auto overflow-x-auto scrollbar-hide max-w-[50%]">
+                        {activeBuffs.map(b => {
+                            const end = new Date(b.endDate);
+                            if (end < now) return null;
+                            let icon = 'Check'; if(b.itemId === 'premium_box') icon = 'Premium'; if(b.itemId === 'kafra_box') icon = 'Kafra'; if(b.itemId === 'silvervine_24h') icon = 'Silvervine';
+                            const diff = end - now; const h = Math.floor(diff / (1000 * 60 * 60)); const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                            return (<div key={b.uid} className="flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-lg pr-2 h-8"><div className="w-8 h-full flex items-center justify-center bg-black/20 rounded-l-lg"><SmartIcon name={icon} className="w-5 h-5"/></div><span className="text-[10px] font-mono text-emerald-400">{h}h:{m}m</span></div>);
+                        })}
+                    </div>
+                    <div className="flex gap-2"><div className="currency-pill"><SmartIcon name="Zeny" className="w-4 h-4"/><span>{formatMoney(stats.zeny)}</span></div><div className="currency-pill"><SmartIcon name="DEK" className="w-4 h-4"/><span>{formatMoney(stats.coins)}</span></div></div>
+                </div>
+            );
+        }
+        function DeleteButton({ onDelete, duration = 750 }) { const [isDeleting, setIsDeleting] = useState(false); const timerRef = useRef(null); const startDelete = () => { setIsDeleting(true); timerRef.current = setTimeout(() => { onDelete(); setIsDeleting(false); }, duration); }; const cancelDelete = () => { clearTimeout(timerRef.current); setIsDeleting(false); }; return (<div className="relative w-full h-8 bg-zinc-800 rounded-lg overflow-hidden cursor-pointer border border-rose-900/30 select-none touch-none mt-2" onMouseDown={startDelete} onMouseUp={cancelDelete} onMouseLeave={cancelDelete} onTouchStart={(e) => { e.preventDefault(); startDelete(); }} onTouchEnd={(e) => { e.preventDefault(); cancelDelete(); }}><div className={`absolute top-0 left-0 h-full bg-rose-600 delete-progress ${isDeleting ? 'w-full' : 'w-0'}`} style={{ transitionDuration: isDeleting ? `${duration}ms` : '100ms' }}></div><div className="absolute inset-0 flex items-center justify-center pointer-events-none"><span className={`text-[10px] font-bold uppercase tracking-widest ${isDeleting ? 'text-white animate-pulse' : 'text-rose-400'}`}>{isDeleting ? "DELETING..." : "Hold Delete"}</span></div></div>); }
+        function Toast({ message }) { return (<div className="fixed top-14 left-1/2 transform -translate-x-1/2 z-[100] animate-slide-down pointer-events-none w-full max-w-sm px-4"><div className="bg-zinc-800/95 backdrop-blur-md border border-zinc-700 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 justify-center"><div className="bg-emerald-500/20 p-1 rounded-full text-emerald-400"><Icon name="Check" size={14} /></div><span className="text-xs font-bold tracking-wide">{message}</span></div></div>); }
+        function Modal({ children, onClose }) { return (<div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}><div className="w-full max-w-sm bg-[#18181b] rounded-[2.5rem] p-6 relative border border-zinc-800" onClick={e => e.stopPropagation()}><button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors"><Icon name="X" size={20}/></button>{children}</div></div>); }
+        function InfoModal({ onClose }) { return (<div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-fade-in" onClick={onClose}><div className="w-full max-w-xs bg-[#18181b] rounded-[2.5rem] p-6 relative border border-zinc-800" onClick={e => e.stopPropagation()}><button onClick={onClose} className="absolute top-5 right-5 text-zinc-500 hover:text-white"><Icon name="X" size={20}/></button><h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Icon name="Clover" className="text-emerald-400"/> Rank Criteria</h3><div className="space-y-3 text-sm text-zinc-300"><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-ss w-8 text-center">SS</div><div className="flex-1"><span className="text-white font-bold">Godly</span> <br/><span className="text-xs text-zinc-500">Card Drop!</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-s w-8 text-center">S</div><div className="flex-1"><span className="text-white font-bold">Lucky</span> <br/><span className="text-xs text-zinc-500">&gt; Avg +50%</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-a w-8 text-center">A</div><div className="flex-1"><span className="text-white font-bold">Good</span> <br/><span className="text-xs text-zinc-500">&gt; Avg +30%</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-b w-8 text-center">B</div><div className="flex-1"><span className="text-white font-bold">Normal</span> <br/><span className="text-xs text-zinc-500">Within 10% of Avg</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-c w-8 text-center">C</div><div className="flex-1"><span className="text-white font-bold">Bad</span> <br/><span className="text-xs text-zinc-500">&lt; Avg -10%</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-d w-8 text-center">D</div><div className="flex-1"><span className="text-white font-bold">Poor</span> <br/><span className="text-xs text-zinc-500">&lt; Avg -30%</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-e w-8 text-center">E</div><div className="flex-1"><span className="text-white font-bold">Awful</span> <br/><span className="text-xs text-zinc-500">&lt; Avg -50%</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-f w-8 text-center">F</div><div className="flex-1"><span className="text-white font-bold">Loss</span> <br/><span className="text-xs text-zinc-500">Negative Profit</span></div></div></div></div></div>); }
+        function VersionModal({ onClose }) { return (<div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-fade-in" onClick={onClose}><div className="w-full max-w-xs bg-[#18181b] rounded-[2.5rem] p-6 relative border border-zinc-800" onClick={e => e.stopPropagation()}><button onClick={onClose} className="absolute top-5 right-5 text-zinc-500 hover:text-white"><Icon name="X" size={20}/></button><h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Icon name="Info" size={20}/> Update Log</h3><div className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">{VERSION_HISTORY.map((v, i) => (<div key={i} className="bg-zinc-900 p-3 rounded-xl border border-zinc-700/50"><h4 className="text-sm font-black text-emerald-400 mb-1">{v.ver}</h4><ul className="list-disc pl-4 text-zinc-400 text-xs space-y-1">{v.changes.map((c, j) => <li key={j}>{c}</li>)}</ul></div>))}</div></div></div>); }
+        
+        // --- SHARE MODAL ---
+        function ShareModal({ data, onClose }) {
+            return (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-fade-in" onClick={onClose}>
+                    <div className="w-full max-w-sm share-card-bg rounded-3xl p-6 border border-white/10 shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <button onClick={onClose} className="absolute top-4 right-4 text-white/50 hover:text-white"><Icon name="X" size={24}/></button>
+                        
+                        <div className="text-center mb-6">
+                            <h2 className="text-3xl font-black text-white italic tracking-tighter">OGHza <span className="text-emerald-400">Tracker</span></h2>
+                            <p className="text-[10px] text-zinc-400 tracking-widest uppercase">Adventure Report</p>
+                        </div>
+
+                        <div className="flex justify-center mb-6">
+                            <div className="w-32 h-32 rounded-2xl border-2 border-white/20 relative overflow-hidden shadow-lg bg-black">
+                                <SmartIcon name={data.runMode === 'aogh' ? 'AOGH_BOSS' : 'OGH_BOSS'} className="w-full h-full object-cover" />
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-center py-1 text-[10px] font-bold text-white uppercase">{data.runMode || 'OGH'}</div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="bg-white/5 rounded-xl p-3 text-center border border-white/5">
+                                <p className="text-[9px] text-zinc-500 uppercase">Profit</p>
+                                <p className={`text-xl font-black ${data.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatMoney(data.profit)}</p>
+                            </div>
+                            <div className="bg-white/5 rounded-xl p-3 text-center border border-white/5">
+                                <p className="text-[9px] text-zinc-500 uppercase">Rank</p>
+                                <div className="flex items-center justify-center gap-1">
+                                    <Icon name="Clover" className={data.rankCss} size={16}/>
+                                    <span className={`text-xl font-black ${data.rankCss}`}>{data.rank}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="text-center">
+                            <p className="text-[10px] text-zinc-600 mb-2">Capture this screen to share!</p>
+                            <div className="inline-block px-3 py-1 rounded-full bg-white/10 text-[10px] text-zinc-400 font-mono">{new Date().toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function RewardPopup({ data, onClose, onShare }) {
+            // ... (Existing RewardPopup Logic) ...
+            const [displayExpPercent, setDisplayExpPercent] = useState(Math.min(100, Math.floor((data.beforeExp / getExpReq(data.beforeLv)) * 100)));
+            const targetExpPercent = Math.min(100, Math.floor((data.afterExp / getExpReq(data.afterLv)) * 100));
+            const isLevelUp = data.afterLv > data.beforeLv;
+
+            useEffect(() => {
+                const timer = setTimeout(() => { setDisplayExpPercent(targetExpPercent); }, 100); 
+                return () => clearTimeout(timer);
+            }, [targetExpPercent]);
+
+            return (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-fade-in" onClick={onClose}>
+                    <div className="w-full max-w-sm bg-gradient-to-b from-zinc-800 to-black rounded-[2rem] p-8 relative border-2 border-amber-500/50 shadow-[0_0_50px_rgba(251,191,36,0.2)] flex flex-col items-center" onClick={e => e.stopPropagation()}>
+                        <div className={`absolute -top-12 transition-all duration-700 ${isLevelUp ? 'scale-125' : ''}`}><div className={`w-24 h-24 rounded-full bg-amber-500 flex items-center justify-center border-4 border-zinc-900 shadow-xl animate-pop-in ${isLevelUp ? 'level-up-glow' : ''}`}><Icon name={isLevelUp ? "Clover" : "Wish"} size={50} /></div></div>
+                        {isLevelUp && <h2 className="text-4xl font-black text-emerald-400 mt-12 mb-2 tracking-tighter drop-shadow-md animate-bounce">LEVEL UP!</h2>}
+                        {!isLevelUp && <h2 className="text-2xl font-black text-amber-400 mt-10 mb-2 tracking-tighter drop-shadow-md">STAGE CLEAR!</h2>}
+                        <p className="text-xs text-zinc-400 mb-6 uppercase tracking-widest font-bold">Rewards Obtained</p>
+                        <div className="flex gap-4 mb-6 w-full justify-center">
+                            <div className="bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-700 flex flex-col items-center min-w-[80px]"><span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mb-1">PROFIT</span><span className={`font-black text-lg flex items-center gap-1 ${data.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatMoney(data.profit)}</span></div>
+                             <div className="bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-700 flex flex-col items-center min-w-[80px]"><span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mb-1">EXP</span><span className="text-blue-400 font-black text-lg flex items-center gap-1">+{formatMoney(data.expGain)}</span></div>
+                            <div className="bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-700 flex flex-col items-center min-w-[80px]"><span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mb-1">DEK</span><span className="text-amber-400 font-black text-lg flex items-center gap-1"><SmartIcon name="DEK" className="w-4 h-4"/>+{formatMoney(data.dek)}</span></div>
+                        </div>
+                         <div className="w-full mb-6"><div className="flex justify-between text-[10px] font-bold text-zinc-500 mb-1"><span>LV.{data.afterLv}</span><span>{Math.floor(displayExpPercent)}%</span></div><div className="w-full h-3 bg-zinc-900 rounded-full overflow-hidden relative border border-zinc-700"><div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-1000 ease-out" style={{ width: `${displayExpPercent}%` }}></div></div></div>
+                        <div className="grid grid-cols-4 gap-3 mb-8 w-full">{data.drops.length > 0 ? data.drops.map((d, i) => (<div key={i} className="flex flex-col items-center animate-slide-up" style={{animationDelay: `${i*100}ms`}}><div className="w-14 h-14 bg-zinc-900 rounded-xl border border-zinc-700 flex items-center justify-center relative shadow-inner"><SmartIcon name={d.icon} className="w-10 h-10" /><span className="absolute -bottom-1 -right-1 bg-black text-zinc-300 text-[9px] font-black px-1.5 rounded border border-zinc-700">x{d.qty}</span></div></div>)) : <div className="col-span-4 text-center text-zinc-600 italic py-4">No rare drops...</div>}</div>
+                        <div className="flex gap-2 w-full">
+                            <button onClick={onShare} className="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-black rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"><Icon name="Share" size={18}/> SHARE</button>
+                            <button onClick={onClose} className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl shadow-lg transition-transform active:scale-95">CONTINUE</button>
+                        </div>
+                    </div>
+                </div>
+            ); 
+        }
+
+        function ItemDetailModal({ item, onClose, onSell }) { const rColors = { Common: "text-zinc-400", Uncommon: "text-emerald-400", Rare: "text-blue-400", Legendary: "text-amber-400" }; const rBg = { Common: "bg-zinc-800/50", Uncommon: "bg-emerald-500/10", Rare: "bg-blue-500/10", Legendary: "bg-amber-500/10" }; const info = getItemInfo(item.id || item.itemId); const [sellQty, setSellQty] = useState('1'); const [sellPrice, setSellPrice] = useState(''); return (<div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-fade-in" onClick={onClose}><div className="w-full max-w-xs bg-[#18181b] rounded-[2.5rem] p-6 relative border border-zinc-800" onClick={e => e.stopPropagation()}><button onClick={onClose} className="absolute top-5 right-5 text-zinc-500 hover:text-white"><Icon name="X" size={20}/></button><div className={`w-24 h-24 mx-auto rounded-3xl flex items-center justify-center mb-4 ${rBg[info.rarity]} border border-white/5 shadow-xl`}><SmartIcon name={info.icon} className="w-16 h-16" /></div><h3 className={`text-lg font-black text-center ${rColors[info.rarity]}`}>{info.name}</h3><p className="text-[10px] font-bold text-center opacity-40 uppercase tracking-widest mb-4">{info.type} • {info.rarity}</p><p className="text-xs text-center opacity-60 mb-6 italic">"{info.desc}"</p>{item.isSellable ? (<div className="bg-zinc-900 p-4 rounded-2xl mb-4 border border-zinc-800"><p className="text-[10px] font-bold opacity-40 uppercase mb-2 text-center">Sell Item</p><div className="grid grid-cols-2 gap-2 mb-2"><div><label className="text-[8px] font-bold opacity-30 uppercase ml-1">Qty</label><input type="text" inputMode="numeric" value={sellQty} onChange={e => setSellQty(e.target.value.replace(/\D/g,''))} className="w-full bg-slate-800/80 border border-white/10 p-2 rounded-xl text-center font-bold text-sm outline-none placeholder-white/20"/></div><div><label className="text-[8px] font-bold opacity-30 uppercase ml-1">Price/Unit</label><input type="text" inputMode="numeric" value={sellPrice} onChange={e => setSellPrice(e.target.value.replace(/\D/g,''))} className="w-full bg-slate-800/80 border border-white/10 p-2 rounded-xl text-center font-bold text-sm outline-none placeholder-white/20"/></div></div><button onClick={() => onSell(item, sellQty, sellPrice)} disabled={!sellQty || !sellPrice} className="w-full py-2 bg-emerald-600 rounded-xl text-xs font-black uppercase hover:bg-emerald-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"><Icon name="DollarSign" size={14}/> Confirm Sell</button></div>) : (<div className="text-center"><p className="text-xs font-bold opacity-50">Owned: {item.count || item.qty}</p></div>)}</div></div>); }
+        const TabButton = ({ label, icon: IconName, active, onClick }) => ( <button onClick={onClick} className={`flex-1 py-2 text-[10px] font-black uppercase transition-all rounded-xl flex flex-col items-center justify-center gap-1 ${active ? 'bg-zinc-700 text-white shadow-lg ring-1 ring-zinc-600' : 'text-zinc-500 hover:text-zinc-300'}`}><Icon name={IconName} size={16} />{label}</button> );
+
+        // --- VIEWS ---
+        function HomeView({ records, stats, goToTab, activeBuffs }) {
+             const { ResponsiveContainer, AreaChart, Area } = window.Recharts || {}; 
+             const totalProfit = records.reduce((acc, r) => acc + (r.profit || 0), 0);
+             const chartData = [...records].reverse().slice(-7).map((r, i) => ({ name: `Run ${i+1}`, profit: r.profit }));
+             const expPercent = Math.min(100, Math.floor((stats.baseExp / getExpReq(stats.baseLv)) * 100));
+             
+             const groupedRecords = useMemo(() => {
+                const groups = {};
+                records.forEach(r => { if (!groups[r.date]) groups[r.date] = []; groups[r.date].push(r); });
+                return Object.keys(groups).sort((a, b) => new Date(b) - new Date(a)).slice(0, 3).reduce((obj, key) => { obj[key] = groups[key]; return obj; }, {});
+            }, [records]);
+
+             return (
+                <div className="p-6 animate-fade-in view-content">
+                    <header className="flex justify-between items-center mb-6"><div onClick={() => goToTab('profile')} className="flex items-center gap-3 bg-zinc-800 p-2 rounded-full pr-4 cursor-pointer hover:bg-zinc-700 transition-colors border border-zinc-700 relative overflow-hidden group"><div className="w-10 h-10 rounded-full flex items-center justify-center font-black bg-zinc-600 text-white shadow-inner relative z-10 text-xl">🧙‍♂️</div><div className="relative z-10"><p className="text-[10px] font-bold uppercase tracking-tighter">LV.{stats.baseLv}</p><p className="text-xs font-black text-zinc-300">{stats.jobClass}</p></div><div className="absolute bottom-0 left-0 h-1 bg-emerald-500 transition-all duration-500" style={{width: `${expPercent}%`}}></div></div></header>
+                    <div className="text-center mb-8 bg-zinc-800/50 p-6 rounded-[2.5rem] border border-zinc-700/50 relative overflow-hidden"><div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div><div className="flex items-center justify-center gap-2 mb-1"><SmartIcon name="Zeny" className="w-5 h-5"/><p className="text-[10px] opacity-50 font-bold uppercase tracking-widest">Total Profit</p></div><p className="text-4xl font-black text-white drop-shadow-sm">{formatMoney(totalProfit)}</p></div>
+                    {window.Recharts && (<div className="glass-panel p-4 rounded-3xl h-48 mb-6 border-zinc-700 bg-zinc-800/50"><p className="text-[10px] font-bold opacity-40 mb-2 uppercase flex items-center gap-2"><Icon name="TrendingUp" size={14}/> Profit Trend</p><ResponsiveContainer width="100%" height="90%"><AreaChart data={chartData}><Area type="monotone" dataKey="profit" stroke="#10b981" fill="#10b981" fillOpacity={0.1} strokeWidth={3} /></AreaChart></ResponsiveContainer></div>)}
+                    <div className="space-y-3"><h4 className="text-[10px] font-bold opacity-40 px-2 uppercase tracking-widest flex items-center gap-2"><Icon name="Clock" size={12}/> Daily Performance (Last 3 Days)</h4>{Object.keys(groupedRecords).length === 0 && <p className="text-center text-xs text-zinc-600 py-4 italic">No recent data</p>}{Object.keys(groupedRecords).map(date => { const dailyRecords = groupedRecords[date]; const dailyOperatingProfit = dailyRecords.reduce((acc, r) => acc + (r.profit || 0), 0); let dailyFixedCost = 0; activeBuffs.forEach(buff => { const recDate = new Date(date); const start = new Date(buff.activatedAt); const end = new Date(buff.endDate); const d = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate()).getTime(); const s = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime(); const e = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime(); if (d >= s && d < e) dailyFixedCost += Math.round(buff.buyPrice / buff.duration); }); const dailyNetProfit = dailyOperatingProfit - dailyFixedCost; return (<div key={date} className="list-panel p-4 rounded-3xl border border-zinc-700 bg-zinc-900/50 relative overflow-hidden"><div className="flex justify-between items-center mb-2 border-b border-zinc-800 pb-2"><span className="text-xs font-bold text-zinc-300">{date}</span><span className={`text-[9px] font-black px-2 py-0.5 rounded ${dailyNetProfit >= 0 ? 'bg-emerald-900/30 text-emerald-400' : 'bg-rose-900/30 text-rose-400'}`}>{dailyNetProfit >= 0 ? 'PROFIT' : 'LOSS'}</span></div><div className="grid grid-cols-3 gap-2 text-center"><div><p className="text-[8px] text-zinc-500 uppercase">Run Profit</p><p className="text-xs font-bold text-zinc-300">{formatMoney(dailyOperatingProfit)}</p></div><div><p className="text-[8px] text-zinc-500 uppercase">Fixed Cost</p><p className="text-xs font-bold text-rose-400">-{formatMoney(dailyFixedCost)}</p></div><div><p className="text-[8px] text-zinc-500 uppercase">Net Total</p><p className={`text-sm font-black ${dailyNetProfit>=0?'text-emerald-400':'text-rose-400'}`}>{formatMoney(dailyNetProfit)}</p></div></div></div>); })}</div>
+                </div>
+            );
+        }
+
+        function ShopView({ db, uid, showToast }) {
+            const [selectedItem, setSelectedItem] = useState(null); const [price, setPrice] = useState(''); const [qty, setQty] = useState('1');
+            const handleItemClick = (item) => { setSelectedItem(item); setPrice(''); setQty('1'); };
+            const handleBuy = async () => {
+                if (!price || !selectedItem) return;
+                const buyPrice = parseInt(price); const quantity = parseInt(qty) || 1; const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker'; const promises = [];
+                for(let i=0; i<quantity; i++) { promises.push(addDoc(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), { itemId: selectedItem.id, name: selectedItem.name, type: selectedItem.type, subType: selectedItem.subType || null, duration: selectedItem.duration || null, qty: selectedItem.qty || 1, buyPrice: buyPrice, timestamp: Date.now() + i, status: 'unused', category: selectedItem.category || 'Consumable' })); }
+                await Promise.all(promises); showToast(`Bought ${quantity} ${selectedItem.name}`); setSelectedItem(null); setPrice(''); setQty('1');
+            };
+            return (
+                <div className="p-6 animate-fade-in view-content space-y-6">
+                    <h2 className="text-2xl font-black italic tracking-tighter text-zinc-200 flex items-center gap-2"><Icon name="Shop" size={24}/> Cash Shop</h2>
+                    <div className="bg-zinc-900/50 p-4 rounded-[2rem] border border-zinc-800 min-h-[200px]"><p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mb-4 text-zinc-400">Shelves</p><div className="grid grid-cols-4 gap-3">{SHOP_ITEMS.map(item => (<div key={item.id} onClick={() => handleItemClick(item)} className={`aspect-square rounded-2xl flex items-center justify-center transition-all relative cursor-pointer ${selectedItem?.id === item.id ? 'bg-zinc-700 ring-2 ring-emerald-500 scale-105 z-10' : 'bg-zinc-800 border border-zinc-700 active:scale-95 hover:bg-zinc-700/50'}`}><SmartIcon name={item.icon} className="w-8 h-8" /></div>))}</div></div>
+                    <div className="glass-panel p-6 rounded-[2.5rem] relative overflow-hidden border-zinc-700"><div className="flex gap-4"><div className={`w-24 h-24 rounded-3xl flex-shrink-0 flex items-center justify-center border-2 transition-all ${selectedItem ? 'bg-zinc-800 border-emerald-500/50 shadow-xl' : 'bg-zinc-900/50 border-dashed border-zinc-700'}`}>{selectedItem ? <div className="flex flex-col items-center animate-pop-in"><SmartIcon name={selectedItem.icon} className="w-10 h-10 mb-1" /></div> : <span className="text-[8px] opacity-20 font-black uppercase text-center text-zinc-500">Select<br/>Item</span>}</div><div className="flex-1 space-y-2"><div><div className="flex justify-between items-baseline mb-1"><label className="text-[8px] font-bold opacity-40 uppercase ml-1 flex items-center gap-1"><Icon name="Box" size={10}/> Item Name</label>{selectedItem && <span className="text-[10px] font-bold text-emerald-400 truncate">{selectedItem.name}</span>}</div><input type="text" inputMode="numeric" disabled={!selectedItem} value={price} onChange={e => setPrice(e.target.value.replace(/\D/g, ''))} className="slate-input w-full p-2 rounded-xl text-sm font-bold placeholder-zinc-700" placeholder="Price / Unit"/></div><div><label className="text-[8px] font-bold opacity-40 uppercase ml-1">Quantity</label><div className="flex items-center gap-2"><button disabled={!selectedItem} onClick={() => setQty(Math.max(1, parseInt(qty||0)-1).toString())} className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center hover:bg-zinc-700 disabled:opacity-30 text-zinc-400">-</button><input type="text" inputMode="numeric" disabled={!selectedItem} value={qty} onChange={e => setQty(e.target.value.replace(/\D/g, ''))} className="w-full bg-transparent text-center text-sm font-black outline-none text-white"/><button disabled={!selectedItem} onClick={() => setQty((parseInt(qty||0)+1).toString())} className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center hover:bg-zinc-700 disabled:opacity-30 text-zinc-400">+</button></div></div></div></div><div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center"><div><p className="text-[9px] opacity-40 font-bold uppercase flex items-center gap-1"><SmartIcon name="Zeny" className="w-3 h-3"/> Total Cost</p><p className="text-xl font-black text-white">{formatMoney((parseInt(price) || 0) * (parseInt(qty) || 0))} z</p></div><button onClick={handleBuy} disabled={!selectedItem || !price} className="px-6 py-3 bg-zinc-100 text-zinc-900 rounded-xl text-xs font-black uppercase shadow-lg hover:bg-white active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center gap-2"><Icon name="ShoppingCart" size={14}/> Buy Now</button></div></div>
+                </div>
+            );
+        }
+
+        function InventoryView({ db, uid, showToast, records, stock, stats }) {
+            const [items, setItems] = useState([]);
+            const [activeBuffs, setActiveBuffs] = useState([]);
+            const [selectedBox, setSelectedBox] = useState(null);
+            const [svUseConfirm, setSvUseConfirm] = useState(null);
+            const [viewItem, setViewItem] = useState(null); 
+            const [activeTab, setActiveTab] = useState('All');
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
+            const totalSpellsDropped = useMemo(() => records.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (parseInt(r.purpleStoneCount) || 0), 0), [records]);
+            const totalMagicsDropped = useMemo(() => records.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (parseInt(r.contMagicCount) || 0), 0), [records]);
+            const totalSpellsSold = useMemo(() => records.filter(r => r.isSaleRecord && r.itemId === 'spell').reduce((acc, r) => acc + r.qty, 0), [records]);
+            const totalMagicsSold = useMemo(() => records.filter(r => r.isSaleRecord && r.itemId === 'magic').reduce((acc, r) => acc + r.qty, 0), [records]);
+            const currentSpells = Math.max(0, totalSpellsDropped - totalSpellsSold);
+            const currentMagics = Math.max(0, totalMagicsDropped - totalMagicsSold);
+            const drops = useMemo(() => { const c = {}; records.forEach(r => { if (r.drops && !r.isSaleRecord) r.drops.forEach(d => c[d.id] = (c[d.id] || 0) + d.qty); }); return c; }, [records]);
+
+            useEffect(() => {
+                const q = query(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), orderBy('timestamp', 'desc'));
+                const unsub = onSnapshot(q, (snap) => {
+                    setItems(snap.docs.map(d => ({ ...d.data(), uid: d.id })).filter(i => i.status === 'unused'));
+                    const buffs = snap.docs.map(d => d.data()).filter(i => i.status === 'active').map(b => {
+                        const endDate = new Date(b.activatedAt);
+                        if(b.duration === 30) endDate.setDate(endDate.getDate() + 30);
+                        else if(b.duration === 7) endDate.setDate(endDate.getDate() + 7);
+                        else if(b.duration === 1) endDate.setTime(endDate.getTime() + (24*60*60*1000));
+                        return { ...b, endDate };
+                    });
+                    setActiveBuffs(buffs);
+                });
+                return () => unsub();
+            }, [uid]);
+
+            const handleUseBox = async (item) => {
+                if (item.itemId === 'premium_box' || item.itemId === 'kafra_box') {
+                    const isActive = activeBuffs.some(b => b.itemId === item.itemId && new Date(b.endDate) > new Date());
+                    if (isActive) { showToast("Buff is already active!"); return; }
+                }
+                if (item.type === 'buff_box') {
+                    await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'inventory', item.uid), { ...item, status: 'active', activatedAt: new Date().toISOString() });
+                    showToast(`${item.name} Activated!`);
+                } else if (item.type === 'consumable_box') {
+                    const currentQty = stock[item.subType]?.qty || 0;
+                    const currentCost = stock[item.subType]?.totalCost || 0;
+                    const newQty = currentQty + item.qty;
+                    const newTotalCost = currentCost + item.buyPrice;
+                    await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'stock'), { ...stock, [item.subType]: { qty: newQty, totalCost: newTotalCost, avgCost: newTotalCost / newQty } });
+                    await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'inventory', item.uid), { ...item, status: 'consumed' });
+                    showToast(`Added ${item.qty} to Stock`);
+                }
+                setSelectedBox(null);
+             };
+            const handleSellAction = async (item, qtyStr, priceStr) => { 
+                const qty = parseInt(qtyStr); const price = parseInt(priceStr);
+                if (!qty || !price || qty > item.count) { showToast("Invalid Amount"); return; }
+                const profit = qty * price;
+                const earnedDek = Math.floor(profit / 1000);
+                const record = { isSaleRecord: true, itemId: item.id, itemName: item.name, qty: qty, pricePerUnit: price, profit, date: new Date().toISOString().split('T')[0], timestamp: Date.now() };
+                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'records'), record);
+                const newStats = { ...stats };
+                newStats.coins = (newStats.coins || 0) + earnedDek;
+                newStats.zeny = (newStats.zeny || 0) + profit;
+                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), newStats);
+                showToast(`Sold! +${earnedDek} DEK`); setViewItem(null);
+            };
+            const handleUseSilvervineFromStock = async () => { 
+                const isActive = activeBuffs.some(b => b.itemId === 'silvervine_24h' && new Date(b.endDate) > new Date());
+                if (isActive) { alert("Active!"); setSvUseConfirm(null); return; }
+                if ((stock.silvervine?.qty || 0) < 2) { alert("Need 2 Silvervine!"); setSvUseConfirm(null); return; }
+                const newStock = { ...stock, silvervine: { ...stock.silvervine, qty: stock.silvervine.qty - 2 } };
+                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'stock'), newStock);
+                const buffData = { itemId: 'silvervine_24h', name: 'Silvervine Buff (24h)', type: 'buff_box', duration: 1, buyPrice: (stock.silvervine?.avgCost || 0) * 2, timestamp: Date.now(), activatedAt: new Date().toISOString(), status: 'active' };
+                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), buffData);
+                showToast("Activated!"); setSvUseConfirm(null);
+            };
+
+            const allItems = [
+                { id: 'spell', category: 'Etc', iconComp: <SmartIcon name="Spell" className="w-full h-full"/>, count: Math.max(0, currentSpells), name: 'Purple Stone', isSellable: true },
+                { id: 'magic', category: 'Etc', iconComp: <SmartIcon name="Magic" className="w-full h-full"/>, count: Math.max(0, currentMagics), name: 'Red Stone', isSellable: true },
+                { id: 'gum', category: 'Consumable', iconComp: <SmartIcon name="Gum" className="w-full h-full"/>, count: stock.gum?.qty || 0, name: 'Gum (Stock)' },
+                { id: 'he_gum', category: 'Consumable', iconComp: <SmartIcon name="HeGum" className="w-full h-full"/>, count: stock.he_gum?.qty || 0, name: 'HE (Stock)' },
+                { id: 'silvervine', category: 'Etc', iconComp: <SmartIcon name="Silvervine" className="w-full h-full"/>, count: stock.silvervine?.qty || 0, name: 'SV (Stock)', isStockAction: true },
+            ];
+            
+            const hasPremium = activeBuffs.some(b => b.itemId === 'premium_box' && new Date(b.endDate) > new Date());
+            if (hasPremium) { allItems.push({ id: 'premium_staff', category: 'Consumable', iconComp: <SmartIcon name="PremiumStaff" className="w-full h-full"/>, count: 1, name: 'Staff' }); }
+            items.forEach(i => { let cat = i.category || 'Consumable'; if (i.itemId.includes('card')) cat = 'Rare'; allItems.push({ id: i.uid, category: cat, iconComp: <SmartIcon name={SHOP_ITEMS.find(s=>s.id===i.itemId)?.icon} className="w-full h-full" />, count: 1, isBox: true, data: i, name: i.name, itemId: i.itemId }); });
+            Object.keys(drops).forEach(key => { const def = DROP_TABLE.find(d => d.id === key); if (def) allItems.push({ id: key, category: def.category, iconComp: <SmartIcon name={def.icon} className="w-full h-full" />, count: drops[key], name: def.name }); });
+            const filteredItems = activeTab === 'All' ? allItems : allItems.filter(i => i.category === activeTab);
+            
+            const groupedDisplayItems = useMemo(() => {
+                const map = new Map();
+                filteredItems.forEach(item => {
+                    const key = item.itemId || item.id;
+                    if(map.has(key)) {
+                        const ex = map.get(key);
+                        ex.count += (item.count || 1); 
+                    } else {
+                        map.set(key, { ...item, count: item.count !== undefined ? item.count : 0 });
+                    }
+                });
+                return Array.from(map.values());
+            }, [filteredItems]);
+
+            const onItemClick = (item) => { if(item.isBox) { setSelectedBox(item.data); return; } if(item.id === 'premium_staff') { setSvUseConfirm(true); return; } setViewItem(item); };
+
+            return (
+                <div className="p-6 animate-fade-in view-content space-y-6">
+                    <div className="flex items-center justify-between"><h2 className="text-2xl font-black italic tracking-tighter text-zinc-300">Bag <span className="text-sm font-normal text-zinc-500">Inventory 🎒</span></h2><div className="text-[10px] text-zinc-500 font-mono">{groupedDisplayItems.length} Items</div></div>
+                    <div className="bg-zinc-900 p-1 rounded-2xl flex gap-1 border border-zinc-800">{['All', 'Consumable', 'Etc', 'Rare'].map(t => { let label = t; let iconName = 'LayoutGrid'; if (t === 'Consumable') { label = 'Use'; iconName = 'Flask'; } if (t === 'Etc') { label = 'Etc'; iconName = 'Layers'; } if (t === 'Rare') { label = 'Rare'; iconName = 'Diamond'; } return <TabButton key={t} label={label} icon={iconName} active={activeTab === t} onClick={() => setActiveTab(t)} />; })}</div>
+                    <div className="bg-zinc-900/50 p-5 rounded-[2.5rem] border border-zinc-800 max-h-[420px] overflow-y-auto custom-scrollbar"><div className="grid grid-cols-4 gap-4 pb-10">{groupedDisplayItems.map((item, index) => (<div key={index} onClick={() => onItemClick(item)} className="aspect-square rounded-2xl sunken-slot relative flex items-center justify-center cursor-pointer overflow-hidden group"><div className="w-10 h-10 pointer-events-none group-active:scale-90 transition-transform">{item.iconComp}</div><span className="absolute bottom-1 right-1.5 text-[8px] font-black text-zinc-400 bg-black/60 px-1.5 rounded-md pointer-events-none backdrop-blur-sm border border-white/5">{item.count}</span></div>))}{Array.from({ length: Math.max(0, 16 - groupedDisplayItems.length) }).map((_, i) => (<div key={`e-${i}`} className="aspect-square rounded-2xl sunken-slot opacity-30"></div>))}</div></div>
+                    {viewItem && <ItemDetailModal item={viewItem} onClose={() => setViewItem(null)} onSell={handleSellAction} />}
+                    {selectedBox && <Modal onClose={() => setSelectedBox(null)}><div className="text-center"><div className="w-20 h-20 mx-auto bg-zinc-800 rounded-3xl flex items-center justify-center mb-4 border border-zinc-700"><SmartIcon name={SHOP_ITEMS.find(s=>s.id===selectedBox.itemId)?.icon} className="w-12 h-12" /></div><h3 className="text-lg font-black text-white mb-1">{selectedBox.name}</h3><div className="flex gap-2 mt-4"><button onClick={() => setSelectedBox(null)} className="flex-1 py-3 bg-zinc-700 rounded-xl font-bold text-xs">Cancel</button><button onClick={() => handleUseBox(selectedBox)} className="flex-1 py-3 bg-emerald-600 rounded-xl font-bold text-xs text-white">Use</button></div></div></Modal>}
+                    {svUseConfirm && <Modal onClose={() => setSvUseConfirm(null)}><div className="text-center"><div className="w-20 h-20 mx-auto bg-zinc-800 rounded-3xl flex items-center justify-center mb-4 border border-zinc-700"><SmartIcon name="Silvervine" className="w-12 h-12"/></div><h3 className="text-lg font-black text-white mb-2">Activate Buff?</h3><div className="flex gap-2"><button onClick={() => setSvUseConfirm(null)} className="flex-1 py-3 bg-zinc-700 rounded-xl font-bold text-xs">Cancel</button><button onClick={handleUseSilvervineFromStock} className="flex-1 py-3 bg-emerald-600 rounded-xl font-bold text-xs text-white">Use (2 ea)</button></div></div></Modal>}
+                </div>
+            );
+        }
+
+        function DungeonView({ db, uid, stock, activeBuffs, onSuccess, records, prices, stats }) {
+            const [form, setForm] = useState({ runMode: 'ogh', normalGumUsed: 0, heGumUsed: 0, useSilvervine: false, purpleStoneCount: 0, contMagicCount: 0, trashAmount: '', minutesUsed: 60, otherCosts: [], notes: '' });
+            const [rewardData, setRewardData] = useState(null);
+            const [showHeGum, setShowHeGum] = useState(false);
+            
+            const hasPremium = activeBuffs.some(b => b.itemId === 'premium_box' && new Date(b.endDate) > new Date());
+            const hasKafra = activeBuffs.some(b => b.itemId === 'kafra_box' && new Date(b.endDate) > new Date());
+            const hasSilvervineBuff = activeBuffs.some(b => b.itemId === 'silvervine_24h' && new Date(b.endDate) > new Date());
+            const hasGumStock = (stock.gum?.qty || 0) > 0;
+            const hasHeGumStock = (stock.he_gum?.qty || 0) > 0; 
+            
+            const addCost = () => setForm(p => ({...p, otherCosts: [...p.otherCosts, {id: Date.now(), name: '', amount: ''}]}));
+            const updateCost = (id, field, val) => { if (field === 'amount') val = val.replace(/[^0-9]/g, ''); setForm(p => ({...p, otherCosts: p.otherCosts.map(c => c.id === id ? {...c, [field]: val} : c)})); };
+            const removeCost = (id) => setForm(p => ({...p, otherCosts: p.otherCosts.filter(c => c.id !== id)}));
+
+            const handleSave = async () => {
+                const prevStats = { ...stats }; 
+                let costBreakdown = [];
+                let gumCost = 0;
+                if (form.normalGumUsed > 0) { const cost = form.normalGumUsed * (stock.gum?.avgCost || 0); gumCost += cost; costBreakdown.push({ name: `Gum x${form.normalGumUsed}`, amount: cost }); }
+                if (form.heGumUsed > 0) { const cost = form.heGumUsed * (stock.he_gum?.avgCost || 0); gumCost += cost; costBreakdown.push({ name: `HE Gum x${form.heGumUsed}`, amount: cost }); }
+                form.otherCosts.forEach(c => { costBreakdown.push({ name: c.name || 'Misc', amount: parseInt(c.amount) || 0 }); });
+                let consumablesCost = gumCost; 
+                
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
+                let newStock = { ...stock };
+                if (form.normalGumUsed > 0) newStock.gum.qty = Math.max(0, newStock.gum.qty - form.normalGumUsed);
+                if (form.heGumUsed > 0) { if(!newStock.he_gum) newStock.he_gum = { qty: 0, cost: 0 }; newStock.he_gum.qty = Math.max(0, newStock.he_gum.qty - form.heGumUsed); }
+                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'stock'), newStock);
+                
+                const profit = (parseInt(form.trashAmount) || 0) - consumablesCost;
+                const earnedDek = Math.max(0, Math.floor(profit / 1000));
+                
+                const drops = simulateDrops();
+                const record = { ...form, consumablesCost, profit, drops, timestamp: Date.now(), date: new Date().toISOString().split('T')[0], costBreakdown };
+                
+                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'records'), record);
+                
+                const newStats = { ...stats };
+                newStats.coins = (newStats.coins || 0) + earnedDek;
+                newStats.zeny = (newStats.zeny || 0) + profit;
+                const expGain = form.minutesUsed * (form.runMode === 'aogh' ? 500 : 300);
+                newStats.baseExp = (newStats.baseExp || 0) + expGain;
+                while (newStats.baseExp >= getExpReq(newStats.baseLv)) { newStats.baseExp -= getExpReq(newStats.baseLv); newStats.baseLv += 1; }
+                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), newStats);
+
+                setRewardData({ drops, dek: earnedDek, expGain, profit, beforeExp: prevStats.baseExp, afterExp: newStats.baseExp, beforeLv: prevStats.baseLv, afterLv: newStats.baseLv });
+            };
+
+            const closeReward = () => { setRewardData(null); setForm({ runMode: 'ogh', normalGumUsed: 0, heGumUsed: 0, useSilvervine: false, purpleStoneCount: 0, contMagicCount: 0, trashAmount: '', minutesUsed: 60, otherCosts: [], notes: '' }); };
+            const isFormValid = form.trashAmount && parseInt(form.trashAmount) > 0;
+            
+            // Share Modal State
+            const [shareData, setShareData] = useState(null);
+
+            return (
+                <div className="p-6 animate-fade-in view-content space-y-6">
+                     <div className="flex bg-zinc-900 p-1 rounded-2xl border border-zinc-800 h-16">
+                        <button type="button" onClick={() => setForm({...form, runMode: 'ogh'})} className={`flex-1 rounded-xl flex items-center justify-center gap-2 transition-all ${form.runMode === 'ogh' ? 'bg-purple-900/50 border border-purple-500/50 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                            <div className="w-8 h-8 rounded-lg overflow-hidden"><SmartIcon name="OGH_BOSS" className="w-full h-full object-cover" /></div>
+                            <span className="text-xs font-black">OGH</span>
+                        </button>
+                        <button type="button" onClick={() => setForm({...form, runMode: 'aogh'})} className={`flex-1 rounded-xl flex items-center justify-center gap-2 transition-all ${form.runMode === 'aogh' ? 'bg-rose-900/50 border border-rose-500/50 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                            <div className="w-8 h-8 rounded-lg overflow-hidden"><SmartIcon name="AOGH_BOSS" className="w-full h-full object-cover" /></div>
+                            <span className="text-xs font-black">AOGH</span>
+                        </button>
+                     </div>
+                     
+                     <div className="bg-zinc-900 px-4 py-3 rounded-2xl border border-zinc-800 flex items-center justify-between shadow-lg">
+                         <span className="text-xs font-bold text-zinc-400">Trash Sale</span>
+                         <div className="flex items-center gap-2">
+                             <input type="text" inputMode="numeric" placeholder="0" value={form.trashAmount === 0 ? '' : form.trashAmount} onChange={e => setForm({...form, trashAmount: e.target.value === '' ? 0 : (parseInt(e.target.value) || 0)})} className="bg-transparent text-right text-xl font-black outline-none placeholder-zinc-700 text-emerald-400 w-32" />
+                             <span className="text-[10px] font-bold text-zinc-600">ZENY</span>
+                         </div>
+                    </div>
+                    
+                    <div className="glass-panel p-6 rounded-[2rem] space-y-4 bg-zinc-800/50">
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center rounded-xl p-2 border border-zinc-800/50 bg-zinc-900/80">
+                                <span className="text-xs font-bold text-blue-300 flex items-center gap-2 relative z-10"><SmartIcon name="Gum" className="w-5 h-5"/> Bubble Gum</span>
+                                <div className="flex bg-zinc-900/80 rounded-lg p-0.5 gap-1 relative z-10">
+                                    {[0, 1, 2].map(n => (
+                                        <button key={n} disabled={!hasGumStock && n>0} onClick={() => setForm({...form, normalGumUsed: n})} className={`w-8 h-8 rounded-md text-xs font-bold transition-all ${form.normalGumUsed === n ? (n===0 ? 'bg-zinc-600 text-zinc-300' : 'bg-blue-600 text-white shadow') : 'text-zinc-600 hover:bg-zinc-800'}`}>{n}</button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button onClick={() => setForm({...form, heGumUsed: form.heGumUsed > 0 ? 0 : 1})} className={`w-full py-2 rounded-xl text-xs font-bold border transition-all ${form.heGumUsed > 0 ? 'bg-amber-900/20 border-amber-500/50 text-amber-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}>
+                                {form.heGumUsed > 0 ? '✅ HE Bubble Gum Active' : 'Enable HE Bubble Gum'}
+                            </button>
+                        </div>
+                        
+                        <div className="bg-zinc-900 rounded-2xl p-3 border border-zinc-800/50">
+                            <label className="text-[9px] font-bold opacity-40 uppercase mb-2 flex items-center gap-2"><Icon name="Clock" size={14}/> Time Spent (Minutes): <span className="text-emerald-400 ml-auto text-sm">{form.minutesUsed}m</span></label>
+                            <input type="range" min="1" max="60" value={form.minutesUsed} onChange={e => setForm({...form, minutesUsed: parseInt(e.target.value)})} className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                             <div className="bg-zinc-900 p-2 rounded-2xl flex items-center gap-3 border border-zinc-800/50 relative overflow-hidden">
+                                 <div className="relative z-10"><SmartIcon name="Spell" className="w-8 h-8 drop-shadow-lg" /></div>
+                                 <input type="text" inputMode="numeric" placeholder="0" value={form.purpleStoneCount === 0 ? '' : form.purpleStoneCount} onChange={e => setForm({...form, purpleStoneCount: e.target.value === '' ? 0 : (parseInt(e.target.value)||0)})} className="bg-transparent w-full text-lg font-black text-right outline-none text-purple-200 placeholder-zinc-700 relative z-10"/>
+                            </div>
+                             <div className={`bg-zinc-900 p-2 rounded-2xl flex items-center gap-3 border border-zinc-800/50 relative overflow-hidden ${form.runMode==='ogh'?'opacity-30':''}`}>
+                                 <div className="relative z-10"><SmartIcon name="Magic" className="w-8 h-8 drop-shadow-lg" /></div>
+                                 <input type="text" inputMode="numeric" disabled={form.runMode==='ogh'} placeholder="0" value={form.contMagicCount === 0 ? '' : form.contMagicCount} onChange={e => setForm({...form, contMagicCount: e.target.value === '' ? 0 : (parseInt(e.target.value)||0)})} className="bg-transparent w-full text-lg font-black text-right outline-none text-rose-200 placeholder-zinc-700 relative z-10"/>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center"><span className="text-[10px] font-bold opacity-30 uppercase tracking-widest text-zinc-500">Extras</span><button type="button" onClick={addCost} className="text-[10px] text-zinc-500 hover:text-white font-bold transition-colors">+ Cost</button></div>
+                        {form.otherCosts.map(c => (<div key={c.id} className="flex gap-2 animate-fade-in"><input type="text" placeholder="Name" value={c.name} onChange={e => updateCost(c.id, 'name', e.target.value)} className="slate-input flex-1 p-2 rounded-xl text-xs bg-zinc-900/50" /><input type="text" inputMode="numeric" placeholder="0" value={c.amount} onChange={e => updateCost(c.id, 'amount', e.target.value)} className="slate-input w-20 p-2 rounded-xl text-xs text-right bg-zinc-900/50" /><button type="button" onClick={() => removeCost(c.id)} className="text-zinc-600 hover:text-rose-500 p-2"><Icon name="Trash" size={14}/></button></div>))}
+                        <textarea placeholder="Add a note..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="w-full bg-zinc-900/30 border border-zinc-800 rounded-xl p-3 text-xs text-white outline-none h-12 resize-none placeholder-zinc-700 transition-all focus:bg-zinc-900/80"></textarea>
+                    </div>
+
+                    <button disabled={!isFormValid} onClick={handleSave} className="w-full py-5 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-[1.5rem] font-black text-lg shadow-lg shadow-emerald-900/30 active:scale-95 transition-transform text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"><Icon name="Save" size={20}/> COMPLETE RUN</button>
+                    
+                    {rewardData && <RewardPopup data={rewardData} onClose={closeReward} onShare={() => setShareData({...rewardData, runMode: form.runMode === 'aogh' ? 'AOGH' : 'OGH', rank: getRankInfo(rewardData.profit, 0).rank, rankCss: getRankInfo(rewardData.profit, 0).css})} />}
+                    {shareData && <ShareModal data={shareData} onClose={() => setShareData(null)} />}
+                </div>
+            );
+        }
+
+        // --- Other Views ---
+        function HistoryView({ records, db, uid, showToast, prices, activeBuffs }) {
+            const [expandedId, setExpandedId] = useState(null);
+            const [showRankInfo, setShowRankInfo] = useState(false);
+            const [shareData, setShareData] = useState(null); // Share State
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
+
+            // Group Records by Date
+            const groupedRecords = useMemo(() => {
+                const groups = {};
+                records.forEach(r => {
+                    if (!groups[r.date]) groups[r.date] = [];
+                    groups[r.date].push(r);
+                });
+                return groups;
+            }, [records]);
+
+            // Calculate Average Profit for Ranking
+            const avgProfit = useMemo(() => {
+                const profits = records.filter(r => !r.isSaleRecord).map(r => r.profit || 0);
+                if(profits.length === 0) return 0;
+                const sum = profits.reduce((a, b) => a + b, 0);
+                return sum / profits.length;
+            }, [records]);
+
+            return (
+                <div className="p-6 animate-fade-in view-content space-y-4">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-black italic tracking-tighter text-zinc-300 flex items-center gap-2">
+                            History Logs 
+                            <button onClick={() => setShowRankInfo(true)} className="opacity-40 hover:opacity-100 transition-opacity text-emerald-400"><Icon name="Info" size={20} /></button>
+                        </h2>
+                    </div>
+                    
+                    {Object.keys(groupedRecords).length === 0 ? (
+                        <div className="text-center text-zinc-600 py-10 italic">No logs yet. Start your adventure! ⚔️</div>
+                    ) : (
+                        Object.keys(groupedRecords).sort((a,b)=>new Date(b)-new Date(a)).map(date => {
+                            const dailyRecords = groupedRecords[date];
+                            return (
+                                <div key={date} className="space-y-3 mb-6">
+                                    <div className="sticky top-14 z-20 bg-zinc-900/95 backdrop-blur-md px-3 py-2 rounded-lg border-b border-zinc-800 flex justify-between items-center">
+                                        <span className="text-xs font-bold text-zinc-400">{date}</span>
+                                        <span className="text-[10px] text-zinc-600">{dailyRecords.length} Records</span>
+                                    </div>
+
+                                    {dailyRecords.map(r => {
+                                        const isExpanded = expandedId === r.id;
+                                        const profitValue = r.profit || 0;
+                                        let rankInfo = { rank: '-', css: 'text-zinc-500', text: '' };
+                                        if (!r.isSaleRecord) {
+                                            rankInfo = getRankInfo(profitValue, avgProfit);
+                                        }
+
+                                        if (r.isSaleRecord) {
+                                            return (
+                                                <div key={r.id} className="list-panel p-4 rounded-3xl flex justify-between items-center bg-emerald-900/10 border-emerald-500/20">
+                                                    <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center font-black bg-emerald-600 text-white shadow-lg">S</div><div><p className="font-bold text-sm text-emerald-300">Sold: {r.itemName}</p><p className="text-[10px] opacity-60 text-zinc-400">Qty: {r.qty} @ {formatMoney(r.pricePerUnit)}</p></div></div>
+                                                    <div className="text-right"><p className="font-black text-emerald-400 text-lg">+{formatMoney(r.profit)}</p><DeleteButton onDelete={() => deleteDoc(doc(db, 'artifacts', appId, 'users', uid, 'records', r.id))} /></div>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div key={r.id} className={`list-panel rounded-[1.5rem] overflow-hidden transition-all border-zinc-800 ${expandedId === r.id ? 'bg-zinc-800 ring-1 ring-zinc-600' : 'bg-zinc-900'}`}>
+                                                <div onClick={() => setExpandedId(expandedId === r.id ? null : r.id)} className="p-4 flex justify-between items-center cursor-pointer">
+                                                    <div className="flex gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden border border-white/5 relative bg-black`}><SmartIcon name={r.runMode === 'aogh' ? 'AOGH_BOSS' : 'OGH_BOSS'} className="w-full h-full object-cover" /></div><div><p className="font-bold text-sm text-zinc-200">{r.runMode?.toUpperCase() || 'OGH'}</p><p className="text-[10px] opacity-40 uppercase font-bold tracking-widest text-zinc-500 flex items-center gap-1"><Icon name="Clock" size={10}/> {r.minutesUsed}m</p></div></div>
+                                                    <div className="text-right flex flex-col items-end"><p className={`font-black text-sm ${profitValue >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatMoney(profitValue)}</p><div className="flex items-center gap-1 mt-1"><Icon name="Clover" size={12} className={rankInfo.css}/><span className={`text-[10px] font-black ${rankInfo.css}`}>{rankInfo.text} : {rankInfo.rank}</span></div></div>
+                                                </div>
+                                                {expandedId === r.id && (
+                                                    <div className="px-4 pb-4 animate-slide-up bg-black/20 pt-4 border-t border-zinc-700/50 text-center">
+                                                        {/* Detail Content same as before... */}
+                                                        <div className="grid grid-cols-2 gap-3 mb-4 text-left">
+                                                            <div className="p-2 border-b border-zinc-800"><p className="text-[9px] uppercase opacity-50 mb-2">Stones</p><div className="flex items-center gap-4"><div className="flex items-center gap-2"><SmartIcon name="Spell" className="w-6 h-6"/><span className="text-purple-400 font-bold text-sm">x{r.purpleStoneCount}</span></div>{r.runMode==='aogh' && (<div className="flex items-center gap-2"><SmartIcon name="Magic" className="w-6 h-6"/><span className="text-rose-400 font-bold text-sm">x{r.contMagicCount}</span></div>)}</div></div>
+                                                            <div className="p-2 border-b border-zinc-800"><p className="text-[9px] uppercase opacity-50 mb-2">Usage</p><div className="flex flex-wrap gap-4 items-center">{r.normalGumUsed > 0 && <div className="flex items-center gap-2"><SmartIcon name="Gum" className="w-6 h-6"/><span className="text-zinc-300 text-xs">x{r.normalGumUsed}</span></div>}{r.heGumUsed > 0 && <div className="flex items-center gap-2"><SmartIcon name="HeGum" className="w-6 h-6"/><span className="text-zinc-300 text-xs">x{r.heGumUsed}</span></div>}<div className="flex items-center gap-1 text-xs text-zinc-500 ml-auto"><Icon name="Clock" size={14} className="text-zinc-600"/> {r.minutesUsed}m</div></div></div>
+                                                            <div className="col-span-2 p-2 space-y-1"><p className="text-[9px] uppercase opacity-50 font-bold mb-2 flex items-center gap-1"><Icon name="Cost" size={10}/> Expenses</p>{r.costBreakdown && r.costBreakdown.length > 0 ? (r.costBreakdown.map((c, i) => (<div key={i} className="flex justify-between text-[10px] text-zinc-400 border-b border-zinc-800/50 pb-1"><span className="truncate w-32">{c.name}</span><span>-{formatMoney(c.amount)}</span></div>))) : ((r.consumablesCost > 0) && (<div className="flex justify-between text-[10px] text-zinc-400 border-b border-zinc-800/50 pb-1"><span>Direct Consumables</span><span>-{formatMoney(r.consumablesCost)}</span></div>))}<div className="pt-1 flex justify-between text-[10px] font-bold text-rose-400 mt-1"><span>Total Direct Cost</span><span>-{formatMoney(r.consumablesCost + (r.otherCosts?.reduce((a,x)=>a+parseInt(x.amount||0),0)||0))}</span></div></div>
+                                                            {r.drops && r.drops.length > 0 && (<div className="col-span-2 p-2"><p className="text-[9px] uppercase opacity-50 mb-2">Drops</p><div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">{r.drops.map((d, i) => (<div key={i} className="flex-shrink-0 w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center relative border border-zinc-600"><SmartIcon name={d.icon} className="w-6 h-6"/><span className="absolute bottom-0 right-0 text-[8px] bg-black px-1 rounded">{d.qty}</span></div>))}</div></div>)}
+                                                            {r.notes && (<div className="col-span-2 bg-yellow-900/10 p-3 rounded-xl border border-yellow-700/30 relative mt-2"><div className="absolute -top-2.5 left-3 bg-zinc-900 px-2 py-0.5 text-[9px] text-yellow-500 font-bold border border-yellow-700/50 rounded-full flex items-center gap-1 shadow-sm"><Icon name="FileText" size={8}/> NOTE</div><p className="text-[11px] italic text-zinc-300 mt-1">"{r.notes}"</p></div>)}
+                                                        </div>
+                                                        <div className="flex gap-2 justify-end">
+                                                            <button onClick={() => setShareData({...r, runMode: r.runMode === 'aogh' ? 'AOGH' : 'OGH', rank: rankInfo.rank, rankCss: rankInfo.css})} className="p-2 bg-zinc-800 rounded-lg text-zinc-400 hover:text-white"><Icon name="Share" size={14}/></button>
+                                                            <DeleteButton onDelete={() => deleteDoc(doc(db, 'artifacts', appId, 'users', uid, 'records', r.id))} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })
+                    )}
+                    
+                    {showRankInfo && <InfoModal onClose={() => setShowRankInfo(false)} />}
+                    {shareData && <ShareModal data={shareData} onClose={() => setShareData(null)} />}
+                </div>
+            );
+        }
+
+        // --- Profile View ---
+        function ProfileView({ stats, uid, onResetUid, prices, setPrices, db, showToast, onBack }) {
+            const [localPrices, setLocalPrices] = useState(prices);
+            const [deleteProgress, setDeleteProgress] = useState(0);
+            const timerRef = useRef(null);
+            const [showVersionModal, setShowVersionModal] = useState(false);
+
+            const handleSavePrices = async () => { const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker'; await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'prices'), localPrices); setPrices(localPrices); showToast("Prices Saved"); };
+            
+            const startDelete = () => {
+                let progress = 0; const interval = 30; const totalDuration = 3000; const step = 100 / (totalDuration / interval);
+                timerRef.current = setInterval(async () => {
+                    progress += step; setDeleteProgress(Math.min(progress, 100));
+                    if (progress >= 100) {
+                        clearInterval(timerRef.current);
+                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
+                        const recSnap = await getDocs(collection(db, 'artifacts', appId, 'users', uid, 'records')); recSnap.forEach(d => deleteDoc(d.ref));
+                        const invSnap = await getDocs(collection(db, 'artifacts', appId, 'users', uid, 'inventory')); invSnap.forEach(d => deleteDoc(d.ref));
+                        await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), INITIAL_STATS);
+                        showToast("All Data Cleared!"); setDeleteProgress(0);
+                    }
+                }, interval);
+            };
+            const cancelDelete = () => { clearInterval(timerRef.current); setDeleteProgress(0); };
+            const expPercent = Math.min(100, Math.floor((stats.baseExp / getExpReq(stats.baseLv)) * 100));
+
+            const handleBuyTitle = async (title) => {
+                if (stats.coins < title.cost) { alert("Not enough DEK!"); return; }
+                if (stats.unlockedTitles?.includes(title.name)) { alert("Already owned!"); return; }
+                const newCoins = stats.coins - title.cost;
+                const newTitles = [...(stats.unlockedTitles || ['Novice']), title.name];
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
+                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), { ...stats, coins: newCoins, unlockedTitles: newTitles });
+                showToast(`Unlocked: ${title.name}!`);
+            };
+
+            return (
+                <div className="p-6 animate-fade-in view-content space-y-6">
+                    <div className="flex justify-between items-center mb-2"><h2 className="text-2xl font-black italic tracking-tighter text-zinc-300 flex items-center gap-2"><Icon name="Profile" size={24}/> Profile</h2><button onClick={onBack} className="p-2 bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors"><Icon name="X" size={20} /></button></div>
+                    <div className="glass-panel p-6 rounded-[2rem] text-center border-t-4 border-t-zinc-600 relative overflow-hidden">
+                         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-zinc-800 to-transparent -z-10"></div><div className="w-20 h-20 mx-auto bg-zinc-900 rounded-full border-4 border-zinc-800 shadow-xl flex items-center justify-center mb-4 relative text-4xl">🧙‍♂️<div className="absolute bottom-0 right-0 w-6 h-6 bg-emerald-500 rounded-full border-2 border-zinc-900 flex items-center justify-center text-[10px] font-black text-white">{stats.baseLv}</div></div><h2 className="text-xl font-black text-white">Adventurer</h2><p className="text-zinc-400 font-bold text-xs uppercase tracking-wide mb-4">{stats.jobClass}</p>
+                         <div className="w-full h-3 bg-zinc-900 rounded-full overflow-hidden relative border border-zinc-700 mb-2"><div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-500" style={{ width: `${expPercent}%` }}></div></div><div className="flex justify-between text-[9px] text-zinc-500 font-mono"><span>EXP: {formatMoney(stats.baseExp)}</span><span>NEXT: {formatMoney(getExpReq(stats.baseLv))}</span></div>
+                    </div>
+                    
+                    {/* DEK Shop */}
+                    <div className="glass-panel p-4 rounded-2xl border border-zinc-800 space-y-3">
+                        <div className="flex justify-between items-center"><span className="text-[10px] font-black uppercase opacity-50 tracking-[0.2em]">DEK Shop</span><span className="text-amber-400 text-xs font-bold flex items-center gap-1"><SmartIcon name="DEK" className="w-4 h-4"/> {formatMoney(stats.coins)}</span></div>
+                        <div className="grid grid-cols-1 gap-2">
+                            {DEK_TITLES.map(t => {
+                                const isOwned = stats.unlockedTitles?.includes(t.name);
+                                return (
+                                    <div key={t.id} onClick={() => !isOwned && handleBuyTitle(t)} className={`flex items-center justify-between p-2 rounded-xl border ${isOwned ? 'bg-zinc-800 border-zinc-700 opacity-50' : 'bg-zinc-900 border-zinc-800 hover:border-amber-500/50 cursor-pointer'}`}>
+                                        <div className="flex items-center gap-2"><span className="text-xl">{t.icon}</span><span className="text-xs font-bold text-zinc-300">{t.name}</span></div>
+                                        {isOwned ? <span className="text-[9px] font-bold text-emerald-500">OWNED</span> : <span className="text-[9px] font-bold text-amber-400 flex items-center gap-1"><SmartIcon name="DEK" className="w-3 h-3"/> {t.cost}</span>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="space-y-3"><h3 className="text-[10px] font-black opacity-40 px-2 uppercase tracking-[0.2em]">Market Config</h3><div className="grid grid-cols-2 gap-3"><div className="glass-panel p-3 rounded-2xl border border-zinc-700/50 bg-zinc-900/30"><p className="text-[9px] font-bold opacity-50 mb-1 truncate">Spell Price</p><input type="text" inputMode="numeric" value={localPrices.purpleStonePrice} onChange={e => setLocalPrices({...localPrices, purpleStonePrice: parseInt(e.target.value)||0})} className="w-full bg-black/30 rounded-lg px-2 py-1 text-sm font-black text-center text-white" /></div><div className="glass-panel p-3 rounded-2xl border border-zinc-700/50 bg-zinc-900/30"><p className="text-[9px] font-bold opacity-50 mb-1 truncate">Magic Price</p><input type="text" inputMode="numeric" value={localPrices.contMagicPrice} onChange={e => setLocalPrices({...localPrices, contMagicPrice: parseInt(e.target.value)||0})} className="w-full bg-black/30 rounded-lg px-2 py-1 text-sm font-black text-center text-white" /></div></div><button onClick={handleSavePrices} className="w-full py-3 bg-zinc-800 text-zinc-300 font-bold rounded-xl text-xs hover:bg-zinc-700 border border-zinc-700">Save Prices</button></div>
+                    <div className="glass-panel p-4 rounded-2xl border border-zinc-800 space-y-3"><div className="flex justify-between items-center"><span className="text-[10px] font-black uppercase opacity-50 tracking-[0.2em]">ID Manager</span></div><div className="bg-black/30 p-2 rounded-xl flex items-center justify-between border border-zinc-800/50"><code className="text-[10px] font-mono opacity-60 truncate mr-2">{uid}</code><button onClick={() => copyToClipboard(uid)} className="p-1.5 bg-zinc-800 rounded-lg hover:bg-zinc-700"><Icon name="Copy" size={12}/></button></div><button onClick={onResetUid} className="w-full py-2 border border-zinc-700 text-zinc-500 rounded-xl text-[10px] font-bold hover:text-white hover:border-zinc-500 transition-colors">Reset ID to Default</button></div>
+                    <div className="pt-4 border-t border-zinc-800"><div className="relative w-full h-12 bg-rose-900/20 border border-rose-900/50 rounded-xl overflow-hidden cursor-pointer select-none touch-none" onMouseDown={startDelete} onMouseUp={cancelDelete} onMouseLeave={cancelDelete} onTouchStart={(e) => { e.preventDefault(); startDelete(); }} onTouchEnd={(e) => { e.preventDefault(); cancelDelete(); }}><div className="absolute top-0 left-0 h-full bg-rose-600/50 transition-all ease-linear" style={{ width: `${deleteProgress}%` }}></div><div className="absolute inset-0 flex items-center justify-center gap-2 pointer-events-none text-rose-500 font-black text-xs"><Icon name="Trash" size={16}/> {deleteProgress > 0 ? "HOLDING..." : "HOLD 3s TO DELETE ALL DATA"}</div></div></div>
+                     <div className="text-center opacity-20 mt-4 cursor-pointer hover:opacity-50 transition-opacity" onClick={() => setShowVersionModal(true)}><p className="text-[10px] font-mono tracking-widest underline">{APP_VERSION}</p></div>
+                     {showVersionModal && <VersionModal onClose={() => setShowVersionModal(false)} />}
+                </div>
+            );
+        }
+
+        // --- App Component ---
+        function App() {
+            const [authUser, setAuthUser] = useState(null);
+            const [targetUid, setTargetUid] = useState(null);
+            const [activeTab, setActiveTab] = useState('home');
+            const [records, setRecords] = useState([]);
+            const [prices, setPrices] = useState({ purpleStonePrice: 150000, contMagicPrice: 450000, gumBoxPrice: 1500000, silvervineBoxPrice: 2500000 });
+            const [activeBuffs, setActiveBuffs] = useState([]);
+            const [stats, setStats] = useState(INITIAL_STATS);
+            const [loading, setLoading] = useState(true);
+            const [toast, setToast] = useState(null);
+            const [db, setDb] = useState(null);
+            const [stock, setStock] = useState({});
+
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
+            const showToast = (message) => { setToast(message); setTimeout(() => setToast(null), 3000); };
+            const handleResetUid = () => { localStorage.removeItem('ogh_target_uid'); if (authUser) setTargetUid(authUser.uid); showToast("Reset to Default"); };
+
+            useEffect(() => {
+                const init = async () => {
+                    const app = initializeApp(MANUAL_FIREBASE_CONFIG);
+                    const auth = getAuth(app);
+                    const firestore = getFirestore(app);
+                    setDb(firestore);
+                    await signInAnonymously(auth);
+                    onAuthStateChanged(auth, (u) => { setAuthUser(u); setTargetUid(localStorage.getItem('ogh_target_uid') || u?.uid); setLoading(false); });
+                };
+                init();
+            }, []);
+
+            useEffect(() => {
+                if (!db || !targetUid) return;
+                const unsubRecords = onSnapshot(query(collection(db, 'artifacts', appId, 'users', targetUid, 'records'), orderBy('timestamp', 'desc')), (snap) => setRecords(snap.docs.map(d => ({ ...d.data(), id: d.id }))));
+                const unsubPrices = onSnapshot(doc(db, 'artifacts', appId, 'users', targetUid, 'config', 'prices'), d => { if (d.exists()) setPrices(d.data()); });
+                const unsubStats = onSnapshot(doc(db, 'artifacts', appId, 'users', targetUid, 'gamification', 'stats'), d => { if (d.exists()) setStats(d.data()); else setStats(INITIAL_STATS); });
+                const qInv = query(collection(db, 'artifacts', appId, 'users', targetUid, 'inventory'));
+                const unsubBuffs = onSnapshot(qInv, snap => {
+                    const buffs = snap.docs.map(d => d.data()).filter(i => i.status === 'active').map(b => {
+                         const endDate = new Date(b.activatedAt);
+                         if(b.duration === 30) endDate.setDate(endDate.getDate() + 30);
+                         else if(b.duration === 7) endDate.setDate(endDate.getDate() + 7);
+                         else if(b.duration === 1) endDate.setTime(endDate.getTime() + (24*60*60*1000));
+                         return { ...b, endDate };
+                    });
+                    setActiveBuffs(buffs);
+                });
+                const unsubStock = onSnapshot(doc(db, 'artifacts', appId, 'users', targetUid, 'config', 'stock'), d => { if (d.exists()) setStock(d.data()); });
+                return () => { unsubRecords(); unsubPrices(); unsubStats(); unsubBuffs(); unsubStock(); };
+            }, [db, targetUid]);
+
+            if (loading) return <div className="h-screen flex items-center justify-center bg-[#0f172a] text-purple-500">Loading...</div>;
+
+            return (
+                <div className="max-w-md mx-auto relative min-h-screen">
+                    <CurrencyHeader stats={stats} activeBuffs={activeBuffs} />
+                    {toast && <Toast message={toast} />}
+                    {activeTab === 'home' && <HomeView records={records} stats={stats} goToTab={setActiveTab} activeBuffs={activeBuffs} />}
+                    {activeTab === 'add' && <DungeonView db={db} uid={targetUid} stock={stock} activeBuffs={activeBuffs} records={records} prices={prices} stats={stats} onSuccess={() => {}} />}
+                    {activeTab === 'inventory' && <InventoryView db={db} uid={targetUid} showToast={showToast} records={records} stock={stock} stats={stats} />}
+                    {activeTab === 'shop' && <ShopView db={db} uid={targetUid} showToast={showToast}/>}
+                    {activeTab === 'history' && <HistoryView records={records} db={db} uid={targetUid} showToast={showToast} prices={prices} activeBuffs={activeBuffs} />}
+                    {activeTab === 'profile' && <ProfileView stats={stats} uid={targetUid} onResetUid={handleResetUid} prices={prices} setPrices={setPrices} db={db} showToast={showToast} onBack={() => setActiveTab('home')} />}
+
+                    {activeTab !== 'profile' && (
+                        <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto glass-panel border-t border-white/5 nav-bar-padding pt-2 px-2 flex justify-between items-end z-40 rounded-t-[2rem]">
+                            <button onClick={() => setActiveTab('home')} className={`flex-1 flex flex-col items-center gap-1 py-3 ${activeTab === 'home' ? 'text-purple-400' : 'opacity-40'}`}><Icon name="Home" size={24}/><span className="text-[9px] font-bold uppercase">Home</span></button>
+                            <button onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center gap-1 py-3 ${activeTab === 'inventory' ? 'text-purple-400' : 'opacity-40'}`}><Icon name="Inventory" size={24}/><span className="text-[9px] font-bold uppercase">Inventory</span></button>
+                            <button onClick={() => setActiveTab('shop')} className={`flex-1 flex flex-col items-center gap-1 py-3 ${activeTab === 'shop' ? 'text-purple-400' : 'opacity-40'}`}><Icon name="Shop" size={24}/><span className="text-[9px] font-bold uppercase">Shop</span></button>
+                            <button onClick={() => setActiveTab('add')} className={`flex-1 flex flex-col items-center gap-1 py-3 ${activeTab === 'add' ? 'text-purple-400' : 'opacity-40'}`}><Icon name="Dungeon" size={24}/><span className="text-[9px] font-bold uppercase">Adventure</span></button>
+                            <button onClick={() => setActiveTab('history')} className={`flex-1 flex flex-col items-center gap-1 py-3 ${activeTab === 'history' ? 'text-purple-400' : 'opacity-40'}`}><Icon name="History" size={24}/><span className="text-[9px] font-bold uppercase">History</span></button>
+                        </nav>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+    </script>
+</body>
+</html>
