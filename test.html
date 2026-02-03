@@ -3,24 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>OGHza Tracker V4.8.1 (Fixed)</title>
+    <title>OGHza Tracker V4.9.19</title>
     
     <!-- App Icon -->
     <link rel="icon" href="icon.png" type="image/png">
     <link rel="apple-touch-icon" href="icon.png">
     
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Add Prop-Types for Recharts -->
     <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
-    <!-- Fixed Babel Version for stability -->
     <script src="https://unpkg.com/@babel/standalone@7.23.7/babel.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kanit:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Kanit:wght@300;400;500;600&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap');
 
         :root {
             --app-bg: #18181b; /* Zinc-950 */
@@ -62,6 +63,10 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #3f3f46; border-radius: 20px; }
+
         .rank-ss { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8); background-size: 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow 3s linear infinite; font-weight: 900; font-style: italic; }
         @keyframes rainbow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
         .rank-s { color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5); font-weight: 900; }
@@ -79,6 +84,7 @@
         
         .rox-currency-bar { background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid #3f3f46; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; height: 50px; }
         .currency-pill { background: #27272a; border-radius: 12px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: bold; color: #e4e4e7; border: 1px solid #3f3f46; }
+        .emoji-icon { font-family: 'Noto Color Emoji', sans-serif; line-height: 1; }
         
         @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         .animate-pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -99,8 +105,31 @@
         }
         .level-up-glow { animation: levelUpPulse 2s infinite; }
         
-        .share-card-bg { background: linear-gradient(135deg, #1f2937 0%, #000000 100%); position: relative; }
-        .share-card-bg::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.15) 0%, transparent 70%); pointer-events: none; }
+        /* New Share Card Design (ROM Style) */
+        .rom-card {
+            background: linear-gradient(180deg, #18191c 0%, #0f0f10 100%);
+            border: 2px solid #3f3f46;
+            border-radius: 0px; /* Square corners */
+            overflow: hidden;
+            box-shadow: none;
+            position: relative;
+        }
+        .rom-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, #b8860b 0%, #ffd700 50%, #b8860b 100%);
+        }
+        .rom-item-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+        }
+        .rom-header-text {
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.1em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 <body>
@@ -113,13 +142,11 @@
 
         const { useState, useEffect, useMemo, useRef } = React;
 
-        const APP_VERSION = "Ver.4.8.1 (Fixed)";
+        const APP_VERSION = "Ver.4.9.19";
         const VERSION_HISTORY = [
-            { ver: "Ver.4.8.1", changes: ["Fixed Profile Icon Syntax Error"] },
-            { ver: "Ver.4.8.0", changes: ["Custom Nav Icons (New Look!)", "Clean History UI (No frames)", "Bag: Hidden Scrollbar"] },
-            { ver: "Ver.4.7.1", changes: ["Reverted to SVG Icons (Fix iOS lag)"] },
-            { ver: "Ver.4.7.0", changes: ["Added Share System", "Added DEK Shop"] },
-            { ver: "Ver.4.6.5", changes: ["UI Clean up", "Fixed HE Gum icon", "Removed save toast"] }
+            { ver: "Ver.4.9.19", changes: ["Fixed SVG Syntax (Fragment)", "Finalized Share Card"] },
+            { ver: "Ver.4.9.18", changes: ["Updated Icons: Swords for Complete, Camera for Share"] },
+            { ver: "Ver.4.9.16", changes: ["Fixed Wish/Clover SVG Icons", "Updated Image URL to HTTPS"] },
         ];
         
         const MANUAL_FIREBASE_CONFIG = { apiKey: "AIzaSyAbWzr8o_OhkjGbEetBYq_nzYmVZ2fTf40", authDomain: "rocogh-88a38.firebaseapp.com", projectId: "rocogh-88a38", storageBucket: "rocogh-88a38.firebasestorage.app", messagingSenderId: "1025971309206", appId: "1:1025971309206:web:d4f9e0ab6bb016dde590b7" };
@@ -135,7 +162,7 @@
         const copyToClipboard = (text) => { const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select(); try { document.execCommand('copy'); } catch (err) {} document.body.removeChild(textArea); };
         const getItemInfo = (id) => { if (ITEM_DETAILS[id]) return { ...ITEM_DETAILS[id], icon: id }; const dropItem = DROP_TABLE.find(d => d.id === id); if (dropItem) return dropItem; const shopItem = SHOP_ITEMS.find(s => s.id === id); if (shopItem) return { ...shopItem, type: 'Box', rarity: shopItem.rarity || 'Common', category: shopItem.category || 'Consumable' }; if (id === 'premium_staff') return { ...ITEM_DETAILS['premium_staff'], icon: 'PremiumStaff' }; if (id === 'he_gum') return { ...ITEM_DETAILS['he_gum'], icon: 'HeGum' }; if (id === 'spell') return { ...ITEM_DETAILS['spell'], icon: 'Spell' }; if (id === 'magic') return { ...ITEM_DETAILS['magic'], icon: 'Magic' }; return { name: 'Unknown Item', desc: 'No description.', type: 'Etc', rarity: 'Common', icon: 'Box', category: 'Etc' }; };
         const getRankInfo = (profit, averageProfit) => { if (profit < 0) return { rank: 'F', css: 'rank-f', text: 'LOSS' }; if (!averageProfit || averageProfit === 0) return { rank: 'B', css: 'rank-b', text: 'NORMAL' }; const diff = (profit - averageProfit) / averageProfit; if (diff >= 0.5) return { rank: 'S', css: 'rank-s', text: 'LUCKY' }; if (diff >= 0.3) return { rank: 'A', css: 'rank-a', text: 'GOOD' }; if (diff >= -0.1) return { rank: 'B', css: 'rank-b', text: 'NORMAL' }; if (diff >= -0.3) return { rank: 'C', css: 'rank-c', text: 'BAD' }; if (diff >= -0.5) return { rank: 'D', css: 'rank-d', text: 'POOR' }; return { rank: 'E', css: 'rank-e', text: 'AWFUL' }; };
-        const SmartIcon = ({ name, className }) => { const [error, setError] = useState(false); const BASE_URL = "http://sdekzaaa-source.github.io/ro-farm-app/"; const imgMap = { 'Spell': 'Coagulated Spell.png', 'Magic': 'Contaminated Magic.png', 'Gum': 'Bubble Gum.png', 'HeGum': 'HE Bubble Gum.png', 'Silvervine': 'Silvervine Fruit.png', 'GumBox': 'Bubble Gum Box.png', 'HeGumBox': 'HE Bubble Gum Box.png', 'SilvervineBox': 'Silvervine Box.png', 'Premium': 'Premium Box.png', 'Kafra': 'Kafra Buff.png', 'PremiumStaff': 'Premium Service Staff.png', 'Elunium': 'Elunium.png', 'Oridecon': 'Oridecon.png', 'Card': 'Card.png', 'Zeny': 'Zeny.png', 'DEK': 'DEK.png', 'OGH_BOSS': 'OGH BOSS.png', 'AOGH_BOSS': 'AOGH BOSS.png' }; const finalName = imgMap[name] ? name : (Object.keys(imgMap).find(k => k.toLowerCase() === name?.toLowerCase()) || 'Box'); if (finalName === 'GumBox') return (<div className={`relative ${className}`}><img src={`${BASE_URL}Bubble Gum Box.png`} className="w-full h-full object-contain" /><img src={`${BASE_URL}Bubble Gum.png`} className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>); if (finalName === 'HeGumBox') return (<div className={`relative ${className}`}><img src={`${BASE_URL}Bubble Gum Box.png`} className="w-full h-full object-contain filter hue-rotate-15" /><img src={`${BASE_URL}HE Bubble Gum.png`} className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>); if (!error && imgMap[finalName]) return <img src={`${BASE_URL}${imgMap[finalName]}`} className={`object-contain ${className}`} onError={() => setError(true)} />; return <div className={`w-full h-full bg-zinc-700 rounded-md flex items-center justify-center ${className}`}><span className="text-[8px] text-zinc-500">?</span></div>; };
+        const SmartIcon = ({ name, className }) => { const [error, setError] = useState(false); const BASE_URL = "https://sdekzaaa-source.github.io/ro-farm-app/"; const imgMap = { 'Spell': 'Coagulated Spell.png', 'Magic': 'Contaminated Magic.png', 'Gum': 'Bubble Gum.png', 'HeGum': 'HE Bubble Gum.png', 'Silvervine': 'Silvervine Fruit.png', 'GumBox': 'Bubble Gum Box.png', 'HeGumBox': 'HE Bubble Gum Box.png', 'SilvervineBox': 'Silvervine Box.png', 'Premium': 'Premium Box.png', 'Kafra': 'Kafra Buff.png', 'PremiumStaff': 'Premium Service Staff.png', 'Elunium': 'Elunium.png', 'Oridecon': 'Oridecon.png', 'Card': 'Card.png', 'Zeny': 'Zeny.png', 'DEK': 'DEK.png', 'OGH_BOSS': 'OGH BOSS.png', 'AOGH_BOSS': 'AOGH BOSS.png' }; const finalName = imgMap[name] ? name : (Object.keys(imgMap).find(k => k.toLowerCase() === name?.toLowerCase()) || 'Box'); if (finalName === 'GumBox') return (<div className={`relative ${className}`}><img crossOrigin="anonymous" src={`${BASE_URL}Bubble Gum Box.png`} className="w-full h-full object-contain" /><img crossOrigin="anonymous" src={`${BASE_URL}Bubble Gum.png`} className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>); if (finalName === 'HeGumBox') return (<div className={`relative ${className}`}><img crossOrigin="anonymous" src={`${BASE_URL}Bubble Gum Box.png`} className="w-full h-full object-contain filter hue-rotate-15" /><img crossOrigin="anonymous" src={`${BASE_URL}HE Bubble Gum.png`} className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>); if (!error && imgMap[finalName]) return <img crossOrigin="anonymous" src={`${BASE_URL}${imgMap[finalName]}`} className={`object-contain ${className}`} onError={() => setError(true)} />; return <div className={`w-full h-full bg-zinc-700 rounded-md flex items-center justify-center ${className}`}><span className="text-[8px] text-zinc-500">?</span></div>; };
 
         // --- CUSTOM SVG ICONS ---
         const Icon = ({ name, size = 20, className }) => {
@@ -144,11 +171,11 @@
                 Home: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><linearGradient id="g1" x1="6" x2="42" y1="41" y2="41" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#c8d3de"/><stop offset="1" stopColor="#c8d3de"/></linearGradient><path fill="url(#g1)" d="M42,39H6v2c0,1.105,0.895,2,2,2h32c1.105,0,2-0.895,2-2V39z"/><linearGradient id="g2" x1="14.095" x2="31.385" y1="10.338" y2="43.787" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#fcfcfc"/><stop offset=".495" stopColor="#f4f4f4"/><stop offset=".946" stopColor="#e8e8e8"/><stop offset="1" stopColor="#e8e8e8"/></linearGradient><path fill="url(#g2)" d="M42,39H6V20L24,3l18,17V39z"/><path fill="#de490d" d="M13,25h10c0.552,0,1,0.448,1,1v17H12V26C12,25.448,12.448,25,13,25z"/><linearGradient id="g3" x1="24" x2="24" y1="1.684" y2="23.696" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#d43a02"/><stop offset="1" stopColor="#b9360c"/></linearGradient><path fill="url(#g3)" d="M44.495,19.507L25.326,2.503C24.948,2.168,24.474,2,24,2s-0.948,0.168-1.326,0.503L3.505,19.507c-0.42,0.374-0.449,1.02-0.064,1.43l1.636,1.745c0.369,0.394,0.984,0.424,1.39,0.067L24,7.428L41.533,22.75c0.405,0.356,1.021,0.327,1.39-0.067l1.636-1.745C44.944,20.527,44.915,19.881,44.495,19.507z"/><linearGradient id="g4" x1="28.05" x2="35.614" y1="25.05" y2="32.614" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#33bef0"/><stop offset="1" stopColor="#0a85d9"/></linearGradient><path fill="url(#g4)" d="M29,25h6c0.552,0,1,0.448,1,1v6c0,0.552-0.448,1-1,1h-6c-0.552,0-1-0.448-1-1v-6C28,25.448,28.448,25,29,25z"/></svg>,
                 Inventory: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50"><polygon fill="#e68f3a" points="43,14.6 43,33.08 23,44.63 23,44.62 7,35.39 7,16.91 27,5.36"/><polygon fill="#ff9f40" points="23,26.149 23,44.624 7,35.389 7,16.904"/><polygon fill="#ccc" points="17,22.691 17,27.318 13,25.008 13,20.381"/><polygon fill="#a8a8a8" points="17,22.691 37,11.144 33,8.834 13,20.381"/><polygon fill="#b3702d" points="43,33.083 23,44.63 23,26.149 43,14.602"/><polygon fill="#d98836" points="12,24.423 12,26.732 18,30.196 18,27.887"/><polygon fill="#b3702d" points="12,24.423 12,26.732 14,25.577"/></svg>,
                 Shop: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><path d="M93.46 39.45c6.71-1.49 15.45-8.15 16.78-11.43c.78-1.92-3.11-4.92-4.15-6.13c-2.38-2.76-1.42-4.12-.5-7.41c1.05-3.74-1.44-7.87-4.97-9.49s-7.75-1.11-11.3.47c-3.55 1.58-6.58 4.12-9.55 6.62c-2.17-1.37-5.63-7.42-11.23-3.49c-3.87 2.71-4.22 8.61-3.72 13.32c1.17 10.87 3.85 16.51 8.9 18.03c6.38 1.92 13.44.91 19.74-.49z" fill="#FFCA28"/><path d="M104.36 8.18c-.85 14.65-15.14 24.37-21.92 28.65l4.4 3.78s2.79.06 6.61-1.16c6.55-2.08 16.12-7.96 16.78-11.43c.97-5.05-4.21-3.95-5.38-7.94c-.61-2.11 2.97-6.1-.49-11.9zm-24.58 3.91s-2.55-2.61-4.44-3.8c-.94 1.77-1.61 3.69-1.94 5.67c-.59 3.48 0 8.42 1.39 12.1c.22.57 1.04.48 1.13-.12c1.2-7.91 3.86-13.85 3.86-13.85z" fill="#E2A610"/><path d="M61.96 38.16S30.77 41.53 16.7 68.61c-14.07 27.08-2.11 43.5 10.55 49.48c12.66 5.98 44.56 8.09 65.31 3.17s25.94-15.12 24.97-24.97c-1.41-14.38-14.77-23.22-14.77-23.22s.53-17.76-13.25-29.29c-12.23-10.24-27.55-5.62-27.55-5.62z" fill="#FFCA28"/><path d="M74.76 83.73c-6.69-8.44-14.59-9.57-17.12-12.6c-1.38-1.65-2.19-3.32-1.88-5.39c.33-2.2 2.88-3.72 4.86-4.09c2.31-.44 7.82-.21 12.45 4.2c1.1 1.04.7 2.66.67 4.11c-.08 3.11 4.37 6.13 7.97 3.53c3.61-2.61.84-8.42-1.49-11.24c-1.76-2.13-8.14-6.82-16.07-7.56c-2.23-.21-11.2-1.54-16.38 8.31c-1.49 2.83-2.04 9.67 5.76 15.45c1.63 1.21 10.09 5.51 12.44 8.3c4.07 4.83 1.28 9.08-1.9 9.64c-8.67 1.52-13.58-3.17-14.49-5.74c-.65-1.83.03-3.81-.81-5.53c-.86-1.77-2.62-2.47-4.48-1.88c-6.1 1.94-4.16 8.61-1.46 12.28c2.89 3.93 6.44 6.3 10.43 7.6c14.89 4.85 22.05-2.81 23.3-8.42c.92-4.11.82-7.67-1.8-10.97z" fill="#6B4B46"/><path d="M71.16 48.99c-12.67 27.06-14.85 61.23-14.85 61.23" stroke="#6B4B46" stroke-width="5" stroke-miterlimit="10"/><path d="M81.67 31.96c8.44 2.75 10.31 10.38 9.7 12.46c-.73 2.44-10.08-7.06-23.98-6.49c-4.86.2-3.45-2.78-1.2-4.5c2.97-2.27 7.96-3.91 15.48-1.47z" fill="#6D4C41"/><path d="M96.49 58.86c1.06-.73 4.62.53 5.62 7.5c.49 3.41.64 6.71.64 6.71s-4.2-3.77-5.59-6.42c-1.75-3.35-2.43-6.59-.67-7.79z" fill="#E2A610"/></svg>,
-                Dungeon: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 504.32 504.32"><path style={{fill:"#FFD0A1"}} d="M95.427,448.707L161.133,383l-42.667-42.667L52.76,406.04l-14.507-14.507c-3.413-3.413-8.533-3.413-11.947,0L6.68,411.16c-3.413,3.413-3.413,8.533,0,11.947l72.533,72.533c3.413,3.413,8.533,3.413,11.947,0l19.627-19.627c3.413-3.413,3.413-9.387-1.707-13.653L95.427,448.707L95.427,448.707z M74.093,427.374L52.76,406.04l0,0l0,0L74.093,427.374z"/><path style={{fill:"#ECF4F7"}} d="M173.933,327.533L173.933,327.533L203.8,357.4l0,0l46.933-46.933L220.867,280.6L173.933,327.533L173.933,327.533L173.933,327.533l46.933-46.933L191,250.733l-46.933,46.933l0,0L173.933,327.533L173.933,327.533z M498.2,3.267l-17.067,76.8L310.467,250.733L280.6,220.867L498.2,3.267z M498.2,3.267l-217.6,217.6L250.733,191L421.4,20.333L498.2,3.267z"/><path style={{fill:"#ECF4F7"}} d="M357.4,297.667l-29.867,29.867L3.267,3.267l76.8,17.067L250.733,191l29.867,29.867l29.867,29.867L357.4,297.667z M327.533,327.533L297.667,357.4l-46.933-46.933L220.867,280.6L191,250.733L20.333,80.067L3.267,3.267L327.533,327.533z"/><path style={{fill:"#AE938D"}} d="M203.8,357.4l29.867,29.867c-22.187,22.187-45.227,23.04-68.267,0L161.133,383l0,0l-42.667-42.667l-4.267-4.267c-22.187-22.187-23.04-45.227,0-68.267l29.867,29.867l29.867,29.867L203.8,357.4z M357.4,297.667l29.867-29.867c23.04,22.187,23.04,45.227,0,68.267L383,340.333l0,0L340.333,383l-4.267,4.267c-22.187,22.187-45.227,23.04-68.267,0l29.867-29.867l29.867-29.867L357.4,297.667z"/><path style={{fill:"#FFD0A1"}} d="M406.893,448.707l41.813-41.813L383,341.187l0,0l-42.667,42.667L406.893,448.707L406.893,448.707l-15.36,15.36c-3.413,3.413-3.413,8.533,0,11.947l19.627,19.627c3.413,3.413,8.533,3.413,11.947,0l72.533-72.533c3.413-3.413,3.413-8.533,0-11.947l-19.627-19.627c-3.413-3.413-9.387-3.413-13.653,1.707l-12.8,12.8C448.707,406.04,406.893,448.707,406.893,448.707z"/><path style={{fill:"#51565F"}} d="M418.133,503.467c-3.413,0-6.827-1.707-9.387-3.413l-19.627-19.627c-5.12-5.12-5.12-12.8,0-17.92l11.947-11.947l-59.733-59.733l-0.853,0.853c-23.893,23.893-50.347,23.893-74.24,0c-1.707-1.707-1.707-4.267,0-5.973L385.707,266.24c1.707-1.707,4.267-1.707,5.973,0c11.947,11.947,17.92,24.747,17.92,36.693c0,12.8-5.973,24.747-17.92,37.547l-0.853,0.853l59.733,59.733l10.24-10.24c6.827-6.827,15.36-6.827,20.48-1.707l19.627,19.627c2.56,2.56,3.413,5.973,3.413,9.387c0,3.413-1.707,6.827-3.413,9.387l-72.533,72.533C424.96,501.76,421.547,503.467,418.133,503.467z"/></svg>,
+                Dungeon: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 504.32 504.32"><path style={{fill:"#FFD0A1"}} d="M95.427,448.707L161.133,383l-42.667-42.667L52.76,406.04l-14.507-14.507c-3.413-3.413-8.533-3.413-11.947,0L6.68,411.16c-3.413,3.413-3.413,8.533,0,11.947l72.533,72.533c3.413,3.413,8.533,3.413,11.947,0l19.627-19.627c3.413-3.413,3.413-9.387-1.707-13.653L95.427,448.707L95.427,448.707z M74.093,427.374L52.76,406.04l0,0l0,0L74.093,427.374z"/><path style={{fill:"#ECF4F7"}} d="M173.933,327.533L173.933,327.533L203.8,357.4l0,0l46.933-46.933L220.867,280.6L173.933,327.533L173.933,327.533L173.933,327.533l46.933-46.933L191,250.733l-46.933,46.933l0,0L173.933,327.533L173.933,327.533z M498.2,3.267l-17.067,76.8L310.467,250.733L280.6,220.867L498.2,3.267z M498.2,3.267l-217.6,217.6L250.733,191L421.4,20.333L498.2,3.267z"/><path style={{fill:"#ECF4F7"}} d="M357.4,297.667l-29.867,29.867L3.267,3.267l76.8,17.067L250.733,191l29.867,29.867l29.867,29.867L357.4,297.667z M327.533,327.533L297.667,357.4l-46.933-46.933L220.867,280.6L191,250.733L20.333,80.067L3.267,3.267L327.533,327.533z"/><path style={{fill:"#AE938D"}} d="M203.8,357.4l29.867,29.867c-22.187,22.187-45.227,23.04-68.267,0L161.133,383l0,0l-42.667-42.667l-4.267-4.267c-22.187-22.187-23.04-45.227,0-68.267l29.867,29.867l29.867,29.867L203.8,357.4z M357.4,297.667l29.867-29.867c23.04,22.187,23.04,45.227,0,68.267L383,340.333l0,0L340.333,383l-4.267,4.267c-22.187-22.187-45.227,23.04-68.267,0l29.867-29.867l29.867-29.867L357.4,297.667z"/><path style={{fill:"#FFD0A1"}} d="M406.893,448.707l41.813-41.813L383,341.187l0,0l-42.667,42.667L406.893,448.707L406.893,448.707l-15.36,15.36c-3.413,3.413-3.413,8.533,0,11.947l19.627,19.627c3.413,3.413,8.533,3.413,11.947,0l72.533-72.533c3.413-3.413,3.413-8.533,0-11.947l-19.627-19.627c-3.413-3.413-9.387-3.413-13.653,1.707l-12.8,12.8C448.707,406.04,406.893,448.707,406.893,448.707z"/><path style={{fill:"#51565F"}} d="M418.133,503.467c-3.413,0-6.827-1.707-9.387-3.413l-19.627-19.627c-5.12-5.12-5.12-12.8,0-17.92l11.947-11.947l-59.733-59.733l-0.853,0.853c-23.893,23.893-50.347,23.893-74.24,0c-1.707-1.707-1.707-4.267,0-5.973L385.707,266.24c1.707-1.707,4.267-1.707,5.973,0c11.947,11.947,17.92,24.747,17.92,36.693c0,12.8-5.973,24.747-17.92,37.547l-0.853,0.853l59.733,59.733l10.24-10.24c6.827-6.827,15.36-6.827,20.48-1.707l19.627,19.627c2.56,2.56,3.413,5.973,3.413,9.387c0,3.413-1.707,6.827-3.413,9.387l-72.533,72.533C424.96,501.76,421.547,503.467,418.133,503.467z"/></svg>,
                 History: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><path d="M903.73,183.71l-57.87-0.55c-0.73,0-91.94-5.44-128.64-11.87c-79.15-13.82-142.53-12.6-209.45,35.23c-68.57-47.29-114.94-50.22-204.13-35.05c-7.52,1.28-14.74,2.63-21.9,3.98c-26.79,5.14-104.05,8.26-104.05,8.26H120c-12.97,0-23.49,10.52-23.49,23.49v599.17c0,12.97,10.52,23.49,23.49,23.49h292.83c-0.67,2.08-1.35,4.16-1.35,6.48c0,12.6,10.64,22.82,23.92,22.82h146.14c13.27,0,23.98-10.22,23.98-22.82c0-2.32-0.67-4.4-1.41-6.48h299.62c13.03,0,23.55-10.52,23.55-23.49V207.2c0-12.97-10.52-23.49-23.55-23.49z" fill="#27323A"/><path d="M143.55,230.75h30.71v552.13H143.55z" fill="#FFFFFF"/><path d="M206.62,230.94c33.95-0.18,59.58-4.71,83.87-9.3a825.05,825.05,0,0,1,21.04-3.86c88.09-14.92,119.77-8.93,178.5,33.77c0.37,0.24,0.74,0.37,1.1,0.55v497.93c-76.1-66.74-144.49-40.25-230.31-6.48l-54.2,22.63c-0.12-92.31-0.12-431.2-0.001-535.25z" fill="#79CCBF"/><path d="M272.56,772.3c88.51-34.81,141.92-55.73,208.47,10.52c0,0,0.06,0.06,0.12,0.06H247.18l25.39-10.58z" fill="#F4CE73"/><path d="M534.75,782.89c0.3-0.24,0.73-0.43,1.04-0.73c61.41-66.92,119.47-45.02,215.32-8.93l23.61,9.67H534.75z" fill="#F4CE73"/><path d="M814.85,765.88l-52.36-21.53c-93.16-35.11-167.49-62.88-240.03,7.28v-498.3c1.41-0.67,2.88-1.22,4.16-2.2c57.56-45.02,108.58-46.49,182.54-33.52c29.06,5.08,80.2,9.48,105.7,11.44c0.24,103.32,0.24,445.7,0,536.84z" fill="#79CCBF"/><path d="M846.11,230.75h34.13v552.13h-34.13z" fill="#FFFFFF"/></svg>,
                 
                 // Other UI Icons
-                Settings: <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></g>,
+                Settings: <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></g>,
                 Trash: <><polyline points="3 6 5 6 21 6" fill="none" stroke="currentColor" strokeWidth="2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" strokeWidth="2"/><line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" strokeWidth="2"/><line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" strokeWidth="2"/></>,
                 Plus: <><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2"/></>,
                 X: <><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2"/></>,
@@ -161,42 +188,36 @@
                 Box: <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" strokeWidth="2" fill="none"/>,
                 ShoppingCart: <><circle cx="9" cy="21" r="1" fill="currentColor"/><circle cx="20" cy="21" r="1" fill="currentColor"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" stroke="currentColor" strokeWidth="2" fill="none"/></>,
                 FileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" stroke="currentColor" strokeWidth="2" fill="none"/><polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="2" fill="none"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2"/><line x1="10" y1="9" x2="8" y2="9" stroke="currentColor" strokeWidth="2"/></>,
-                Clover: <path d="M16.19 2H7.81C4.17 2 2 4.17 2 7.81v8.37C2 19.83 4.17 22 7.81 22h8.37c3.64 0 5.81-2.17 5.81-5.81V7.81C22 4.17 19.83 2 16.19 2zm-4.14 15.65c0 .3-.24.54-.54.54-.3 0-.54-.24-.54-.54v-3.77l-2.67 2.67c-.21.21-.55.21-.76 0s-.21-.55 0-.76l2.97-2.97c.21-.21.55-.21.76 0 .21.21.21.55 0 .76l-2.22 2.22h2.22c.3 0 .54.24.54.54v1.31zM16 13.5c-.3 0-.54.24-.54.54 0 .3.24.54.54.54h-1.31c0 .3-.24.54-.54.54-.3 0-.54-.24-.54-.54v-2.22l2.22 2.22c.21.21.55.21.76 0 .21-.21.21-.55 0-.76l-2.97-2.97c-.21-.21-.55-.21-.76 0-.21.21-.21.55 0 .76l2.67 2.67h3.77c.3 0 .54-.24.54-.54 0-.3-.24-.54-.54-.54h-3.3z" fill="currentColor"/>,
-                Wish: <svg viewBox="0 0 120 120" fill="none"><path d="M60 10 L75 45 L110 50 L85 75 L90 110 L60 95 L30 110 L35 75 L10 50 L45 45 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="4"/><circle cx="60" cy="60" r="10" fill="#fff" fillOpacity="0.4"/></svg>,
-                Skull: <><path d="M12 2c-4.97 0-9 4.03-9 9 0 4.14 2.84 7.63 6.72 8.64a1 1 0 0 1 .58.55l.65 1.5a1 1 0 0 0 .91.59h6.27a1 1 0 0 0 .91-.59l.65-1.5a1 1 0 0 1 .58-.55C21.16 18.63 24 15.14 24 11c0-4.97-4.03-9-9-9z" stroke="currentColor" strokeWidth="2" fill="none"/><circle cx="8.5" cy="9.5" r="1.5" fill="currentColor"/><circle cx="15.5" cy="9.5" r="1.5" fill="currentColor"/><path d="M12 14.5v1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></>,
-                LayoutGrid: <><rect width="7" height="7" x="3" y="3" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/><rect width="7" height="7" x="14" y="3" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/><rect width="7" height="7" x="14" y="14" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/><rect width="7" height="7" x="3" y="14" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/></>,
-                Flask: <><path d="M10 2v7.527a2 2 0 0 1 .211.896v.669L6.81 18.61A3.202 3.202 0 0 0 6 20.556V21h12v-.444a3.202 3.202 0 0 0-.81-1.946l-3.4-7.518v-.669a2 2 0 0 1 .211-.896V2H10z" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M8.5 2h7" stroke="currentColor" strokeWidth="2"/></>,
-                Layers: <><polygon points="12 2 2 7 12 12 22 7 12 2" stroke="currentColor" strokeWidth="2" fill="none"/><polyline points="2 17 12 22 22 17" stroke="currentColor" strokeWidth="2" fill="none"/><polyline points="2 12 12 17 22 12" stroke="currentColor" strokeWidth="2" fill="none"/></>,
-                Diamond: <path d="M6 3h12l4 6-10 13L2 9z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinejoin="round"/>,
-                Lock: <><rect width="18" height="11" x="3" y="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="2" fill="none"/></>,
-                DollarSign: <><line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" strokeWidth="2"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" fill="none"/></>,
-                ToggleOn: <><rect x="1" y="5" width="22" height="14" rx="7" fill="#10b981"/><circle cx="16" cy="12" r="5" fill="white"/></>,
-                ToggleOff: <><rect x="1" y="5" width="22" height="14" rx="7" fill="#52525b"/><circle cx="8" cy="12" r="5" fill="white"/></>,
-                Profile: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" fill="none"/><circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" fill="none"/></>,
-                Share: <><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" stroke="currentColor" strokeWidth="2" fill="none"/><polyline points="16 6 12 2 8 6" stroke="currentColor" strokeWidth="2" fill="none"/><line x1="12" y1="2" x2="12" y2="15" stroke="currentColor" strokeWidth="2"/></>
+                Clover: <><g><path style={{fill:"#BDEB73"}} d="M438.63,222.333l-6.555-6.552l21.48-21.48c12.155-12.155,18.227-28.087,18.227-44.019 s-6.072-31.864-18.227-44.019c-24.31-24.31-63.727-24.31-88.037,0l-60.627,39.626L256,215.782l4.116,6.552H438.63z"/><path style={{fill:"#BDEB73"}} d="M75.808,211.667l4.117,4.115l-21.48,21.48c-12.155-12.155-18.227-28.087-18.227,44.019 c0,15.932,6.072,31.864,18.227,44.019c24.31,24.31,63.727,24.31,88.037,0l64.408-40.408L256,215.782l-2.803-4.115H75.808z"/><g><g><path style={{fill:"#7AA82D"}} d="M435.662,512c-0.17,0-0.339-0.002-0.51-0.007c-10.765-0.276-19.266-9.227-18.99-19.991 c2.645-102.938-61.414-150.431-62.062-150.899c-8.729-6.306-10.693-18.494-4.387-27.222c6.307-8.728,18.494-10.691,27.222-4.387 c3.325,2.402,81.375,60.235,78.208,183.509C454.87,503.597,446.197,512,435.662,512z"/><path style={{fill:"#729B23"}} d="M455.144,493.004c-0.278,10.59-8.952,18.996-19.481,18.996c-0.175,0-0.34,0-0.515-0.01 c-2.843-0.072-5.522-0.752-7.932-1.906c6.377-3.07,10.858-9.519,11.054-17.081c3.163-123.272-74.884-181.106-78.211-183.506 c-0.958-0.69-1.957-1.288-2.988-1.772c6.233-2.987,13.866-2.565,19.862,1.772C380.261,311.898,458.307,369.732,455.144,493.004z"/><g><path style={{fill:"#BDEB73"}} d="M264.333,31.37L256,39.707l-21.48-21.48C222.365,6.072,206.433,0,190.501,0 c-15.932,0-31.864,6.072-44.019,18.227c-24.31,24.31-24.31,63.727,0,88.037l29.28,62.28L256,215.782l8.333-8.333V31.37z"/><path style={{fill:"#A4E540"}} d="M365.518,106.264L256,215.782l-12.467-12.467l97.039-97.051c24.31-24.31,24.31-63.727,0-88.037 c-8.969-8.969-19.987-14.628-31.552-16.968C313.132,0.412,317.31,0,321.499,0c15.932,0,31.863,6.072,44.019,18.227 C389.827,42.537,389.827,81.954,365.518,106.264z"/><path style={{fill:"#A4E540"}} d="M365.518,106.264L256,215.782V39.707l21.469-21.48c8.969-8.969,19.987-14.628,31.552-16.968 C313.132,0.412,317.31,0,321.499,0c15.932,0,31.863,6.072,44.019,18.227C389.827,42.537,389.827,81.954,365.518,106.264z"/><path style={{fill:"#8EC737"}} d="M365.518,106.264L256,215.782v-24.934l84.572-84.584c24.31-24.31,24.31-63.727,0-88.037 c-8.969-8.969-19.987-14.628-31.552-16.968C313.132,0.412,317.31,0,321.499,0c15.932,0,31.863,6.072,44.019,18.227 C389.827,42.537,389.827,81.954,365.518,106.264z"/></g><g><path style={{fill:"#BDEB73"}} d="M365.517,325.299l-44.7-65.7L256,215.782l-11,11v176.08l11-11.005l21.48,21.48 c12.155,12.155,28.087,18.227,44.019,18.227s31.864-6.072,44.019-18.227C389.827,389.026,389.827,349.609,365.517,325.299z"/><path style={{fill:"#A4E540"}} d="M146.482,325.299L256,215.782l12.467,12.467l-97.039,97.051c-24.31,24.31-24.31,63.727,0,88.037 c8.969,8.969,19.987,14.628,31.551,16.968c-4.111,0.847-8.289,1.259-12.478,1.259c-15.932,0-31.863-6.072-44.019-18.227 C122.173,389.026,122.173,349.609,146.482,325.299z"/><path style={{fill:"#A4E540"}} d="M146.482,325.299L256,215.782v176.075l-21.469,21.48c-8.969,8.969-19.987,14.628-31.552,16.968 c-4.111,0.847-8.289,1.259-12.478,1.259c-15.932,0-31.863-6.072-44.019-18.227C122.173,389.026,122.173,349.609,146.482,325.299 z"/><path style={{fill:"#8EC737"}} d="M146.482,325.299L256,215.782v24.934l-84.572,84.584c-24.31,24.31-24.31,63.727,0,88.037 c8.969,8.969,19.987,14.628,31.551,16.968c-4.111,0.847-8.289,1.259-12.478,1.259c-15.932,0-31.863-6.072-44.019-18.227 C122.173,389.026,122.173,349.609,146.482,325.299z"/></g><g><path style={{fill:"#A4E540"}} d="M365.517,325.299L256,215.782l12.467-12.467l97.051,97.039c24.31,24.31,63.727,24.31,88.037,0 c8.969-8.969,14.628-19.987,16.968-31.552c0.847,4.111,1.259,8.289,1.259,12.478c0,15.932-6.072,31.863-18.227,44.019 C429.245,349.609,389.827,349.609,365.517,325.299z"/><path style={{fill:"#A4E540"}} d="M365.517,325.299L256,215.782h176.075l21.48,21.469c8.969,8.969,14.628,19.987,16.968,31.552 c0.847,4.111,1.259,8.289,1.259,12.478c0,15.932-6.072,31.863-18.227,44.019C429.245,349.609,389.827,349.609,365.517,325.299z" /><path style={{fill:"#8EC737"}} d="M365.517,325.299L256,215.782h24.934l84.584,84.572c24.31,24.31,63.727,24.31,88.037,0 c8.969-8.969,14.628-19.987,16.968-31.552c0.847,4.111,1.259,8.289,1.259,12.478c0,15.932-6.072,31.863-18.227,44.019 C429.245,349.609,389.827,349.609,365.517,325.299z"/></g><g><path style={{fill:"#A4E540"}} d="M146.483,106.264L256,215.782l-12.467,12.467l-97.051-97.039c-24.31,24.31-63.727-24.31-88.037,0 c-8.969,8.969-14.628,19.987-16.968,31.552c-0.847-4.111-1.259-8.289-1.259-12.478c0-15.932,6.072-31.863,18.227-44.019 C82.755,81.954,122.173,81.954,146.483,106.264z"/><path style={{fill:"#A4E540"}} d="M146.483,106.264L256,215.782H79.925l-21.48-21.469c-8.969-8.969-14.628-19.987-16.968-31.552 c-0.847-4.111-1.259-8.289-1.259-12.478c0-15.932,6.072-31.863,18.227-44.019C82.755,81.954,122.173,81.954,146.483,106.264z"/><path style={{fill:"#8EC737"}} d="M146.483,106.264L256,215.782h-24.934l-84.584-84.572c-24.31-24.31-63.727-24.31-88.037,0 c-8.969,8.969-14.628,19.987-16.968,31.552c-0.847-4.111-1.259-8.289-1.259-12.478c0-15.932,6.072-31.863,18.227-44.019 C82.755,81.954,122.173,81.954,146.483,106.264z"/></g></g></g><circle style={{fill:"#7AA82D"}} cx="256" cy="215.782" r="30.411"/><path style={{fill:"#729B23"}} d="M286.411,215.782c0,16.792-13.619,30.411-30.411,30.411c-3.255,0-6.387-0.515-9.323-1.463 c12.228-3.935,21.088-15.411,21.088-28.948c0-13.536-8.859-25.013-21.088-28.948c2.936-0.948,6.068-1.463,9.323-1.463 C272.792,185.371,286.411,198.99,286.411,215.782z"/></g></>,
+                Reward: <><g transform="translate(-26,-305)"><path d="m 44.000048,328.67941 5.196153,3 L 39.196153,349 38.579267,344.06848 34,346 c 3.333351,-5.77353 6.666699,-11.54706 10.000048,-17.32059 z" style={{fill:"#ff5576", fillOpacity:1, fillRule:"evenodd", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1}}/><path d="m 55.999976,328.67941 -5.196153,3 L 60.803871,349 61.420757,344.06848 66.000024,346 c -3.333351,-5.77353 -6.666699,-11.54706 -10.000048,-17.32059 z" style={{fill:"#ff5576", fillOpacity:1, fillRule:"evenodd", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1}}/><path d="m 58.61151,332.64671 -1.093909,4.40936 -4.365569,-1.25732 -3.152031,3.27166 -3.152031,-3.27166 -4.365569,1.25732 -1.09391,-4.40936 -4.409356,-1.0939 1.257325,-4.36557 -3.27166,-3.15204 3.27166,-3.15203 -1.257325,-4.36557 4.409356,-1.0939 1.093909,-4.40936 4.365569,1.25732 L 50,309 l 3.152031,3.27166 4.365569,-1.25732 1.09391,4.40936 4.409356,1.0939 -1.257325,4.36557 3.27166,3.15203 -3.27166,3.15204 1.257325,4.36557 z" style={{fill:"#e7e7e7", fillRule:"evenodd", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1}}/><path d="m 43.720703,313.0625 a 15.136557,15.136557 0 0 0 -1.777344,0.12695 l -0.554687,2.23438 -4.410156,1.09375 1.257812,4.36523 -3.271484,3.15235 3.271484,3.15234 -1.257812,4.36523 4.410156,1.09375 1.09375,4.41016 4.365234,-1.25781 3.152344,3.27148 3.152344,-3.27148 3.076172,0.88672 a 15.136557,15.136557 0 0 0 2.628906,-8.48633 15.136557,15.136557 0 0 0 -15.136719,-15.13672 z" style={{fill:"#fafafa", fillOpacity:1, fillRule:"evenodd", stroke:"none", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1, strokeOpacity:1}}/><path d="m 57.99999,324.03521 c 0,4.41826 -3.58171,7.99998 -7.99998,7.99998 -4.41828,0 -8,-3.58172 -8,-7.99998 0,-4.41827 3.58172,-8 8,-8 4.41827,0 7.99998,3.58173 7.99998,8 z" style={{fill:"#f2a50c", fillOpacity:1, fillRule:"evenodd", stroke:"none", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1, strokeOpacity:1}}/><path d="M 48.648438,316.15039 C 44.874149,316.79295 42,320.07779 42,324.03516 c 0,3.95735 2.874149,7.2422 6.648438,7.88476 3.773341,-0.64334 6.646484,-3.92807 6.646484,-7.88476 0,-3.9567 -2.873143,-7.24143 -6.646484,-7.88477 z" style={{fill:"#fcca3d", fillOpacity:1, fillRule:"evenodd", stroke:"none", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1, strokeOpacity:1}}/><path d="m 50,317.77344 a 1.0057675,0.9942576 0 0 0 -1.005859,0.99609 v 0.86328 c -1.090652,0.39441 -1.894531,1.40627 -1.894531,2.60938 0,1.55135 1.333807,2.78711 2.90039,2.78711 0.52508,0 0.888672,0.36923 0.888672,0.79882 -10e-7,0.42962 -0.363602,0.79883 -0.888672,0.79883 -0.525074,0 -0.886718,-0.36921 -0.886719,-0.79883 a 1.0057675,0.9942576 0 0 0 -1.005859,-0.99413 1.0057675,0.9942576 0 0 0 -1.007812,0.99413 c 1e-6,1.20312 0.803877,2.21497 1.894531,2.60938 v 0.86328 A 1.0057675,0.9942576 0 0 0 50,330.29687 a 1.0057675,0.9942576 0 0 0 1.005859,-0.99609 v -0.86328 c 1.090653,-0.39441 1.894528,-1.40626 1.894531,-2.60938 0,-1.55134 -1.333808,-2.7871 -2.90039,-2.7871 -0.525083,0 -0.886719,-0.36921 -0.886719,-0.79883 0,-0.42961 0.36163,-0.79883 0.886719,-0.79883 0.525084,0 0.888672,0.36922 0.888672,0.79883 a 1.0057675,0.9942576 0 0 0 1.005859,0.99414 1.0057675,0.9942576 0 0 0 1.005859,-0.99414 c 0,-1.20312 -0.803879,-2.21497 -1.894531,-2.60938 v -0.86328 A 1.0057675,0.9942576 0 0 0 50,317.77344 Z" style={{color:"#000000", fill:"#808b9b", fillOpacity:1, fillRule:"evenodd", stroke:"none", strokeWidth:0.999996, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1, strokeOpacity:1}}/></g></>
             };
             
             const iconDef = icons[name] || icons.Box;
             let viewBox = "0 0 24 24";
-            if (name === "Wish") viewBox = "0 0 120 120";
-            if (name === "Inventory") viewBox = "0 0 256 256";
-            if (name === "Dungeon") viewBox = "0 0 32 32";
-            if (name === "Home") viewBox = "0 0 48 48";
-            if (name === "Inventory") viewBox = "0 0 50 50";
-            if (name === "Shop") viewBox = "0 0 128 128";
-            if (name === "Dungeon") viewBox = "0 0 504.32 504.32";
-            if (name === "History") viewBox = "0 0 1024 1024";
+            if (['Wish','Inventory','Dungeon','Home','Shop','History','Clover','Reward'].includes(name)) {
+                if (name === "Wish") viewBox = "0 0 120 120";
+                else if (name === "Inventory") viewBox = "0 0 50 50";
+                else if (name === "Dungeon") viewBox = "0 0 504.32 504.32";
+                else if (name === "Home") viewBox = "0 0 48 48";
+                else if (name === "Shop") viewBox = "0 0 128 128";
+                else if (name === "History") viewBox = "0 0 1024 1024";
+                else if (name === "Clover") viewBox = "0 0 512 512";
+                else if (name === "Reward") viewBox = "0 0 48 48";
+            }
 
-            return <svg width={size} height={size} viewBox={viewBox} fill="none" stroke={['Settings','Trash','Check','X','LayoutGrid','Flask','Layers','Diamond','Lock','ShoppingCart','Save','DollarSign','Clock','FileText','Info','TrendingUp','Share','Profile','Skull'].includes(name)?"currentColor":"none"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{iconDef}</svg>;
+            return <svg width={size} height={size} viewBox={viewBox} fill="none" stroke={['Settings','Trash','Check','X','LayoutGrid','Flask','Layers','Diamond','Lock','DollarSign','Clock','FileText','Info','TrendingUp','Share','Profile','Skull'].includes(name)?"currentColor":"none"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{iconDef}</svg>;
         };
 
         // --- Shared Components ---
         function CurrencyHeader({ stats, activeBuffs }) {
+            const [now, setNow] = useState(new Date());
+            useEffect(() => { const interval = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(interval); }, []);
+
             return (
                 <div className="rox-currency-bar sticky top-0 z-30">
                     <div className="flex gap-2 mr-auto overflow-x-auto scrollbar-hide max-w-[50%]">
                         {activeBuffs.map(b => {
-                            const now = new Date(); const end = new Date(b.endDate);
+                            const end = new Date(b.endDate);
                             if (end < now) return null;
                             let icon = 'Check'; if(b.itemId === 'premium_box') icon = 'Premium'; if(b.itemId === 'kafra_box') icon = 'Kafra'; if(b.itemId === 'silvervine_24h') icon = 'Silvervine';
                             return (
@@ -210,76 +231,175 @@
                 </div>
             );
         }
-        function DeleteButton({ onDelete, duration = 750 }) { const [isDeleting, setIsDeleting] = useState(false); const timerRef = useRef(null); const startDelete = () => { setIsDeleting(true); timerRef.current = setTimeout(() => { onDelete(); setIsDeleting(false); }, duration); }; const cancelDelete = () => { clearTimeout(timerRef.current); setIsDeleting(false); }; return (<div className="relative w-full h-8 bg-zinc-800 rounded-lg overflow-hidden cursor-pointer border border-rose-900/30 select-none touch-none mt-2" onMouseDown={startDelete} onMouseUp={cancelDelete} onMouseLeave={cancelDelete} onTouchStart={(e) => { e.preventDefault(); startDelete(); }} onTouchEnd={(e) => { e.preventDefault(); cancelDelete(); }}><div className={`absolute top-0 left-0 h-full bg-rose-600 delete-progress ${isDeleting ? 'w-full' : 'w-0'}`} style={{ transitionDuration: isDeleting ? `${duration}ms` : '100ms' }}></div><div className="absolute inset-0 flex items-center justify-center pointer-events-none"><span className={`text-[10px] font-bold uppercase tracking-widest ${isDeleting ? 'text-white animate-pulse' : 'text-rose-400'}`}>{isDeleting ? "DELETING..." : "Hold Delete"}</span></div></div>); }
+        function DeleteButton({ onDelete, duration = 750 }) { const [isDeleting, setIsDeleting] = useState(false); const timerRef = useRef(null); const startDelete = () => { setIsDeleting(true); timerRef.current = setTimeout(() => { onDelete(); setIsDeleting(false); }, 750); }; const cancelDelete = () => { clearTimeout(timerRef.current); setIsDeleting(false); }; return (<div className="relative w-full h-8 bg-zinc-800 rounded-lg overflow-hidden cursor-pointer border border-rose-900/30 select-none touch-none mt-2" onMouseDown={startDelete} onMouseUp={cancelDelete} onMouseLeave={cancelDelete} onTouchStart={(e) => { e.preventDefault(); startDelete(); }} onTouchEnd={(e) => { e.preventDefault(); cancelDelete(); }}><div className={`absolute top-0 left-0 h-full bg-rose-600 delete-progress ${isDeleting ? 'w-full duration-[750ms]' : 'w-0 duration-100'}`}></div><div className="absolute inset-0 flex items-center justify-center pointer-events-none"><span className={`text-[10px] font-bold uppercase tracking-widest ${isDeleting ? 'text-white animate-pulse' : 'text-rose-400'}`}>{isDeleting ? "DELETING..." : "Hold Delete"}</span></div></div>); }
         function Toast({ message }) { return (<div className="fixed top-14 left-1/2 transform -translate-x-1/2 z-[100] animate-slide-down pointer-events-none w-full max-w-sm px-4"><div className="bg-zinc-800/95 backdrop-blur-md border border-zinc-700 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 justify-center"><div className="bg-emerald-500/20 p-1 rounded-full text-emerald-400"><Icon name="Check" size={14} /></div><span className="text-xs font-bold tracking-wide">{message}</span></div></div>); }
         function Modal({ children, onClose }) { return (<div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}><div className="w-full max-w-sm bg-[#18181b] rounded-[2.5rem] p-6 relative border border-zinc-800" onClick={e => e.stopPropagation()}><button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors"><Icon name="X" size={20}/></button>{children}</div></div>); }
-        function InfoModal({ onClose }) { return (<div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-fade-in" onClick={onClose}><div className="w-full max-w-xs bg-[#18181b] rounded-[2.5rem] p-6 relative border border-zinc-800" onClick={e => e.stopPropagation()}><button onClick={onClose} className="absolute top-5 right-5 text-zinc-500 hover:text-white"><Icon name="X" size={20}/></button><h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Icon name="Clover" className="text-emerald-400"/> Rank Criteria</h3><div className="space-y-3 text-sm text-zinc-300"><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-ss w-8 text-center">SS</div><div className="flex-1"><span className="text-white font-bold">Godly</span> <br/><span className="text-xs text-zinc-500">Card Drop!</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-s w-8 text-center">S</div><div className="flex-1"><span className="text-white font-bold">Lucky</span> <br/><span className="text-xs text-zinc-500">&gt; Avg +50%</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-a w-8 text-center">A</div><div className="flex-1"><span className="text-white font-bold">Good</span> <br/><span className="text-xs text-zinc-500">&gt; Avg +30%</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-b w-8 text-center">B</div><div className="flex-1"><span className="text-white font-bold">Normal</span> <br/><span className="text-xs text-zinc-500">Within 10% of Avg</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-c w-8 text-center">C</div><div className="flex-1"><span className="text-white font-bold">Bad</span> <br/><span className="text-xs text-zinc-500">&lt; Avg -10%</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-d w-8 text-center">D</div><div className="flex-1"><span className="text-white font-bold">Poor</span> <br/><span className="text-xs text-zinc-500">&lt; Avg -30%</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-e w-8 text-center">E</div><div className="flex-1"><span className="text-white font-bold">Awful</span> <br/><span className="text-xs text-zinc-500">&lt; Avg -50%</span></div></div><div className="flex items-center gap-3 p-2 bg-zinc-900 rounded-xl border border-zinc-700/50"><div className="text-lg font-black rank-f w-8 text-center">F</div><div className="flex-1"><span className="text-white font-bold">Loss</span> <br/><span className="text-xs text-zinc-500">Negative Profit</span></div></div></div></div></div>); }
         function VersionModal({ onClose }) { return (<div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-black/90 backdrop-blur-sm animate-fade-in" onClick={onClose}><div className="w-full max-w-xs bg-[#18181b] rounded-[2.5rem] p-6 relative border border-zinc-800" onClick={e => e.stopPropagation()}><button onClick={onClose} className="absolute top-5 right-5 text-zinc-500 hover:text-white"><Icon name="X" size={20}/></button><h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Icon name="Info" size={20}/> Update Log</h3><div className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">{VERSION_HISTORY.map((v, i) => (<div key={i} className="bg-zinc-900 p-3 rounded-xl border border-zinc-700/50"><h4 className="text-sm font-black text-emerald-400 mb-1">{v.ver}</h4><ul className="list-disc pl-4 text-zinc-400 text-xs space-y-1">{v.changes.map((c, j) => <li key={j}>{c}</li>)}</ul></div>))}</div></div></div>); }
         
-        function RewardPopup({ data, onClose }) {
+        function ShareModal({ data, onClose }) {
+            const cardRef = useRef(null);
+            const [isCopying, setIsCopying] = useState(false);
+
+            const handleCopy = async () => {
+                if (!cardRef.current || !window.html2canvas) return;
+                setIsCopying(true);
+                try {
+                    const canvas = await window.html2canvas(cardRef.current, {
+                        backgroundColor: null,
+                        scale: 2,
+                        logging: false,
+                        useCORS: true 
+                    });
+                    
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) return;
+                        try {
+                            const item = new ClipboardItem({ "image/png": blob });
+                            await navigator.clipboard.write([item]);
+                            const btn = document.getElementById("copy-btn-text");
+                            if(btn) btn.innerText = "COPIED!";
+                            setTimeout(() => { if(btn) btn.innerText = "COPY IMAGE"; }, 2000);
+                        } catch (err) {
+                             const link = document.createElement('a');
+                             link.download = `oghza-report-${Date.now()}.png`;
+                             link.href = canvas.toDataURL();
+                             link.click();
+                             const btn = document.getElementById("copy-btn-text");
+                             if(btn) btn.innerText = "SAVED!";
+                             setTimeout(() => { if(btn) btn.innerText = "COPY IMAGE"; }, 2000);
+                        }
+                        setIsCopying(false);
+                    });
+                } catch (err) {
+                    console.error("Canvas error:", err);
+                    setIsCopying(false);
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-fade-in" onClick={onClose}>
+                    <div className="w-full max-w-sm flex flex-col gap-4">
+                        <div ref={cardRef} className="rom-card p-6 bg-[#18181b] relative overflow-hidden flex flex-col gap-4 !rounded-none">
+                            {/* Header Section */}
+                            <div className="text-center border-b border-zinc-700 pb-3 mb-2">
+                                 <h2 className="text-2xl font-black text-white italic tracking-tighter drop-shadow-md font-sans">OGHza <span className="text-[#eab308]">Tracker</span></h2>
+                                 <p className="text-[10px] text-zinc-500 tracking-[0.3em] uppercase font-bold mt-1">ADVENTURE REPORT</p>
+                            </div>
+                            
+                            {/* Row 1: Mode & Time */}
+                            <div className="flex justify-between items-center px-1">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-10 h-10 rounded-lg overflow-hidden shadow-lg border border-zinc-700">
+                                        <SmartIcon name={data.runMode === 'AOGH' ? 'AOGH_BOSS' : 'OGH_BOSS'} className="w-full h-full object-cover"/>
+                                    </div>
+                                    <span className={`text-xl font-black uppercase tracking-tighter ${data.runMode === 'AOGH' ? 'text-rose-500' : 'text-purple-400'} font-sans`}>
+                                        {data.runMode}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-zinc-300">
+                                     <span className="text-lg">⏱️</span>
+                                     <span className="text-lg font-bold font-sans">{data.minutesUsed}m</span>
+                                </div>
+                            </div>
+
+                            {/* Row 2: Net Profit (Centered, Big, No Border) */}
+                            <div className="text-center py-2 flex flex-col items-center justify-center">
+                                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">NET PROFIT (ZENY)</p>
+                                 <div className="flex items-baseline gap-2">
+                                    <span className="text-6xl font-black text-emerald-400 drop-shadow-lg leading-tight font-sans">
+                                        {formatMoney(data.profit)}
+                                    </span>
+                                 </div>
+                            </div>
+
+                            {/* Row 3: Stats (No Border, Centered, Spaced Out) */}
+                            <div className="flex justify-between items-center px-2 py-2 mb-2 w-full">
+                                <div className="text-center flex-1">
+                                     <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-wider">COST</p>
+                                     <p className="text-sm font-bold text-rose-400 font-sans">-{formatMoney((data.trashAmount||0) - data.profit)}</p>
+                                </div>
+                                <div className="w-px h-8 bg-zinc-800"></div>
+                                <div className="text-center flex-1">
+                                     <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-wider">SALES</p>
+                                     <p className="text-sm font-bold text-blue-400 font-sans">+{formatMoney(data.trashAmount)}</p>
+                                </div>
+                                <div className="w-px h-8 bg-zinc-800"></div>
+                                <div className="text-center flex-1">
+                                     <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-wider">RATE</p>
+                                     <p className="text-sm font-bold text-amber-400 font-sans">{formatMoney(Math.floor(data.profit / (data.minutesUsed || 1)))}/m</p>
+                                </div>
+                            </div>
+
+                            {/* Row 4: Items (Single Large Frame) */}
+                            <div className="rom-item-box p-4 flex justify-center gap-8 mt-2 items-end !rounded-xl">
+                                {/* Purple Stone */}
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-8 h-8"><SmartIcon name="Spell" className="w-full h-full drop-shadow-md"/></div>
+                                    <span className="text-[10px] font-bold text-zinc-400 font-sans">x{data.purpleStoneCount}</span>
+                                </div>
+
+                                {/* Red Stone (Conditional) */}
+                                {data.runMode === 'AOGH' && (
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="w-8 h-8"><SmartIcon name="Magic" className="w-full h-full drop-shadow-md"/></div>
+                                        <span className="text-[10px] font-bold text-zinc-400 font-sans">x{data.contMagicCount}</span>
+                                    </div>
+                                )}
+
+                                {/* Bubble Gum */}
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-8 h-8"><SmartIcon name="Gum" className="w-full h-full drop-shadow-md"/></div>
+                                    <span className="text-[10px] font-bold text-zinc-400 font-sans">x{data.normalGumUsed || 0}</span>
+                                </div>
+
+                                {/* HE Gum - Show only if used */}
+                                {data.heGumUsed > 0 && (
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="w-8 h-8"><SmartIcon name="HeGum" className="w-full h-full drop-shadow-md"/></div>
+                                        <span className="text-[10px] font-bold text-zinc-400 font-sans">x{data.heGumUsed}</span>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="text-center mt-4 opacity-30">
+                                <p className="text-[9px] text-zinc-500 tracking-widest font-mono">created by @SDekza-Ro • {new Date().toLocaleDateString()}</p>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2">
+                            <button onClick={handleCopy} disabled={isCopying} className="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-black rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
+                                <Icon name="Copy" size={18}/> <span id="copy-btn-text">{isCopying ? "PROCESSING..." : "COPY IMAGE"}</span>
+                            </button>
+                            <button onClick={onClose} className="w-12 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl flex items-center justify-center"><Icon name="X" size={20}/></button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function RewardPopup({ data, onClose, onShare }) {
             const [displayExpPercent, setDisplayExpPercent] = useState(Math.min(100, Math.floor((data.beforeExp / getExpReq(data.beforeLv)) * 100)));
             const targetExpPercent = Math.min(100, Math.floor((data.afterExp / getExpReq(data.afterLv)) * 100));
             const isLevelUp = data.afterLv > data.beforeLv;
 
-            useEffect(() => {
-                const timer = setTimeout(() => {
-                    setDisplayExpPercent(targetExpPercent);
-                }, 100); 
-                return () => clearTimeout(timer);
-            }, [targetExpPercent]);
+            useEffect(() => { const timer = setTimeout(() => { setDisplayExpPercent(targetExpPercent); }, 100); return () => clearTimeout(timer); }, [targetExpPercent]);
 
             return (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-fade-in" onClick={onClose}>
                     <div className="w-full max-w-sm bg-gradient-to-b from-zinc-800 to-black rounded-[2rem] p-8 relative border-2 border-amber-500/50 shadow-[0_0_50px_rgba(251,191,36,0.2)] flex flex-col items-center" onClick={e => e.stopPropagation()}>
-                        
-                        <div className={`absolute -top-12 transition-all duration-700 ${isLevelUp ? 'scale-125' : ''}`}>
-                            <div className={`w-24 h-24 rounded-full bg-amber-500 flex items-center justify-center border-4 border-zinc-900 shadow-xl animate-pop-in ${isLevelUp ? 'level-up-glow' : ''}`}>
-                                <Icon name={isLevelUp ? "Clover" : "Wish"} size={50} />
-                            </div>
-                        </div>
-
+                        <div className={`absolute -top-12 transition-all duration-700 ${isLevelUp ? 'scale-125' : ''}`}><div className={`w-24 h-24 rounded-full bg-amber-500 flex items-center justify-center border-4 border-zinc-900 shadow-xl animate-pop-in ${isLevelUp ? 'level-up-glow' : ''}`}>{isLevelUp ? <Icon name="Clover" size={50} /> : <Icon name="Reward" size={50} />}</div></div>
                         {isLevelUp && <h2 className="text-4xl font-black text-emerald-400 mt-12 mb-2 tracking-tighter drop-shadow-md animate-bounce">LEVEL UP!</h2>}
                         {!isLevelUp && <h2 className="text-2xl font-black text-amber-400 mt-10 mb-2 tracking-tighter drop-shadow-md">STAGE CLEAR!</h2>}
-                        
                         <p className="text-xs text-zinc-400 mb-6 uppercase tracking-widest font-bold">Rewards Obtained</p>
-                        
                         <div className="flex gap-4 mb-6 w-full justify-center">
-                            <div className="bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-700 flex flex-col items-center min-w-[80px]">
-                                <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mb-1">PROFIT</span>
-                                <span className={`font-black text-lg flex items-center gap-1 ${data.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatMoney(data.profit)}</span>
-                            </div>
-                             <div className="bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-700 flex flex-col items-center min-w-[80px]">
-                                <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mb-1">EXP</span>
-                                <span className="text-blue-400 font-black text-lg flex items-center gap-1">+{formatMoney(data.expGain)}</span>
-                            </div>
-                            <div className="bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-700 flex flex-col items-center min-w-[80px]">
-                                <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mb-1">DEK</span>
-                                <span className="text-amber-400 font-black text-lg flex items-center gap-1"><SmartIcon name="DEK" className="w-4 h-4"/>+{formatMoney(data.dek)}</span>
-                            </div>
+                            <div className="bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-700 flex flex-col items-center min-w-[80px]"><span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mb-1">PROFIT</span><span className={`font-black text-lg flex items-center gap-1 ${data.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatMoney(data.profit)}</span></div>
+                             <div className="bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-700 flex flex-col items-center min-w-[80px]"><span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mb-1">EXP</span><span className="text-blue-400 font-black text-lg flex items-center gap-1">+{formatMoney(data.expGain)}</span></div>
+                            <div className="bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-700 flex flex-col items-center min-w-[80px]"><span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mb-1">DEK</span><span className="text-amber-400 font-black text-lg flex items-center gap-1"><SmartIcon name="DEK" className="w-4 h-4"/>+{formatMoney(data.dek)}</span></div>
                         </div>
-
-                         <div className="w-full mb-6">
-                            <div className="flex justify-between text-[10px] font-bold text-zinc-500 mb-1">
-                                <span>LV.{data.afterLv}</span>
-                                <span>{Math.floor(displayExpPercent)}%</span>
-                            </div>
-                            <div className="w-full h-3 bg-zinc-900 rounded-full overflow-hidden relative border border-zinc-700">
-                                <div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-1000 ease-out" style={{ width: `${displayExpPercent}%` }}></div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-3 mb-8 w-full">
-                            {data.drops.length > 0 ? data.drops.map((d, i) => (
-                                <div key={i} className="flex flex-col items-center animate-slide-up" style={{animationDelay: `${i*100}ms`}}>
-                                    <div className="w-14 h-14 bg-zinc-900 rounded-xl border border-zinc-700 flex items-center justify-center relative shadow-inner">
-                                        <SmartIcon name={d.icon} className="w-10 h-10" />
-                                        <span className="absolute -bottom-1 -right-1 bg-black text-zinc-300 text-[9px] font-black px-1.5 rounded border border-zinc-700">x{d.qty}</span>
-                                    </div>
-                                </div>
-                            )) : <div className="col-span-4 text-center text-zinc-600 italic py-4">No rare drops...</div>}
-                        </div>
-                        
-                        <button onClick={onClose} className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl shadow-lg transition-transform active:scale-95">CONTINUE</button>
+                         <div className="w-full mb-6"><div className="flex justify-between text-[10px] font-bold text-zinc-500 mb-1"><span>LV.{data.afterLv}</span><span>{Math.floor(displayExpPercent)}%</span></div><div className="w-full h-3 bg-zinc-900 rounded-full overflow-hidden relative border border-zinc-700"><div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-1000 ease-out" style={{ width: `${displayExpPercent}%` }}></div></div></div>
+                        <div className="grid grid-cols-4 gap-3 mb-8 w-full">{data.drops.length > 0 ? data.drops.map((d, i) => (<div key={i} className="flex flex-col items-center animate-slide-up" style={{animationDelay: `${i*100}ms`}}><div className="w-14 h-14 bg-zinc-900 rounded-xl border border-zinc-700 flex items-center justify-center relative shadow-inner"><SmartIcon name={d.icon} className="w-10 h-10" /><span className="absolute -bottom-1 -right-1 bg-black text-zinc-300 text-[9px] font-black px-1.5 rounded border border-zinc-700">x{d.qty}</span></div></div>)) : <div className="col-span-4 text-center text-zinc-600 italic py-4">No rare drops...</div>}</div>
+                        <div className="flex gap-2 w-full"><button onClick={onShare} className="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-black rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"><Icon name="Share" size={18}/> SHARE</button><button onClick={onClose} className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl shadow-lg transition-transform active:scale-95">CONTINUE</button></div>
                     </div>
                 </div>
             ); 
@@ -437,7 +557,7 @@
 
             return (
                 <div className="p-6 animate-fade-in view-content space-y-6">
-                    <div className="flex items-center justify-between"><h2 className="text-2xl font-black italic tracking-tighter text-zinc-300">Bag <span className="text-sm font-normal text-zinc-500">Inventory 🎒</span></h2><div className="text-[10px] text-zinc-500 font-mono">{groupedDisplayItems.length} Items</div></div>
+                    <div className="flex items-center justify-between"><h2 className="text-2xl font-black tracking-tighter text-zinc-300">Bag <span className="text-sm font-normal text-zinc-500">Inventory 🎒</span></h2><div className="text-[10px] text-zinc-500 font-mono">{groupedDisplayItems.length} Items</div></div>
                     <div className="bg-zinc-900 p-1 rounded-2xl flex gap-1 border border-zinc-800">{['All', 'Consumable', 'Etc', 'Rare'].map(t => { let label = t; let iconName = 'LayoutGrid'; if (t === 'Consumable') { label = 'Use'; iconName = 'Flask'; } if (t === 'Etc') { label = 'Etc'; iconName = 'Layers'; } if (t === 'Rare') { label = 'Rare'; iconName = 'Diamond'; } return <TabButton key={t} label={label} icon={iconName} active={activeTab === t} onClick={() => setActiveTab(t)} />; })}</div>
                     <div className="bg-zinc-900/50 p-5 rounded-[2.5rem] border border-zinc-800 max-h-[420px] overflow-y-auto scrollbar-hide"><div className="grid grid-cols-4 gap-4 pb-10">{groupedDisplayItems.map((item, index) => (<div key={index} onClick={() => onItemClick(item)} className="aspect-square rounded-2xl sunken-slot relative flex items-center justify-center cursor-pointer overflow-hidden group"><div className="w-10 h-10 pointer-events-none group-active:scale-90 transition-transform">{item.iconComp}</div><span className="absolute bottom-1 right-1.5 text-[8px] font-black text-zinc-400 bg-black/60 px-1.5 rounded-md pointer-events-none backdrop-blur-sm border border-white/5">{item.count}</span></div>))}{Array.from({ length: Math.max(0, 16 - groupedDisplayItems.length) }).map((_, i) => (<div key={`e-${i}`} className="aspect-square rounded-2xl sunken-slot opacity-30"></div>))}</div></div>
                     {viewItem && <ItemDetailModal item={viewItem} onClose={() => setViewItem(null)} onSell={handleSellAction} />}
@@ -450,6 +570,7 @@
         function DungeonView({ db, uid, stock, activeBuffs, onSuccess, records, prices, stats }) {
             const [form, setForm] = useState({ runMode: 'ogh', normalGumUsed: 0, heGumUsed: 0, useSilvervine: false, purpleStoneCount: 0, contMagicCount: 0, trashAmount: '', minutesUsed: 60, otherCosts: [], notes: '' });
             const [rewardData, setRewardData] = useState(null);
+            const [showHeGum, setShowHeGum] = useState(false);
             
             const hasPremium = activeBuffs.some(b => b.itemId === 'premium_box' && new Date(b.endDate) > new Date());
             const hasKafra = activeBuffs.some(b => b.itemId === 'kafra_box' && new Date(b.endDate) > new Date());
@@ -480,7 +601,8 @@
                 const earnedDek = Math.max(0, Math.floor(profit / 1000));
                 
                 const drops = simulateDrops();
-                const record = { ...form, consumablesCost, profit, drops, timestamp: Date.now(), date: new Date().toISOString().split('T')[0], costBreakdown };
+                // Ensure runMode is lowercase for consistency in DB, but we use it correctly in UI
+                const record = { ...form, runMode: form.runMode.toLowerCase(), consumablesCost, profit, drops, timestamp: Date.now(), date: new Date().toISOString().split('T')[0], costBreakdown };
                 
                 await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'records'), record);
                 
@@ -491,11 +613,23 @@
                 newStats.baseExp = (newStats.baseExp || 0) + expGain;
                 while (newStats.baseExp >= getExpReq(newStats.baseLv)) { newStats.baseExp -= getExpReq(newStats.baseLv); newStats.baseLv += 1; }
                 await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), newStats);
-
-                setRewardData({ drops, dek: earnedDek, expGain, profit, beforeExp: prevStats.baseExp, afterExp: newStats.baseExp, beforeLv: prevStats.baseLv, afterLv: newStats.baseLv });
+                
+                // Pass UPPERCASE runMode for Display
+                setRewardData({ 
+                    ...form,
+                    runMode: form.runMode.toUpperCase(), // Force Uppercase for Display
+                    drops, 
+                    dek: earnedDek, 
+                    expGain, 
+                    profit, 
+                    beforeExp: prevStats.baseExp, 
+                    afterExp: newStats.baseExp, 
+                    beforeLv: prevStats.baseLv, 
+                    afterLv: newStats.baseLv 
+                });
             };
 
-            const closeReward = () => { setRewardData(null); onSuccess("Saved!"); setForm({ runMode: 'ogh', normalGumUsed: 0, heGumUsed: 0, useSilvervine: false, purpleStoneCount: 0, contMagicCount: 0, trashAmount: '', minutesUsed: 60, otherCosts: [], notes: '' }); };
+            const closeReward = () => { setRewardData(null); /* No Toast */ setForm({ runMode: 'ogh', normalGumUsed: 0, heGumUsed: 0, useSilvervine: false, purpleStoneCount: 0, contMagicCount: 0, trashAmount: '', minutesUsed: 60, otherCosts: [], notes: '' }); };
             const isFormValid = form.trashAmount && parseInt(form.trashAmount) > 0;
             
             // Share Modal State
@@ -533,11 +667,11 @@
                                 </div>
                             </div>
 
-                            <button onClick={() => setForm({...form, heGumUsed: form.heGumUsed > 0 ? 0 : 1})} className={`w-full py-2 rounded-xl text-xs font-bold border transition-all ${form.heGumUsed > 0 ? 'bg-amber-900/20 border-amber-500/50 text-amber-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}>
-                                {form.heGumUsed > 0 ? '✅ HE Bubble Gum Active' : 'Enable HE Bubble Gum'}
+                            <button onClick={() => setShowHeGum(!showHeGum)} className={`w-full py-2 rounded-xl text-xs font-bold border transition-all ${showHeGum ? 'bg-amber-900/20 border-amber-500/50 text-amber-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}>
+                                {showHeGum ? '✅ HE Bubble Gum Active' : 'Enable HE Bubble Gum'}
                             </button>
                             
-                            {form.heGumUsed > 0 && (
+                            {showHeGum && (
                                 <div className="flex justify-between items-center rounded-xl p-2 border border-zinc-800/50 bg-zinc-900/80 animate-slide-up">
                                     <span className="text-xs font-bold text-amber-300 flex items-center gap-2 relative z-10"><SmartIcon name="HeGum" className="w-5 h-5"/> HE Gum</span>
                                     <div className="flex bg-zinc-900/80 rounded-lg p-0.5 gap-1 relative z-10">
@@ -574,91 +708,8 @@
 
                     <button disabled={!isFormValid} onClick={handleSave} className="w-full py-5 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-[1.5rem] font-black text-lg shadow-lg shadow-emerald-900/30 active:scale-95 transition-transform text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"><Icon name="Save" size={20}/> COMPLETE RUN</button>
                     
-                    {rewardData && <RewardPopup data={rewardData} onClose={closeReward} onShare={() => setShareData({...rewardData, runMode: form.runMode === 'aogh' ? 'AOGH' : 'OGH', rank: getRankInfo(rewardData.profit, 0).rank, rankCss: getRankInfo(rewardData.profit, 0).css})} />}
+                    {rewardData && <RewardPopup data={rewardData} onClose={closeReward} onShare={() => setShareData({...rewardData, runMode: form.runMode === 'aogh' ? 'AOGH' : 'OGH'})} />}
                     {shareData && <ShareModal data={shareData} onClose={() => setShareData(null)} />}
-                </div>
-            );
-        }
-
-        // --- Profile View ---
-        function ProfileView({ stats, uid, onResetUid, prices, setPrices, db, showToast, onBack }) {
-            const [localPrices, setLocalPrices] = useState(prices);
-            const [deleteProgress, setDeleteProgress] = useState(0);
-            const timerRef = useRef(null);
-            const [showVersionModal, setShowVersionModal] = useState(false);
-
-            const handleSavePrices = async () => { const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker'; await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'prices'), localPrices); setPrices(localPrices); showToast("Prices Saved"); };
-            
-            const startDelete = () => {
-                let progress = 0;
-                const interval = 30; // ms
-                const totalDuration = 3000;
-                const step = 100 / (totalDuration / interval);
-                
-                timerRef.current = setInterval(async () => {
-                    progress += step;
-                    setDeleteProgress(Math.min(progress, 100));
-                    if (progress >= 100) {
-                        clearInterval(timerRef.current);
-                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
-                        const recSnap = await getDocs(collection(db, 'artifacts', appId, 'users', uid, 'records'));
-                        recSnap.forEach(d => deleteDoc(d.ref));
-                        const invSnap = await getDocs(collection(db, 'artifacts', appId, 'users', uid, 'inventory'));
-                        invSnap.forEach(d => deleteDoc(d.ref));
-                        await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), INITIAL_STATS);
-                        showToast("All Data Cleared!");
-                        setDeleteProgress(0);
-                    }
-                }, interval);
-            };
-
-            const cancelDelete = () => {
-                clearInterval(timerRef.current);
-                setDeleteProgress(0);
-            };
-
-            const expPercent = Math.min(100, Math.floor((stats.baseExp / getExpReq(stats.baseLv)) * 100));
-
-            const handleBuyTitle = async (title) => {
-                if (stats.coins < title.cost) { alert("Not enough DEK!"); return; }
-                if (stats.unlockedTitles?.includes(title.name)) { alert("Already owned!"); return; }
-                const newCoins = stats.coins - title.cost;
-                const newTitles = [...(stats.unlockedTitles || ['Novice']), title.name];
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
-                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), { ...stats, coins: newCoins, unlockedTitles: newTitles });
-                showToast(`Unlocked: ${title.name}!`);
-            };
-
-            return (
-                <div className="p-6 animate-fade-in view-content space-y-6">
-                    <div className="flex justify-between items-center mb-2"><h2 className="text-2xl font-black italic tracking-tighter text-zinc-300 flex items-center gap-2"><Icon name="Profile" size={24}/> Profile</h2><button onClick={onBack} className="p-2 bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors"><Icon name="X" size={20} /></button></div>
-                    <div className="glass-panel p-6 rounded-[2rem] text-center border-t-4 border-t-zinc-600 relative overflow-hidden">
-                         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-zinc-800 to-transparent -z-10"></div><div className="w-20 h-20 mx-auto bg-zinc-900 rounded-full border-4 border-zinc-800 shadow-xl flex items-center justify-center mb-4 relative text-4xl">🧙‍♂️<div className="absolute bottom-0 right-0 w-6 h-6 bg-emerald-500 rounded-full border-2 border-zinc-900 flex items-center justify-center text-[10px] font-black text-white">{stats.baseLv}</div></div><h2 className="text-xl font-black text-white">Adventurer</h2><p className="text-zinc-400 font-bold text-xs uppercase tracking-wide mb-4">{stats.jobClass}</p>
-                         <div className="w-full h-3 bg-zinc-900 rounded-full overflow-hidden relative border border-zinc-700 mb-2"><div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-500" style={{ width: `${expPercent}%` }}></div></div><div className="flex justify-between text-[9px] text-zinc-500 font-mono"><span>EXP: {formatMoney(stats.baseExp)}</span><span>NEXT: {formatMoney(getExpReq(stats.baseLv))}</span></div>
-                    </div>
-                    
-                    {/* DEK Shop */}
-                    <div className="glass-panel p-4 rounded-2xl border border-zinc-800 space-y-3">
-                        <div className="flex justify-between items-center"><span className="text-[10px] font-black uppercase opacity-50 tracking-[0.2em]">DEK Shop</span><span className="text-amber-400 text-xs font-bold flex items-center gap-1"><SmartIcon name="DEK" className="w-4 h-4"/> {formatMoney(stats.coins)}</span></div>
-                        <div className="grid grid-cols-1 gap-2">
-                            {DEK_TITLES.map(t => {
-                                const isOwned = stats.unlockedTitles?.includes(t.name);
-                                return (
-                                    <div key={t.id} onClick={() => !isOwned && handleBuyTitle(t)} className={`flex items-center justify-between p-2 rounded-xl border ${isOwned ? 'bg-zinc-800 border-zinc-700 opacity-50' : 'bg-zinc-900 border-zinc-800 hover:border-amber-500/50 cursor-pointer'}`}>
-                                        <div className="flex items-center gap-2"><span className="text-xl">{t.icon}</span><span className="text-xs font-bold text-zinc-300">{t.name}</span></div>
-                                        {isOwned ? <span className="text-[9px] font-bold text-emerald-500">OWNED</span> : <span className="text-[9px] font-bold text-amber-400 flex items-center gap-1"><SmartIcon name="DEK" className="w-3 h-3"/> {t.cost}</span>}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="space-y-3"><h3 className="text-[10px] font-black opacity-40 px-2 uppercase tracking-[0.2em]">Market Config</h3><div className="grid grid-cols-2 gap-3"><div className="glass-panel p-3 rounded-2xl border border-zinc-700/50 bg-zinc-900/30"><p className="text-[9px] font-bold opacity-50 mb-1 truncate">Spell Price</p><input type="text" inputMode="numeric" value={localPrices.purpleStonePrice} onChange={e => setLocalPrices({...localPrices, purpleStonePrice: parseInt(e.target.value)||0})} className="w-full bg-black/30 rounded-lg px-2 py-1 text-sm font-black text-center text-white" /></div><div className="glass-panel p-3 rounded-2xl border border-zinc-700/50 bg-zinc-900/30"><p className="text-[9px] font-bold opacity-50 mb-1 truncate">Magic Price</p><input type="text" inputMode="numeric" value={localPrices.contMagicPrice} onChange={e => setLocalPrices({...localPrices, contMagicPrice: parseInt(e.target.value)||0})} className="w-full bg-black/30 rounded-lg px-2 py-1 text-sm font-black text-center text-white" /></div></div><button onClick={handleSavePrices} className="w-full py-3 bg-zinc-800 text-zinc-300 font-bold rounded-xl text-xs hover:bg-zinc-700 border border-zinc-700">Save Prices</button></div>
-                    <div className="glass-panel p-4 rounded-2xl border border-zinc-800 space-y-3"><div className="flex justify-between items-center"><span className="text-[10px] font-black uppercase opacity-50 tracking-[0.2em]">ID Manager</span></div><div className="bg-black/30 p-2 rounded-xl flex items-center justify-between border border-zinc-800/50"><code className="text-[10px] font-mono opacity-60 truncate mr-2">{uid}</code><button onClick={() => copyToClipboard(uid)} className="p-1.5 bg-zinc-800 rounded-lg hover:bg-zinc-700"><Icon name="Copy" size={12}/></button></div><button onClick={onResetUid} className="w-full py-2 border border-zinc-700 text-zinc-500 rounded-xl text-[10px] font-bold hover:text-white hover:border-zinc-500 transition-colors">Reset ID to Default</button></div>
-                    <div className="pt-4 border-t border-zinc-800"><div className="relative w-full h-12 bg-rose-900/20 border border-rose-900/50 rounded-xl overflow-hidden cursor-pointer select-none touch-none" onMouseDown={startDelete} onMouseUp={cancelDelete} onMouseLeave={cancelDelete} onTouchStart={(e) => { e.preventDefault(); startDelete(); }} onTouchEnd={(e) => { e.preventDefault(); cancelDelete(); }}><div className="absolute top-0 left-0 h-full bg-rose-600/50 transition-all ease-linear" style={{ width: `${deleteProgress}%` }}></div><div className="absolute inset-0 flex items-center justify-center gap-2 pointer-events-none text-rose-500 font-black text-xs"><Icon name="Trash" size={16}/> {deleteProgress > 0 ? "HOLDING..." : "HOLD 3s TO DELETE ALL DATA"}</div></div></div>
-                     <div className="text-center opacity-20 mt-4 cursor-pointer hover:opacity-50 transition-opacity" onClick={() => setShowVersionModal(true)}><p className="text-[10px] font-mono tracking-widest underline">{APP_VERSION}</p></div>
-                     
-                     {showVersionModal && <VersionModal onClose={() => setShowVersionModal(false)} />}
                 </div>
             );
         }
@@ -691,7 +742,7 @@
             return (
                 <div className="p-6 animate-fade-in view-content space-y-4">
                     <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-black italic tracking-tighter text-zinc-300 flex items-center gap-2">
+                        <h2 className="text-2xl font-black tracking-tighter text-zinc-300 flex items-center gap-2">
                             History Logs 
                             <button onClick={() => setShowRankInfo(true)} className="opacity-40 hover:opacity-100 transition-opacity text-emerald-400"><Icon name="Info" size={20} /></button>
                         </h2>
@@ -782,11 +833,20 @@
             const [toast, setToast] = useState(null);
             const [db, setDb] = useState(null);
             const [stock, setStock] = useState({});
-            const [showSettings, setShowSettings] = useState(false);
 
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
             const showToast = (message) => { setToast(message); setTimeout(() => setToast(null), 3000); };
-            const handleResetUid = () => { localStorage.removeItem('ogh_target_uid'); if (authUser) setTargetUid(authUser.uid); showToast("Reset to Default"); };
+            
+            const handleSetUid = (newUid) => {
+                setTargetUid(newUid);
+                localStorage.setItem('ogh_target_uid', newUid);
+            };
+
+            const handleResetUid = () => { 
+                localStorage.removeItem('ogh_target_uid'); 
+                if (authUser) setTargetUid(authUser.uid); 
+                showToast("Restored Default ID"); 
+            };
 
             useEffect(() => {
                 const init = async () => {
@@ -827,11 +887,11 @@
                     <CurrencyHeader stats={stats} activeBuffs={activeBuffs} />
                     {toast && <Toast message={toast} />}
                     {activeTab === 'home' && <HomeView records={records} stats={stats} goToTab={setActiveTab} activeBuffs={activeBuffs} />}
-                    {activeTab === 'add' && <DungeonView db={db} uid={targetUid} stock={stock} activeBuffs={activeBuffs} records={records} prices={prices} stats={stats} onSuccess={() => showToast('Saved!')} />}
+                    {activeTab === 'add' && <DungeonView db={db} uid={targetUid} stock={stock} activeBuffs={activeBuffs} records={records} prices={prices} stats={stats} onSuccess={() => {}} />}
                     {activeTab === 'inventory' && <InventoryView db={db} uid={targetUid} showToast={showToast} records={records} stock={stock} stats={stats} />}
                     {activeTab === 'shop' && <ShopView db={db} uid={targetUid} showToast={showToast}/>}
                     {activeTab === 'history' && <HistoryView records={records} db={db} uid={targetUid} showToast={showToast} prices={prices} activeBuffs={activeBuffs} />}
-                    {activeTab === 'profile' && <ProfileView stats={stats} uid={targetUid} onResetUid={handleResetUid} prices={prices} setPrices={setPrices} db={db} showToast={showToast} onBack={() => setActiveTab('home')} />}
+                    {activeTab === 'profile' && <ProfileView stats={stats} uid={targetUid} onResetUid={handleResetUid} onSetUid={handleSetUid} prices={prices} setPrices={setPrices} db={db} showToast={showToast} onBack={() => setActiveTab('home')} />}
 
                     {activeTab !== 'profile' && (
                         <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto glass-panel border-t border-white/5 nav-bar-padding pt-2 px-2 flex justify-between items-end z-40 rounded-t-[2rem]">
