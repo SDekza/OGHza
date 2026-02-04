@@ -41,7 +41,6 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        // ปรับเป็น 600px เพื่อประหยัดพื้นที่สุดๆ แต่ยังดูรู้เรื่อง
                         const MAX_WIDTH = 600; 
                         let width = img.width;
                         let height = img.height;
@@ -56,7 +55,6 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        // Quality 0.6 (ชัดพอสำหรับมือถือ แต่ไฟล์เล็กมาก)
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                         resolve(dataUrl);
                     };
@@ -455,29 +453,58 @@
                 });
             };
 
-            const handleAddItem = (dayIdx) => {
-                setItineraryData(prev => {
-                    const newData = [...prev];
-                    const newDay = { ...newData[dayIdx] };
-                    newDay.items = [...newDay.items, {
-                        time: '??:??', activity: '', iconType: 'MapPin', iconColor: 'text-gray-500', location: '', link: '',
-                        isOpen: true, isNew: true, completed: false, expenses: [], journalMood: '', journalNote: '', journalImage: null
-                    }];
-                    newData[dayIdx] = newDay;
-                    return newData;
+            // Helper to sort items
+            const sortItems = (items) => {
+                return items.sort((a, b) => {
+                    // Ensure items with valid times come first, sorted ascending
+                    // Treat '??:??' or invalid formats as "end of day"
+                    const timeA = (a.time && a.time !== '??:??') ? a.time : 'ZZ:ZZ';
+                    const timeB = (b.time && b.time !== '??:??') ? b.time : 'ZZ:ZZ';
+                    return timeA.localeCompare(timeB);
                 });
-                setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
             };
 
+            // Update handleUpdateItem
             const handleUpdateItem = (dayIdx, itemIdx, updatedData) => {
                 setItineraryData(prev => {
                     const newData = [...prev];
                     const newDay = { ...newData[dayIdx] };
-                    newDay.items = [...newDay.items];
-                    newDay.items[itemIdx] = { ...newDay.items[itemIdx], ...updatedData };
+                    let newItems = [...newDay.items];
+                    
+                    // Update the item
+                    newItems[itemIdx] = { ...newItems[itemIdx], ...updatedData };
+                    
+                    // Sort items by time
+                    newItems = sortItems(newItems);
+                    
+                    newDay.items = newItems;
                     newData[dayIdx] = newDay;
                     return newData;
                 });
+            };
+
+            // Update handleAddItem (ensure sorting is maintained if mixed)
+            const handleAddItem = (dayIdx) => {
+                setItineraryData(prev => {
+                    const newData = [...prev];
+                    const newDay = { ...newData[dayIdx] };
+                    
+                    const newItem = {
+                        time: '??:??', activity: '', iconType: 'MapPin', iconColor: 'text-gray-500', location: '', link: '',
+                        isOpen: true, isNew: true, completed: false, expenses: [], journalMood: '', journalNote: '', journalImage: null
+                    };
+                    
+                    // Add then sort (??:?? will go to bottom)
+                    let newItems = [...newDay.items, newItem];
+                    newItems = sortItems(newItems);
+                    
+                    newDay.items = newItems;
+                    newData[dayIdx] = newDay;
+                    return newData;
+                });
+                
+                // Scroll logic
+                setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
             };
 
             const handleDeleteItem = (dayIdx, itemIdx) => {
