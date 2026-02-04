@@ -31,7 +31,7 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
 
-        // --- HELPER: IMAGE COMPRESSION ---
+        // --- HELPER: IMAGE COMPRESSION (200px) ---
         const compressImage = (file) => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -41,17 +41,22 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 600; 
+                        // ปรับเป็น 200px ตามคำขอ (รูปเล็กจิ๋ว ประหยัดที่)
+                        const MAX_WIDTH = 200; 
                         let width = img.width;
                         let height = img.height;
+
                         if (width > MAX_WIDTH) {
                             height *= MAX_WIDTH / width;
                             width = MAX_WIDTH;
                         }
+
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Quality 0.6
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                         resolve(dataUrl);
                     };
@@ -149,7 +154,7 @@
         const ItineraryItem = ({ item, dayIndex, itemIndex, onToggle, onAddExpense, onDeleteExpense, onUpdateItem, onDeleteItem, onToggleDone }) => {
             const [expenseNote, setExpenseNote] = useState('');
             const [expenseAmount, setExpenseAmount] = useState('');
-            const [expenseCategory, setExpenseCategory] = useState('food'); // Default category
+            const [expenseCategory, setExpenseCategory] = useState('food');
             const [isEditing, setIsEditing] = useState(item.isNew || false);
             
             const [editTime, setEditTime] = useState(item.time);
@@ -172,14 +177,20 @@
                 }
             };
 
+            const handleDeleteImage = (e) => {
+                e.stopPropagation();
+                if(confirm('ลบรูปภาพ?')) {
+                    onUpdateItem(dayIndex, itemIndex, { journalImage: null });
+                }
+            };
+
             const handleAddExpenseLocal = (e) => {
                 e.stopPropagation();
                 if (expenseNote && expenseAmount) {
-                    // Include category
                     onAddExpense(dayIndex, itemIndex, expenseNote, parseFloat(expenseAmount), expenseCategory);
                     setExpenseNote('');
                     setExpenseAmount('');
-                    setExpenseCategory('food'); // Reset
+                    setExpenseCategory('food');
                 }
             };
             const handleSaveEdit = (e) => {
@@ -201,7 +212,7 @@
             const totalItemCost = item.expenses ? item.expenses.reduce((sum, ex) => sum + ex.amount, 0) : 0;
             const moods = ['😍', '😊', '😐', '😕', '😴'];
 
-            // Edit Mode UI (Same as before)
+            // Edit Mode UI
             if (isEditing) {
                 return (
                     <div className="relative pl-6 mb-4">
@@ -237,7 +248,6 @@
                 );
             }
 
-            // Helper to get Category Icon component
             const renderCategoryIcon = (catId) => {
                 const cat = EXPENSE_CATEGORIES.find(c => c.id === catId) || EXPENSE_CATEGORIES[5];
                 const CatIcon = Icons[cat.icon];
@@ -289,20 +299,18 @@
                                     <textarea placeholder="จดบันทึก..." value={item.journalNote || ''} onChange={handleNoteChange} className="w-full p-2 bg-white rounded-lg border border-yellow-200/50 text-sm mb-2 min-h-[60px] outline-none focus:ring-1 focus:ring-yellow-400" />
                                     <div className="flex items-center gap-3">
                                         <label className="flex items-center gap-2 bg-white border border-dashed border-gray-300 text-gray-500 px-3 py-2 rounded-lg text-xs cursor-pointer hover:bg-gray-50 hover:border-blue-400 hover:text-blue-500 transition-colors">
-                                            <Icons.Image size={16}/> {item.journalImage ? 'เปลี่ยนรูปภาพ' : 'เพิ่มรูปภาพ'} <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                                            <Icons.Image size={16}/> {item.journalImage ? 'เปลี่ยนรูป' : 'เพิ่มรูป'} <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                                         </label>
-                                        {item.journalImage && <span className="text-[10px] text-green-500 flex items-center gap-1">✓ อัปโหลดแล้ว</span>}
+                                        {item.journalImage && <button onClick={handleDeleteImage} className="text-xs text-red-500 flex items-center gap-1 bg-white border border-red-200 px-2 py-2 rounded-lg hover:bg-red-50"><Icons.Trash2 size={14}/> ลบรูป</button>}
                                     </div>
                                     {item.journalImage && <div className="mt-2 rounded-lg overflow-hidden border border-gray-200"><img src={item.journalImage} className="w-full h-auto object-cover max-h-40" /></div>}
                                 </div>
 
                                 {item.link && <a href={item.link} target="_blank" className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 mb-4 bg-blue-50 px-3 py-2 rounded-lg w-full justify-center"><Icons.Navigation size={14}/> นำทางด้วย Google Maps</a>}
                                 
-                                {/* EXPENSES SECTION */}
                                 <div className="space-y-3 bg-white/60 p-3 rounded-xl border border-[#DED0B6]/20">
                                     <p className="text-xs font-bold uppercase opacity-40 flex items-center gap-1 mb-2 border-b border-black/5 pb-1"><Icons.Coins size={12}/> บันทึกค่าใช้จ่าย</p>
                                     
-                                    {/* Existing Expenses List */}
                                     {item.expenses && item.expenses.length > 0 && (
                                         <ul className="space-y-2 mb-3">
                                             {item.expenses.map((ex, idx) => (
@@ -319,7 +327,6 @@
                                         </ul>
                                     )}
 
-                                    {/* Category Selector */}
                                     <div className="flex gap-2 overflow-x-auto pb-2 mb-2 no-scrollbar" onClick={e => e.stopPropagation()}>
                                         {EXPENSE_CATEGORIES.map(cat => {
                                             const CatIcon = Icons[cat.icon];
@@ -349,7 +356,6 @@
             );
         };
 
-        // --- SHARE MODAL ---
         const ShareModal = ({ isOpen, onClose, journalData }) => {
             if (!isOpen) return null;
 
@@ -808,18 +814,6 @@
             );
 
             const renderJournalView = () => {
-                const journalEntries = useMemo(() => {
-                    const entries = [];
-                    itineraryData.forEach(day => {
-                        day.items.forEach(item => {
-                            if (item.journalNote || item.journalImage || item.journalMood) {
-                                entries.push({ ...item, dayDate: day.dateShort });
-                            }
-                        });
-                    });
-                    return entries;
-                }, [itineraryData]);
-
                 return (
                     <div className="px-4 py-6 animate-in slide-in-from-bottom-4 duration-300 pb-24 relative">
                         <div className="flex justify-between items-start mb-6 border-l-4 border-[#4A4238] pl-2">
