@@ -233,7 +233,11 @@
             'he_gum': { name: 'HE Bubble Gum', desc: 'เพิ่ม drop rate 200%', type: 'Consumable', rarity: 'Rare', category: 'Consumable', icon: 'HeGum' }, 
             'silvervine': { name: 'Silvervine', desc: 'ผลไม้แมว', type: 'Etc', rarity: 'Common', category: 'Etc', icon: 'Silvervine' }, 
             'premium_staff': { name: 'Premium Staff', desc: 'คฑา VIP', type: 'Tool', rarity: 'Legendary', category: 'Consumable', icon: 'PremiumStaff' }, 
-            'premium_box': { name: 'Premium Service Box', desc: 'VIP 30 วัน', type: 'Consumable', rarity: 'Rare', category: 'Consumable', icon: 'Premium' } 
+            'premium_box': { name: 'Premium Service Box', desc: 'VIP 30 วัน', type: 'Consumable', rarity: 'Rare', category: 'Consumable', icon: 'Premium' },
+            'silvervine_box': { name: 'Silvervine Box', desc: 'กล่องผลไม้แมว 10 ชิ้น', type: 'Consumable', rarity: 'Uncommon', category: 'Consumable', icon: 'SilvervineBox' },
+            'gum_box': { name: 'Bubble Gum Box', desc: 'กล่องหมากฝรั่ง 10 ชิ้น', type: 'Consumable', rarity: 'Common', category: 'Consumable', icon: 'GumBox' },
+            'he_gum_box': { name: 'HE Bubble Gum Box', desc: 'กล่องหมากฝรั่ง HE 5 ชิ้น', type: 'Consumable', rarity: 'Rare', category: 'Consumable', icon: 'HeGumBox' },
+            'kafra_box': { name: 'Kafra Buff', desc: 'บัฟคลังคาฟร่า 7 วัน', type: 'Consumable', rarity: 'Uncommon', category: 'Consumable', icon: 'Kafra' }
         };
         const DROP_TABLE = [ { id: 'elu', name: 'Elunium', rate: 0.4, min: 1, max: 2, icon: 'Elunium' }, { id: 'ori', name: 'Oridecon', rate: 0.4, min: 1, max: 2, icon: 'Oridecon' }, { id: 'card_wk', name: 'White Knight Card', rarity: 'Rare', rate: 0.05, min: 1, max: 1, icon: 'Card' }, { id: 'card_kk', name: 'Khalitzburg Card', rarity: 'Rare', rate: 0.05, min: 1, max: 1, icon: 'Card' }, { id: 'card_ogh', name: 'OGH Card', rarity: 'Legendary', rate: 0.001, min: 1, max: 1, icon: 'Card' } ];
 
@@ -411,7 +415,7 @@
             useEffect(() => { const interval = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(interval); }, []);
 
             return (
-                <div className="rox-currency-bar sticky top-0 z-30 flex items-center justify-between">
+                <div className="rox-currency-bar sticky top-0 z-50 flex items-center justify-between bg-[#f0f2f5]/90 backdrop-blur-md px-4 py-2 border-b border-zinc-200 shadow-sm">
                     <div className="flex flex-1 items-center gap-2 overflow-x-auto scrollbar-hide mr-2">
                          {activeBuffs.map(b => {
                             const end = new Date(b.endDate);
@@ -1728,7 +1732,7 @@
                 return () => { unsubRecords(); unsubPrices(); unsubStats(); unsubBuffs(); unsubStock(); unsubChars(); };
             }, [db, targetUid]);
 
-            if (loading) return <div className="h-screen flex items-center justify-center bg-[#0f172a] text-purple-500">Loading...</div>;
+            if (loading) return <div className="h-screen flex items-center justify-center bg-[#f0f2f5] text-emerald-600 font-bold tracking-widest animate-pulse">LOADING...</div>;
 
             return (
                 <div className="max-w-md mx-auto relative min-h-screen">
