@@ -243,7 +243,9 @@
 
         const formatMoney = (n) => new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(n || 0);
         const getExpReq = (lv) => Math.floor(100 * Math.pow(lv || 1, 1.5));
-        const simulateDrops = () => { const drops = []; DROP_TABLE.forEach(item => { if (Math.random() <= item.rate) { const qty = Math.floor(Math.random() * (item.max - item.min + 1)) + item.min; drops.push({ ...item, qty }); } }); return drops; };
+        
+        // REMOVED: simulateDrops function
+        
         const copyToClipboard = (text) => { const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select(); try { document.execCommand('copy'); } catch (err) {} document.body.removeChild(textArea); };
         const getItemInfo = (id) => { 
             if (ITEM_DETAILS[id]) return ITEM_DETAILS[id]; 
@@ -296,7 +298,7 @@
                 case 'Dungeon':
                     viewBox = "0 0 504.32 504.32";
                     stroke = "none";
-                    content = (<><path style={{fill:"#FFD0A1"}} d="M95.427,448.707L161.133,383l-42.667-42.667L52.76,406.04l-14.507-14.507c-3.413-3.413-8.533-3.413-11.947,0L6.68,411.16c-3.413,3.413-3.413,8.533,0,11.947l72.533,72.533c3.413,3.413,8.533,3.413,11.947,0l19.627-19.627c3.413-3.413,3.413-9.387-1.707-13.653L95.427,448.707L95.427,448.707z M74.093,427.374L52.76,406.04l0,0l0,0L74.093,427.374z"/><path style={{fill:"#ECF4F7"}} d="M173.933,327.533L173.933,327.533L203.8,357.4l0,0l46.933-46.933L220.867,280.6L173.933,327.533L173.933,327.533L173.933,327.533l46.933-46.933L191,250.733l-46.933,46.933l0,0L173.933,327.533L173.933,327.533z M498.2,3.267l-17.067,76.8L310.467,250.733L280.6,220.867L498.2,3.267z M498.2,3.267l-217.6,217.6L250.733,191L421.4,20.333L498.2,3.267z"/><path style={{fill:"#ECF4F7"}} d="M357.4,297.667l-29.867,29.867L3.267,3.267l76.8,17.067L250.733,191l29.867,29.867l29.867,29.867L357.4,297.667z M327.533,327.533L297.667,357.4l-46.933-46.933L220.867,280.6L191,250.733L20.333,80.067L3.267,3.267L327.533,327.533z"/><path style={{fill:"#AE938D"}} d="M203.8,357.4l29.867,29.867c-22.187,22.187-45.227,23.04-68.267,0L161.133,383l0,0l-42.667-42.667l-4.267-4.267c-22.187-22.187-23.04-45.227,0-68.267l29.867,29.867l29.867,29.867L203.8,357.4z M357.4,297.667l29.867-29.867c23.04,22.187,23.04,45.227,0,68.267L383,340.333l0,0L340.333,383l-4.267,4.267c-22.187-22.187-45.227,23.04-68.267,0l29.867-29.867l29.867-29.867L357.4,297.667z"/><path style={{fill:"#FFD0A1"}} d="M406.893,448.707l41.813-41.813L383,341.187l0,0l-42.667,42.667L406.893,448.707L406.893,448.707l-15.36,15.36c-3.413,3.413-3.413,8.533,0,11.947l19.627,19.627c3.413,3.413,8.533,3.413,11.947,0l72.533-72.533c3.413-3.413,3.413-8.533,0-11.947l-19.627-19.627c-3.413-3.413-9.387-3.413-13.653,1.707l-12.8,12.8C448.707,406.04,406.893,448.707,406.893,448.707z"/><path style={{fill:"#51565F"}} d="M418.133,503.467c-3.413,0-6.827-1.707-9.387-3.413l-19.627-19.627c-5.12-5.12-5.12-12.8,0-17.92l11.947-11.947l-59.733-59.733l-0.853,0.853c-23.893,23.893-50.347,23.893-74.24,0c-1.707-1.707-1.707-4.267,0-5.973L385.707,266.24c1.707-1.707,4.267-1.707,5.973,0c11.947,11.947,17.92,24.747,17.92,36.693c0,12.8-5.973,24.747-17.92,37.547l-0.853,0.853l59.733,59.733l10.24-10.24c6.827-6.827,15.36-6.827,20.48-1.707l19.627,19.627c2.56,2.56,3.413,5.973,3.413,9.387c0,3.413-1.707,6.827-3.413,9.387l-72.533,72.533C424.96,501.76,421.547,503.467,418.133,503.467z"/></>); break;
+                    content = (<><path style={{fill:"#FFD0A1"}} d="M95.427,448.707L161.133,383l-42.667-42.667L52.76,406.04l-14.507-14.507c-3.413-3.413-8.533-3.413-11.947,0L6.68,411.16c-3.413,3.413-3.413,8.533,0,11.947l72.533,72.533c3.413,3.413,8.533,3.413,11.947,0l19.627-19.627c3.413-3.413,3.413-9.387-1.707-13.653L95.427,448.707L95.427,448.707z M74.093,427.374L52.76,406.04l0,0l0,0L74.093,427.374z"/><path style={{fill:"#ECF4F7"}} d="M173.933,327.533L173.933,327.533L203.8,357.4l0,0l46.933-46.933L220.867,280.6L173.933,327.533L173.933,327.533L173.933,327.533l46.933-46.933L191,250.733l-46.933,46.933l0,0L173.933,327.533L173.933,327.533z M498.2,3.267l-17.067,76.8L310.467,250.733L280.6,220.867L498.2,3.267z M498.2,3.267l-217.6,217.6L250.733,191L421.4,20.333L498.2,3.267z"/><path style={{fill:"#ECF4F7"}} d="M357.4,297.667l-29.867,29.867L3.267,3.267l76.8,17.067L250.733,191l29.867,29.867l29.867,29.867L357.4,297.667z M327.533,327.533L297.667,357.4l-46.933-46.933L220.867,280.6L191,250.733L20.333,80.067L3.267,3.267L327.533,327.533z"/><path style={{fill:"#AE938D"}} d="M203.8,357.4l29.867,29.867c-22.187,22.187-45.227,23.04-68.267,0L161.133,383l0,0l-42.667-42.667l-4.267-4.267c-22.187-22.187-23.04-45.227,0-68.267l29.867,29.867l29.867,29.867L203.8,357.4z M357.4,297.667l29.867-29.867c23.04,22.187,23.04,45.227,0,68.267L383,340.333l0,0L340.333,383l-4.267,4.267c-22.187-22.187-45.227,23.04-68.267,0l29.867-29.867l29.867-29.867L357.4,297.667z"/><path style={{fill:"#FFD0A1"}} d="M406.893,448.707l41.813-41.813L383,341.187l0,0l-42.667,42.667L406.893,448.707L406.893,448.707l-15.36,15.36c-3.413,3.413-3.413,8.533,0,11.947l19.627,19.627c3.413,3.413,8.533,3.413,11.947,0l72.533-72.533c3.413,3.413,3.413-8.533,0-11.947l-19.627-19.627c-3.413-3.413-9.387-3.413-13.653,1.707l-12.8,12.8C448.707,406.04,406.893,448.707,406.893,448.707z"/><path style={{fill:"#51565F"}} d="M418.133,503.467c-3.413,0-6.827-1.707-9.387-3.413l-19.627-19.627c-5.12-5.12-5.12-12.8,0-17.92l11.947-11.947l-59.733-59.733l-0.853,0.853c-23.893,23.893-50.347,23.893-74.24,0c-1.707-1.707-1.707-4.267,0-5.973L385.707,266.24c1.707-1.707,4.267-1.707,5.973,0c11.947,11.947,17.92,24.747,17.92,36.693c0,12.8-5.973,24.747-17.92,37.547l-0.853,0.853l59.733,59.733l10.24-10.24c6.827-6.827,15.36-6.827,20.48-1.707l19.627,19.627c2.56,2.56,3.413,5.973,3.413,9.387c0,3.413-1.707,6.827-3.413,9.387l-72.533,72.533C424.96,501.76,421.547,503.467,418.133,503.467z"/></>); break;
                 case 'History': viewBox = "0 0 1024 1024"; stroke = "none"; content = (<><path d="M903.73,183.71l-57.87-0.55c-0.73,0-91.94-5.44-128.64-11.87c-79.15-13.82-142.53-12.6-209.45,35.23c-68.57-47.29-114.94-50.22-204.13-35.05c-7.52,1.28-14.74,2.63-21.9,3.98c-26.79,5.14-104.05,8.26-104.05,8.26H120c-12.97,0-23.49,10.52-23.49,23.49v599.17c0,12.97,10.52,23.49,23.49,23.49h292.83c-0.67,2.08-1.35,4.16-1.35,6.48c0,12.6,10.64,22.82,23.92,22.82h146.14c13.27,0,23.98-10.22,23.98-22.82c0-2.32-0.67-4.4-1.41-6.48h299.62c13.03,0,23.55-10.52,23.55-23.49V207.2c0-12.97-10.52-23.49-23.55-23.49z" fill="#27323A"/><path d="M143.55,230.75h30.71v552.13H143.55z" fill="#FFFFFF"/><path d="M206.62,230.94c33.95-0.18,59.58-4.71,83.87-9.3a825.05,825.05,0,0,1,21.04-3.86c88.09-14.92,119.77-8.93,178.5,33.77c0.37,0.24,0.74,0.37,1.1,0.55v497.93c-76.1-66.74-144.49-40.25-230.31-6.48l-54.2,22.63c-0.12-92.31-0.12-431.2-0.001-535.25z" fill="#79CCBF"/><path d="M272.56,772.3c88.51-34.81,141.92-55.73,208.47,10.52c0,0,0.06,0.06,0.12,0.06H247.18l25.39-10.58z" fill="#F4CE73"/><path d="M534.75,782.89c0.3-0.24,0.73-0.43,1.04-0.73c61.41-66.92,119.47-45.02,215.32-8.93l23.61,9.67H534.75z" fill="#F4CE73"/><path d="M814.85,765.88l-52.36-21.53c-93.16-35.11-167.49-62.88-240.03,7.28v-498.3c1.41-0.67,2.88-1.22,4.16-2.2c57.56-45.02,108.58-46.49,182.54-33.52c29.06,5.08,80.2,9.48,105.7,11.44c0.24,103.32,0.24,445.7,0,536.84z" fill="#79CCBF"/><path d="M846.11,230.75h34.13v552.13h-34.13z" fill="#FFFFFF"/></>); break;
                 case 'Medal': viewBox = "0 0 512 512"; stroke = "none"; content = (
                     <g>
@@ -347,6 +349,7 @@
                 case 'Profile': content = <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" fill="none"/><circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" fill="none"/></>; break;
                 case 'Share': content = <><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" stroke="currentColor" strokeWidth="2" fill="none"/><polyline points="16 6 12 2 8 6" stroke="currentColor" strokeWidth="2" fill="none"/><line x1="12" y1="2" x2="12" y2="15" stroke="currentColor" strokeWidth="2"/></>; break;
                 case 'Globe': content = <><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/><line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" strokeWidth="2"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="currentColor" strokeWidth="2" fill="none"/></>; break;
+                case 'Sword': content = <><path d="M14.5 4l-8.5 8.5a2.121 2.121 0 0 0 3 3l8.5-8.5-3-3zM2 18l3 3 2.5-2.5-3-3L2 18zM15 3.5l5.5 5.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></>; break;
                 default: content = <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" strokeWidth="2" fill="none"/>; break;
             }
 
@@ -395,7 +398,7 @@
             );
         };
 
-        function CurrencyHeader({ stats, activeBuffs, selectedCharId }) {
+        function CurrencyHeader({ stats, activeBuffs, selectedCharId, runCount }) {
             const [now, setNow] = useState(new Date());
             useEffect(() => { const interval = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(interval); }, []);
 
@@ -412,6 +415,7 @@
                         })}
                     </div>
                     <div className="flex gap-2 flex-shrink-0 items-center justify-end">
+                        <div className="currency-pill bg-zinc-100"><Icon name="Sword" size={12} className="text-zinc-500"/><span>{runCount || 0}</span></div>
                         <div className="currency-pill"><SmartIcon name="Zeny" className="w-4 h-4"/><span>{formatMoney(stats.zeny)}</span></div>
                         <div className="currency-pill"><SmartIcon name="DEK" className="w-4 h-4"/><span>{formatMoney(stats.coins)}</span></div>
                     </div>
@@ -543,7 +547,6 @@
                             <div className="bg-zinc-900/80 px-4 py-2 rounded-xl border border-zinc-700 flex flex-col items-center min-w-[80px]"><span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mb-1">DEK</span><span className="text-amber-400 font-black text-lg flex items-center gap-1"><SmartIcon name="DEK" className="w-4 h-4"/>+{formatMoney(data.dek)}</span></div>
                         </div>
                          <div className="w-full mb-6"><div className="flex justify-between text-[10px] font-bold text-zinc-500 mb-1"><span>LV.{data.afterLv}</span><span>{Math.floor(displayExpPercent)}%</span></div><div className="w-full h-3 bg-zinc-900 rounded-full overflow-hidden relative border border-zinc-700"><div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-1000 ease-out" style={{ width: `${displayExpPercent}%` }}></div></div></div>
-                        <div className="grid grid-cols-4 gap-3 mb-8 w-full">{data.drops.length > 0 ? data.drops.map((d, i) => (<div key={i} className="flex flex-col items-center animate-slide-up" style={{animationDelay: `${i*100}ms`}}><div className="w-14 h-14 bg-zinc-900 rounded-xl border border-zinc-700 flex items-center justify-center relative shadow-inner"><SmartIcon name={d.icon} className="w-10 h-10" /><span className="item-badge absolute -bottom-1 -right-1 text-[8px] font-black px-1.5 rounded border border-zinc-700/50">x{d.qty}</span></div></div>)) : <div className="col-span-4 text-center text-zinc-600 italic py-4">No rare drops...</div>}</div>
                         <div className="flex gap-2 w-full"><button onClick={onShare} className="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 text-white font-black rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"><Icon name="Share" size={18}/> SHARE</button><button onClick={onClose} className="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black rounded-xl shadow-lg transition-transform active:scale-95">CONTINUE</button></div>
                     </div>
                 </div>
@@ -580,7 +583,6 @@
         }
         const TabButton = ({ label, icon: IconName, active, onClick }) => ( <button onClick={onClick} className={`flex-1 py-2 text-[10px] font-black uppercase transition-all rounded-xl flex flex-col items-center justify-center gap-1 ${active ? 'nav-item-active' : 'nav-item-inactive'}`}><Icon name={IconName} size={16} />{label}</button> );
 
-        // --- NEW: ProfileView Component with Export/Import & Theme ---
         function ProfileView({ stats, uid, onResetUid, onSetUid, prices, setPrices, db, showToast, onBack, characters, setCharacters, setTheme, currentTheme }) {
             const [localPrices, setLocalPrices] = useState(prices);
             const [localGoal, setLocalGoal] = useState(stats.savingsGoal || 0);
@@ -649,7 +651,6 @@
             );
         }
 
-        // --- Other Views (Home, Shop, Inventory, Dungeon, History) ---
         function HomeView({ records, stats, goToTab, activeBuffs, stock, characters, selectedCharId, setSelectedCharId }) {
              const { ResponsiveContainer, AreaChart, Area } = window.Recharts || {}; 
              const totalProfit = records.reduce((acc, r) => acc + (r.profit || 0), 0);
@@ -674,7 +675,7 @@
                  const oneWeekAgo = new Date(); oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
                  const recentRecords = records.filter(r => new Date(r.date) >= oneWeekAgo && !r.isSaleRecord);
                  if (recentRecords.length < 3) return { text: "Need more data...", days: 0 };
-                 const totalRecentProfit = recentRecords.reduce((acc, r) => acc + (r.profit || 0), 0);
+                 const totalRecentProfit = records.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (r.profit || 0), 0);
                  const distinctDays = new Set(recentRecords.map(r => r.date)).size || 1;
                  const dailyAvg = totalRecentProfit / distinctDays;
                  if (dailyAvg <= 0) return { text: "Profit is negative...", days: 0 };
@@ -904,7 +905,10 @@
                 if (form.heGumUsed > 0) { if(!newStock.he_gum) newStock.he_gum = { qty: 0, cost: 0 }; newStock.he_gum.qty = Math.max(0, newStock.he_gum.qty - form.heGumUsed); }
                 const profit = (parseInt(form.trashAmount) || 0) - consumablesCost;
                 const earnedDek = Math.max(0, Math.floor(profit / 1000));
-                const drops = simulateDrops();
+                
+                // NO DROPS SIMULATION - RECORD ONLY
+                const drops = []; // Empty drops
+                
                 const record = { ...form, runMode: form.runMode.toLowerCase(), consumablesCost, profit, drops, timestamp: Date.now(), date: getGameDate(), costBreakdown, characterId: selectedCharId };
                 const newStats = { ...stats };
                 newStats.coins = (newStats.coins || 0) + earnedDek;
@@ -1044,7 +1048,7 @@
                                                                 <div className="p-2 border-b border-zinc-100"><p className="text-[9px] uppercase opacity-50 mb-2 text-zinc-400">Usage</p><div className="flex flex-wrap gap-4 items-center">{r.normalGumUsed > 0 && <div className="flex items-center gap-2"><SmartIcon name="Gum" className="w-6 h-6"/><span className="text-zinc-600 text-xs">x{r.normalGumUsed}</span></div>}{r.heGumUsed > 0 && <div className="flex items-center gap-2"><SmartIcon name="HeGum" className="w-6 h-6"/><span className="text-zinc-600 text-xs">x{r.heGumUsed}</span></div>}<div className="flex items-center gap-1 text-xs text-zinc-400 ml-auto"><Icon name="Clock" size={14} className="text-zinc-400"/> {r.minutesUsed}m</div></div></div>
                                                                 <div className="col-span-2 p-2 space-y-1"><p className="text-[9px] uppercase opacity-50 font-bold mb-2 flex items-center gap-1 text-zinc-400"><Icon name="Cost" size={10}/> Expenses</p>{r.costBreakdown && r.costBreakdown.length > 0 ? (r.costBreakdown.map((c, i) => (<div key={i} className="flex justify-between text-[10px] text-zinc-500 border-b border-zinc-100 pb-1"><span className="truncate w-32">{c.name}</span><span>-{formatMoney(c.amount)}</span></div>))) : ((r.consumablesCost > 0) && (<div className="flex justify-between text-[10px] text-zinc-500 border-b border-zinc-100 pb-1"><span>Direct Consumables</span><span>-{formatMoney(r.consumablesCost)}</span></div>))}<div className="pt-1 flex justify-between text-[10px] font-bold text-rose-400 mt-1"><span>Total Direct Cost</span><span>-{formatMoney(r.consumablesCost + (r.otherCosts?.reduce((a,x)=>a+parseInt(x.amount||0),0)||0))}</span></div></div>
                                                                 {r.drops && r.drops.length > 0 && (<div className="col-span-2 p-2"><p className="text-[9px] uppercase opacity-50 mb-2 text-zinc-400">Drops</p><div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">{r.drops.map((d, i) => (<div key={i} className="flex-shrink-0 w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center relative border border-zinc-200"><SmartIcon name={d.icon} className="w-6 h-6"/><span className="absolute bottom-0 right-0 text-[8px] bg-zinc-800 text-white px-1 rounded">{d.qty}</span></div>))}</div></div>)}
-                                                                {r.notes && (<div className="col-span-2 bg-yellow-50 p-3 rounded-xl border border-yellow-100 relative mt-2"><div className="absolute -top-2.5 left-3 bg-white px-2 py-0.5 text-[9px] text-yellow-600 font-bold border border-yellow-200 rounded-full flex items-center gap-1 shadow-sm"><Icon name="FileText" size={8}/> NOTE</div><p className="text-[11px] italic text-zinc-600 mt-1">"{r.notes}"</p></div>)}
+                                                                {r.notes && (<div className="col-span-2 bg-yellow-50 p-3 rounded-xl border border-yellow-100 relative mt-2"><div className="absolute -top-2.5 left-3 bg-white px-2 py-0.5 text-[9px] text-yellow-600 font-bold border border-yellow-200 rounded-full flex items-center gap-1 shadow-sm"><Icon name="FileText" size={8}/> NOTE</div><p className="text-[11px] italic text-zinc-300 mt-1">"{r.notes}"</p></div>)}
                                                             </div>
                                                             <div className="flex gap-2 justify-end mt-2">
                                                                 <button onClick={() => setShareData({...r, runMode: r.runMode === 'aogh' ? 'AOGH' : 'OGH', rank: rankInfo.rank, rankCss: rankInfo.css})} className="h-8 w-8 bg-zinc-100 rounded-lg text-zinc-500 hover:text-zinc-800 flex items-center justify-center"><Icon name="Share" size={14}/></button>
@@ -1125,6 +1129,7 @@
                 init();
             }, []);
 
+            // Register User Globally
             useEffect(() => {
                 if (!db || !targetUid) return;
                 
@@ -1178,11 +1183,14 @@
                 return () => { unsubRecords(); unsubPrices(); unsubStats(); unsubBuffs(); unsubStock(); unsubChars(); };
             }, [db, targetUid]);
 
+            // Calculate run count for current user
+            const runCount = useMemo(() => records.filter(r => !r.isSaleRecord).length, [records]);
+
             if (loading) return <div className="h-screen flex items-center justify-center bg-[#f0f2f5] text-emerald-600 font-bold tracking-widest animate-pulse">LOADING...</div>;
 
             return (
                 <div className="max-w-md mx-auto relative min-h-screen">
-                    <CurrencyHeader stats={stats} activeBuffs={activeBuffs} selectedCharId={selectedCharId} />
+                    <CurrencyHeader stats={stats} activeBuffs={activeBuffs} selectedCharId={selectedCharId} runCount={runCount} />
                     {toast && <Toast message={toast} />}
                     {activeTab === 'home' && <HomeView records={records} stats={stats} goToTab={setActiveTab} activeBuffs={activeBuffs} stock={stock} characters={characters} selectedCharId={selectedCharId} setSelectedCharId={setSelectedCharId} />}
                     {activeTab === 'add' && <DungeonView db={db} uid={targetUid} stock={stock} activeBuffs={activeBuffs} records={records} prices={prices} stats={stats} selectedCharId={selectedCharId} setSelectedCharId={setSelectedCharId} characters={characters} onSuccess={() => {}} goToTab={setActiveTab} />}
