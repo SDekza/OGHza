@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>OGHza Tracker V6.0.3</title>
+    <title>OGHza Tracker V6.0.9</title>
     
     <!-- App Icon -->
     <link rel="icon" href="icon.png" type="image/png">
@@ -205,9 +205,6 @@
         .rom-card { background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important; border: 2px solid #d1d5db !important; }
         .rom-item-box { background: rgba(0,0,0,0.03) !important; border-color: rgba(0,0,0,0.05) !important; }
         .rom-header-text { color: #4a4238 !important; text-shadow: none !important; }
-
-        body { font-family: 'Inter', 'Kanit', sans-serif; background-color: var(--app-bg); color: var(--text-main); overflow-x: hidden; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s, color 0.3s; }
-        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(var(--blur-strength)); -webkit-backdrop-filter: blur(var(--blur-strength)); border: 1px solid var(--border-color); box-shadow: 0 4px 12px -2px var(--shadow-color); transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; }
         
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         .calendar-cell { aspect-ratio: 1; border-radius: 8px; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; position: relative; }
@@ -215,6 +212,9 @@
         .calendar-green { background-color: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); }
         .calendar-red { background-color: rgba(244, 63, 94, 0.15); color: #e11d48; border: 1px solid rgba(244, 63, 94, 0.3); }
         .calendar-neutral { background-color: var(--input-bg); color: var(--text-muted); border: 1px solid transparent; }
+
+        body { font-family: 'Inter', 'Kanit', sans-serif; background-color: var(--app-bg); color: var(--text-main); overflow-x: hidden; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s, color 0.3s; }
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(var(--blur-strength)); -webkit-backdrop-filter: blur(var(--blur-strength)); border: 1px solid var(--border-color); box-shadow: 0 4px 12px -2px var(--shadow-color); transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; }
     </style>
 </head>
 <body>
@@ -227,7 +227,7 @@
 
         const { useState, useEffect, useMemo, useRef, memo } = React;
 
-        const APP_VERSION = "Ver.6.0.3";
+        const APP_VERSION = "Ver.6.0.9";
         
         const MANUAL_FIREBASE_CONFIG = { apiKey: "AIzaSyAbWzr8o_OhkjGbEetBYq_nzYmVZ2fTf40", authDomain: "rocogh-88a38.firebaseapp.com", projectId: "rocogh-88a38", storageBucket: "rocogh-88a38.firebasestorage.app", messagingSenderId: "1025971309206", appId: "1:1025971309206:web:d4f9e0ab6bb016dde590b7" };
         const INITIAL_STATS = { baseLv: 1, baseExp: 0, jobLv: 1, jobExp: 0, jobClass: 'Novice', coins: 0, zeny: 0, unlockedTitles: ['Novice'], savingsGoal: 0, wishlist: null };
@@ -517,7 +517,17 @@
             const [name, setName] = useState('');
             const [price, setPrice] = useState('');
             const [icon, setIcon] = useState('Card');
-            const icons = ['Card', 'Elunium', 'Oridecon', 'Spell', 'Magic', 'Gum', 'HeGum', 'Premium', 'Kafra', 'Silvervine'];
+            // Reverted icons to V6.0.1 style (removed Sword, Shield, Box)
+            const iconOptions = [
+                { val: 'Card', type: 'smart' },
+                { val: 'Zeny', type: 'smart' },
+                { val: 'Elunium', type: 'smart' },
+                { val: 'Oridecon', type: 'smart' },
+                { val: 'Spell', type: 'smart' },
+                { val: 'Magic', type: 'smart' },
+                { val: 'Gum', type: 'smart' },
+                { val: 'Premium', type: 'smart' }
+            ];
             
             return (
                 <Modal onClose={onClose}>
@@ -527,9 +537,11 @@
                             <p className="text-xs text-zinc-500">What are you farming for?</p>
                         </div>
                         <div className="flex justify-center gap-2 mb-4 flex-wrap">
-                            {icons.map(ic => (
-                                <div key={ic} onClick={() => setIcon(ic)} className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${icon === ic ? 'border-emerald-500 bg-emerald-50' : 'border-transparent bg-zinc-100'}`}>
-                                    <SmartIcon name={ic} className="w-6 h-6"/>
+                            {iconOptions.map(opt => (
+                                <div key={opt.val} onClick={() => setIcon(opt.val)} className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${icon === opt.val ? 'border-emerald-500 bg-emerald-50' : 'border-transparent bg-zinc-100'}`}>
+                                    <div className="w-6 h-6 flex items-center justify-center text-zinc-500">
+                                        <SmartIcon name={opt.val} className="w-full h-full"/>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -819,6 +831,160 @@
             );
         }
 
+        function InventoryView({ db, uid, showToast, records, stock, stats, selectedCharId }) {
+            const [items, setItems] = useState([]);
+            const [activeBuffs, setActiveBuffs] = useState([]);
+            const [selectedBox, setSelectedBox] = useState(null);
+            const [svUseConfirm, setSvUseConfirm] = useState(null);
+            const [viewItem, setViewItem] = useState(null); 
+            const [activeTab, setActiveTab] = useState('All');
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
+            
+            const safeRecords = records || [];
+            
+            const totalSpellsDropped = useMemo(() => safeRecords.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (parseInt(r.purpleStoneCount) || 0), 0), [safeRecords]);
+            const totalMagicsDropped = useMemo(() => safeRecords.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (parseInt(r.contMagicCount) || 0), 0), [safeRecords]);
+            const totalSpellsSold = useMemo(() => safeRecords.filter(r => r.isSaleRecord && r.itemId === 'spell').reduce((acc, r) => acc + r.qty, 0), [safeRecords]);
+            const totalMagicsSold = useMemo(() => safeRecords.filter(r => r.isSaleRecord && r.itemId === 'magic').reduce((acc, r) => acc + r.qty, 0), [safeRecords]);
+            const currentSpells = Math.max(0, totalSpellsDropped - totalSpellsSold);
+            const currentMagics = Math.max(0, totalMagicsDropped - totalMagicsSold);
+            
+            const drops = useMemo(() => { 
+                const c = {}; 
+                safeRecords.forEach(r => { 
+                    if (r.drops && !r.isSaleRecord) {
+                        r.drops.forEach(d => c[d.id] = (c[d.id] || 0) + d.qty); 
+                    }
+                }); 
+                return c; 
+            }, [safeRecords]);
+
+            useEffect(() => {
+                if (!db || !uid) return;
+                const q = query(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), orderBy('timestamp', 'desc'));
+                const unsub = onSnapshot(q, (snap) => {
+                    setItems(snap.docs.map(d => ({ ...d.data(), uid: d.id })).filter(i => i.status === 'unused'));
+                    const buffs = snap.docs.map(d => d.data()).filter(i => i.status === 'active').map(b => {
+                        const endDate = new Date(b.activatedAt);
+                        if(b.duration === 30) endDate.setDate(endDate.getDate() + 30);
+                        else if(b.duration === 7) endDate.setDate(endDate.getDate() + 7);
+                        else if(b.duration === 1) endDate.setTime(endDate.getTime() + (24*60*60*1000));
+                        return { ...b, endDate };
+                    });
+                    setActiveBuffs(buffs);
+                });
+                return () => unsub();
+            }, [db, uid, appId]);
+
+            const handleUseBox = async (item) => {
+                // Logic for premium/kafra checks
+                if (item.itemId === 'premium_box' || item.itemId === 'kafra_box') {
+                    const isActive = activeBuffs.some(b => {
+                        const isTimeValid = new Date(b.endDate) > new Date();
+                        if (!isTimeValid) return false;
+                        if (item.itemId === 'premium_box') return b.itemId === 'premium_box'; 
+                        if (item.itemId === 'kafra_box') return b.itemId === 'kafra_box' && b.characterId === selectedCharId;
+                        return false;
+                    });
+                    if (isActive) { showToast("Buff is already active!"); return; }
+                }
+
+                if (item.type === 'buff_box') {
+                    const buffData = { ...item, status: 'active', activatedAt: new Date().toISOString(), characterId: selectedCharId };
+                    if (item.itemId === 'premium_box') buffData.isAccountWide = true; 
+                    await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'inventory', item.uid), buffData);
+                    showToast(`${item.name} Activated!`);
+                } else if (item.type === 'consumable_box') {
+                    const currentQty = stock[item.subType]?.qty || 0;
+                    const currentCost = stock[item.subType]?.totalCost || 0;
+                    const newQty = currentQty + item.qty;
+                    const newTotalCost = currentCost + item.buyPrice;
+                    await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'stock'), { ...stock, [item.subType]: { qty: newQty, totalCost: newTotalCost, avgCost: newTotalCost / newQty } });
+                    await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'inventory', item.uid), { ...item, status: 'consumed' });
+                    showToast(`Added ${item.qty} to Stock`);
+                }
+                setSelectedBox(null);
+             };
+
+            const handleSellAction = async (item, qtyStr, priceStr) => { 
+                const qty = parseInt(qtyStr); const price = parseInt(priceStr);
+                if (!qty || !price || qty > item.count) { showToast("Invalid Amount"); return; }
+                const profit = qty * price;
+                const earnedDek = Math.floor(profit / 1000);
+                const record = { isSaleRecord: true, itemId: item.id, itemName: item.name, qty: qty, pricePerUnit: price, profit, date: getGameDate(), timestamp: Date.now() };
+                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'records'), record);
+                const newStats = { ...stats };
+                newStats.coins = (newStats.coins || 0) + earnedDek;
+                newStats.zeny = (newStats.zeny || 0) + profit;
+                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), newStats);
+                showToast(`Sold! +${earnedDek} DEK`); setViewItem(null);
+            };
+
+            const handleUseSilvervineFromStock = async () => { 
+                const isActive = activeBuffs.some(b => b.itemId === 'silvervine_24h' && new Date(b.endDate) > new Date());
+                if (isActive) { alert("Active!"); setSvUseConfirm(null); return; }
+                if ((stock.silvervine?.qty || 0) < 2) { alert("Need 2 Silvervine!"); setSvUseConfirm(null); return; }
+                const newStock = { ...stock, silvervine: { ...stock.silvervine, qty: stock.silvervine.qty - 2 } };
+                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'stock'), newStock);
+                const buffData = { itemId: 'silvervine_24h', name: 'Silvervine Buff (24h)', type: 'buff_box', duration: 1, buyPrice: (stock.silvervine?.avgCost || 0) * 2, timestamp: Date.now(), activatedAt: new Date().toISOString(), status: 'active', isAccountWide: true };
+                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), buffData);
+                showToast("Activated!"); setSvUseConfirm(null);
+            };
+
+            const allItems = [
+                { id: 'spell', category: 'Etc', iconComp: <SmartIcon name="Spell" className="w-full h-full"/>, count: Math.max(0, currentSpells), name: 'Purple Stone', isSellable: true },
+                { id: 'magic', category: 'Etc', iconComp: <SmartIcon name="Magic" className="w-full h-full"/>, count: Math.max(0, currentMagics), name: 'Red Stone', isSellable: true },
+                { id: 'gum', category: 'Consumable', iconComp: <SmartIcon name="Gum" className="w-full h-full"/>, count: stock.gum?.qty || 0, name: 'Gum (Stock)' },
+                { id: 'he_gum', category: 'Consumable', iconComp: <SmartIcon name="HeGum" className="w-full h-full"/>, count: stock.he_gum?.qty || 0, name: 'HE (Stock)' },
+                { id: 'silvervine', category: 'Etc', iconComp: <SmartIcon name="Silvervine" className="w-full h-full"/>, count: stock.silvervine?.qty || 0, name: 'SV (Stock)', isStockAction: true },
+            ];
+            
+            const hasPremium = activeBuffs.some(b => b.itemId === 'premium_box' && new Date(b.endDate) > new Date());
+            if (hasPremium) { allItems.push({ id: 'premium_staff', category: 'Consumable', iconComp: <SmartIcon name="PremiumStaff" className="w-full h-full"/>, count: 1, name: 'Staff' }); }
+            
+            items.forEach(i => { 
+                if(!i.itemId) return;
+                let cat = i.category || 'Consumable'; 
+                if (i.itemId.includes('card')) cat = 'Rare'; 
+                const shopItem = SHOP_ITEMS.find(s=>s.id===i.itemId);
+                const iconName = shopItem ? shopItem.icon : 'Box';
+                allItems.push({ id: i.uid, category: cat, iconComp: <SmartIcon name={iconName} className="w-full h-full" />, count: 1, isBox: true, data: i, name: i.name, itemId: i.itemId }); 
+            });
+            
+            Object.keys(drops).forEach(key => { 
+                const def = DROP_TABLE.find(d => d.id === key); 
+                if (def) allItems.push({ id: key, category: def.category, iconComp: <SmartIcon name={def.icon} className="w-full h-full" />, count: drops[key], name: def.name }); 
+            });
+            
+            const filteredItems = activeTab === 'All' ? allItems : allItems.filter(i => i.category === activeTab);
+            const groupedDisplayItems = useMemo(() => { 
+                const map = new Map(); 
+                filteredItems.forEach(item => { 
+                    const key = item.itemId || item.id; 
+                    if(map.has(key)) { const ex = map.get(key); ex.count += (item.count || 1); } 
+                    else { map.set(key, { ...item, count: item.count !== undefined ? item.count : 0 }); } 
+                }); 
+                return Array.from(map.values()); 
+            }, [filteredItems]);
+            
+            const onItemClick = (item) => { 
+                if(item.isBox) { setSelectedBox(item.data); return; } 
+                if(item.id === 'premium_staff') { setSvUseConfirm(true); return; } 
+                setViewItem(item); 
+            };
+
+            return (
+                <div className="p-6 animate-fade-in view-content space-y-6">
+                    <div className="flex items-center justify-between"><h2 className="text-2xl font-black tracking-tighter text-zinc-700 flex items-center gap-2"><Icon name="Inventory" size={24}/> Item</h2><div className="text-[10px] text-zinc-500 font-mono">{groupedDisplayItems.length} Items</div></div>
+                    <div className="bg-zinc-100 p-1 rounded-2xl flex gap-1 border border-zinc-200">{['All', 'Consumable', 'Etc', 'Rare'].map(t => { let label = t; let iconName = 'LayoutGrid'; if (t === 'Consumable') { label = 'Use'; iconName = 'Flask'; } if (t === 'Etc') { label = 'Etc'; iconName = 'Layers'; } if (t === 'Rare') { label = 'Rare'; iconName = 'Diamond'; } return <TabButton key={t} label={label} icon={iconName} active={activeTab === t} onClick={() => setActiveTab(t)} />; })}</div>
+                    <div className="bg-white p-5 rounded-[2.5rem] border border-zinc-200 max-h-[420px] overflow-y-auto scrollbar-hide"><div className="grid grid-cols-4 gap-4 pb-10">{groupedDisplayItems.map((item, index) => (<div key={index} onClick={() => onItemClick(item)} className="aspect-square rounded-2xl sunken-slot relative flex items-center justify-center cursor-pointer overflow-hidden group"><div className="w-10 h-10 pointer-events-none group-active:scale-90 transition-transform">{item.iconComp}</div><span className="item-badge absolute bottom-1 right-1.5 text-[8px] font-black px-1.5 rounded-md pointer-events-none backdrop-blur-sm border border-zinc-200/50">{item.count}</span></div>))}{Array.from({ length: Math.max(0, 16 - groupedDisplayItems.length) }).map((_, i) => (<div key={`e-${i}`} className="aspect-square rounded-2xl sunken-slot opacity-30"></div>))}</div></div>
+                    {viewItem && <ItemDetailModal item={viewItem} onClose={() => setViewItem(null)} onSell={handleSellAction} />}
+                    {selectedBox && <Modal onClose={() => setSelectedBox(null)}><div className="text-center"><div className="w-20 h-20 mx-auto bg-zinc-100 rounded-3xl flex items-center justify-center mb-4 border border-zinc-200"><SmartIcon name={SHOP_ITEMS.find(s=>s.id===selectedBox.itemId)?.icon} className="w-12 h-12" /></div><h3 className="text-lg font-black text-zinc-800 mb-1">{selectedBox.name}</h3><p className="text-xs text-zinc-500 mb-4 italic">"{getItemInfo(selectedBox.itemId).desc}"</p><div className="flex gap-2 mt-4"><button onClick={() => setSelectedBox(null)} className="flex-1 py-3 bg-zinc-200 rounded-xl font-bold text-xs text-zinc-600">Cancel</button><button onClick={() => handleUseBox(selectedBox)} className="flex-1 py-3 bg-emerald-600 rounded-xl font-bold text-xs text-white">Use</button></div></div></Modal>}
+                    {svUseConfirm && <Modal onClose={() => setSvUseConfirm(null)}><div className="text-center"><div className="w-20 h-20 mx-auto bg-zinc-100 rounded-3xl flex items-center justify-center mb-4 border border-zinc-200"><SmartIcon name="Silvervine" className="w-12 h-12"/></div><h3 className="text-lg font-black text-zinc-800 mb-2">Activate Buff?</h3><div className="flex gap-2"><button onClick={() => setSvUseConfirm(null)} className="flex-1 py-3 bg-zinc-200 rounded-xl font-bold text-xs text-zinc-600">Cancel</button><button onClick={handleUseSilvervineFromStock} className="flex-1 py-3 bg-emerald-600 rounded-xl font-bold text-xs text-white">Use (2 ea)</button></div></div></Modal>}
+                </div>
+            );
+        }
+
         function DungeonView({ db, uid, stock, activeBuffs, onSuccess, records, prices, stats, selectedCharId, setSelectedCharId, characters, goToTab }) {
             const [form, setForm] = useState({ runMode: 'ogh', normalGumUsed: 0, heGumUsed: 0, useSilvervine: false, purpleStoneCount: 0, contMagicCount: 0, trashAmount: '', minutesUsed: 60, otherCosts: [], notes: '' });
             const [rewardData, setRewardData] = useState(null);
@@ -917,6 +1083,20 @@
                     <button disabled={!isFormValid} onClick={handleSave} className="w-full py-5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[1.5rem] font-black text-lg shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"><Icon name="Save" size={20}/> COMPLETE RUN</button>
                     {rewardData && <RewardPopup data={rewardData} onClose={closeReward} onShare={() => setShareData({...rewardData, runMode: form.runMode === 'aogh' ? 'AOGH' : 'OGH', rank: getRankInfo(rewardData.profit, 0).rank, rankCss: getRankInfo(rewardData.profit, 0).css})} />}
                     {shareData && <ShareModal data={shareData} onClose={() => setShareData(null)} />}
+                </div>
+            );
+        }
+
+        function ShopView({ db, uid, showToast }) {
+            const [selectedItem, setSelectedItem] = useState(null); const [price, setPrice] = useState(''); const [qty, setQty] = useState('1');
+            const handleItemClick = (item) => { setSelectedItem(item); setPrice(''); setQty('1'); };
+            const handleBuy = async () => { if (!price || !selectedItem) return; const buyPrice = parseInt(price); const quantity = parseInt(qty) || 1; const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker'; const promises = []; for(let i=0; i<quantity; i++) { promises.push(addDoc(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), { itemId: selectedItem.id, name: selectedItem.name, type: selectedItem.type, subType: selectedItem.subType || null, duration: selectedItem.duration || null, qty: selectedItem.qty || 1, buyPrice: buyPrice, timestamp: Date.now() + i, status: 'unused', category: selectedItem.category || 'Consumable' })); } await Promise.all(promises); showToast(`Bought ${quantity} ${selectedItem.name}`); setSelectedItem(null); setPrice(''); setQty('1'); };
+            return (
+                <div className="p-6 animate-fade-in view-content space-y-6">
+                    <h2 className="text-2xl font-black tracking-tighter text-zinc-700 flex items-center gap-2"><Icon name="Shop" size={24}/> Cash Shop</h2>
+                    <div className="bg-white p-4 rounded-[2rem] border border-zinc-200 min-h-[200px]"><p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mb-4 text-zinc-500">Shelves</p><div className="grid grid-cols-4 gap-3">{SHOP_ITEMS.map(item => (<div key={item.id} onClick={() => handleItemClick(item)} className={`aspect-square rounded-2xl flex items-center justify-center transition-all relative cursor-pointer ${selectedItem?.id === item.id ? 'bg-zinc-100 ring-2 ring-emerald-500 scale-105 z-10' : 'bg-white border border-zinc-200 active:scale-95 hover:bg-zinc-50 shadow-sm'}`}><SmartIcon name={item.icon} className="w-8 h-8" /></div>))}</div></div>
+                    <div className="glass-panel p-6 rounded-[2.5rem] relative overflow-hidden border-zinc-200"><div className="flex gap-4"><div className={`w-24 h-24 rounded-3xl flex-shrink-0 flex items-center justify-center border-2 transition-all ${selectedItem ? 'bg-white border-emerald-200 shadow-xl' : 'bg-zinc-50 border-dashed border-zinc-300'}`}>{selectedItem ? <div className="flex flex-col items-center animate-pop-in"><SmartIcon name={selectedItem.icon} className="w-10 h-10 mb-1" /></div> : <span className="text-[8px] opacity-20 font-black uppercase text-center text-zinc-400">Select<br/>Item</span>}</div><div className="flex-1 space-y-2"><div><div className="flex justify-between items-baseline mb-1"><label className="text-[8px] font-bold opacity-40 uppercase ml-1 flex items-center gap-1"><Icon name="Box" size={10}/> Item Name</label>{selectedItem && <span className="text-[10px] font-bold text-emerald-600 truncate">{selectedItem.name}</span>}</div><input type="text" inputMode="numeric" disabled={!selectedItem} value={price} onChange={e => setPrice(e.target.value.replace(/\D/g, ''))} className="slate-input shop-input w-full p-2 rounded-xl text-sm font-bold placeholder-zinc-400 text-zinc-800" placeholder="Price / Unit"/></div><div><label className="text-[8px] font-bold opacity-40 uppercase ml-1">Quantity</label><div className="flex items-center gap-2"><button disabled={!selectedItem} onClick={() => setQty(Math.max(1, parseInt(qty||0)-1).toString())} className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-30 text-zinc-500">-</button><input type="text" inputMode="numeric" disabled={!selectedItem} value={qty} onChange={e => setQty(e.target.value.replace(/\D/g, ''))} className="w-full bg-transparent text-center text-sm font-black outline-none text-zinc-800"/><button disabled={!selectedItem} onClick={() => setQty((parseInt(qty||0)+1).toString())} className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-30 text-zinc-500">+</button></div></div></div></div><div className="mt-4 pt-4 border-t border-zinc-100 flex justify-between items-center"><div><p className="text-[9px] opacity-40 font-bold uppercase flex items-center gap-1"><SmartIcon name="Zeny" className="w-3 h-3"/> Total Cost</p><p className="text-xl font-black text-zinc-200">{formatMoney((parseInt(price) || 0) * (parseInt(qty) || 0))} z</p></div><button onClick={handleBuy} disabled={!selectedItem || !price} className="px-6 py-3 bg-zinc-800 text-white rounded-xl text-xs font-black uppercase shadow-lg hover:bg-zinc-700 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center gap-2"><Icon name="ShoppingCart" size={14}/> Buy Now</button></div></div>
+                    {selectedItem && <div className="mt-4 p-3 bg-zinc-50 rounded-xl border border-zinc-200"><p className="text-xs text-zinc-500 italic text-center">"{getItemInfo(selectedItem.id).desc}"</p></div>}
                 </div>
             );
         }
