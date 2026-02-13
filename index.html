@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>OGHza Tracker V5.1.1</title>
+    <title>OGHza Tracker V6.0.3</title>
     
     <!-- App Icon -->
     <link rel="icon" href="icon.png" type="image/png">
@@ -208,6 +208,13 @@
 
         body { font-family: 'Inter', 'Kanit', sans-serif; background-color: var(--app-bg); color: var(--text-main); overflow-x: hidden; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; transition: background-color 0.3s, color 0.3s; }
         .glass-panel { background: var(--glass-bg); backdrop-filter: blur(var(--blur-strength)); -webkit-backdrop-filter: blur(var(--blur-strength)); border: 1px solid var(--border-color); box-shadow: 0 4px 12px -2px var(--shadow-color); transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; }
+        
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-cell { aspect-ratio: 1; border-radius: 8px; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; position: relative; }
+        .calendar-header { font-size: 10px; text-transform: uppercase; color: var(--text-muted); text-align: center; font-weight: 900; margin-bottom: 4px; }
+        .calendar-green { background-color: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .calendar-red { background-color: rgba(244, 63, 94, 0.15); color: #e11d48; border: 1px solid rgba(244, 63, 94, 0.3); }
+        .calendar-neutral { background-color: var(--input-bg); color: var(--text-muted); border: 1px solid transparent; }
     </style>
 </head>
 <body>
@@ -220,10 +227,10 @@
 
         const { useState, useEffect, useMemo, useRef, memo } = React;
 
-        const APP_VERSION = "Ver.5.1.1";
+        const APP_VERSION = "Ver.6.0.3";
         
         const MANUAL_FIREBASE_CONFIG = { apiKey: "AIzaSyAbWzr8o_OhkjGbEetBYq_nzYmVZ2fTf40", authDomain: "rocogh-88a38.firebaseapp.com", projectId: "rocogh-88a38", storageBucket: "rocogh-88a38.firebasestorage.app", messagingSenderId: "1025971309206", appId: "1:1025971309206:web:d4f9e0ab6bb016dde590b7" };
-        const INITIAL_STATS = { baseLv: 1, baseExp: 0, jobLv: 1, jobExp: 0, jobClass: 'Novice', coins: 0, zeny: 0, unlockedTitles: ['Novice'], savingsGoal: 0 };
+        const INITIAL_STATS = { baseLv: 1, baseExp: 0, jobLv: 1, jobExp: 0, jobClass: 'Novice', coins: 0, zeny: 0, unlockedTitles: ['Novice'], savingsGoal: 0, wishlist: null };
         const SHOP_ITEMS = [ { id: 'premium_box', name: 'Premium Service Box', duration: 30, type: 'buff_box', icon: 'Premium', desc: 'กล่องพรีเมียม 30 วัน', rarity: 'Rare', category: 'Consumable' }, { id: 'kafra_box', name: 'Kafra Buff (7d)', duration: 7, type: 'buff_box', icon: 'Kafra', desc: 'บัฟคลังคาฟร่า 7 วัน', rarity: 'Uncommon', category: 'Consumable' }, { id: 'silvervine_box', name: 'Silvervine Box (10ea)', qty: 10, type: 'consumable_box', subType: 'silvervine', icon: 'SilvervineBox', desc: 'กล่องผลไม้แมว 10 ชิ้น', rarity: 'Uncommon', category: 'Consumable' }, { id: 'gum_box', name: 'Bubble Gum Box (10ea)', qty: 10, type: 'consumable_box', subType: 'gum', icon: 'GumBox', desc: 'กล่องหมากฝรั่ง 10 ชิ้น', rarity: 'Common', category: 'Consumable' }, { id: 'he_gum_box', name: 'HE Bubble Gum Box (5ea)', qty: 5, type: 'consumable_box', subType: 'he_gum', icon: 'HeGumBox', desc: 'กล่องหมากฝรั่ง HE 5 ชิ้น', rarity: 'Rare', category: 'Consumable' } ];
         
         const ITEM_DETAILS = { 
@@ -237,17 +244,19 @@
             'silvervine_box': { name: 'Silvervine Box', desc: 'กล่องผลไม้แมว 10 ชิ้น', type: 'Consumable', rarity: 'Uncommon', category: 'Consumable', icon: 'SilvervineBox' },
             'gum_box': { name: 'Bubble Gum Box', desc: 'กล่องหมากฝรั่ง 10 ชิ้น', type: 'Consumable', rarity: 'Common', category: 'Consumable', icon: 'GumBox' },
             'he_gum_box': { name: 'HE Bubble Gum Box', desc: 'กล่องหมากฝรั่ง HE 5 ชิ้น', type: 'Consumable', rarity: 'Rare', category: 'Consumable', icon: 'HeGumBox' },
-            'kafra_box': { name: 'Kafra Buff', desc: 'บัฟคลังคาฟร่า 7 วัน', type: 'Consumable', rarity: 'Uncommon', category: 'Consumable', icon: 'Kafra' }
+            'kafra_box': { name: 'Kafra Buff', desc: 'บัฟคลังคาฟร่า 7 วัน', type: 'Consumable', rarity: 'Uncommon', category: 'Consumable', icon: 'Kafra' },
+            'card_wk': { name: 'White Knight', desc: 'Card', icon: 'Card', rarity: 'Rare' },
+            'card_kk': { name: 'Khalitzburg', desc: 'Card', icon: 'Card', rarity: 'Rare' },
+            'card_ogh': { name: 'OGH Card', desc: 'Legendary Card', icon: 'Card', rarity: 'Legendary' }
         };
         const DROP_TABLE = [ { id: 'elu', name: 'Elunium', rate: 0.4, min: 1, max: 2, icon: 'Elunium' }, { id: 'ori', name: 'Oridecon', rate: 0.4, min: 1, max: 2, icon: 'Oridecon' }, { id: 'card_wk', name: 'White Knight Card', rarity: 'Rare', rate: 0.05, min: 1, max: 1, icon: 'Card' }, { id: 'card_kk', name: 'Khalitzburg Card', rarity: 'Rare', rate: 0.05, min: 1, max: 1, icon: 'Card' }, { id: 'card_ogh', name: 'OGH Card', rarity: 'Legendary', rate: 0.001, min: 1, max: 1, icon: 'Card' } ];
 
         const formatMoney = (n) => new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(n || 0);
         const getExpReq = (lv) => Math.floor(100 * Math.pow(lv || 1, 1.5));
         
-        // REMOVED: simulateDrops function
-        
         const copyToClipboard = (text) => { const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select(); try { document.execCommand('copy'); } catch (err) {} document.body.removeChild(textArea); };
         const getItemInfo = (id) => { 
+            if (!id) return { name: 'Unknown', desc: 'Error', type: 'Etc', rarity: 'Common', icon: 'Box' };
             if (ITEM_DETAILS[id]) return ITEM_DETAILS[id]; 
             const dropItem = DROP_TABLE.find(d => d.id === id); 
             if (dropItem) return dropItem; 
@@ -257,8 +266,8 @@
         };
 
         const getRankInfo = (profit, averageProfit) => { if (profit < 0) return { rank: 'F', css: 'rank-f', text: 'LOSS' }; if (!averageProfit || averageProfit === 0) return { rank: 'B', css: 'rank-b', text: 'NORMAL' }; const diff = (profit - averageProfit) / averageProfit; if (diff >= 0.5) return { rank: 'S', css: 'rank-s', text: 'LUCKY' }; if (diff >= 0.3) return { rank: 'A', css: 'rank-a', text: 'GOOD' }; if (diff >= -0.1) return { rank: 'B', css: 'rank-b', text: 'NORMAL' }; if (diff >= -0.3) return { rank: 'C', css: 'rank-c', text: 'BAD' }; if (diff >= -0.5) return { rank: 'D', css: 'rank-d', text: 'POOR' }; return { rank: 'E', css: 'rank-e', text: 'AWFUL' }; };
-        const SmartIcon = ({ name, className }) => { const [error, setError] = useState(false); const BASE_URL = "https://sdekza.github.io/OGHza/"; const imgMap = { 'Spell': 'Coagulated Spell.png', 'Magic': 'Contaminated Magic.png', 'Gum': 'Bubble Gum.png', 'HeGum': 'HE Bubble Gum.png', 'Silvervine': 'Silvervine Fruit.png', 'GumBox': 'Bubble Gum Box.png', 'HeGumBox': 'HE Bubble Gum Box.png', 'SilvervineBox': 'Silvervine Box.png', 'Premium': 'Premium Box.png', 'Kafra': 'Kafra Buff.png', 'PremiumStaff': 'Premium Service Staff.png', 'Elunium': 'Elunium.png', 'Oridecon': 'Oridecon.png', 'Card': 'Card.png', 'Zeny': 'Zeny.png', 'DEK': 'DEK.png', 'OGH_BOSS': 'OGH BOSS.png', 'AOGH_BOSS': 'AOGH BOSS.png' }; const finalName = imgMap[name] ? name : (Object.keys(imgMap).find(k => k.toLowerCase() === name?.toLowerCase()) || 'Box'); if (finalName === 'GumBox') return (<div className={`relative ${className}`}><img crossOrigin="anonymous" src={`${BASE_URL}Bubble Gum Box.png`} className="w-full h-full object-contain" /><img crossOrigin="anonymous" src={`${BASE_URL}Bubble Gum.png`} className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>); if (finalName === 'HeGumBox') return (<div className={`relative ${className}`}><img crossOrigin="anonymous" src={`${BASE_URL}Bubble Gum Box.png`} className="w-full h-full object-contain filter hue-rotate-15" /><img crossOrigin="anonymous" src={`${BASE_URL}HE Bubble Gum.png`} className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>); if (!error && imgMap[finalName]) return <img crossOrigin="anonymous" src={`${BASE_URL}${imgMap[finalName]}`} className={`object-contain ${className}`} onError={() => setError(true)} />; return <div className={`w-full h-full bg-zinc-700 rounded-md flex items-center justify-center ${className}`}><span className="text-[8px] text-zinc-500">?</span></div>; };
-
+        
+        // Utility: Get current date relative to game reset (4 AM)
         const getGameDate = () => {
             const now = new Date();
             now.setHours(now.getHours() - 4);
@@ -267,6 +276,13 @@
             const day = String(now.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         };
+        
+        // Utility: Get Date object relative to game reset
+        const getGameDateObj = () => {
+            const now = new Date();
+            now.setHours(now.getHours() - 4);
+            return now;
+        };
 
         const Icon = ({ name, size = 20, className }) => {
             let viewBox = "0 0 24 24";
@@ -274,56 +290,21 @@
             let stroke = "currentColor";
             let fill = "none";
             
-            const defaultProps = {
-                strokeWidth: "2",
-                strokeLinecap: "round",
-                strokeLinejoin: "round"
-            };
+            const defaultProps = { strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" };
 
             switch (name) {
-                case 'Home':
-                    viewBox = "0 0 48 48";
-                    stroke = "none";
-                    content = (<><linearGradient id="g1" x1="6" x2="42" y1="41" y2="41" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#c8d3de"/><stop offset="1" stopColor="#c8d3de"/></linearGradient><path fill="url(#g1)" d="M42,39H6v2c0,1.105,0.895,2,2,2h32c1.105,0,2-0.895,2-2V39z"/><linearGradient id="g2" x1="14.095" x2="31.385" y1="10.338" y2="43.787" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#fcfcfc"/><stop offset=".495" stopColor="#f4f4f4"/><stop offset=".946" stopColor="#e8e8e8"/><stop offset="1" stopColor="#e8e8e8"/></linearGradient><path fill="url(#g2)" d="M42,39H6V20L24,3l18,17V39z"/><path fill="#de490d" d="M13,25h10c0.552,0,1,0.448,1,1v17H12V26C12,25.448,12.448,25,13,25z"/><linearGradient id="g3" x1="24" x2="24" y1="1.684" y2="23.696" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#d43a02"/><stop offset="1" stopColor="#b9360c"/></linearGradient><path fill="url(#g3)" d="M44.495,19.507L25.326,2.503C24.948,2.168,24.474,2,24,2s-0.948,0.168-1.326,0.503L3.505,19.507c-0.42,0.374-0.449,1.02-0.064,1.43l1.636,1.745c0.369,0.394,0.984,0.424,1.39,0.067L24,7.428L41.533,22.75c0.405,0.356,1.021,0.327,1.39-0.067l1.636-1.745C44.944,20.527,44.915,19.881,44.495,19.507z"/><linearGradient id="g4" x1="28.05" x2="35.614" y1="25.05" y2="32.614" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#33bef0"/><stop offset="1" stopColor="#0a85d9"/></linearGradient><path fill="url(#g4)" d="M29,25h6c0.552,0,1,0.448,1,1v6c0,0.552-0.448,1-1,1h-6c-0.552,0-1-0.448-1-1v-6C28,25.448,28.448,25,29,25z"/></>);
-                    break;
-                case 'Inventory':
-                    viewBox = "0 0 50 50";
-                    stroke = "none";
-                    content = (<><polygon fill="#e68f3a" points="43,14.6 43,33.08 23,44.63 23,44.62 7,35.39 7,16.91 27,5.36"/><polygon fill="#ff9f40" points="23,26.149 23,44.624 7,35.389 7,16.904"/><polygon fill="#ccc" points="17,22.691 17,27.318 13,25.008 13,20.381"/><polygon fill="#a8a8a8" points="17,22.691 37,11.144 33,8.834 13,20.381"/><polygon fill="#b3702d" points="43,33.083 23,44.63 23,26.149 43,14.602"/><polygon fill="#d98836" points="12,24.423 12,26.732 18,30.196 18,27.887"/><polygon fill="#b3702d" points="12,24.423 12,26.732 14,25.577"/></>);
-                    break;
-                case 'Shop':
-                    viewBox = "0 0 128 128";
-                    stroke = "none";
-                    content = (<><path d="M93.46 39.45c6.71-1.49 15.45-8.15 16.78-11.43c.78-1.92-3.11-4.92-4.15-6.13c-2.38-2.76-1.42-4.12-.5-7.41c1.05-3.74-1.44-7.87-4.97-9.49s-7.75-1.11-11.3.47c-3.55 1.58-6.58 4.12-9.55 6.62c-2.17-1.37-5.63-7.42-11.23-3.49c-3.87 2.71-4.22 8.61-3.72 13.32c1.17 10.87 3.85 16.51 8.9 18.03c6.38 1.92 13.44.91 19.74-.49z" fill="#FFCA28"/><path d="M104.36 8.18c-.85 14.65-15.14 24.37-21.92 28.65l4.4 3.78s2.79.06 6.61-1.16c6.55-2.08 16.12-7.96 16.78-11.43c.97-5.05-4.21-3.95-5.38-7.94c-.61-2.11 2.97-6.1-.49-11.9zm-24.58 3.91s-2.55-2.61-4.44-3.8c-.94 1.77-1.61 3.69-1.94 5.67c-.59 3.48 0 8.42 1.39 12.1c.22.57 1.04.48 1.13-.12c1.2-7.91 3.86-13.85 3.86-13.85z" fill="#E2A610"/><path d="M61.96 38.16S30.77 41.53 16.7 68.61c-14.07 27.08-2.11 43.5 10.55 49.48c12.66 5.98 44.56 8.09 65.31 3.17s25.94-15.12 24.97-24.97c-1.41-14.38-14.77-23.22-14.77-23.22s.53-17.76-13.25-29.29c-12.23-10.24-27.55-5.62-27.55-5.62z" fill="#FFCA28"/><path d="M74.76 83.73c-6.69-8.44-14.59-9.57-17.12-12.6c-1.38-1.65-2.19-3.32-1.88-5.39c.33-2.2 2.88-3.72 4.86-4.09c2.31-.44 7.82-.21 12.45 4.2c1.1 1.04.7 2.66.67 4.11c-.08 3.11 4.37 6.13 7.97 3.53c3.61-2.61.84-8.42-1.49-11.24c-1.76-2.13-8.14-6.82-16.07-7.56c-2.23-.21-11.2-1.54-16.38 8.31c-1.49 2.83-2.04 9.67 5.76 15.45c1.63 1.21 10.09 5.51 12.44 8.3c4.07 4.83 1.28 9.08-1.9 9.64c-8.67 1.52-13.58-3.17-14.49-5.74c-.65-1.83.03-3.81-.81-5.53c-.86-1.77-2.62-2.47-4.48-1.88c-6.1 1.94-4.16 8.61-1.46 12.28c2.89 3.93 6.44 6.3 10.43 7.6c14.89 4.85 22.05-2.81 23.3-8.42c.92-4.11.82-7.67-1.8-10.97z" fill="#6B4B46"/><path d="M71.16 48.99c-12.67 27.06-14.85 61.23-14.85 61.23" stroke="#6B4B46" strokeWidth="5" strokeMiterlimit="10"/><path d="M81.67 31.96c8.44 2.75 10.31 10.38 9.7 12.46c-.73 2.44-10.08-7.06-23.98-6.49c-4.86.2-3.45-2.78-1.2-4.5c2.97-2.27 7.96-3.91 15.48-1.47z" fill="#6D4C41"/><path d="M96.49 58.86c1.06-.73 4.62.53 5.62 7.5c.49 3.41.64 6.71.64 6.71s-4.2-3.77-5.59-6.42c-1.75-3.35-2.43-6.59-.67-7.79z" fill="#E2A610"/></>); break;
-                case 'Dungeon':
-                    viewBox = "0 0 504.32 504.32";
-                    stroke = "none";
-                    content = (<><path style={{fill:"#FFD0A1"}} d="M95.427,448.707L161.133,383l-42.667-42.667L52.76,406.04l-14.507-14.507c-3.413-3.413-8.533-3.413-11.947,0L6.68,411.16c-3.413,3.413-3.413,8.533,0,11.947l72.533,72.533c3.413,3.413,8.533,3.413,11.947,0l19.627-19.627c3.413-3.413-3.413-9.387-1.707-13.653L95.427,448.707L95.427,448.707z M74.093,427.374L52.76,406.04l0,0l0,0L74.093,427.374z"/><path style={{fill:"#ECF4F7"}} d="M173.933,327.533L173.933,327.533L203.8,357.4l0,0l46.933-46.933L220.867,280.6L173.933,327.533L173.933,327.533L173.933,327.533l46.933-46.933L191,250.733l-46.933,46.933l0,0L173.933,327.533L173.933,327.533z M498.2,3.267l-17.067,76.8L310.467,250.733L280.6,220.867L498.2,3.267z M498.2,3.267l-217.6,217.6L250.733,191L421.4,20.333L498.2,3.267z"/><path style={{fill:"#ECF4F7"}} d="M357.4,297.667l-29.867,29.867L3.267,3.267l76.8,17.067L250.733,191l29.867,29.867l29.867,29.867L357.4,297.667z M327.533,327.533L297.667,357.4l-46.933-46.933L220.867,280.6L191,250.733L20.333,80.067L3.267,3.267L327.533,327.533z"/><path style={{fill:"#AE938D"}} d="M203.8,357.4l29.867,29.867c-22.187,22.187-45.227,23.04-68.267,0L161.133,383l0,0l-42.667-42.667l-4.267-4.267c-22.187-22.187-23.04-45.227,0-68.267l29.867,29.867l29.867,29.867L203.8,357.4z M357.4,297.667l29.867-29.867c23.04,22.187,23.04,45.227,0,68.267L383,340.333l0,0L340.333,383l-4.267,4.267c-22.187-22.187-45.227,23.04-68.267,0l29.867-29.867l29.867-29.867L357.4,297.667z"/><path style={{fill:"#FFD0A1"}} d="M406.893,448.707l41.813-41.813L383,341.187l0,0l-42.667,42.667L406.893,448.707L406.893,448.707l-15.36,15.36c-3.413,3.413-3.413,8.533,0,11.947l19.627,19.627c3.413,3.413,8.533,3.413,11.947,0l72.533-72.533c3.413,3.413,3.413-8.533,0-11.947l-19.627-19.627c-3.413-3.413-9.387-3.413-13.653,1.707l-12.8,12.8C448.707,406.04,406.893,448.707,406.893,448.707z"/><path style={{fill:"#51565F"}} d="M418.133,503.467c-3.413,0-6.827-1.707-9.387-3.413l-19.627-19.627c-5.12-5.12-5.12-12.8,0-17.92l11.947-11.947l-59.733-59.733l-0.853,0.853c-23.893,23.893-50.347,23.893-74.24,0c-1.707-1.707-1.707-4.267,0-5.973L385.707,266.24c1.707-1.707,4.267-1.707,5.973,0c11.947,11.947,17.92,24.747,17.92,36.693c0,12.8-5.973,24.747-17.92,37.547l-0.853,0.853l59.733,59.733l10.24-10.24c6.827-6.827,15.36-6.827,20.48-1.707l19.627,19.627c2.56,2.56,3.413,5.973,3.413,9.387c0,3.413-1.707,6.827-3.413,9.387l-72.533,72.533C424.96,501.76,421.547,503.467,418.133,503.467z"/></>); break;
+                case 'Home': viewBox="0 0 48 48"; stroke="none"; content=(<><path fill="#c8d3de" d="M42,39H6v2c0,1.1,0.9,2,2,2h32c1.1,0,2-0.9,2-2V39z"/><path fill="#e8e8e8" d="M42,39H6V20L24,3l18,17V39z"/><path fill="#de490d" d="M13,25h10c0.6,0,1,0.4,1,1v17H12V26C12,25.4,12.4,25,13,25z"/><path fill="#b9360c" d="M44.5,19.5L25.3,2.5C24.9,2.2,24.5,2,24,2s-0.9,0.2-1.3,0.5L3.5,19.5c-0.4,0.4-0.4,1-0.1,1.4l1.6,1.7c0.4,0.4,1,0.4,1.4,0.1L24,7.4l17.5,15.3c0.4,0.4,1,0.3,1.4-0.1l1.6-1.7C44.9,20.5,44.9,19.9,44.5,19.5z"/><path fill="#0a85d9" d="M29,25h6c0.6,0,1,0.4,1,1v6c0,0.6-0.4,1-1,1h-6c-0.6,0-1-0.4-1-1v-6C28,25.4,28.4,25,29,25z"/></>); break;
+                case 'Inventory': viewBox="0 0 50 50"; stroke="none"; content=(<><polygon fill="#e68f3a" points="43,14.6 43,33.08 23,44.63 23,44.62 7,35.39 7,16.91 27,5.36"/><polygon fill="#ff9f40" points="23,26.149 23,44.624 7,35.389 7,16.904"/><polygon fill="#b3702d" points="43,33.083 23,44.63 23,26.149 43,14.602"/><polygon fill="#d98836" points="12,24.423 12,26.732 18,30.196 18,27.887"/><polygon fill="#b3702d" points="12,24.423 12,26.732 14,25.577"/></>); break;
+                case 'Shop': viewBox="0 0 128 128"; stroke="none"; content=(<><path d="M93.46 39.45c6.71-1.49 15.45-8.15 16.78-11.43c.78-1.92-3.11-4.92-4.15-6.13c-2.38-2.76-1.42-4.12-.5-7.41c1.05-3.74-1.44-7.87-4.97-9.49s-7.75-1.11-11.3.47c-3.55 1.58-6.58 4.12-9.55 6.62c-2.17-1.37-5.63-7.42-11.23-3.49c-3.87 2.71-4.22 8.61-3.72 13.32c1.17 10.87 3.85 16.51 8.9 18.03c6.38 1.92 13.44.91 19.74-.49z" fill="#FFCA28"/><path d="M104.36 8.18c-.85 14.65-15.14 24.37-21.92 28.65l4.4 3.78s2.79.06 6.61-1.16c6.55-2.08 16.12-7.96 16.78-11.43c.97-5.05-4.21-3.95-5.38-7.94c-.61-2.11 2.97-6.1-.49-11.9zm-24.58 3.91s-2.55-2.61-4.44-3.8c-.94 1.77-1.61 3.69-1.94 5.67c-.59 3.48 0 8.42 1.39 12.1c.22.57 1.04.48 1.13-.12c1.2-7.91 3.86-13.85 3.86-13.85z" fill="#E2A610"/><path d="M61.96 38.16S30.77 41.53 16.7 68.61c-14.07 27.08-2.11 43.5 10.55 49.48c12.66 5.98 44.56 8.09 65.31 3.17s25.94-15.12 24.97-24.97c-1.41-14.38-14.77-23.22-14.77-23.22s.53-17.76-13.25-29.29c-12.23-10.24-27.55-5.62-27.55-5.62z" fill="#FFCA28"/><path d="M74.76 83.73c-6.69-8.44-14.59-9.57-17.12-12.6c-1.38-1.65-2.19-3.32-1.88-5.39c.33-2.2 2.88-3.72 4.86-4.09c2.31-.44 7.82-.21 12.45 4.2c1.1 1.04.7 2.66.67 4.11c-.08 3.11 4.37 6.13 7.97 3.53c3.61-2.61.84-8.42-1.49-11.24c-1.76-2.13-8.14-6.82-16.07-7.56c-2.23-.21-11.2-1.54-16.38 8.31c-1.49 2.83-2.04 9.67 5.76 15.45c1.63 1.21 10.09 5.51 12.44 8.3c4.07 4.83 1.28 9.08-1.9 9.64c-8.67 1.52-13.58-3.17-14.49-5.74c-.65-1.83.03-3.81-.81-5.53c-.86-1.77-2.62-2.47-4.48-1.88c-6.1 1.94-4.16 8.61-1.46 12.28c2.89 3.93 6.44 6.3 10.43 7.6c14.89 4.85 22.05-2.81 23.3-8.42c.92-4.11.82-7.67-1.8-10.97z" fill="#6B4B46"/></>); break;
+                case 'Dungeon': viewBox="0 0 504.32 504.32"; stroke="none"; content=(<><path style={{fill:"#FFD0A1"}} d="M95.427,448.707L161.133,383l-42.667-42.667L52.76,406.04l-14.507-14.507c-3.413-3.413-8.533-3.413-11.947,0L6.68,411.16c-3.413,3.413-3.413,8.533,0,11.947l72.533,72.533c3.413,3.413,8.533,3.413,11.947,0l19.627-19.627c3.413-3.413,3.413-9.387-1.707-13.653L95.427,448.707L95.427,448.707z M74.093,427.374L52.76,406.04l0,0l0,0L74.093,427.374z"/><path style={{fill:"#ECF4F7"}} d="M173.933,327.533L173.933,327.533L203.8,357.4l0,0l46.933-46.933L220.867,280.6L173.933,327.533L173.933,327.533L173.933,327.533l46.933-46.933L191,250.733l-46.933,46.933l0,0L173.933,327.533L173.933,327.533z M498.2,3.267l-17.067,76.8L310.467,250.733L280.6,220.867L498.2,3.267z M498.2,3.267l-217.6,217.6L250.733,191L421.4,20.333L498.2,3.267z"/><path style={{fill:"#ECF4F7"}} d="M357.4,297.667l-29.867,29.867L3.267,3.267l76.8,17.067L250.733,191l29.867,29.867l29.867,29.867L357.4,297.667z M327.533,327.533L297.667,357.4l-46.933-46.933L220.867,280.6L191,250.733L20.333,80.067L3.267,3.267L327.533,327.533z"/><path style={{fill:"#AE938D"}} d="M203.8,357.4l29.867,29.867c-22.187,22.187-45.227,23.04-68.267,0L161.133,383l0,0l-42.667-42.667l-4.267-4.267c-22.187-22.187-23.04-45.227,0-68.267l29.867,29.867l29.867,29.867L203.8,357.4z M357.4,297.667l29.867-29.867c23.04,22.187,23.04,45.227,0,68.267L383,340.333l0,0L340.333,383l-4.267,4.267c-22.187-22.187-45.227,23.04-68.267,0l29.867-29.867l29.867-29.867L357.4,297.667z"/><path style={{fill:"#FFD0A1"}} d="M406.893,448.707l41.813-41.813L383,341.187l0,0l-42.667,42.667L406.893,448.707L406.893,448.707l-15.36,15.36c-3.413,3.413-3.413,8.533,0,11.947l19.627,19.627c3.413,3.413,8.533,3.413,11.947,0l72.533-72.533c3.413,3.413,3.413-8.533,0-11.947l-19.627-19.627c-3.413-3.413-9.387-3.413-13.653,1.707l-12.8,12.8C448.707,406.04,406.893,448.707,406.893,448.707z"/><path style={{fill:"#51565F"}} d="M418.133,503.467c-3.413,0-6.827-1.707-9.387-3.413l-19.627-19.627c-5.12-5.12-5.12-12.8,0-17.92l11.947-11.947l-59.733-59.733l-0.853,0.853c-23.893,23.893-50.347,23.893-74.24,0c-1.707-1.707-1.707-4.267,0-5.973L385.707,266.24c1.707-1.707,4.267-1.707,5.973,0c11.947,11.947,17.92,24.747,17.92,36.693c0,12.8-5.973,24.747-17.92,37.547l-0.853,0.853l59.733,59.733l10.24-10.24c6.827-6.827,15.36-6.827,20.48-1.707l19.627,19.627c2.56,2.56,3.413,5.973,3.413,9.387c0,3.413-1.707,6.827-3.413,9.387l-72.533,72.533C424.96,501.76,421.547,503.467,418.133,503.467z"/></>); break;
                 case 'History': viewBox = "0 0 1024 1024"; stroke = "none"; content = (<><path d="M903.73,183.71l-57.87-0.55c-0.73,0-91.94-5.44-128.64-11.87c-79.15-13.82-142.53-12.6-209.45,35.23c-68.57-47.29-114.94-50.22-204.13-35.05c-7.52,1.28-14.74,2.63-21.9,3.98c-26.79,5.14-104.05,8.26-104.05,8.26H120c-12.97,0-23.49,10.52-23.49,23.49v599.17c0,12.97,10.52,23.49,23.49,23.49h292.83c-0.67,2.08-1.35,4.16-1.35,6.48c0,12.6,10.64,22.82,23.92,22.82h146.14c13.27,0,23.98-10.22,23.98-22.82c0-2.32-0.67-4.4-1.41-6.48h299.62c13.03,0,23.55-10.52,23.55-23.49V207.2c0-12.97-10.52-23.49-23.55-23.49z" fill="#27323A"/><path d="M143.55,230.75h30.71v552.13H143.55z" fill="#FFFFFF"/><path d="M206.62,230.94c33.95-0.18,59.58-4.71,83.87-9.3a825.05,825.05,0,0,1,21.04-3.86c88.09-14.92,119.77-8.93,178.5,33.77c0.37,0.24,0.74,0.37,1.1,0.55v497.93c-76.1-66.74-144.49-40.25-230.31-6.48l-54.2,22.63c-0.12-92.31-0.12-431.2-0.001-535.25z" fill="#79CCBF"/><path d="M272.56,772.3c88.51-34.81,141.92-55.73,208.47,10.52c0,0,0.06,0.06,0.12,0.06H247.18l25.39-10.58z" fill="#F4CE73"/><path d="M534.75,782.89c0.3-0.24,0.73-0.43,1.04-0.73c61.41-66.92,119.47-45.02,215.32-8.93l23.61,9.67H534.75z" fill="#F4CE73"/><path d="M814.85,765.88l-52.36-21.53c-93.16-35.11-167.49-62.88-240.03,7.28v-498.3c1.41-0.67,2.88-1.22,4.16-2.2c57.56-45.02,108.58-46.49,182.54-33.52c29.06,5.08,80.2,9.48,105.7,11.44c0.24,103.32,0.24,445.7,0,536.84z" fill="#79CCBF"/><path d="M846.11,230.75h34.13v552.13h-34.13z" fill="#FFFFFF"/></>); break;
-                case 'Medal': viewBox = "0 0 512 512"; stroke = "none"; content = (
-                    <g>
-                        <path fill="#FFC107" d="M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0zm0 472c-119.3 0-216-96.7-216-216S136.7 40 256 40s216 96.7 216 216-96.7 216-216 216z"/>
-                        <path fill="#FFC107" d="M372.5 174c-6.1-2.3-11.8 1.9-12.7 8.4l-6.2 44.4-41-17.7c-5.8-2.5-12.4.9-13.8 7.1l-15.8 67.4-15.8-67.4c-1.4-6.1-8-9.6-13.8-7.1l-41 17.7-6.2-44.4c-.9-6.5-6.6-10.7-12.7-8.4-46.3 17.6-79.3 62-79.3 114 0 67.6 54.8 122.4 122.4 122.4S359 355.6 359 288c0-52-33-96.4-79.3-114z"/>
-                        <path fill="#FF9800" d="M256 320c-8.8 0-16-7.2-16-16s7.2-16 16-16 16 7.2 16 16-7.2 16-16 16z"/>
-                        <path fill="#FFEB3B" d="M256 96l25 55 59 6-44 40 12 59-52-30-52 30 12-59-44-40 59-6z"/>
-                    </g>
-                ); break;
-                case 'Clover': viewBox = "0 0 512 512"; stroke = "none"; content = (<g><path style={{fill:"#FFD05B"}} d="M256,0C114.615,0,0,114.615,0,256s114.615,256,256,256s256-114.615,256-256S397.385,0,256,0z"/><path style={{fill:"#FFC82D"}} d="M256,32.336c123.518,0,223.664,100.146,223.664,223.664S379.518,479.664,256,479.664S32.336,379.518,32.336,256S132.482,32.336,256,32.336 M256,0C114.615,0,0,114.615,0,256s114.615,256,256,256s256-114.615,256-256S397.385,0,256,0L256,0z"/><g><path style={{fill:"#EAB308"}} d="M256,128l37.28,75.52L376.6,215.6l-60.4,58.88l14.24,83.12L256,318.4l-74.44,39.2l14.24-83.12l-60.4-58.88l83.32-12.08L256,128z"/></g></g>); break;
-                case 'Reward':
-                    viewBox = "0 0 48 48";
-                    stroke = "none";
-                    content = (
-                        <g transform="translate(-26,-305)">
-                            <path d="m 44.000048,328.67941 5.196153,3 L 39.196153,349 38.579267,344.06848 34,346 c 3.333351,-5.77353 6.666699,-11.54706 10.000048,-17.32059 z" style={{fill:"#ff5576", fillOpacity:1, fillRule:"evenodd", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1}}/>
-                            <path d="m 55.999976,328.67941 -5.196153,3 L 60.803871,349 61.420757,344.06848 66.000024,346 c -3.333351,-5.77353 -6.666699,-11.54706 -10.000048,-17.32059 z" style={{fill:"#ff5576", fillOpacity:1, fillRule:"evenodd", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1}}/>
-                            <path d="m 58.61151,332.64671 -1.093909,4.40936 -4.365569,-1.25732 -3.152031,3.27166 -3.152031,-3.27166 -4.365569,1.25732 -1.09391,-4.40936 -4.409356,-1.0939 1.257325,-4.36557 -3.27166,-3.15204 3.27166,-3.15203 -1.257325,-4.36557 4.409356,-1.0939 1.093909,-4.40936 4.365569,1.25732 L 50,309 l 3.152031,3.27166 4.365569,-1.25732 1.09391,4.40936 4.409356,1.0939 -1.257325,4.36557 3.27166,3.15203 -3.27166,3.15204 1.257325,4.36557 z" style={{fill:"#e7e7e7", fillRule:"evenodd", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1}}/>
-                            <path d="m 43.720703,313.0625 a 15.136557,15.136557 0 0 0 -1.777344,0.12695 l -0.554687,2.23438 -4.410156,1.09375 1.257812,4.36523 -3.271484,3.15235 3.271484,3.15234 -1.257812,4.36523 4.410156,1.09375 1.09375,4.41016 4.365234,-1.25781 3.152344,3.27148 3.152344,-3.27148 3.076172,0.88672 a 15.136557,15.136557 0 0 0 2.628906,-8.48633 15.136557,15.136557 0 0 0 -15.136719,-15.13672 z" style={{fill:"#fafafa", fillOpacity:1, fillRule:"evenodd", stroke:"none", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1, strokeOpacity:1}}/>
-                            <path d="m 57.99999,324.03521 c 0,4.41826 -3.58171,7.99998 -7.99998,7.99998 -4.41828,0 -8,-3.58172 -8,-7.99998 0,-4.41827 3.58172,-8 8,-8 4.41827,0 7.99998,3.58173 7.99998,8 z" style={{fill:"#f2a50c", fillOpacity:1, fillRule:"evenodd", stroke:"none", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1, strokeOpacity:1}}/>
-                            <path d="M 48.648438,316.15039 C 44.874149,316.79295 42,320.07779 42,324.03516 c 0,3.95735 2.874149,7.2422 6.648438,7.88476 3.773341,-0.64334 6.646484,-3.92807 6.646484,-7.88476 0,-3.9567 -2.873143,-7.24143 -6.646484,-7.88477 z" style={{fill:"#fcca3d", fillOpacity:1, fillRule:"evenodd", stroke:"none", strokeWidth:2, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1, strokeOpacity:1}}/>
-                            <path d="m 50,317.77344 a 1.0057675,0.9942576 0 0 0 -1.005859,0.99609 v 0.86328 c -1.090652,0.39441 -1.894531,1.40627 -1.894531,2.60938 0,1.55135 1.333807,2.78711 2.90039,2.78711 0.52508,0 0.888672,0.36923 0.888672,0.79882 -10e-7,0.42962 -0.363602,0.79883 -0.888672,0.79883 -0.525074,0 -0.886718,-0.36921 -0.886719,-0.79883 a 1.0057675,0.9942576 0 0 0 -1.005859,-0.99413 1.0057675,0.9942576 0 0 0 -1.007812,0.99413 c 1e-6,1.20312 0.803877,2.21497 1.894531,2.60938 v 0.86328 A 1.0057675,0.9942576 0 0 0 50,330.29687 a 1.0057675,0.9942576 0 0 0 1.005859,-0.99609 v -0.86328 c 1.090653,-0.39441 1.894528,-1.40626 1.894531,-2.60938 0,-1.55134 -1.333808,-2.7871 -2.90039,-2.7871 -0.525083,0 -0.886719,-0.36921 -0.886719,-0.79883 0,-0.42961 0.36163,-0.79883 0.886719,-0.79883 0.525084,0 0.888672,0.36922 0.888672,0.79883 a 1.0057675,0.9942576 0 0 0 1.005859,0.99414 1.0057675,0.9942576 0 0 0 1.005859,-0.99414 c 0,-1.20312 -0.803879,-2.21497 -1.894531,-2.60938 v -0.86328 A 1.0057675,0.9942576 0 0 0 50,317.77344 Z" style={{color:"#000000", fill:"#808b9b", fillOpacity:1, fillRule:"evenodd", stroke:"none", strokeWidth:0.999996, strokeLinecap:"round", strokeLinejoin:"round", strokeMiterlimit:4.1, strokeOpacity:1}}/>
-                        </g>
-                    );
-                    break;
+                case 'Chart': content=<><rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M8 17V11M12 17V7M16 17V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></>; break;
+                case 'Calendar': content=<><rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/></>; break;
+                case 'Target': content=<><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/><circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="2" fill="none"/><circle cx="12" cy="12" r="2" fill="currentColor"/></>; break;
+                case 'Tag': content=<><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" fill="none" stroke="currentColor" strokeWidth="2"/><line x1="7" y1="7" x2="7.01" y2="7" stroke="currentColor" strokeWidth="2"/></>; break;
+                case 'Shield': content = <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>; break;
+                case 'Sword': content = <><path d="M14.5 4l-8.5 8.5a2.121 2.121 0 0 0 3 3l8.5-8.5-3-3zM2 18l3 3 2.5-2.5-3-3L2 18zM15 3.5l5.5 5.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></>; break;
+                // Reuse existing icons...
                 case 'Settings': content = <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>; break;
                 case 'Trash': content = <><polyline points="3 6 5 6 21 6" fill="none" stroke="currentColor" strokeWidth="2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" strokeWidth="2"/><line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" strokeWidth="2"/><line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" strokeWidth="2"/></>; break;
                 case 'Plus': content = <><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2"/></>; break;
@@ -346,7 +327,7 @@
                 case 'DollarSign': content = <><line x1="12" y1="1" x2="12" y2="23" stroke="currentColor" strokeWidth="2"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="2" fill="none"/></>; break;
                 case 'ToggleOn': content = <><rect x="1" y="5" width="22" height="14" rx="7" fill="#10b981"/><circle cx="16" cy="12" r="5" fill="white"/></>; break;
                 case 'ToggleOff': content = <><rect x="1" y="5" width="22" height="14" rx="7" fill="#52525b"/><circle cx="8" cy="12" r="5" fill="white"/></>; break;
-                case 'Profile': content = <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" fill="none"/><circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" fill="none"/></>; break;
+                case 'Profile': content = <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" fill="none"/><circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" fill="none"/><line x1="12" y1="2" x2="12" y2="15" stroke="currentColor" strokeWidth="2"/></>; break;
                 case 'Share': content = <><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" stroke="currentColor" strokeWidth="2" fill="none"/><polyline points="16 6 12 2 8 6" stroke="currentColor" strokeWidth="2" fill="none"/><line x1="12" y1="2" x2="12" y2="15" stroke="currentColor" strokeWidth="2"/></>; break;
                 case 'Globe': content = <><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/><line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" strokeWidth="2"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="currentColor" strokeWidth="2" fill="none"/></>; break;
                 case 'Sword': content = <><path d="M14.5 4l-8.5 8.5a2.121 2.121 0 0 0 3 3l8.5-8.5-3-3zM2 18l3 3 2.5-2.5-3-3L2 18zM15 3.5l5.5 5.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></>; break;
@@ -359,6 +340,13 @@
                 </svg>
             );
         };
+
+        const SmartIcon = ({ name, className }) => { const [error, setError] = useState(false); const BASE_URL = "https://sdekza.github.io/OGHza/"; const imgMap = { 'Spell': 'Coagulated Spell.png', 'Magic': 'Contaminated Magic.png', 'Gum': 'Bubble Gum.png', 'HeGum': 'HE Bubble Gum.png', 'Silvervine': 'Silvervine Fruit.png', 'GumBox': 'Bubble Gum Box.png', 'HeGumBox': 'HE Bubble Gum Box.png', 'SilvervineBox': 'Silvervine Box.png', 'Premium': 'Premium Box.png', 'Kafra': 'Kafra Buff.png', 'PremiumStaff': 'Premium Service Staff.png', 'Elunium': 'Elunium.png', 'Oridecon': 'Oridecon.png', 'Card': 'Card.png', 'Zeny': 'Zeny.png', 'DEK': 'DEK.png', 'OGH_BOSS': 'OGH BOSS.png', 'AOGH_BOSS': 'AOGH BOSS.png', 'Calendar': 'Calendar.png', 'Graph': 'Graph.png' }; const finalName = imgMap[name] ? name : (Object.keys(imgMap).find(k => k.toLowerCase() === name?.toLowerCase()) || 'Box'); 
+        if (['Sword', 'Shield', 'Box'].includes(name)) { return <div className={className}><Icon name={name} size="100%" /></div>; }
+        if (finalName === 'GumBox') return (<div className={`relative ${className}`}><img crossOrigin="anonymous" src={`${BASE_URL}Bubble Gum Box.png`} className="w-full h-full object-contain" /><img crossOrigin="anonymous" src={`${BASE_URL}Bubble Gum.png`} className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>); 
+        if (finalName === 'HeGumBox') return (<div className={`relative ${className}`}><img crossOrigin="anonymous" src={`${BASE_URL}Bubble Gum Box.png`} className="w-full h-full object-contain filter hue-rotate-15" /><img crossOrigin="anonymous" src={`${BASE_URL}HE Bubble Gum.png`} className="absolute bottom-0 right-0 w-1/2 h-1/2 object-contain filter drop-shadow-md" /></div>); 
+        if (!error && imgMap[finalName]) return <img crossOrigin="anonymous" src={`${BASE_URL}${imgMap[finalName]}`} className={`object-contain ${className}`} onError={() => setError(true)} />; 
+        return <div className={`w-full h-full bg-zinc-700 rounded-md flex items-center justify-center ${className}`}><span className="text-[8px] text-zinc-500">?</span></div>; };
 
         // --- SUB-COMPONENTS ---
         const BuffIcon = ({ buff }) => {
@@ -487,6 +475,72 @@
             );
         }
 
+        function MarketPriceModal({ prices, onClose, onSave }) {
+            const [localPrices, setLocalPrices] = useState(prices);
+            const handleChange = (key, val) => {
+                setLocalPrices(prev => ({ ...prev, [key]: parseInt(val.replace(/\D/g, '')) || 0 }));
+            };
+            return (
+                <Modal onClose={onClose}>
+                    <div className="space-y-4">
+                        <div className="text-center mb-4">
+                            <h3 className="text-xl font-black text-zinc-800">Market Price Manager</h3>
+                            <p className="text-xs text-zinc-500">Update daily prices for accurate tracking</p>
+                        </div>
+                        <div className="space-y-3">
+                            {['purpleStonePrice', 'contMagicPrice', 'gumBoxPrice', 'silvervineBoxPrice'].map(key => {
+                                let label = 'Item';
+                                let icon = 'Box';
+                                if(key === 'purpleStonePrice') { label = 'Purple Stone'; icon = 'Spell'; }
+                                if(key === 'contMagicPrice') { label = 'Red Stone'; icon = 'Magic'; }
+                                if(key === 'gumBoxPrice') { label = 'Gum Box (10)'; icon = 'GumBox'; }
+                                if(key === 'silvervineBoxPrice') { label = 'Silvervine Box (10)'; icon = 'SilvervineBox'; }
+                                return (
+                                    <div key={key} className="flex items-center gap-2 bg-zinc-100 p-2 rounded-xl border border-zinc-200">
+                                        <div className="w-8 h-8 flex-shrink-0"><SmartIcon name={icon} className="w-full h-full"/></div>
+                                        <div className="flex-1">
+                                            <p className="text-[9px] font-bold uppercase text-zinc-500">{label}</p>
+                                            <input type="text" inputMode="numeric" value={localPrices[key]} onChange={e => handleChange(key, e.target.value)} className="w-full bg-transparent text-sm font-black text-zinc-800 outline-none"/>
+                                        </div>
+                                        <div className="text-xs font-bold text-zinc-400">Z</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <button onClick={() => onSave(localPrices)} className="w-full py-3 bg-emerald-600 rounded-xl font-black text-white shadow-lg active:scale-95 transition-transform mt-2">UPDATE PRICES</button>
+                    </div>
+                </Modal>
+            );
+        }
+
+        function WishlistModal({ onClose, onSave }) {
+            const [name, setName] = useState('');
+            const [price, setPrice] = useState('');
+            const [icon, setIcon] = useState('Card');
+            const icons = ['Card', 'Elunium', 'Oridecon', 'Spell', 'Magic', 'Gum', 'HeGum', 'Premium', 'Kafra', 'Silvervine'];
+            
+            return (
+                <Modal onClose={onClose}>
+                    <div className="space-y-4">
+                        <div className="text-center mb-4">
+                            <h3 className="text-xl font-black text-zinc-800">Set Your Goal</h3>
+                            <p className="text-xs text-zinc-500">What are you farming for?</p>
+                        </div>
+                        <div className="flex justify-center gap-2 mb-4 flex-wrap">
+                            {icons.map(ic => (
+                                <div key={ic} onClick={() => setIcon(ic)} className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${icon === ic ? 'border-emerald-500 bg-emerald-50' : 'border-transparent bg-zinc-100'}`}>
+                                    <SmartIcon name={ic} className="w-6 h-6"/>
+                                </div>
+                            ))}
+                        </div>
+                        <input type="text" placeholder="Item Name (e.g. OGH Card)" value={name} onChange={e => setName(e.target.value)} className="slate-input w-full p-2 rounded-xl text-sm font-bold text-zinc-800 bg-zinc-50"/>
+                        <input type="text" inputMode="numeric" placeholder="Target Price (Zeny)" value={price} onChange={e => setPrice(e.target.value.replace(/\D/g, ''))} className="slate-input w-full p-2 rounded-xl text-sm font-bold text-zinc-800 bg-zinc-50"/>
+                        <button disabled={!name || !price} onClick={() => onSave({ name, price: parseInt(price), icon })} className="w-full py-3 bg-gradient-to-r from-amber-400 to-orange-500 rounded-xl font-black text-white shadow-lg active:scale-95 transition-transform disabled:opacity-50 disabled:grayscale">SET TARGET</button>
+                    </div>
+                </Modal>
+            );
+        }
+
         function ShareModal({ data, onClose }) {
             const cardRef = useRef(null);
             const [imgUrl, setImgUrl] = useState(null);
@@ -585,17 +639,17 @@
 
         function ProfileView({ stats, uid, onResetUid, onSetUid, prices, setPrices, db, showToast, onBack, characters, setCharacters, setTheme, currentTheme }) {
             const [localPrices, setLocalPrices] = useState(prices);
-            const [localGoal, setLocalGoal] = useState(stats.savingsGoal || 0);
             const [inputUid, setInputUid] = useState('');
             const [newCharName, setNewCharName] = useState('');
             const [newCharJob, setNewCharJob] = useState('');
             const [isExporting, setIsExporting] = useState(false);
+            const [showMarketModal, setShowMarketModal] = useState(false);
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
 
-            useEffect(() => { setLocalPrices(prices); setLocalGoal(stats.savingsGoal || 0); }, [prices, stats]);
+            useEffect(() => { setLocalPrices(prices); }, [prices]);
             const hasNoCharacters = !characters || characters.length === 0;
 
-            const handleSaveConfig = async () => { await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'prices'), localPrices); const newStats = { ...stats, savingsGoal: parseInt(localGoal) }; await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), newStats); showToast("Settings Saved!"); };
+            const handleSavePrices = async (newPrices) => { await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'prices'), newPrices); showToast("Market Prices Updated!"); setShowMarketModal(false); };
             const handleDeleteAllData = async () => { if(!confirm("⚠️ ARE YOU SURE? This will PERMANENTLY DELETE all your data!")) return; try { const batch = writeBatch(db); const recordsSnapshot = await getDocs(collection(db, 'artifacts', appId, 'users', uid, 'records')); recordsSnapshot.forEach((doc) => batch.delete(doc.ref)); const inventorySnapshot = await getDocs(collection(db, 'artifacts', appId, 'users', uid, 'inventory')); inventorySnapshot.forEach((doc) => batch.delete(doc.ref)); batch.delete(doc(db, 'artifacts', appId, 'users', uid, 'config', 'prices')); batch.delete(doc(db, 'artifacts', appId, 'users', uid, 'config', 'characters')); batch.delete(doc(db, 'artifacts', appId, 'users', uid, 'config', 'stock')); batch.delete(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats')); await batch.commit(); showToast("All Data Deleted!"); setTimeout(() => window.location.reload(), 1500); } catch (error) { console.error("Error deleting data:", error); showToast("Failed to delete data"); } };
             const copyUid = () => { navigator.clipboard.writeText(uid); showToast("Copied UID"); };
             const addCharacter = async () => { if (!newCharName || !newCharJob) return; const newChar = { id: Date.now().toString(), name: newCharName, job: newCharJob }; const updatedChars = [...(characters || []), newChar]; await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'characters'), { list: updatedChars }); setNewCharName(''); setNewCharJob(''); showToast(`Added ${newChar.name}`); };
@@ -630,11 +684,9 @@
                             <button onClick={addCharacter} disabled={!newCharName} className="px-3 bg-zinc-200 rounded-xl text-zinc-500 hover:text-zinc-800 disabled:opacity-50"><Icon name="Plus" size={16}/></button>
                         </div>
                     </div>
-                    <div className="glass-panel p-4 rounded-2xl space-y-4">
-                        <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest flex items-center gap-2"><Icon name="Settings" size={12}/> Game Config</p>
-                        <div><label className="text-[9px] font-bold text-zinc-500 uppercase mb-1 block">Savings Goal (Zeny)</label><div className="relative"><input type="text" inputMode="numeric" value={localGoal} onChange={e => setLocalGoal(e.target.value.replace(/\D/g,''))} className="slate-input w-full p-2 pl-8 rounded-xl text-sm font-bold text-zinc-800"/><div className="absolute left-2 top-2.5 text-zinc-400"><SmartIcon name="Zeny" className="w-4 h-4"/></div></div></div>
-                    </div>
-                    <button onClick={handleSaveConfig} className="w-full py-4 bg-emerald-600 rounded-2xl font-black text-white shadow-lg hover:bg-emerald-500 active:scale-95 transition-all">SAVE SETTINGS</button>
+                    
+                    <button onClick={() => setShowMarketModal(true)} className="w-full py-4 bg-white border border-zinc-200 rounded-2xl font-bold text-zinc-700 shadow-sm flex items-center justify-center gap-2 hover:bg-zinc-50"><Icon name="TrendingUp" size={18}/> Manage Market Prices</button>
+
                     <div className="glass-panel p-4 rounded-2xl space-y-3">
                         <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Adventure ID</p>
                         <div className="flex gap-2">
@@ -656,17 +708,45 @@
                         <div className="pt-2 border-t border-zinc-200 mt-2"><p className="text-[9px] text-rose-400 font-bold uppercase tracking-widest mb-1 text-center">Danger Zone</p><DeleteButton onDelete={handleDeleteAllData} duration={10000} label="Hold 10s to Wipe Data" className="w-full h-10 bg-rose-50 border-rose-200" /></div>
                     </div>
                     <div className="text-center pt-8 pb-20"><p className="text-[9px] text-zinc-400 font-mono">OGHza Tracker {APP_VERSION}</p></div>
+                    {showMarketModal && <MarketPriceModal prices={prices} onClose={() => setShowMarketModal(false)} onSave={handleSavePrices} />}
                 </div>
             );
         }
 
-        function HomeView({ records, stats, goToTab, activeBuffs, stock, characters, selectedCharId, setSelectedCharId }) {
+        function HomeView({ records, stats, goToTab, activeBuffs, stock, characters, selectedCharId, setSelectedCharId, db, uid, showToast }) {
              const { ResponsiveContainer, AreaChart, Area } = window.Recharts || {}; 
+             const [showWishlistModal, setShowWishlistModal] = useState(false);
+             const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
+
              const totalProfit = records.reduce((acc, r) => acc + (r.profit || 0), 0);
              const chartData = [...records].filter(r => !r.isSaleRecord).reverse().slice(-7).map((r, i) => ({ name: `Run ${i+1}`, profit: r.profit }));
              const expPercent = Math.min(100, Math.floor((stats.baseExp / getExpReq(stats.baseLv)) * 100));
-             const savingsGoal = stats.savingsGoal || 0;
+             
+             // Wishlist Logic
+             const savingsGoal = stats.wishlist ? stats.wishlist.price : (stats.savingsGoal || 0);
              const goalPercent = savingsGoal > 0 ? Math.min(100, (stats.zeny / savingsGoal) * 100) : 0;
+             const timeToGoal = useMemo(() => {
+                 if (savingsGoal <= stats.zeny) return { text: "Goal Reached! 🎉", days: 0 };
+                 if (savingsGoal === 0) return { text: "Set Goal", days: 0 };
+                 const oneWeekAgo = new Date(); oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                 const recentRecords = records.filter(r => new Date(r.date) >= oneWeekAgo && !r.isSaleRecord);
+                 if (recentRecords.length < 3) return { text: "Need data...", days: 0 };
+                 const totalRecentProfit = records.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (r.profit || 0), 0);
+                 const distinctDays = new Set(recentRecords.map(r => r.date)).size || 1;
+                 const dailyAvg = totalRecentProfit / distinctDays;
+                 if (dailyAvg <= 0) return { text: "Profit < 0", days: 0 };
+                 const remaining = savingsGoal - stats.zeny;
+                 const daysLeft = Math.ceil(remaining / dailyAvg);
+                 return { text: `${daysLeft} days left`, days: daysLeft };
+             }, [records, stats.zeny, savingsGoal]);
+
+             const handleSaveWishlist = async (wishlist) => {
+                 const newStats = { ...stats, wishlist, savingsGoal: wishlist.price };
+                 await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), newStats);
+                 showToast("Goal Updated!");
+                 setShowWishlistModal(false);
+             };
+
              const recentLuck = useMemo(() => {
                  if (records.length === 0) return { text: "No Data", icon: "😐", color: "text-zinc-500" };
                  const last5 = records.slice(0, 5);
@@ -678,30 +758,8 @@
                  if (score >= -1) return { text: "Normal", icon: "😐", color: "text-zinc-400" };
                  return { text: "Cursed...", icon: "💀", color: "text-rose-500" };
              }, [records]);
-             const timeToGoal = useMemo(() => {
-                 if (savingsGoal <= stats.zeny) return { text: "Goal Reached! 🎉", days: 0 };
-                 if (savingsGoal === 0) return { text: "Set a goal in Profile", days: 0 };
-                 const oneWeekAgo = new Date(); oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                 const recentRecords = records.filter(r => new Date(r.date) >= oneWeekAgo && !r.isSaleRecord);
-                 if (recentRecords.length < 3) return { text: "Need more data...", days: 0 };
-                 const totalRecentProfit = records.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (r.profit || 0), 0);
-                 const distinctDays = new Set(recentRecords.map(r => r.date)).size || 1;
-                 const dailyAvg = totalRecentProfit / distinctDays;
-                 if (dailyAvg <= 0) return { text: "Profit is negative...", days: 0 };
-                 const remaining = savingsGoal - stats.zeny;
-                 const daysLeft = Math.ceil(remaining / dailyAvg);
-                 const targetDate = new Date(); targetDate.setDate(targetDate.getDate() + daysLeft);
-                 return { text: `Est. ${targetDate.toLocaleDateString(undefined, {month:'short', day:'numeric'})} (${daysLeft} days)`, days: daysLeft };
-             }, [records, stats.zeny, savingsGoal]);
-             const alerts = [];
-             if (stock?.gum?.qty < 5) alerts.push({ name: "Low Gum", icon: "Gum" });
-             if (stock?.silvervine?.qty < 5) alerts.push({ name: "Low SV", icon: "Silvervine" });
-             const groupedRecords = useMemo(() => {
-                const groups = {};
-                records.forEach(r => { if (!groups[r.date]) groups[r.date] = []; groups[r.date].push(r); });
-                return Object.keys(groups).sort((a, b) => new Date(b) - new Date(a)).slice(0, 3).reduce((obj, key) => { obj[key] = groups[key]; return obj; }, {});
-            }, [records]);
-            const dailyChecklist = useMemo(() => {
+             
+             const dailyChecklist = useMemo(() => {
                 if (!characters) return [];
                 const today = getGameDate();
                 return characters.map(c => {
@@ -737,141 +795,26 @@
                             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest z-10">Fortune</span>
                             <div className="flex items-center gap-2 z-10 mt-1"><span className="text-2xl">{recentLuck.icon}</span><span className={`text-xs font-black ${recentLuck.color}`}>{recentLuck.text}</span></div>
                         </div>
-                        <div className="bg-white rounded-2xl p-3 border border-zinc-200 flex flex-col justify-center shadow-sm">
-                            <div className="flex justify-between mb-1"><span className="text-[9px] font-bold text-zinc-400 uppercase">Savings Goal</span><span className="text-[9px] font-bold text-amber-500">{Math.floor(goalPercent)}%</span></div>
-                            <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden"><div className="h-full bg-amber-400 transition-all" style={{width: `${goalPercent}%`}}></div></div>
-                            <div className="flex justify-between items-end mt-1"><p className="text-[8px] text-zinc-500">{formatMoney(stats.zeny)}</p><p className="text-[8px] font-bold text-emerald-500">{timeToGoal.text}</p></div>
+                        <div onClick={() => setShowWishlistModal(true)} className="bg-white rounded-2xl p-3 border border-zinc-200 flex flex-col justify-center shadow-sm cursor-pointer hover:bg-zinc-50 transition-colors relative group">
+                            <div className="absolute top-2 right-2 text-zinc-300 group-hover:text-emerald-500"><Icon name="Settings" size={12}/></div>
+                            <div className="flex justify-between mb-1">
+                                <span className="text-[9px] font-bold text-zinc-400 uppercase truncate pr-4">{stats.wishlist ? stats.wishlist.name : 'Set Goal'}</span>
+                                <span className="text-[9px] font-bold text-amber-500">{Math.floor(goalPercent)}%</span>
+                            </div>
+                            <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden mb-1"><div className="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all" style={{width: `${goalPercent}%`}}></div></div>
+                            <div className="flex justify-between items-end">
+                                <div className="flex items-center gap-1">
+                                    {stats.wishlist && <div className="w-4 h-4"><SmartIcon name={stats.wishlist.icon} className="w-full h-full"/></div>}
+                                    <p className="text-[8px] text-zinc-500">{formatMoney(stats.zeny)}</p>
+                                </div>
+                                <p className="text-[8px] font-bold text-emerald-500">{timeToGoal.text}</p>
+                            </div>
                         </div>
                     </div>
-                    {alerts.length > 0 && <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide">{alerts.map((a, i) => (<div key={i} onClick={() => goToTab('shop')} className="flex items-center gap-2 bg-rose-50 border border-rose-200 px-3 py-2 rounded-xl animate-pulse cursor-pointer"><SmartIcon name={a.icon} className="w-4 h-4"/><span className="text-[10px] font-bold text-rose-500 uppercase">{a.name}</span></div>))}</div>}
+                    
                     <div className="text-center mb-8 bg-white p-6 rounded-[2.5rem] border border-zinc-200 relative overflow-hidden shadow-lg shadow-zinc-200/50"><div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent"></div><div className="flex items-center justify-center gap-2 mb-1"><SmartIcon name="Zeny" className="w-5 h-5"/><p className="text-[10px] opacity-50 font-bold uppercase tracking-widest text-zinc-600">Total Profit</p></div><p className="text-4xl font-black text-zinc-800 drop-shadow-sm">{formatMoney(totalProfit)}</p></div>
                     {window.Recharts && (<div className="glass-panel p-4 rounded-3xl h-48 mb-6 border-zinc-200 bg-white"><p className="text-[10px] font-bold opacity-40 mb-2 uppercase flex items-center gap-2 text-zinc-500"><Icon name="TrendingUp" size={14}/> Profit Trend</p><ResponsiveContainer width="100%" height="90%"><AreaChart data={chartData}><Area type="monotone" dataKey="profit" stroke="#10b981" fill="#10b981" fillOpacity={0.1} strokeWidth={3} /></AreaChart></ResponsiveContainer></div>)}
-                    <div className="space-y-3"><h4 className="text-[10px] font-bold opacity-40 px-2 uppercase tracking-widest flex items-center gap-2 text-zinc-500"><Icon name="Clock" size={12}/> Daily Performance (Last 3 Days)</h4>{Object.keys(groupedRecords).length === 0 && <p className="text-center text-xs text-zinc-500 py-4 italic">No recent data</p>}{Object.keys(groupedRecords).map(date => { const dailyRecords = groupedRecords[date]; const dailyOperatingProfit = dailyRecords.reduce((acc, r) => acc + (r.profit || 0), 0); let dailyFixedCost = 0; activeBuffs.forEach(buff => { const recDate = new Date(date); const start = new Date(buff.activatedAt); const end = new Date(buff.endDate); const d = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate()).getTime(); const s = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime(); const e = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime(); if (d >= s && d < e) dailyFixedCost += Math.round(buff.buyPrice / buff.duration); }); const dailyNetProfit = dailyOperatingProfit - dailyFixedCost; return (<div key={date} className="list-panel p-4 rounded-3xl border border-zinc-200 bg-white relative overflow-hidden"><div className="flex justify-between items-center mb-2 border-b border-zinc-100 pb-2"><span className="text-xs font-bold text-zinc-600">{date}</span><span className={`text-[9px] font-black px-2 py-0.5 rounded ${dailyNetProfit >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>{dailyNetProfit >= 0 ? 'PROFIT' : 'LOSS'}</span></div><div className="grid grid-cols-3 gap-2 text-center"><div><p className="text-[8px] text-zinc-400 uppercase">Run Profit</p><p className="text-xs font-bold text-zinc-700">{formatMoney(dailyOperatingProfit)}</p></div><div><p className="text-[8px] text-zinc-400 uppercase">Fixed Cost</p><p className="text-xs font-bold text-rose-500">-{formatMoney(dailyFixedCost)}</p></div><div><p className="text-[8px] text-zinc-400 uppercase">Net Total</p><p className={`text-sm font-black ${dailyNetProfit>=0?'text-emerald-500':'text-rose-500'}`}>{formatMoney(dailyNetProfit)}</p></div></div></div>); })}</div>
-                </div>
-            );
-        }
-
-        function ShopView({ db, uid, showToast }) {
-            const [selectedItem, setSelectedItem] = useState(null); const [price, setPrice] = useState(''); const [qty, setQty] = useState('1');
-            const handleItemClick = (item) => { setSelectedItem(item); setPrice(''); setQty('1'); };
-            const handleBuy = async () => { if (!price || !selectedItem) return; const buyPrice = parseInt(price); const quantity = parseInt(qty) || 1; const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker'; const promises = []; for(let i=0; i<quantity; i++) { promises.push(addDoc(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), { itemId: selectedItem.id, name: selectedItem.name, type: selectedItem.type, subType: selectedItem.subType || null, duration: selectedItem.duration || null, qty: selectedItem.qty || 1, buyPrice: buyPrice, timestamp: Date.now() + i, status: 'unused', category: selectedItem.category || 'Consumable' })); } await Promise.all(promises); showToast(`Bought ${quantity} ${selectedItem.name}`); setSelectedItem(null); setPrice(''); setQty('1'); };
-            return (
-                <div className="p-6 animate-fade-in view-content space-y-6">
-                    <h2 className="text-2xl font-black tracking-tighter text-zinc-700 flex items-center gap-2"><Icon name="Shop" size={24}/> Cash Shop</h2>
-                    <div className="bg-white p-4 rounded-[2rem] border border-zinc-200 min-h-[200px]"><p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mb-4 text-zinc-500">Shelves</p><div className="grid grid-cols-4 gap-3">{SHOP_ITEMS.map(item => (<div key={item.id} onClick={() => handleItemClick(item)} className={`aspect-square rounded-2xl flex items-center justify-center transition-all relative cursor-pointer ${selectedItem?.id === item.id ? 'bg-zinc-100 ring-2 ring-emerald-500 scale-105 z-10' : 'bg-white border border-zinc-200 active:scale-95 hover:bg-zinc-50 shadow-sm'}`}><SmartIcon name={item.icon} className="w-8 h-8" /></div>))}</div></div>
-                    <div className="glass-panel p-6 rounded-[2.5rem] relative overflow-hidden border-zinc-200"><div className="flex gap-4"><div className={`w-24 h-24 rounded-3xl flex-shrink-0 flex items-center justify-center border-2 transition-all ${selectedItem ? 'bg-white border-emerald-200 shadow-xl' : 'bg-zinc-50 border-dashed border-zinc-300'}`}>{selectedItem ? <div className="flex flex-col items-center animate-pop-in"><SmartIcon name={selectedItem.icon} className="w-10 h-10 mb-1" /></div> : <span className="text-[8px] opacity-20 font-black uppercase text-center text-zinc-400">Select<br/>Item</span>}</div><div className="flex-1 space-y-2"><div><div className="flex justify-between items-baseline mb-1"><label className="text-[8px] font-bold opacity-40 uppercase ml-1 flex items-center gap-1"><Icon name="Box" size={10}/> Item Name</label>{selectedItem && <span className="text-[10px] font-bold text-emerald-600 truncate">{selectedItem.name}</span>}</div><input type="text" inputMode="numeric" disabled={!selectedItem} value={price} onChange={e => setPrice(e.target.value.replace(/\D/g, ''))} className="slate-input shop-input w-full p-2 rounded-xl text-sm font-bold placeholder-zinc-400 text-zinc-800" placeholder="Price / Unit"/></div><div><label className="text-[8px] font-bold opacity-40 uppercase ml-1">Quantity</label><div className="flex items-center gap-2"><button disabled={!selectedItem} onClick={() => setQty(Math.max(1, parseInt(qty||0)-1).toString())} className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-30 text-zinc-500">-</button><input type="text" inputMode="numeric" disabled={!selectedItem} value={qty} onChange={e => setQty(e.target.value.replace(/\D/g, ''))} className="w-full bg-transparent text-center text-sm font-black outline-none text-zinc-800"/><button disabled={!selectedItem} onClick={() => setQty((parseInt(qty||0)+1).toString())} className="w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center hover:bg-zinc-200 disabled:opacity-30 text-zinc-500">+</button></div></div></div></div><div className="mt-4 pt-4 border-t border-zinc-100 flex justify-between items-center"><div><p className="text-[9px] opacity-40 font-bold uppercase flex items-center gap-1"><SmartIcon name="Zeny" className="w-3 h-3"/> Total Cost</p><p className="text-xl font-black text-zinc-200">{formatMoney((parseInt(price) || 0) * (parseInt(qty) || 0))} z</p></div><button onClick={handleBuy} disabled={!selectedItem || !price} className="px-6 py-3 bg-zinc-800 text-white rounded-xl text-xs font-black uppercase shadow-lg hover:bg-zinc-700 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center gap-2"><Icon name="ShoppingCart" size={14}/> Buy Now</button></div></div>
-                    {selectedItem && <div className="mt-4 p-3 bg-zinc-50 rounded-xl border border-zinc-200"><p className="text-xs text-zinc-500 italic text-center">"{getItemInfo(selectedItem.id).desc}"</p></div>}
-                </div>
-            );
-        }
-
-        function InventoryView({ db, uid, showToast, records, stock, stats, selectedCharId }) {
-            const [items, setItems] = useState([]);
-            const [activeBuffs, setActiveBuffs] = useState([]);
-            const [selectedBox, setSelectedBox] = useState(null);
-            const [svUseConfirm, setSvUseConfirm] = useState(null);
-            const [viewItem, setViewItem] = useState(null); 
-            const [activeTab, setActiveTab] = useState('All');
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
-            const totalSpellsDropped = useMemo(() => records.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (parseInt(r.purpleStoneCount) || 0), 0), [records]);
-            const totalMagicsDropped = useMemo(() => records.filter(r => !r.isSaleRecord).reduce((acc, r) => acc + (parseInt(r.contMagicCount) || 0), 0), [records]);
-            const totalSpellsSold = useMemo(() => records.filter(r => r.isSaleRecord && r.itemId === 'spell').reduce((acc, r) => acc + r.qty, 0), [records]);
-            const totalMagicsSold = useMemo(() => records.filter(r => r.isSaleRecord && r.itemId === 'magic').reduce((acc, r) => acc + r.qty, 0), [records]);
-            const currentSpells = Math.max(0, totalSpellsDropped - totalSpellsSold);
-            const currentMagics = Math.max(0, totalMagicsDropped - totalMagicsSold);
-            const drops = useMemo(() => { const c = {}; records.forEach(r => { if (r.drops && !r.isSaleRecord) r.drops.forEach(d => c[d.id] = (c[d.id] || 0) + d.qty); }); return c; }, [records]);
-
-            useEffect(() => {
-                const q = query(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), orderBy('timestamp', 'desc'));
-                const unsub = onSnapshot(q, (snap) => {
-                    setItems(snap.docs.map(d => ({ ...d.data(), uid: d.id })).filter(i => i.status === 'unused'));
-                    const buffs = snap.docs.map(d => d.data()).filter(i => i.status === 'active').map(b => {
-                        const endDate = new Date(b.activatedAt);
-                        if(b.duration === 30) endDate.setDate(endDate.getDate() + 30);
-                        else if(b.duration === 7) endDate.setDate(endDate.getDate() + 7);
-                        else if(b.duration === 1) endDate.setTime(endDate.getTime() + (24*60*60*1000));
-                        return { ...b, endDate };
-                    });
-                    setActiveBuffs(buffs);
-                });
-                return () => unsub();
-            }, [uid]);
-
-            const handleUseBox = async (item) => {
-                if (item.itemId === 'premium_box' || item.itemId === 'kafra_box') {
-                    const isActive = activeBuffs.some(b => {
-                        const isTimeValid = new Date(b.endDate) > new Date();
-                        if (!isTimeValid) return false;
-                        if (item.itemId === 'premium_box') return b.itemId === 'premium_box'; 
-                        if (item.itemId === 'kafra_box') return b.itemId === 'kafra_box' && b.characterId === selectedCharId;
-                        return false;
-                    });
-                    if (isActive) { showToast("Buff is already active!"); return; }
-                }
-
-                if (item.type === 'buff_box') {
-                    const buffData = { ...item, status: 'active', activatedAt: new Date().toISOString(), characterId: selectedCharId };
-                    if (item.itemId === 'premium_box') buffData.isAccountWide = true; 
-                    await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'inventory', item.uid), buffData);
-                    showToast(`${item.name} Activated!`);
-                } else if (item.type === 'consumable_box') {
-                    const currentQty = stock[item.subType]?.qty || 0;
-                    const currentCost = stock[item.subType]?.totalCost || 0;
-                    const newQty = currentQty + item.qty;
-                    const newTotalCost = currentCost + item.buyPrice;
-                    await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'stock'), { ...stock, [item.subType]: { qty: newQty, totalCost: newTotalCost, avgCost: newTotalCost / newQty } });
-                    await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'inventory', item.uid), { ...item, status: 'consumed' });
-                    showToast(`Added ${item.qty} to Stock`);
-                }
-                setSelectedBox(null);
-             };
-            const handleSellAction = async (item, qtyStr, priceStr) => { 
-                const qty = parseInt(qtyStr); const price = parseInt(priceStr);
-                if (!qty || !price || qty > item.count) { showToast("Invalid Amount"); return; }
-                const profit = qty * price;
-                const earnedDek = Math.floor(profit / 1000);
-                const record = { isSaleRecord: true, itemId: item.id, itemName: item.name, qty: qty, pricePerUnit: price, profit, date: new Date().toISOString().split('T')[0], timestamp: Date.now() };
-                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'records'), record);
-                const newStats = { ...stats };
-                newStats.coins = (newStats.coins || 0) + earnedDek;
-                newStats.zeny = (newStats.zeny || 0) + profit;
-                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'gamification', 'stats'), newStats);
-                showToast(`Sold! +${earnedDek} DEK`); setViewItem(null);
-            };
-            const handleUseSilvervineFromStock = async () => { 
-                const isActive = activeBuffs.some(b => b.itemId === 'silvervine_24h' && new Date(b.endDate) > new Date());
-                if (isActive) { alert("Active!"); setSvUseConfirm(null); return; }
-                if ((stock.silvervine?.qty || 0) < 2) { alert("Need 2 Silvervine!"); setSvUseConfirm(null); return; }
-                const newStock = { ...stock, silvervine: { ...stock.silvervine, qty: stock.silvervine.qty - 2 } };
-                await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'config', 'stock'), newStock);
-                const buffData = { itemId: 'silvervine_24h', name: 'Silvervine Buff (24h)', type: 'buff_box', duration: 1, buyPrice: (stock.silvervine?.avgCost || 0) * 2, timestamp: Date.now(), activatedAt: new Date().toISOString(), status: 'active', isAccountWide: true };
-                await addDoc(collection(db, 'artifacts', appId, 'users', uid, 'inventory'), buffData);
-                showToast("Activated!"); setSvUseConfirm(null);
-            };
-
-            const allItems = [
-                { id: 'spell', category: 'Etc', iconComp: <SmartIcon name="Spell" className="w-full h-full"/>, count: Math.max(0, currentSpells), name: 'Purple Stone', isSellable: true },
-                { id: 'magic', category: 'Etc', iconComp: <SmartIcon name="Magic" className="w-full h-full"/>, count: Math.max(0, currentMagics), name: 'Red Stone', isSellable: true },
-                { id: 'gum', category: 'Consumable', iconComp: <SmartIcon name="Gum" className="w-full h-full"/>, count: stock.gum?.qty || 0, name: 'Gum (Stock)' },
-                { id: 'he_gum', category: 'Consumable', iconComp: <SmartIcon name="HeGum" className="w-full h-full"/>, count: stock.he_gum?.qty || 0, name: 'HE (Stock)' },
-                { id: 'silvervine', category: 'Etc', iconComp: <SmartIcon name="Silvervine" className="w-full h-full"/>, count: stock.silvervine?.qty || 0, name: 'SV (Stock)', isStockAction: true },
-            ];
-            const hasPremium = activeBuffs.some(b => b.itemId === 'premium_box' && new Date(b.endDate) > new Date());
-            if (hasPremium) { allItems.push({ id: 'premium_staff', category: 'Consumable', iconComp: <SmartIcon name="PremiumStaff" className="w-full h-full"/>, count: 1, name: 'Staff' }); }
-            items.forEach(i => { let cat = i.category || 'Consumable'; if (i.itemId.includes('card')) cat = 'Rare'; allItems.push({ id: i.uid, category: cat, iconComp: <SmartIcon name={SHOP_ITEMS.find(s=>s.id===i.itemId)?.icon} className="w-full h-full" />, count: 1, isBox: true, data: i, name: i.name, itemId: i.itemId }); });
-            Object.keys(drops).forEach(key => { const def = DROP_TABLE.find(d => d.id === key); if (def) allItems.push({ id: key, category: def.category, iconComp: <SmartIcon name={def.icon} className="w-full h-full" />, count: drops[key], name: def.name }); });
-            const filteredItems = activeTab === 'All' ? allItems : allItems.filter(i => i.category === activeTab);
-            const groupedDisplayItems = useMemo(() => { const map = new Map(); filteredItems.forEach(item => { const key = item.itemId || item.id; if(map.has(key)) { const ex = map.get(key); ex.count += (item.count || 1); } else { map.set(key, { ...item, count: item.count !== undefined ? item.count : 0 }); } }); return Array.from(map.values()); }, [filteredItems]);
-            const onItemClick = (item) => { if(item.isBox) { setSelectedBox(item.data); return; } if(item.id === 'premium_staff') { setSvUseConfirm(true); return; } setViewItem(item); };
-
-            return (
-                <div className="p-6 animate-fade-in view-content space-y-6">
-                    <div className="flex items-center justify-between"><h2 className="text-2xl font-black tracking-tighter text-zinc-700 flex items-center gap-2"><Icon name="Inventory" size={24}/> Item</h2><div className="text-[10px] text-zinc-500 font-mono">{groupedDisplayItems.length} Items</div></div>
-                    <div className="bg-zinc-100 p-1 rounded-2xl flex gap-1 border border-zinc-200">{['All', 'Consumable', 'Etc', 'Rare'].map(t => { let label = t; let iconName = 'LayoutGrid'; if (t === 'Consumable') { label = 'Use'; iconName = 'Flask'; } if (t === 'Etc') { label = 'Etc'; iconName = 'Layers'; } if (t === 'Rare') { label = 'Rare'; iconName = 'Diamond'; } return <TabButton key={t} label={label} icon={iconName} active={activeTab === t} onClick={() => setActiveTab(t)} />; })}</div>
-                    <div className="bg-white p-5 rounded-[2.5rem] border border-zinc-200 max-h-[420px] overflow-y-auto scrollbar-hide"><div className="grid grid-cols-4 gap-4 pb-10">{groupedDisplayItems.map((item, index) => (<div key={index} onClick={() => onItemClick(item)} className="aspect-square rounded-2xl sunken-slot relative flex items-center justify-center cursor-pointer overflow-hidden group"><div className="w-10 h-10 pointer-events-none group-active:scale-90 transition-transform">{item.iconComp}</div><span className="item-badge absolute bottom-1 right-1.5 text-[8px] font-black px-1.5 rounded-md pointer-events-none backdrop-blur-sm border border-zinc-200/50">{item.count}</span></div>))}{Array.from({ length: Math.max(0, 16 - groupedDisplayItems.length) }).map((_, i) => (<div key={`e-${i}`} className="aspect-square rounded-2xl sunken-slot opacity-30"></div>))}</div></div>
-                    {viewItem && <ItemDetailModal item={viewItem} onClose={() => setViewItem(null)} onSell={handleSellAction} />}
-                    {selectedBox && <Modal onClose={() => setSelectedBox(null)}><div className="text-center"><div className="w-20 h-20 mx-auto bg-zinc-100 rounded-3xl flex items-center justify-center mb-4 border border-zinc-200"><SmartIcon name={SHOP_ITEMS.find(s=>s.id===selectedBox.itemId)?.icon} className="w-12 h-12" /></div><h3 className="text-lg font-black text-zinc-800 mb-1">{selectedBox.name}</h3><p className="text-xs text-zinc-500 mb-4 italic">"{getItemInfo(selectedBox.itemId).desc}"</p><div className="flex gap-2 mt-4"><button onClick={() => setSelectedBox(null)} className="flex-1 py-3 bg-zinc-200 rounded-xl font-bold text-xs text-zinc-600">Cancel</button><button onClick={() => handleUseBox(selectedBox)} className="flex-1 py-3 bg-emerald-600 rounded-xl font-bold text-xs text-white">Use</button></div></div></Modal>}
-                    {svUseConfirm && <Modal onClose={() => setSvUseConfirm(null)}><div className="text-center"><div className="w-20 h-20 mx-auto bg-zinc-100 rounded-3xl flex items-center justify-center mb-4 border border-zinc-200"><SmartIcon name="Silvervine" className="w-12 h-12"/></div><h3 className="text-lg font-black text-zinc-800 mb-2">Activate Buff?</h3><div className="flex gap-2"><button onClick={() => setSvUseConfirm(null)} className="flex-1 py-3 bg-zinc-200 rounded-xl font-bold text-xs text-zinc-600">Cancel</button><button onClick={handleUseSilvervineFromStock} className="flex-1 py-3 bg-emerald-600 rounded-xl font-bold text-xs text-white">Use (2 ea)</button></div></div></Modal>}
+                    {showWishlistModal && <WishlistModal onClose={() => setShowWishlistModal(false)} onSave={handleSaveWishlist}/>}
                 </div>
             );
         }
@@ -881,20 +824,18 @@
             const [rewardData, setRewardData] = useState(null);
             const [showHeGum, setShowHeGum] = useState(false);
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
+            const NOTE_TAGS = ['MVP Drop', 'Dead', 'Solo', 'Party', 'Disconnect', 'Lag', 'Carry'];
 
             useEffect(() => {
-                if (records.length > 0 && !rewardData) {
-                    const lastRun = records.find(r => !r.isSaleRecord);
+                if (records.length > 0 && !rewardData && !form.isLoaded) {
+                    const lastRun = records.find(r => !r.isSaleRecord && r.characterId === selectedCharId) || records.find(r => !r.isSaleRecord);
                     if (lastRun) {
-                        setForm(prev => ({ ...prev, runMode: lastRun.runMode || 'ogh', normalGumUsed: lastRun.normalGumUsed || 0, heGumUsed: lastRun.heGumUsed || 0, minutesUsed: lastRun.minutesUsed || 60 }));
+                        setForm(prev => ({ ...prev, runMode: lastRun.runMode || 'ogh', normalGumUsed: lastRun.normalGumUsed || 0, heGumUsed: lastRun.heGumUsed || 0, minutesUsed: lastRun.minutesUsed || 60, isLoaded: true }));
                         if(lastRun.heGumUsed > 0) setShowHeGum(true);
                     }
                 }
-            }, [records, rewardData]);
+            }, [records, rewardData, selectedCharId]);
             
-            const hasPremium = activeBuffs.some(b => b.itemId === 'premium_box' && new Date(b.endDate) > new Date());
-            const hasKafra = activeBuffs.some(b => b.itemId === 'kafra_box' && b.characterId === selectedCharId && new Date(b.endDate) > new Date());
-            const hasSilvervineBuff = activeBuffs.some(b => b.itemId === 'silvervine_24h' && new Date(b.endDate) > new Date());
             const hasGumStock = (stock.gum?.qty || 0) > 0;
             const hasHeGumStock = (stock.he_gum?.qty || 0) > 0; 
             const gameDate = getGameDate();
@@ -903,21 +844,25 @@
             const addCost = () => setForm(p => ({...p, otherCosts: [...p.otherCosts, {id: Date.now(), name: '', amount: ''}]}));
             const updateCost = (id, field, val) => { if (field === 'amount') val = val.replace(/[^0-9]/g, ''); setForm(p => ({...p, otherCosts: p.otherCosts.map(c => c.id === id ? {...c, [field]: val} : c)})); };
             const removeCost = (id) => setForm(p => ({...p, otherCosts: p.otherCosts.filter(c => c.id !== id)}));
+            const addTag = (tag) => setForm(p => ({ ...p, notes: p.notes ? `${p.notes} [${tag}]` : `[${tag}]` }));
+            
+            const resetForm = () => {
+                setForm({ runMode: 'ogh', normalGumUsed: 0, heGumUsed: 0, useSilvervine: false, purpleStoneCount: 0, contMagicCount: 0, trashAmount: '', minutesUsed: 60, otherCosts: [], notes: '', isLoaded: true });
+                setShowHeGum(false);
+            };
+
             const handleSave = async () => {
                 const prevStats = { ...stats }; let costBreakdown = []; let gumCost = 0;
-                if (form.normalGumUsed > 0) { const cost = form.normalGumUsed * (stock.gum?.avgCost || 0); gumCost += cost; costBreakdown.push({ name: `Gum x${form.normalGumUsed}`, amount: cost }); }
-                if (form.heGumUsed > 0) { const cost = form.heGumUsed * (stock.he_gum?.avgCost || 0); gumCost += cost; costBreakdown.push({ name: `HE Gum x${form.heGumUsed}`, amount: cost }); }
+                if (form.normalGumUsed > 0) { const cost = form.normalGumUsed * (prices.gumBoxPrice / 10 || 150000); gumCost += cost; costBreakdown.push({ name: `Gum x${form.normalGumUsed}`, amount: cost }); }
+                if (form.heGumUsed > 0) { const cost = form.heGumUsed * (prices.heGumBoxPrice / 5 || 500000); gumCost += cost; costBreakdown.push({ name: `HE Gum x${form.heGumUsed}`, amount: cost }); }
                 form.otherCosts.forEach(c => { costBreakdown.push({ name: c.name || 'Misc', amount: parseInt(c.amount) || 0 }); });
                 let consumablesCost = gumCost; 
                 let newStock = { ...stock };
-                if (form.normalGumUsed > 0) newStock.gum.qty = Math.max(0, newStock.gum.qty - form.normalGumUsed);
-                if (form.heGumUsed > 0) { if(!newStock.he_gum) newStock.he_gum = { qty: 0, cost: 0 }; newStock.he_gum.qty = Math.max(0, newStock.he_gum.qty - form.heGumUsed); }
+                if (form.normalGumUsed > 0) { if(!newStock.gum) newStock.gum = {qty:0}; newStock.gum.qty = Math.max(0, newStock.gum.qty - form.normalGumUsed); }
+                if (form.heGumUsed > 0) { if(!newStock.he_gum) newStock.he_gum = {qty:0}; newStock.he_gum.qty = Math.max(0, newStock.he_gum.qty - form.heGumUsed); }
                 const profit = (parseInt(form.trashAmount) || 0) - consumablesCost;
                 const earnedDek = Math.max(0, Math.floor(profit / 1000));
-                
-                // NO DROPS SIMULATION - RECORD ONLY
-                const drops = []; // Empty drops
-                
+                const drops = []; 
                 const record = { ...form, runMode: form.runMode.toLowerCase(), consumablesCost, profit, drops, timestamp: Date.now(), date: getGameDate(), costBreakdown, characterId: selectedCharId };
                 const newStats = { ...stats };
                 newStats.coins = (newStats.coins || 0) + earnedDek;
@@ -951,7 +896,8 @@
                         <button type="button" onClick={() => setForm({...form, runMode: 'aogh'})} className={`flex-1 rounded-xl flex items-center justify-center gap-2 transition-all ${form.runMode === 'aogh' ? 'bg-rose-100 border border-rose-200 text-rose-700' : 'text-zinc-400 hover:text-zinc-600'}`}><div className="w-8 h-8 rounded-lg overflow-hidden"><SmartIcon name="AOGH_BOSS" className="w-full h-full object-cover" /></div><span className="text-xs font-black">AOGH</span></button>
                      </div>
                      <div className="px-4 py-2 flex items-center justify-between"><span className="text-xs font-bold text-zinc-400">Trash Sale</span><div className="flex items-center gap-2"><input type="text" inputMode="numeric" placeholder="0" value={form.trashAmount === 0 ? '' : form.trashAmount} onChange={e => setForm({...form, trashAmount: parseInt(e.target.value) || ''})} className="slate-input text-right text-xl font-black outline-none placeholder-zinc-300 text-emerald-500 w-32" /><span className="text-[10px] font-bold text-zinc-500">ZENY</span></div></div>
-                    <div className="glass-panel p-6 rounded-[2rem] space-y-4 bg-white border-zinc-200">
+                    <div className="glass-panel p-6 rounded-[2rem] space-y-4 bg-white border-zinc-200 relative">
+                        <button onClick={resetForm} className="absolute top-2 right-2 text-[10px] font-bold text-zinc-400 border border-zinc-200 px-2 py-1 rounded-lg hover:bg-zinc-50">Reset</button>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center rounded-xl p-2 border border-zinc-100 bg-zinc-50"><span className="text-xs font-bold text-blue-500 flex items-center gap-2 relative z-10"><SmartIcon name="Gum" className="w-5 h-5"/> Bubble Gum</span><div className="flex bg-white rounded-lg p-0.5 gap-1 relative z-10">{[0, 1, 2].map(n => (<button key={n} disabled={!hasGumStock && n>0} onClick={() => setForm({...form, normalGumUsed: n})} className={`w-8 h-8 rounded-md text-xs font-bold transition-all ${form.normalGumUsed === n ? (n===0 ? 'bg-zinc-200 text-zinc-500' : 'bg-blue-500 text-white shadow') : 'text-zinc-400 hover:bg-zinc-100'}`}>{n}</button>))}</div></div>
                             <button onClick={() => setShowHeGum(!showHeGum)} className={`w-full py-2 rounded-xl text-xs font-bold border transition-all ${showHeGum ? 'bg-amber-50 border-amber-200 text-amber-500' : 'bg-zinc-50 border-zinc-100 text-zinc-400'}`}>{showHeGum ? '✅ HE Bubble Gum Active' : 'Enable HE Bubble Gum'}</button>
@@ -963,10 +909,84 @@
                              <div className={`flex flex-col items-center gap-1 p-2 ${form.runMode==='ogh'?'opacity-30':''}`}><div className="relative z-10 mb-1"><SmartIcon name="Magic" className="w-10 h-10 drop-shadow-lg" /></div><input type="text" inputMode="numeric" disabled={form.runMode==='ogh'} placeholder="0" value={form.contMagicCount === 0 ? '' : form.contMagicCount} onChange={e => setForm({...form, contMagicCount: e.target.value === '' ? 0 : (parseInt(e.target.value)||0)})} className="slate-input w-full text-lg font-black text-center outline-none text-rose-500 placeholder-zinc-300"/></div>
                         </div>
                     </div>
-                    <div className="space-y-2"><div className="flex justify-between items-center"><span className="text-[10px] font-bold opacity-30 uppercase tracking-widest text-zinc-400">Extras</span><button type="button" onClick={addCost} className="text-[10px] text-zinc-400 hover:text-zinc-600 font-bold transition-colors">+ Cost</button></div>{form.otherCosts.map(c => (<div key={c.id} className="flex gap-2 animate-fade-in"><input type="text" placeholder="Name" value={c.name} onChange={e => updateCost(c.id, 'name', e.target.value)} className="slate-input flex-1 p-2 rounded-xl text-xs bg-white text-zinc-700" /><input type="text" inputMode="numeric" placeholder="0" value={c.amount} onChange={e => updateCost(c.id, 'amount', e.target.value)} className="slate-input w-20 p-2 rounded-xl text-xs text-right bg-white text-zinc-700" /><button type="button" onClick={() => removeCost(c.id)} className="text-zinc-400 hover:text-rose-500 p-2"><Icon name="Trash" size={14}/></button></div>))}<textarea placeholder="Add a note..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="note-input w-full bg-white border border-zinc-200 rounded-xl p-3 text-xs text-zinc-700 outline-none h-12 resize-none placeholder-zinc-400 transition-all"></textarea></div>
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center"><span className="text-[10px] font-bold opacity-30 uppercase tracking-widest text-zinc-400">Extras</span><button type="button" onClick={addCost} className="text-[10px] text-zinc-400 hover:text-zinc-600 font-bold transition-colors">+ Cost</button></div>{form.otherCosts.map(c => (<div key={c.id} className="flex gap-2 animate-fade-in"><input type="text" placeholder="Name" value={c.name} onChange={e => updateCost(c.id, 'name', e.target.value)} className="slate-input flex-1 p-2 rounded-xl text-xs bg-white text-zinc-700" /><input type="text" inputMode="numeric" placeholder="0" value={c.amount} onChange={e => updateCost(c.id, 'amount', e.target.value)} className="slate-input w-20 p-2 rounded-xl text-xs text-right bg-white text-zinc-700" /><button type="button" onClick={() => removeCost(c.id)} className="text-zinc-400 hover:text-rose-500 p-2"><Icon name="Trash" size={14}/></button></div>))}
+                        <textarea placeholder="Add a note..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} className="note-input w-full bg-white border border-zinc-200 rounded-xl p-3 text-xs text-zinc-700 outline-none h-12 resize-none placeholder-zinc-400 transition-all"></textarea>
+                        <div className="flex gap-1 flex-wrap">{NOTE_TAGS.map(tag => <button key={tag} onClick={() => addTag(tag)} className="px-2 py-1 bg-zinc-100 rounded-lg text-[9px] font-bold text-zinc-500 border border-zinc-200 hover:bg-zinc-200">{tag}</button>)}</div>
+                    </div>
                     <button disabled={!isFormValid} onClick={handleSave} className="w-full py-5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[1.5rem] font-black text-lg shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"><Icon name="Save" size={20}/> COMPLETE RUN</button>
                     {rewardData && <RewardPopup data={rewardData} onClose={closeReward} onShare={() => setShareData({...rewardData, runMode: form.runMode === 'aogh' ? 'AOGH' : 'OGH', rank: getRankInfo(rewardData.profit, 0).rank, rankCss: getRankInfo(rewardData.profit, 0).css})} />}
                     {shareData && <ShareModal data={shareData} onClose={() => setShareData(null)} />}
+                </div>
+            );
+        }
+
+        function CalendarView({ records }) {
+            const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
+            const now = getGameDateObj(); // Use Game Time
+            const daysInMonth = getDaysInMonth(now.getMonth(), now.getFullYear());
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay(); // 0 = Sun
+            const days = Array.from({length: daysInMonth}, (_, i) => i + 1);
+            
+            const getStatus = (day) => {
+                const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                const dailyRecs = records.filter(r => r.date === dateStr && !r.isSaleRecord);
+                if (dailyRecs.length === 0) return 'neutral';
+                const profit = dailyRecs.reduce((a, b) => a + (b.profit || 0), 0);
+                return profit >= 0 ? 'green' : 'red';
+            };
+
+            return (
+                <div className="bg-white p-4 rounded-[2rem] border border-zinc-200 shadow-sm mb-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-xs font-black text-zinc-700 uppercase tracking-widest">{now.toLocaleString('default', { month: 'long' })} {now.getFullYear()}</span>
+                    </div>
+                    <div className="calendar-grid">
+                        {['S','M','T','W','T','F','S'].map((d,i)=><div key={i} className="calendar-header">{d}</div>)}
+                        {Array.from({length: firstDay}).map((_, i) => <div key={`empty-${i}`}></div>)}
+                        {days.map(d => {
+                            const status = getStatus(d);
+                            const isToday = d === now.getDate();
+                            return (
+                                <div key={d} className={`calendar-cell calendar-${status} ${isToday ? 'ring-2 ring-blue-400' : ''}`}>
+                                    {d}
+                                    {status !== 'neutral' && <div className={`absolute bottom-1 w-1 h-1 rounded-full ${status==='green'?'bg-emerald-500':'bg-rose-500'}`}></div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        function InsightView({ records }) {
+            if (records.length < 2) return <div className="text-center text-xs text-zinc-400 py-10">Need more runs to analyze efficiency.</div>;
+            
+            const oghRuns = records.filter(r => !r.isSaleRecord && r.runMode === 'ogh');
+            const aoghRuns = records.filter(r => !r.isSaleRecord && r.runMode === 'aogh');
+            const gumRuns = records.filter(r => !r.isSaleRecord && r.normalGumUsed > 0);
+            const noGumRuns = records.filter(r => !r.isSaleRecord && r.normalGumUsed === 0 && r.heGumUsed === 0);
+
+            const avgOgh = oghRuns.length ? oghRuns.reduce((a,b)=>a+b.profit,0)/oghRuns.length : 0;
+            const avgAogh = aoghRuns.length ? aoghRuns.reduce((a,b)=>a+b.profit,0)/aoghRuns.length : 0;
+            const avgGum = gumRuns.length ? gumRuns.reduce((a,b)=>a+b.profit,0)/gumRuns.length : 0;
+            const avgNoGum = noGumRuns.length ? noGumRuns.reduce((a,b)=>a+b.profit,0)/noGumRuns.length : 0;
+
+            const Bar = ({ label, val, color }) => (
+                <div className="mb-3">
+                    <div className="flex justify-between text-[10px] font-bold text-zinc-500 mb-1"><span>{label}</span><span>{formatMoney(val)}</span></div>
+                    <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden"><div className={`h-full ${color}`} style={{width: `${Math.min(100, (val/Math.max(avgOgh, avgAogh, avgGum, avgNoGum))*100)}%`}}></div></div>
+                </div>
+            );
+
+            return (
+                <div className="glass-panel p-4 rounded-2xl border-zinc-200 bg-white">
+                    <h4 className="text-[10px] font-bold opacity-40 uppercase tracking-widest flex items-center gap-2 mb-4"><SmartIcon name="Graph" className="w-4 h-4"/> Efficiency Analysis</h4>
+                    <Bar label="OGH Average" val={avgOgh} color="bg-purple-400" />
+                    <Bar label="AOGH Average" val={avgAogh} color="bg-rose-400" />
+                    <div className="h-px bg-zinc-100 my-3"></div>
+                    <Bar label="No Gum Run" val={avgNoGum} color="bg-zinc-400" />
+                    <Bar label="With Gum Run" val={avgGum} color="bg-blue-400" />
                 </div>
             );
         }
@@ -978,6 +998,7 @@
             const [shareData, setShareData] = useState(null); 
             const [showGlobalStats, setShowGlobalStats] = useState(false);
             const [globalStats, setGlobalStats] = useState(null);
+            const [subTab, setSubTab] = useState('List'); 
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'oghza-tracker';
 
             const fetchGlobalStats = async () => {
@@ -993,85 +1014,96 @@
 
             return (
                 <div className="p-6 animate-fade-in view-content space-y-4">
-                    <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-black tracking-tighter text-zinc-700 flex items-center gap-2">History Logs <button onClick={() => setShowRankInfo(true)} className="opacity-40 hover:opacity-100 transition-opacity text-emerald-500"><Icon name="Info" size={20} /></button></h2></div>
-                    {salesData.length > 2 && window.Recharts && (<div className="glass-panel p-4 rounded-3xl h-48 mb-6 border-zinc-200 bg-white"><p className="text-[10px] font-bold opacity-40 mb-2 uppercase flex items-center gap-2 text-zinc-500"><Icon name="TrendingUp" size={14}/> Sales History</p><ResponsiveContainer width="100%" height="90%"><ScatterChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}><XAxis dataKey="date" type="number" domain={['auto', 'auto']} tickFormatter={unix => new Date(unix).getDate()} hide /><YAxis dataKey="price" type="number" hide domain={['auto', 'auto']} /><Tooltip cursor={{ strokeDasharray: '3 3' }} content={({ payload }) => { if (payload && payload.length) { const d = payload[0].payload; return ( <div className="bg-white border border-zinc-200 p-2 rounded-lg text-[10px] shadow-xl"> <p className="font-bold text-zinc-800">{d.name}</p> <p className="text-emerald-500">{formatMoney(d.price)} z</p> <p className="text-zinc-400">{new Date(d.date).toLocaleDateString()}</p> </div> ); } return null; }} /><Scatter name="Sales" data={salesData} fill="#10b981" /></ScatterChart></ResponsiveContainer></div>)}
-                    {Object.keys(groupedRecords).length === 0 ? (
-                        <div className="text-center text-zinc-400 py-10 italic">No logs yet. Start your adventure! ⚔️</div>
-                    ) : (
-                        <div className="space-y-6">
-                            {Object.keys(groupedRecords).sort((a,b)=>new Date(b)-new Date(a)).map(date => { 
-                                const dailyRecords = groupedRecords[date]; 
-                                return (
-                                    <div key={date} className="space-y-3">
-                                        <div className="sticky top-14 z-20 bg-white/95 backdrop-blur-md px-3 py-2 rounded-lg border-b border-zinc-200 flex justify-between items-center shadow-sm">
-                                            <span className="text-xs font-bold text-zinc-500">{date}</span>
-                                            <span className="text-[10px] text-zinc-400">{dailyRecords.length} Records</span>
-                                        </div>
-                                        {dailyRecords.map(r => { 
-                                            const isExpanded = expandedId === r.id; 
-                                            const profitValue = r.profit || 0; 
-                                            let rankInfo = { rank: '-', css: 'text-zinc-400', text: '' }; 
-                                            if (!r.isSaleRecord) { rankInfo = getRankInfo(profitValue, avgProfit); } 
-                                            const charName = characters && characters.find(c => c.id === r.characterId)?.name; 
-                                            
-                                            if (r.isSaleRecord) { 
+                    <div className="flex justify-between items-center mb-4"><h2 className="text-2xl font-black tracking-tighter text-zinc-700 flex items-center gap-2">History Logs <button onClick={() => setShowRankInfo(true)} className="opacity-40 hover:opacity-100 transition-opacity text-emerald-500"><Icon name="Info" size={20} /></button></h2></div>
+                    <div className="flex bg-zinc-100 p-1 rounded-xl mb-4 border border-zinc-200">
+                        {['List', 'Calendar', 'Insight'].map(t => <button key={t} onClick={() => setSubTab(t)} className={`flex-1 py-1.5 text-[10px] font-bold uppercase rounded-lg transition-all ${subTab === t ? 'bg-white text-zinc-800 shadow-sm' : 'text-zinc-400'}`}>{t}</button>)}
+                    </div>
+
+                    {subTab === 'Insight' && <InsightView records={records} />}
+                    {subTab === 'Calendar' && <CalendarView records={records} />}
+                    
+                    {subTab === 'List' && (
+                        <>
+                        {salesData.length > 2 && window.Recharts && (<div className="glass-panel p-4 rounded-3xl h-48 mb-6 border-zinc-200 bg-white"><p className="text-[10px] font-bold opacity-40 mb-2 uppercase flex items-center gap-2 text-zinc-500"><Icon name="TrendingUp" size={14}/> Sales History</p><ResponsiveContainer width="100%" height="90%"><ScatterChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}><XAxis dataKey="date" type="number" domain={['auto', 'auto']} tickFormatter={unix => new Date(unix).getDate()} hide /><YAxis dataKey="price" type="number" hide domain={['auto', 'auto']} /><Tooltip cursor={{ strokeDasharray: '3 3' }} content={({ payload }) => { if (payload && payload.length) { const d = payload[0].payload; return ( <div className="bg-white border border-zinc-200 p-2 rounded-lg text-[10px] shadow-xl"> <p className="font-bold text-zinc-800">{d.name}</p> <p className="text-emerald-500">{formatMoney(d.price)} z</p> <p className="text-zinc-400">{new Date(d.date).toLocaleDateString()}</p> </div> ); } return null; }} /><Scatter name="Sales" data={salesData} fill="#10b981" /></ScatterChart></ResponsiveContainer></div>)}
+                        {Object.keys(groupedRecords).length === 0 ? (
+                            <div className="text-center text-zinc-400 py-10 italic">No logs yet. Start your adventure! ⚔️</div>
+                        ) : (
+                            <div className="space-y-6">
+                                {Object.keys(groupedRecords).sort((a,b)=>new Date(b)-new Date(a)).map(date => { 
+                                    const dailyRecords = groupedRecords[date]; 
+                                    return (
+                                        <div key={date} className="space-y-3">
+                                            <div className="sticky top-14 z-20 bg-white/95 backdrop-blur-md px-3 py-2 rounded-lg border-b border-zinc-200 flex justify-between items-center shadow-sm">
+                                                <span className="text-xs font-bold text-zinc-500">{date}</span>
+                                                <span className="text-[10px] text-zinc-400">{dailyRecords.length} Records</span>
+                                            </div>
+                                            {dailyRecords.map(r => { 
+                                                const isExpanded = expandedId === r.id; 
+                                                const profitValue = r.profit || 0; 
+                                                let rankInfo = { rank: '-', css: 'text-zinc-400', text: '' }; 
+                                                if (!r.isSaleRecord) { rankInfo = getRankInfo(profitValue, avgProfit); } 
+                                                const charName = characters && characters.find(c => c.id === r.characterId)?.name; 
+                                                
+                                                if (r.isSaleRecord) { 
+                                                    return (
+                                                        <div key={r.id} className="list-panel rounded-[1.5rem] overflow-hidden transition-all border-zinc-200 mb-2 bg-white shadow-sm">
+                                                            <div onClick={() => setExpandedId(expandedId === r.id ? null : r.id)} className="p-4 flex justify-between items-center cursor-pointer">
+                                                                <div className="flex gap-3">
+                                                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden border border-zinc-100 relative bg-zinc-50 shadow-inner"><SmartIcon name={r.itemId === 'spell' ? 'Spell' : 'Magic'} className="w-8 h-8" /></div>
+                                                                    <div>
+                                                                        <p className="font-bold text-sm text-emerald-600">Sold {r.itemName}</p>
+                                                                        <p className="text-[10px] opacity-60 text-zinc-500 uppercase font-bold tracking-widest flex items-center gap-1">Qty: {r.qty} @ {formatMoney(r.pricePerUnit)}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right flex flex-col items-end">
+                                                                    <p className="font-black text-sm text-emerald-500">+{formatMoney(r.profit)}</p>
+                                                                    <div className="flex items-center gap-1 mt-1 text-[10px] font-black text-zinc-400"><Icon name="TrendingUp" size={10}/> SALES</div>
+                                                                </div>
+                                                            </div>
+                                                            {expandedId === r.id && (<div className="px-4 pb-4 animate-slide-up bg-zinc-50 pt-4 border-t border-zinc-100 text-center"><div className="flex justify-end"><DeleteButton onDelete={() => handleDeleteRecord(r)} className="w-28" /></div></div>)}
+                                                        </div>
+                                                    ); 
+                                                } 
+                                                
                                                 return (
-                                                    <div key={r.id} className="list-panel rounded-[1.5rem] overflow-hidden transition-all border-zinc-200 mb-2 bg-white shadow-sm">
+                                                    <div key={r.id} className={`list-panel rounded-[1.5rem] overflow-hidden transition-all border-zinc-200 shadow-sm ${expandedId === r.id ? 'bg-zinc-50 ring-1 ring-zinc-300' : 'bg-white'}`}>
                                                         <div onClick={() => setExpandedId(expandedId === r.id ? null : r.id)} className="p-4 flex justify-between items-center cursor-pointer">
                                                             <div className="flex gap-3">
-                                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden border border-zinc-100 relative bg-zinc-50 shadow-inner"><SmartIcon name={r.itemId === 'spell' ? 'Spell' : 'Magic'} className="w-8 h-8" /></div>
+                                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden border border-zinc-100 relative bg-zinc-100`}><SmartIcon name={r.runMode === 'aogh' ? 'AOGH_BOSS' : 'OGH_BOSS'} className="w-full h-full object-cover" /></div>
                                                                 <div>
-                                                                    <p className="font-bold text-sm text-emerald-600">Sold {r.itemName}</p>
-                                                                    <p className="text-[10px] opacity-60 text-zinc-500 uppercase font-bold tracking-widest flex items-center gap-1">Qty: {r.qty} @ {formatMoney(r.pricePerUnit)}</p>
+                                                                    <p className="font-bold text-sm text-zinc-700">{r.runMode?.toUpperCase() || 'OGH'} <span className="text-[10px] text-zinc-400 font-normal ml-1">by {charName || 'Unknown'}</span></p>
+                                                                    <p className="text-[10px] opacity-40 uppercase font-bold tracking-widest text-zinc-500 flex items-center gap-1"><Icon name="Clock" size={10}/> {r.minutesUsed}m</p>
                                                                 </div>
                                                             </div>
                                                             <div className="text-right flex flex-col items-end">
-                                                                <p className="font-black text-sm text-emerald-500">+{formatMoney(r.profit)}</p>
-                                                                <div className="flex items-center gap-1 mt-1 text-[10px] font-black text-zinc-400"><Icon name="TrendingUp" size={10}/> SALES</div>
+                                                                <p className={`font-black text-sm ${profitValue >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{formatMoney(profitValue)}</p>
+                                                                <div className="flex items-center gap-1 mt-1"><Icon name="Clover" size={12} className={rankInfo.css}/><span className={`text-[10px] font-black ${rankInfo.css}`}>{rankInfo.text} : {rankInfo.rank}</span></div>
                                                             </div>
                                                         </div>
-                                                        {expandedId === r.id && (<div className="px-4 pb-4 animate-slide-up bg-zinc-50 pt-4 border-t border-zinc-100 text-center"><div className="flex justify-end"><DeleteButton onDelete={() => handleDeleteRecord(r)} className="w-28" /></div></div>)}
+                                                        {expandedId === r.id && (
+                                                            <div className="px-4 pb-4 animate-slide-up bg-zinc-50/50 pt-4 border-t border-zinc-200 text-center">
+                                                                <div className="grid grid-cols-2 gap-3 mb-4 text-left">
+                                                                    <div className="p-2 border-b border-zinc-100"><p className="text-[9px] uppercase opacity-50 mb-2 text-zinc-400">Stones</p><div className="flex items-center gap-4"><div className="flex items-center gap-2"><SmartIcon name="Spell" className="w-6 h-6"/><span className="text-purple-500 font-bold text-sm">x{r.purpleStoneCount}</span></div>{r.runMode==='aogh' && (<div className="flex items-center gap-2"><SmartIcon name="Magic" className="w-6 h-6"/><span className="text-rose-500 font-bold text-sm">x{r.contMagicCount}</span></div>)}</div></div>
+                                                                    <div className="p-2 border-b border-zinc-100"><p className="text-[9px] uppercase opacity-50 mb-2 text-zinc-400">Usage</p><div className="flex flex-wrap gap-4 items-center">{r.normalGumUsed > 0 && <div className="flex items-center gap-2"><SmartIcon name="Gum" className="w-6 h-6"/><span className="text-zinc-600 text-xs">x{r.normalGumUsed}</span></div>}{r.heGumUsed > 0 && <div className="flex items-center gap-2"><SmartIcon name="HeGum" className="w-6 h-6"/><span className="text-zinc-600 text-xs">x{r.heGumUsed}</span></div>}<div className="flex items-center gap-1 text-xs text-zinc-400 ml-auto"><Icon name="Clock" size={14} className="text-zinc-400"/> {r.minutesUsed}m</div></div></div>
+                                                                    <div className="col-span-2 p-2 space-y-1"><p className="text-[9px] uppercase opacity-50 font-bold mb-2 flex items-center gap-1 text-zinc-400"><Icon name="Cost" size={10}/> Expenses</p>{r.costBreakdown && r.costBreakdown.length > 0 ? (r.costBreakdown.map((c, i) => (<div key={i} className="flex justify-between text-[10px] text-zinc-500 border-b border-zinc-100 pb-1"><span className="truncate w-32">{c.name}</span><span>-{formatMoney(c.amount)}</span></div>))) : ((r.consumablesCost > 0) && (<div className="flex justify-between text-[10px] text-zinc-500 border-b border-zinc-100 pb-1"><span>Direct Consumables</span><span>-{formatMoney(r.consumablesCost)}</span></div>))}<div className="pt-1 flex justify-between text-[10px] font-bold text-rose-400 mt-1"><span>Total Direct Cost</span><span>-{formatMoney(r.consumablesCost + (r.otherCosts?.reduce((a,x)=>a+parseInt(x.amount||0),0)||0))}</span></div></div>
+                                                                    {r.drops && r.drops.length > 0 && (<div className="col-span-2 p-2"><p className="text-[9px] uppercase opacity-50 mb-2 text-zinc-400">Drops</p><div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">{r.drops.map((d, i) => (<div key={i} className="flex-shrink-0 w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center relative border border-zinc-200"><SmartIcon name={d.icon} className="w-6 h-6"/><span className="absolute bottom-0 right-0 text-[8px] bg-zinc-800 text-white px-1 rounded">{d.qty}</span></div>))}</div></div>)}
+                                                                    {r.notes && (<div className="col-span-2 bg-yellow-50 p-3 rounded-xl border border-yellow-100 relative mt-2"><div className="absolute -top-2.5 left-3 bg-white px-2 py-0.5 text-[9px] text-yellow-600 font-bold border border-yellow-200 rounded-full flex items-center gap-1 shadow-sm"><Icon name="FileText" size={8}/> NOTE</div><p className="text-[11px] italic text-zinc-300 mt-1">"{r.notes}"</p></div>)}
+                                                                </div>
+                                                                <div className="flex gap-2 justify-end mt-2">
+                                                                    <button onClick={() => setShareData({...r, runMode: r.runMode === 'aogh' ? 'AOGH' : 'OGH', rank: rankInfo.rank, rankCss: rankInfo.css})} className="h-8 w-8 bg-zinc-100 rounded-lg text-zinc-500 hover:text-zinc-800 flex items-center justify-center"><Icon name="Share" size={14}/></button>
+                                                                    <DeleteButton onDelete={() => handleDeleteRecord(r)} className="w-24" />
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                ); 
-                                            } 
-                                            
-                                            return (
-                                                <div key={r.id} className={`list-panel rounded-[1.5rem] overflow-hidden transition-all border-zinc-200 shadow-sm ${expandedId === r.id ? 'bg-zinc-50 ring-1 ring-zinc-300' : 'bg-white'}`}>
-                                                    <div onClick={() => setExpandedId(expandedId === r.id ? null : r.id)} className="p-4 flex justify-between items-center cursor-pointer">
-                                                        <div className="flex gap-3">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden border border-zinc-100 relative bg-zinc-100`}><SmartIcon name={r.runMode === 'aogh' ? 'AOGH_BOSS' : 'OGH_BOSS'} className="w-full h-full object-cover" /></div>
-                                                            <div>
-                                                                <p className="font-bold text-sm text-zinc-700">{r.runMode?.toUpperCase() || 'OGH'} <span className="text-[10px] text-zinc-400 font-normal ml-1">by {charName || 'Unknown'}</span></p>
-                                                                <p className="text-[10px] opacity-40 uppercase font-bold tracking-widest text-zinc-500 flex items-center gap-1"><Icon name="Clock" size={10}/> {r.minutesUsed}m</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right flex flex-col items-end">
-                                                            <p className={`font-black text-sm ${profitValue >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{formatMoney(profitValue)}</p>
-                                                            <div className="flex items-center gap-1 mt-1"><Icon name="Clover" size={12} className={rankInfo.css}/><span className={`text-[10px] font-black ${rankInfo.css}`}>{rankInfo.text} : {rankInfo.rank}</span></div>
-                                                        </div>
-                                                    </div>
-                                                    {expandedId === r.id && (
-                                                        <div className="px-4 pb-4 animate-slide-up bg-zinc-50/50 pt-4 border-t border-zinc-200 text-center">
-                                                            <div className="grid grid-cols-2 gap-3 mb-4 text-left">
-                                                                <div className="p-2 border-b border-zinc-100"><p className="text-[9px] uppercase opacity-50 mb-2 text-zinc-400">Stones</p><div className="flex items-center gap-4"><div className="flex items-center gap-2"><SmartIcon name="Spell" className="w-6 h-6"/><span className="text-purple-500 font-bold text-sm">x{r.purpleStoneCount}</span></div>{r.runMode==='aogh' && (<div className="flex items-center gap-2"><SmartIcon name="Magic" className="w-6 h-6"/><span className="text-rose-500 font-bold text-sm">x{r.contMagicCount}</span></div>)}</div></div>
-                                                                <div className="p-2 border-b border-zinc-100"><p className="text-[9px] uppercase opacity-50 mb-2 text-zinc-400">Usage</p><div className="flex flex-wrap gap-4 items-center">{r.normalGumUsed > 0 && <div className="flex items-center gap-2"><SmartIcon name="Gum" className="w-6 h-6"/><span className="text-zinc-600 text-xs">x{r.normalGumUsed}</span></div>}{r.heGumUsed > 0 && <div className="flex items-center gap-2"><SmartIcon name="HeGum" className="w-6 h-6"/><span className="text-zinc-600 text-xs">x{r.heGumUsed}</span></div>}<div className="flex items-center gap-1 text-xs text-zinc-400 ml-auto"><Icon name="Clock" size={14} className="text-zinc-400"/> {r.minutesUsed}m</div></div></div>
-                                                                <div className="col-span-2 p-2 space-y-1"><p className="text-[9px] uppercase opacity-50 font-bold mb-2 flex items-center gap-1 text-zinc-400"><Icon name="Cost" size={10}/> Expenses</p>{r.costBreakdown && r.costBreakdown.length > 0 ? (r.costBreakdown.map((c, i) => (<div key={i} className="flex justify-between text-[10px] text-zinc-500 border-b border-zinc-100 pb-1"><span className="truncate w-32">{c.name}</span><span>-{formatMoney(c.amount)}</span></div>))) : ((r.consumablesCost > 0) && (<div className="flex justify-between text-[10px] text-zinc-500 border-b border-zinc-100 pb-1"><span>Direct Consumables</span><span>-{formatMoney(r.consumablesCost)}</span></div>))}<div className="pt-1 flex justify-between text-[10px] font-bold text-rose-400 mt-1"><span>Total Direct Cost</span><span>-{formatMoney(r.consumablesCost + (r.otherCosts?.reduce((a,x)=>a+parseInt(x.amount||0),0)||0))}</span></div></div>
-                                                                {r.drops && r.drops.length > 0 && (<div className="col-span-2 p-2"><p className="text-[9px] uppercase opacity-50 mb-2 text-zinc-400">Drops</p><div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">{r.drops.map((d, i) => (<div key={i} className="flex-shrink-0 w-8 h-8 bg-zinc-100 rounded-lg flex items-center justify-center relative border border-zinc-200"><SmartIcon name={d.icon} className="w-6 h-6"/><span className="absolute bottom-0 right-0 text-[8px] bg-zinc-800 text-white px-1 rounded">{d.qty}</span></div>))}</div></div>)}
-                                                                {r.notes && (<div className="col-span-2 bg-yellow-50 p-3 rounded-xl border border-yellow-100 relative mt-2"><div className="absolute -top-2.5 left-3 bg-white px-2 py-0.5 text-[9px] text-yellow-600 font-bold border border-yellow-200 rounded-full flex items-center gap-1 shadow-sm"><Icon name="FileText" size={8}/> NOTE</div><p className="text-[11px] italic text-zinc-300 mt-1">"{r.notes}"</p></div>)}
-                                                            </div>
-                                                            <div className="flex gap-2 justify-end mt-2">
-                                                                <button onClick={() => setShareData({...r, runMode: r.runMode === 'aogh' ? 'AOGH' : 'OGH', rank: rankInfo.rank, rankCss: rankInfo.css})} className="h-8 w-8 bg-zinc-100 rounded-lg text-zinc-500 hover:text-zinc-800 flex items-center justify-center"><Icon name="Share" size={14}/></button>
-                                                                <DeleteButton onDelete={() => handleDeleteRecord(r)} className="w-24" />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ); 
-                            })}
-                        </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ); 
+                                })}
+                            </div>
+                        )}
+                        </>
                     )}
 
                     <div className="mt-8 mb-24 text-center">
@@ -1192,7 +1224,6 @@
                 return () => { unsubRecords(); unsubPrices(); unsubStats(); unsubBuffs(); unsubStock(); unsubChars(); };
             }, [db, targetUid]);
 
-            // Calculate run count for current user
             const runCount = useMemo(() => records.filter(r => !r.isSaleRecord).length, [records]);
 
             if (loading) return <div className="h-screen flex items-center justify-center bg-[#f0f2f5] text-emerald-600 font-bold tracking-widest animate-pulse">LOADING...</div>;
@@ -1201,7 +1232,7 @@
                 <div className="max-w-md mx-auto relative min-h-screen">
                     <CurrencyHeader stats={stats} activeBuffs={activeBuffs} selectedCharId={selectedCharId} runCount={runCount} />
                     {toast && <Toast message={toast} />}
-                    {activeTab === 'home' && <HomeView records={records} stats={stats} goToTab={setActiveTab} activeBuffs={activeBuffs} stock={stock} characters={characters} selectedCharId={selectedCharId} setSelectedCharId={setSelectedCharId} />}
+                    {activeTab === 'home' && <HomeView records={records} stats={stats} goToTab={setActiveTab} activeBuffs={activeBuffs} stock={stock} characters={characters} selectedCharId={selectedCharId} setSelectedCharId={setSelectedCharId} db={db} uid={targetUid} showToast={showToast} />}
                     {activeTab === 'add' && <DungeonView db={db} uid={targetUid} stock={stock} activeBuffs={activeBuffs} records={records} prices={prices} stats={stats} selectedCharId={selectedCharId} setSelectedCharId={setSelectedCharId} characters={characters} onSuccess={() => {}} goToTab={setActiveTab} />}
                     {activeTab === 'inventory' && <InventoryView db={db} uid={targetUid} showToast={showToast} records={records} stock={stock} stats={stats} selectedCharId={selectedCharId} />}
                     {activeTab === 'shop' && <ShopView db={db} uid={targetUid} showToast={showToast}/>}
