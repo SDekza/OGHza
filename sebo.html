@@ -2,15 +2,13 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Work Management - SEBOFFICIAL</title>
     
-    <!-- App Name for Home Screen (iOS & Android) -->
     <meta name="apple-mobile-web-app-title" content="SEB">
     <meta name="application-name" content="SEB">
     <link rel="manifest" href='data:application/manifest+json,{"name":"SEBOFFICIAL","short_name":"SEB","start_url":".","display":"standalone","background_color":"#f1f5f9","theme_color":"#ffffff","icons":[{"src":"sebo.png","sizes":"192x192","type":"image/png"}]}'>
 
-    <!-- App Icons -->
     <link rel="icon" type="image/png" href="sebo.png">
     <link rel="apple-touch-icon" href="sebo.png">
     
@@ -131,14 +129,13 @@
             });
             const [isSaving, setIsSaving] = useState(false);
 
-            // --- Lists & Analysis ---
+            // --- Lists & Items ---
             const [savedItems, setSavedItems] = useState([]);
             const [previewImage, setPreviewImage] = useState(null);
             const [itemToDelete, setItemToDelete] = useState(null);
             const [exitingItems, setExitingItems] = useState(new Set());
             const [analysisRange, setAnalysisRange] = useState('7d');
 
-            // --- Manage Product ---
             const [productSearchInput, setProductSearchInput] = useState('');
             const [newProduct, setNewProduct] = useState({ name: '', imageBase64: '', imageType: '', preview: '' });
             const [isAddingProduct, setIsAddingProduct] = useState(false);
@@ -148,7 +145,6 @@
             const [editQuantityItem, setEditQuantityItem] = useState(null);
             const [editQuantityValue, setEditQuantityValue] = useState('');
 
-            // --- Dev Controls ---
             const [visiblePasswords, setVisiblePasswords] = useState(new Set());
             const [editUserRankModal, setEditUserRankModal] = useState(null); 
             const [editUserPassModal, setEditUserPassModal] = useState(null);
@@ -156,7 +152,7 @@
             const [devActionModal, setDevActionModal] = useState(null); 
             const [isDevWorking, setIsDevWorking] = useState(false);
 
-            // --- Helper Functions ---
+            // --- Helpers ---
             const formatDriveUrl = (url) => {
                 if (!url || typeof url !== 'string') return '';
                 if (url.includes('drive.google.com')) {
@@ -174,9 +170,8 @@
                 try {
                     const parts = dateStr.match(/(\d+)\/(\d+)\/(\d+)/);
                     if (parts) {
-                        const d = parseInt(parts[1], 10);
-                        const m = parseInt(parts[2], 10) - 1;
-                        let y = parseInt(parts[3]);
+                        const d = parseInt(parts[1], 10), m = parseInt(parts[2], 10) - 1;
+                        let y = parseInt(parts[3], 10);
                         if (y > 2400) y -= 543;
                         return new Date(y, m, d);
                     }
@@ -186,57 +181,39 @@
 
             const fetchCsvData = async (gid) => {
                 const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}&ts=${Date.now()}`;
-                const strategies = [
-                    { name: 'Direct', url: csvUrl },
-                    { name: 'CorsProxy', url: `https://corsproxy.io/?${encodeURIComponent(csvUrl)}` },
-                    { name: 'AllOrigins', url: `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}` }
-                ];
-                for (const s of strategies) {
-                    try {
-                        const res = await fetch(s.url);
-                        if (!res.ok) continue;
-                        return await res.text();
-                    } catch (e) {}
+                try {
+                    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(csvUrl)}`);
+                    if (!res.ok) throw new Error();
+                    return await res.text();
+                } catch (e) {
+                    const res2 = await fetch(csvUrl);
+                    return await res2.text();
                 }
-                return "";
             };
 
             const fetchData = async () => {
                 setLoading(true);
                 try {
-                    const masterText = await fetchCsvData(MASTER_GID);
-                    const masterLines = masterText.split(/\r?\n/);
-                    const products = [];
-                    masterLines.forEach(line => {
-                        const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                        const row = matches ? matches.map(m => m.replace(/^"|"$/g, '')) : [];
-                        if (row[0] && row[0] !== 'ชื่อสินค้า') {
-                            products.push({ name: row[0].trim(), imgUrl: formatDriveUrl(row[1]) });
-                        }
-                    });
+                    const [masterText, settingsText] = await Promise.all([
+                        fetchCsvData(MASTER_GID),
+                        fetchCsvData(SETTINGS_GID)
+                    ]);
+
+                    const products = masterText.split(/\r?\n/).map(line => {
+                        const row = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)?.map(m => m.replace(/^"|"$/g, '')) || [];
+                        return (row[0] && row[0] !== 'ชื่อสินค้า') ? { name: row[0].trim(), imgUrl: formatDriveUrl(row[1]) } : null;
+                    }).filter(Boolean);
                     setMasterProducts(products);
 
-                    const settingsText = await fetchCsvData(SETTINGS_GID);
-                    const settingsLines = settingsText.split(/\r?\n/);
-                    const cats = [];
-                    const usrs = [];
-                    settingsLines.slice(1).forEach(line => {
-                        const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                        const row = matches ? matches.map(m => m.replace(/^"|"$/g, '')) : [];
-                        if (row[0] && row[0].trim()) cats.push(row[0].trim());
-                        if (row[1] && row[1].trim()) usrs.push({ 
-                            name: row[1].trim(), 
-                            pass: (row[2] || "").trim(),
-                            rank: (row[3] || "User").trim() 
-                        });
+                    const cats = [], usrs = [];
+                    settingsText.split(/\r?\n/).slice(1).forEach(line => {
+                        const row = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)?.map(m => m.replace(/^"|"$/g, '')) || [];
+                        if (row[0]) cats.push(row[0].trim());
+                        if (row[1]) usrs.push({ name: row[1].trim(), pass: (row[2] || "").trim(), rank: (row[3] || "User").trim() });
                     });
-                    if (cats.length > 0) {
-                        setCategories(cats);
-                        setForm(prev => ({ ...prev, type: prev.type || cats[0] }));
-                    }
-                    if (usrs.length > 0) setUsersData(usrs);
-
-                } catch (e) { console.error("Fetch Data Error:", e); }
+                    setCategories(cats);
+                    setUsersData(usrs);
+                } catch (e) { console.error(e); }
                 finally { setLoading(false); }
             };
 
@@ -244,17 +221,14 @@
                 setRecordsLoading(true);
                 try {
                     const text = await fetchCsvData(RECORDS_GID);
-                    const lines = text.split(/\r?\n/);
-                    const records = lines.slice(1).map((line, index) => {
-                        const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                        if (!parts) return null;
-                        const row = parts.map(m => m.replace(/^"|"$/g, ''));
-                        return {
+                    const records = text.split(/\r?\n/).slice(1).map((line, index) => {
+                        const row = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)?.map(m => m.replace(/^"|"$/g, '')) || [];
+                        return row.length >= 3 ? {
                             id: index, timestamp: row[0], type: row[1], productName: row[2],
                             imageUrl: row[3], quantity: row[4], isDone: String(row[5]).toUpperCase() === 'TRUE',
                             isUrgent: String(row[6]).toUpperCase() === 'TRUE', memo: row[7]
-                        };
-                    }).filter(item => item !== null);
+                        } : null;
+                    }).filter(Boolean);
                     setSavedItems(records);
                 } catch (e) { console.error(e); }
                 finally { setRecordsLoading(false); }
@@ -268,34 +242,21 @@
                 if (storedUser) {
                     setCurrentUser(storedUser);
                     setCurrentUserRank(storedRank || 'User');
+                    setShowUserModal(false);
                 } else {
                     setShowUserModal(true);
                 }
             }, []);
 
-            useEffect(() => {
-                if (activeTab === 'view') fetchSavedRecords();
-                if (activeTab === 'record' || activeTab === 'manage' || activeTab === 'dev') fetchData();
-            }, [activeTab]);
-
             // --- Handlers ---
-            const handleInputChange = (e) => {
-                const val = e.target.value;
-                setSearchTerm(val);
-                setForm(prev => ({ ...prev, productName: val }));
-                setShowSuggestions(true);
-            };
-
             const handleUserSelect = (userObj) => {
-                // ✅ Update Login Logic: skip if pass is empty or "none" (case insensitive)
-                const passStr = String(userObj.pass).toLowerCase();
-                if (!userObj.pass || passStr === "" || passStr === "none") {
+                const passLower = String(userObj.pass || "").toLowerCase().trim();
+                if (passLower === "" || passLower === "none") {
                     setCurrentUser(userObj.name);
                     setCurrentUserRank(userObj.rank);
                     localStorage.setItem('seb_current_user', userObj.name);
                     localStorage.setItem('seb_current_rank', userObj.rank);
                     setShowUserModal(false);
-                    setModalStep('select');
                 } else {
                     setSelectedTempUser(userObj);
                     setModalStep('password');
@@ -312,11 +273,23 @@
                     localStorage.setItem('seb_current_rank', selectedTempUser.rank);
                     setShowUserModal(false);
                     setModalStep('select');
-                    setSelectedTempUser(null);
                 } else {
                     setPassError(true);
                     setTimeout(() => setPassError(false), 500);
                 }
+            };
+
+            const handleInputChange = (e) => {
+                setSearchTerm(e.target.value);
+                setForm(prev => ({ ...prev, productName: e.target.value }));
+                setShowSuggestions(true);
+            };
+
+            const adjustQuantity = (delta, isForm = true) => {
+                const cur = parseInt(isForm ? form.quantity : editQuantityValue) || 1;
+                const next = String(Math.max(1, cur + delta));
+                if (isForm) setForm(p => ({ ...p, quantity: next }));
+                else setEditQuantityValue(next);
             };
 
             const handleAddItem = async () => {
@@ -324,32 +297,11 @@
                 setIsSaving(true);
                 const ts = new Date().toLocaleString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 try {
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                        method: "POST", mode: "no-cors",
-                        body: JSON.stringify({ action: 'add', ...form, timestamp: ts, user: currentUser }),
-                    });
+                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: 'add', ...form, timestamp: ts, user: currentUser }) });
                     setForm({ ...form, productName: '', imageUrl: '', quantity: '1', memo: '', isUrgent: false, isDone: false });
                     setSearchTerm('');
                     setTimeout(() => { fetchSavedRecords(); setIsSaving(false); }, 1500);
                 } catch (e) { setIsSaving(false); }
-            };
-
-            const handleEditQuantity = (item) => {
-                setEditQuantityItem(item);
-                setEditQuantityValue(item.quantity);
-            };
-
-            const confirmEditQuantity = async () => {
-                if (!editQuantityItem) return;
-                setSavedItems(prev => prev.map(i => (i.timestamp === editQuantityItem.timestamp && i.productName === editQuantityItem.productName) ? { ...i, quantity: editQuantityValue } : i));
-                setEditQuantityItem(null); 
-                try {
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                        method: "POST", mode: "no-cors",
-                        body: JSON.stringify({ action: 'update_quantity', productName: editQuantityItem.productName, timestamp: editQuantityItem.timestamp, quantity: editQuantityValue, user: currentUser }),
-                    });
-                    setTimeout(fetchSavedRecords, 1000);
-                } catch (e) { fetchSavedRecords(); }
             };
 
             const toggleStatus = (item) => {
@@ -357,20 +309,50 @@
                 setExitingItems(prev => new Set(prev).add(key));
                 setTimeout(async () => {
                     const newStatus = !item.isDone;
-                    setSavedItems(prev => prev.map(i => (i.timestamp === item.timestamp && i.productName === item.productName) ? { ...i, isDone: newStatus } : i));
-                    setExitingItems(prev => { const next = new Set(prev); next.delete(key); return next; });
+                    setSavedItems(p => p.map(i => (i.timestamp === item.timestamp && i.productName === item.productName) ? { ...i, isDone: newStatus } : i));
+                    setExitingItems(p => { const n = new Set(p); n.delete(key); return n; });
                     try {
                         await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: 'update', productName: item.productName, timestamp: item.timestamp, isDone: newStatus, user: currentUser }) });
-                        setTimeout(fetchSavedRecords, 1000);
-                    } catch (e) { fetchSavedRecords(); }
-                }, 1000); 
+                        fetchSavedRecords();
+                    } catch (e) {}
+                }, 1000);
             };
 
-            const adjustQuantity = (delta, isForm = true) => {
-                const current = parseInt(isForm ? form.quantity : editQuantityValue) || 1;
-                const next = String(Math.max(1, current + delta));
-                if (isForm) setForm(prev => ({ ...prev, quantity: next }));
-                else setEditQuantityValue(next);
+            const handleUpdateUserSetting = async (target, rank, pass) => {
+                setIsDevWorking(true);
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: 'update_user_setting', targetUser: target, rank, pass, user: currentUser }) });
+                    setEditUserRankModal(null); setEditUserPassModal(null);
+                    fetchData();
+                } finally { setIsDevWorking(false); }
+            };
+
+            const handleClearSheet = async (type) => {
+                setIsDevWorking(true);
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: type, user: currentUser }) });
+                    setDevActionModal(null);
+                    fetchData(); fetchSavedRecords();
+                } finally { setIsDevWorking(false); }
+            };
+
+            const handleUpdateMaster = async () => {
+                setIsEditingMaster(true);
+                try {
+                    const body = { action: 'update_master', originalName: editMasterItem.originalName, newName: editMasterItem.name, user: currentUser };
+                    if (editMasterItem.imageBase64) { body.imageBase64 = editMasterItem.imageBase64; body.imageType = editMasterItem.imageType; }
+                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(body) });
+                    setEditMasterItem(null); fetchData();
+                } finally { setIsEditingMaster(false); }
+            };
+
+            const handleFileChangeInternal = (e, setter) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setter(p => ({ ...p, imageBase64: reader.result.split(',')[1], imageType: file.type, preview: reader.result }));
+                    reader.readAsDataURL(file);
+                }
             };
 
             const confirmDelete = async () => {
@@ -384,40 +366,21 @@
                 } catch (e) { fetchSavedRecords(); }
             };
 
-            const handleUpdateUserSetting = async (targetUserName, newRank, newPass) => {
-                setIsDevWorking(true);
+            const confirmDeleteMaster = async () => {
+                if (!masterItemToDelete) return;
+                const pName = masterItemToDelete;
+                setMasterItemToDelete(null);
+                setMasterProducts(prev => prev.filter(p => p.name !== pName));
                 try {
-                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: 'update_user_setting', targetUser: targetUserName, rank: newRank, pass: newPass, user: currentUser }) });
-                    setEditUserRankModal(null);
-                    setEditUserPassModal(null);
+                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: 'delete_master', productName: pName, user: currentUser }) });
                     setTimeout(fetchData, 1000);
-                } catch (e) {} finally { setIsDevWorking(false); }
+                } catch (e) { fetchData(); }
             };
 
-            const handleClearSheet = async (actionType) => {
-                setIsDevWorking(true);
-                try {
-                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: actionType, user: currentUser }) });
-                    setDevActionModal(null);
-                    setTimeout(() => { fetchData(); fetchSavedRecords(); setIsDevWorking(false); }, 2000);
-                } catch (e) { setIsDevWorking(false); }
-            };
-
-            const handleFileChangeInternal = (e, setter) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => setter(prev => ({ ...prev, imageBase64: reader.result.split(',')[1], imageType: file.type, preview: reader.result }));
-                    reader.readAsDataURL(file);
-                }
-            };
-
-            // --- Computed Values ---
-            // ✅ Fixed ReferenceError by standardizing on suggestionsItems
+            // --- Computed ---
             const suggestionsItems = useMemo(() => masterProducts.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).slice(0, 8), [searchTerm, masterProducts]);
-            const filteredItemsMemo = useMemo(() => savedItems.filter(item => viewSubTab === 'pending' ? !item.isDone : item.isDone), [savedItems, viewSubTab]);
+            const filteredItemsMemo = useMemo(() => savedItems.filter(i => viewSubTab === 'pending' ? !i.isDone : i.isDone), [savedItems, viewSubTab]);
             const searchedMasterList = useMemo(() => masterProducts.filter(p => p.name.toLowerCase().includes(productSearchInput.toLowerCase())).slice(0, 50), [productSearchInput, masterProducts]);
-
             const analysisData = useMemo(() => {
                 const now = new Date();
                 let start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -425,44 +388,41 @@
                 else if (analysisRange === '30d') start.setDate(start.getDate() - 30);
                 else if (analysisRange === '90d') start.setDate(start.getDate() - 90);
                 else if (analysisRange === '365d') start.setDate(start.getDate() - 365);
-                
-                const filtered = savedItems.filter(item => parseThaiDate(item.timestamp) >= start);
+                const filtered = savedItems.filter(i => parseThaiDate(i.timestamp) >= start);
                 const agg = {};
                 let total = 0;
                 filtered.forEach(i => {
-                    const q = parseInt(i.quantity) || 0;
+                    const q = parseInt(i.quantity) || 0; total += q;
                     if (!agg[i.productName]) agg[i.productName] = { name: i.productName, qty: 0, image: i.imageUrl };
                     agg[i.productName].qty += q;
-                    total += q;
                 });
                 return { totalQty: total, totalRecords: filtered.length, topProducts: Object.values(agg).sort((a, b) => b.qty - a.qty).slice(0, 5) };
             }, [savedItems, analysisRange]);
 
             return (
                 <div className="min-h-screen flex flex-col pb-6">
-                    {/* User Auth Modal */}
+                    {/* ✅ Mandatory Gatekeeper Modal - Updated Button Height */}
                     {showUserModal && (
-                        <div className="fixed inset-0 z-[150] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
-                            <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
-                                <LucideIcon name={modalStep === 'select' ? "users" : "lock"} size={48} className="text-indigo-600 mx-auto mb-4" />
+                        <div className="fixed inset-0 z-[200] bg-slate-900/95 flex items-center justify-center p-4 backdrop-blur-md">
+                            <div className="bg-white p-8 rounded-[3rem] shadow-2xl max-w-sm w-full text-center border-t-[12px] border-indigo-600 animate-modal">
+                                <LucideIcon name={modalStep === 'select' ? "users" : "lock"} size={56} className="text-indigo-600 mx-auto mb-6" />
                                 <h3 className="font-black text-2xl text-slate-800 mb-2">
-                                    {modalStep === 'select' ? 'กรุณาเลือกชื่อพนักงาน' : `ยืนยันรหัสผ่าน: ${selectedTempUser?.name}`}
+                                    {modalStep === 'select' ? 'กรุณาระบุตัวตน' : `รหัสผ่าน: ${selectedTempUser?.name}`}
                                 </h3>
-                                
                                 {modalStep === 'select' ? (
-                                    <div className="space-y-2 mt-6 max-h-[350px] overflow-y-auto no-scrollbar pr-1">
+                                    <div className="space-y-3 mt-8 max-h-[400px] overflow-y-auto no-scrollbar pr-1">
                                         {usersData.length > 0 ? usersData.map(u => (
-                                            <button key={u.name} onClick={() => handleUserSelect(u)} className="w-full py-4 rounded-2xl border border-slate-100 font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all flex items-center justify-center gap-2 group active:scale-95">
-                                                {u.name} {u.pass && String(u.pass).toLowerCase() !== 'none' && <LucideIcon name="lock" size={12} className="opacity-30 group-hover:opacity-100" />}
+                                            <button key={u.name} onClick={() => handleUserSelect(u)} className="w-full py-6 rounded-[1.8rem] border-2 border-slate-100 font-black text-lg text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100 shadow-sm transition-all flex items-center justify-center gap-3 group active:scale-95">
+                                                {u.name} {u.pass && String(u.pass).toLowerCase() !== 'none' && <LucideIcon name="key" size={16} className="opacity-20 group-hover:opacity-100" />}
                                             </button>
-                                        )) : <p className="text-slate-400 italic py-4">กำลังโหลดข้อมูล...</p>}
+                                        )) : <div className="py-10 animate-pulse text-slate-300 font-bold uppercase tracking-widest">Loading Data...</div>}
                                     </div>
                                 ) : (
-                                    <div className="mt-4 space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                                        <input autoFocus type="password" placeholder="ระบุรหัส login" className={`w-full py-4 px-4 rounded-2xl border-2 text-center font-bold text-slate-700 outline-none transition-all ${passError ? 'border-red-500 animate-shake' : 'border-slate-100 focus:border-indigo-500 bg-slate-50'}`} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleVerifyPassword()} />
-                                        <div className="grid grid-cols-2 gap-3 pt-2">
-                                            <button onClick={() => setModalStep('select')} className="py-3.5 rounded-xl font-bold text-slate-400 hover:bg-slate-50">ย้อนกลับ</button>
-                                            <button onClick={handleVerifyPassword} className="py-3.5 rounded-xl font-black bg-indigo-600 text-white shadow-lg active:scale-95">ยืนยัน</button>
+                                    <div className="mt-6 space-y-6 animate-in fade-in duration-300">
+                                        <input autoFocus type="password" inputMode="numeric" pattern="[0-9]*" placeholder="ใส่รหัส login..." className={`w-full py-5 px-6 rounded-2xl border-2 text-center font-black text-3xl text-slate-700 outline-none transition-all ${passError ? 'border-red-500 animate-shake bg-red-50' : 'border-slate-100 bg-slate-50 focus:border-indigo-500'}`} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleVerifyPassword()} />
+                                        <div className="grid grid-cols-2 gap-4 pt-2">
+                                            <button onClick={() => setModalStep('select')} className="py-4 rounded-2xl font-bold text-slate-400 bg-slate-50 active:scale-95">ย้อนกลับ</button>
+                                            <button onClick={handleVerifyPassword} className="py-4 rounded-2xl font-black bg-indigo-600 text-white shadow-xl active:scale-95">ยืนยัน</button>
                                         </div>
                                     </div>
                                 )}
@@ -475,11 +435,11 @@
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl overflow-hidden shadow border border-slate-100"><img src="https://cf.shopee.co.th/file/th-11134216-81ztq-mi72il8os3cwaf" className="w-full h-full object-cover" /></div>
                             <div>
-                                <h1 className="font-black text-xl text-slate-800 tracking-tight leading-none mb-1">SEBOFFICIAL</h1>
-                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">{currentUserRank} ACCESS</span>
+                                <h1 className="font-black text-xl text-slate-800 tracking-tight leading-none uppercase">SEBOFFICIAL</h1>
+                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{currentUserRank} ACCESS</span>
                             </div>
                         </div>
-                        <div onClick={() => { setModalStep('select'); setShowUserModal(true); }} className="flex items-center gap-2 bg-slate-50 hover:bg-indigo-50 px-4 py-2 rounded-full cursor-pointer border border-slate-200 transition-all active:scale-95 group">
+                        <div onClick={() => { setModalStep('select'); setShowUserModal(true); fetchData(); }} className="flex items-center gap-2 bg-slate-100 hover:bg-indigo-50 px-4 py-2 rounded-full cursor-pointer border border-slate-200 transition-all active:scale-95 group">
                             <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">{currentUser ? currentUser.charAt(0).toUpperCase() : '?'}</div>
                             <span className="text-xs font-bold text-slate-600 hidden sm:block">{currentUser || 'ระบุตัวตน'}</span>
                         </div>
@@ -490,7 +450,6 @@
                         <div className="flex p-1.5 bg-white border border-slate-200 rounded-[1.5rem] overflow-x-auto no-scrollbar shadow-sm">
                             <button onClick={() => setActiveTab('record')} className={`flex-1 min-w-[85px] py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'record' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="edit-3" size={16} /> บันทึก</button>
                             <button onClick={() => setActiveTab('view')} className={`flex-1 min-w-[85px] py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'view' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="list" size={16} /> งาน</button>
-                            {/* ✅ User Limitation: Cannot see Analysis tab */}
                             {currentUserRank !== 'User' && (
                                 <button onClick={() => setActiveTab('analysis')} className={`flex-1 min-w-[85px] py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'analysis' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="bar-chart-2" size={16} /> สถิติ</button>
                             )}
@@ -500,34 +459,28 @@
                             )}
                         </div>
 
-                        {/* ✅ Record Tab - Fixed Overlap for PC */}
+                        {/* ✅ Record Tab - Corrected Layout */}
                         {activeTab === 'record' && (
-                            <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-slate-100 custom-shadow animate-in fade-in duration-300 relative overflow-hidden">
-                                {isSaving && <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center flex-col gap-3 backdrop-blur-sm"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div><span className="font-bold text-indigo-600 animate-pulse">กำลังบันทึกข้อมูล...</span></div>}
-                                <div className="flex items-center gap-3 mb-10"><div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600 shadow-sm"><LucideIcon name="plus-square" size={24} /></div><div><h2 className="text-xl font-black text-slate-800">ลงรายการงานใหม่</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Create Daily Work Record</p></div></div>
+                            <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-slate-100 custom-shadow animate-modal relative overflow-hidden">
+                                {isSaving && <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center flex-col gap-3 backdrop-blur-sm"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div><span className="font-bold text-indigo-600 animate-pulse">Saving...</span></div>}
+                                <div className="flex items-center gap-3 mb-10"><div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600 shadow-sm"><LucideIcon name="plus-square" size={24} /></div><div><h2 className="text-xl font-black text-slate-800">ลงรายการงานใหม่</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Daily Entry Panel</p></div></div>
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                                     <div className="lg:col-span-7 space-y-8">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                            <div className="flex flex-col gap-2">
+                                            <div className="flex flex-col gap-1.5">
                                                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">หมวดหมู่</label>
-                                                <div className="relative group">
-                                                    <select className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold text-slate-700 outline-none appearance-none cursor-pointer transition-all" value={form.type} onChange={(e) => setForm({...form, type: e.target.value})}>
-                                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                                    </select>
-                                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-hover:text-indigo-500"><LucideIcon name="chevron-down" size={18} /></div>
-                                                </div>
+                                                <select className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold text-slate-700 outline-none appearance-none" value={form.type} onChange={(e) => setForm({...form, type: e.target.value})}>
+                                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                                </select>
                                             </div>
-                                            <div className="flex flex-col gap-2 relative">
+                                            <div className="flex flex-col gap-1.5 relative">
                                                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้า</label>
-                                                <div className="relative group">
-                                                    <input type="text" placeholder="พิมพ์ชื่อสินค้า..." className="w-full h-14 bg-slate-50 border-2 border-transparent group-hover:bg-white focus:border-indigo-500 rounded-2xl px-5 font-bold text-slate-700 outline-none transition-all shadow-inner" value={searchTerm} onChange={handleInputChange} onFocus={() => setShowSuggestions(true)} />
-                                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-indigo-500"><LucideIcon name="search" size={18} /></div>
-                                                </div>
+                                                <input type="text" placeholder="ค้นหา..." className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold text-slate-700 outline-none shadow-sm" value={searchTerm} onChange={handleInputChange} onFocus={() => setShowSuggestions(true)} />
                                                 {showSuggestions && suggestionsItems.length > 0 && (
-                                                    <div className="absolute z-50 w-full top-[105%] bg-white border border-slate-100 rounded-2xl shadow-2xl autocomplete-dropdown overflow-hidden animate-modal">
+                                                    <div className="absolute z-50 w-full top-[105%] bg-white border rounded-2xl shadow-2xl autocomplete-dropdown overflow-hidden">
                                                         {suggestionsItems.map((p, i) => (
-                                                            <div key={i} className="px-5 py-4 hover:bg-indigo-50 cursor-pointer flex items-center gap-4 border-b border-slate-50 last:border-0 transition-colors" onClick={() => { setForm({...form, productName: p.name, imageUrl: p.imgUrl}); setSearchTerm(p.name); setShowSuggestions(false); }}>
-                                                                <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 shadow-sm"><img src={p.imgUrl} className="w-full h-full object-cover" /></div>
+                                                            <div key={i} className="px-5 py-4 hover:bg-indigo-50 cursor-pointer flex items-center gap-4 border-b last:border-0" onClick={() => { setForm({...form, productName: p.name, imageUrl: p.imgUrl}); setSearchTerm(p.name); setShowSuggestions(false); }}>
+                                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shadow-sm"><img src={p.imgUrl} className="w-full h-full object-cover" /></div>
                                                                 <span className="font-bold text-sm text-slate-600 truncate">{p.name}</span>
                                                             </div>
                                                         ))}
@@ -535,37 +488,76 @@
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
-                                            <div className="md:col-span-5 flex flex-col gap-2">
-                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">จำนวน (ชิ้น)</label>
-                                                <div className="flex items-center gap-2 h-[58px] bg-slate-50 p-1.5 rounded-2xl border-2 border-transparent focus-within:border-indigo-500 focus-within:bg-white transition-all shadow-inner">
-                                                    <button onClick={() => adjustQuantity(-1)} className="w-14 h-full bg-white text-slate-500 rounded-xl font-black text-2xl hover:bg-red-50 active:scale-90 transition-all shadow-sm border border-slate-100">-</button>
-                                                    <input type="number" inputMode="numeric" className="flex-1 h-full bg-transparent font-black text-center text-indigo-600 text-3xl outline-none" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value.replace(/[^0-9]/g, '')})} onBlur={() => { if(!form.quantity || parseInt(form.quantity) < 1) setForm({...form, quantity: '1'}) }} />
-                                                    <button onClick={() => adjustQuantity(1)} className="w-14 h-full bg-white text-indigo-600 rounded-xl font-black text-2xl hover:bg-indigo-50 active:scale-90 transition-all shadow-sm border border-slate-100">+</button>
+                                        <div className="flex flex-col md:flex-row gap-6 items-end">
+                                            <div className="w-full md:w-56 flex flex-col gap-1.5 flex-none">
+                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">จำนวน</label>
+                                                <div className="flex items-center h-14 bg-slate-50 p-1.5 rounded-2xl border-2 border-transparent focus-within:border-indigo-500 transition-all shadow-inner overflow-hidden">
+                                                    <button onClick={() => adjustQuantity(-1)} className="w-14 h-full bg-white text-slate-500 rounded-xl font-black text-2xl active:scale-90 border shadow-sm">-</button>
+                                                    <input type="number" inputMode="numeric" className="flex-1 min-w-0 h-full bg-transparent font-black text-center text-indigo-600 text-3xl outline-none" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value.replace(/[^0-9]/g, '')})} onBlur={() => { if(!form.quantity || parseInt(form.quantity) < 1) setForm({...form, quantity: '1'}) }} />
+                                                    <button onClick={() => adjustQuantity(1)} className="w-14 h-full bg-white text-indigo-600 rounded-xl font-black text-2xl active:scale-90 border shadow-sm">+</button>
                                                 </div>
                                             </div>
-                                            <div className="md:col-span-7 flex flex-col gap-2">
+                                            <div className="w-full flex-1 flex flex-col gap-1.5">
                                                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">หมายเหตุ</label>
-                                                <input type="text" placeholder="..." className="w-full h-[58px] bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-slate-700 outline-none transition-all shadow-inner" value={form.memo} onChange={(e) => setForm({...form, memo: e.target.value})} />
+                                                <input type="text" placeholder="..." className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-slate-700 outline-none" value={form.memo} onChange={(e) => setForm({...form, memo: e.target.value})} />
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6">
-                                            <button onClick={() => setForm({...form, isUrgent: !form.isUrgent})} className={`h-[72px] rounded-[1.8rem] font-bold flex items-center justify-center gap-4 transition-all border-2 ${form.isUrgent ? 'bg-red-50 border-red-500 text-red-600 shadow-xl shadow-red-100' : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'}`}>
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${form.isUrgent ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-200 shadow-inner'}`}><LucideIcon name={form.isUrgent ? "zap" : "check"} size={20} /></div>
-                                                {form.isUrgent ? 'งานด่วนมาก 🔥' : 'ระดับความสำคัญปกติ'}
+                                        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                                            <button onClick={() => setForm({...form, isUrgent: !form.isUrgent})} className={`h-16 flex-1 rounded-3xl font-bold flex items-center justify-center gap-4 transition-all border-2 ${form.isUrgent ? 'bg-red-50 border-red-500 text-red-600 shadow-lg shadow-red-50' : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'}`}>
+                                                <LucideIcon name={form.isUrgent ? "zap" : "check"} size={18} /> {form.isUrgent ? 'งานด่วน 🔥' : 'ระดับปกติ'}
                                             </button>
-                                            <button onClick={handleAddItem} disabled={!form.productName || isSaving} className="h-[72px] bg-indigo-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-[1.8rem] font-black text-xl shadow-2xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 active:scale-95"><LucideIcon name="plus-circle" size={24} /> บันทึกงานประจำวัน</button>
+                                            <button onClick={handleAddItem} disabled={!form.productName || isSaving} className="h-16 flex-[1.5] bg-indigo-600 disabled:bg-slate-200 text-white rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all">บันทึกรายการ</button>
                                         </div>
                                     </div>
-                                    <div className="lg:col-span-5 flex flex-col items-center justify-center bg-slate-50/50 rounded-[3rem] border-2 border-dashed border-slate-200 p-8 min-h-[350px] relative transition-all hover:bg-indigo-50/30">
+                                    <div className="lg:col-span-5 flex flex-col items-center justify-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 p-8 min-h-[350px]">
                                         {form.imageUrl ? (
-                                            <div className="flex flex-col items-center gap-6 cursor-zoom-in group" onClick={() => setPreviewImage(form.imageUrl)}>
-                                                <div className="bg-white p-5 rounded-[2.8rem] shadow-2xl border border-slate-100 transition-all group-hover:rotate-1 group-hover:scale-105"><img src={form.imageUrl} className="max-w-full max-h-[220px] object-contain rounded-2xl" /></div>
-                                                <span className="text-[11px] font-black text-indigo-500 uppercase bg-white px-6 py-2.5 rounded-full border border-indigo-100 shadow-md flex items-center gap-2 group-hover:bg-indigo-600 group-hover:text-white transition-all"><LucideIcon name="eye" size={14} /> ดูรูปขนาดเต็ม</span>
+                                            <div className="flex flex-col items-center gap-6 cursor-zoom-in" onClick={() => setPreviewImage(form.imageUrl)}>
+                                                <div className="bg-white p-5 rounded-[2.8rem] shadow-2xl border border-slate-100 transition-all hover:rotate-1"><img src={form.imageUrl} className="max-w-full max-h-[220px] object-contain rounded-2xl" /></div>
+                                                <span className="text-[11px] font-black text-indigo-500 uppercase bg-white px-6 py-2.5 rounded-full border border-indigo-100 shadow-md">Zoom Image</span>
                                             </div>
                                         ) : (
-                                            <div className="text-center opacity-15"><LucideIcon name="image" size={100} className="mx-auto mb-4 text-slate-400" /><p className="font-black text-xl text-slate-500 uppercase tracking-[0.2em]">Product Preview</p></div>
+                                            <div className="text-center opacity-10"><LucideIcon name="image" size={150} className="mx-auto" /></div>
                                         )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Analysis Tab */}
+                        {activeTab === 'analysis' && currentUserRank !== 'User' && (
+                             <div className="space-y-6 pb-10 animate-in fade-in duration-300">
+                                <div className="bg-white rounded-[2.5rem] p-6 md:p-8 border custom-shadow">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-10">
+                                        <div className="flex items-center gap-3"><div className="bg-indigo-50 p-3.5 rounded-2xl text-indigo-600 shadow-sm"><LucideIcon name="bar-chart-2" size={24} /></div><h2 className="text-2xl font-black text-slate-800 tracking-tight">สถิติยอดประจำช่วงเวลา</h2></div>
+                                        <div className="flex gap-1 bg-slate-100 p-1.5 rounded-2xl overflow-x-auto no-scrollbar max-w-full shadow-inner">
+                                            {['1d', '7d', '1m', '3m', '1y'].map(range => (
+                                                <button key={range} onClick={() => setAnalysisRange(range)} className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase transition-all ${analysisRange === range ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400'}`}>{range}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12 text-center text-white">
+                                        <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-100 relative overflow-hidden">
+                                            <p className="text-indigo-100 text-xs font-black uppercase tracking-[0.2em] mb-3">รวมจำนวนสินค้าทั้งหมด</p>
+                                            <div className="flex items-baseline justify-center gap-2"><span className="text-5xl font-black">{analysisData.totalQty}</span><span className="text-sm font-bold opacity-75 uppercase">Units</span></div>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 p-8 rounded-[2.5rem] shadow-xl shadow-emerald-100 relative overflow-hidden">
+                                            <p className="text-emerald-100 text-xs font-black uppercase tracking-[0.2em] mb-3">งานที่บันทึกสำเร็จ</p>
+                                            <div className="flex items-baseline justify-center gap-2"><span className="text-5xl font-black">{analysisData.totalRecords}</span><span className="text-sm font-bold opacity-75 uppercase">Entries</span></div>
+                                        </div>
+                                    </div>
+                                    <h3 className="font-black text-slate-800 text-lg mb-8 flex items-center gap-3 px-2 font-bold"><LucideIcon name="award" size={24} className="text-amber-500" /> TOP 5 สินค้าขายดีที่สุด</h3>
+                                    <div className="space-y-6">
+                                        {analysisData.topProducts.map((p, idx) => (
+                                            <div key={idx} className="bg-slate-50/50 p-4 rounded-3xl border border-slate-100 shadow-sm transition-all flex flex-col gap-4">
+                                                <div className="flex items-center gap-4">
+                                                    <span className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black ${idx === 0 ? 'bg-amber-100 text-amber-600 border-2 border-amber-300' : 'bg-slate-50 text-slate-400 border'}`}>{idx + 1}</span>
+                                                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white border shrink-0"><img src={p.image} className="w-full h-full object-cover shadow-inner" /></div>
+                                                    <div className="flex-1 min-w-0 font-black text-slate-700 truncate">{p.name}</div>
+                                                    <div className="text-right font-black text-indigo-600 text-xl">{p.qty} <span className="text-xs text-slate-400 ml-1 font-bold uppercase">Pcs</span></div>
+                                                </div>
+                                                <div className="h-3 w-full bg-white rounded-full overflow-hidden border p-0.5"><div className="h-full bg-indigo-500 rounded-full animate-progress" style={{ width: `${(p.qty / (analysisData.totalQty || 1)) * 100}%` }}></div></div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -579,26 +571,25 @@
                                         <button onClick={() => setViewSubTab('pending')} className={`px-6 py-2.5 rounded-full font-bold text-xs transition-all ${viewSubTab === 'pending' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>งานค้าง ({savedItems.filter(i => !i.isDone).length})</button>
                                         <button onClick={() => setViewSubTab('completed')} className={`px-6 py-2.5 rounded-full font-bold text-xs transition-all ${viewSubTab === 'completed' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>เสร็จแล้ว ({savedItems.filter(i => i.isDone).length})</button>
                                     </div>
-                                    <button onClick={fetchSavedRecords} className="p-3 bg-white rounded-full border shadow-sm text-slate-400 hover:text-indigo-600 active:scale-90 transition-all"><LucideIcon name="refresh-cw" size={18} className={recordsLoading ? "animate-spin" : ""} /></button>
+                                    <button onClick={fetchSavedRecords} className="p-3 bg-white rounded-full border shadow-sm text-slate-400 active:scale-90 transition-all"><LucideIcon name="refresh-cw" size={18} className={recordsLoading ? "animate-spin" : ""} /></button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     {filteredItemsMemo.length > 0 ? filteredItemsMemo.map((item) => {
                                         const key = item.timestamp + item.productName;
                                         const isExiting = exitingItems.has(key);
-                                        const visualDone = isExiting ? !item.isDone : item.isDone; 
                                         return (
-                                            <div key={key} className={`group relative p-5 rounded-[2.2rem] border flex items-center gap-5 hover:shadow-2xl transition-all duration-1000 ease-out ${isExiting ? 'opacity-0 scale-95 translate-x-10 pointer-events-none' : 'opacity-100'} ${item.isUrgent && !visualDone ? 'urgent-card' : 'bg-white border-slate-100 shadow-sm'} ${visualDone ? 'border-emerald-100 bg-white/50' : ''}`}>
-                                                <button onClick={() => toggleStatus(item)} className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border-2 transition-all ${visualDone ? 'bg-emerald-500 border-emerald-400 text-white shadow-inner' : 'bg-slate-50 border-slate-100 active:scale-90'}`}><LucideIcon name={visualDone ? "check-circle" : "circle"} size={28} /></button>
+                                            <div key={key} className={`group relative p-5 rounded-[2.2rem] border flex items-center gap-5 transition-all duration-1000 ${isExiting ? 'opacity-0 scale-95 translate-x-10 pointer-events-none' : 'opacity-100'} ${item.isUrgent && !item.isDone ? 'urgent-card' : 'bg-white border-slate-100 shadow-sm'} ${item.isDone ? 'border-emerald-100 bg-white/50' : ''}`}>
+                                                <button onClick={() => toggleStatus(item)} className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border-2 transition-all ${item.isDone ? 'bg-emerald-500 border-emerald-400 text-white shadow-inner' : 'bg-slate-50 text-slate-300'}`}><LucideIcon name={item.isDone ? "check-circle" : "circle"} size={28} /></button>
                                                 <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 cursor-zoom-in" onClick={() => item.imageUrl && setPreviewImage(item.imageUrl)}><img src={item.imageUrl || 'https://via.placeholder.com/100'} className="w-full h-full object-cover" /></div>
                                                 <div className="flex-1 min-w-0 pr-6">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="text-[10px] font-black text-indigo-500 uppercase px-2 py-0.5 bg-indigo-50 rounded-md shadow-sm border border-indigo-100">{item.type}</span>
                                                         <span className="text-[10px] text-slate-400 italic truncate">{item.timestamp}</span>
                                                     </div>
-                                                    <h4 className={`font-bold text-sm truncate ${visualDone ? 'text-slate-400 line-through italic' : 'text-slate-800'}`}>{item.productName}</h4>
+                                                    <h4 className={`font-bold text-sm truncate ${item.isDone ? 'text-slate-400 line-through italic' : 'text-slate-800'}`}>{item.productName}</h4>
                                                     <div className="text-[11px] font-bold flex items-center gap-3 mt-1.5">
-                                                        <span onClick={(e) => { e.stopPropagation(); handleEditQuantity(item); }} className="bg-slate-100 px-3 py-1 rounded-lg text-slate-600 cursor-pointer hover:bg-indigo-100 transition-colors flex items-center gap-1.5 font-bold shadow-sm border border-slate-200/50">จำนวน: {item.quantity} <LucideIcon name="pencil" size={10} /></span>
-                                                        {item.memo && <span className="truncate text-slate-400">| {item.memo}</span>}
+                                                        <span onClick={(e) => { e.stopPropagation(); handleEditQuantity(item); }} className="bg-slate-100 px-3 py-1 rounded-lg text-slate-600 cursor-pointer hover:bg-indigo-100 transition-colors flex items-center gap-1.5 shadow-sm border font-bold">จำนวน: {item.quantity} <LucideIcon name="pencil" size={10} /></span>
+                                                        {item.memo && <span className="truncate text-slate-400 italic">| {item.memo}</span>}
                                                     </div>
                                                 </div>
                                                 <button onClick={() => setItemToDelete(item)} className="absolute top-5 right-5 p-2 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><LucideIcon name="trash-2" size={16} /></button>
@@ -609,75 +600,35 @@
                             </div>
                         )}
 
-                        {/* ✅ Analysis Tab - Protected */}
-                        {activeTab === 'analysis' && currentUserRank !== 'User' && (
-                             <div className="space-y-6 pb-10 animate-in fade-in duration-300">
-                                <div className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 custom-shadow">
-                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-10">
-                                        <div className="flex items-center gap-3"><div className="bg-indigo-50 p-3.5 rounded-2xl text-indigo-600 shadow-sm"><LucideIcon name="bar-chart-2" size={24} /></div><h2 className="text-2xl font-black text-slate-800 tracking-tight">สรุปยอดประจำช่วงเวลา</h2></div>
-                                        <div className="flex gap-1 bg-slate-100 p-1.5 rounded-2xl overflow-x-auto no-scrollbar max-w-full shadow-inner">
-                                            {['1d', '7d', '1m', '3m', '1y'].map(range => (
-                                                <button key={range} onClick={() => setAnalysisRange(range)} className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase transition-all ${analysisRange === range ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>{range}</button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12 text-center">
-                                        <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-100 text-white relative overflow-hidden">
-                                            <p className="text-indigo-100 text-xs font-black uppercase tracking-[0.2em] mb-3">รวมจำนวนสินค้าทั้งหมด</p>
-                                            <div className="flex items-baseline justify-center gap-2"><span className="text-5xl font-black">{analysisData.totalQty}</span><span className="text-sm font-bold opacity-75 uppercase">Units</span></div>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-emerald-400 to-emerald-600 p-8 rounded-[2.5rem] shadow-xl shadow-emerald-100 text-white relative overflow-hidden">
-                                            <p className="text-emerald-50 text-xs font-black uppercase tracking-[0.2em] mb-3">งานที่บันทึกสำเร็จ</p>
-                                            <div className="flex items-baseline justify-center gap-2"><span className="text-5xl font-black">{analysisData.totalRecords}</span><span className="text-sm font-bold opacity-75 uppercase">Works</span></div>
-                                        </div>
-                                    </div>
-                                    <h3 className="font-black text-slate-800 text-lg mb-8 flex items-center gap-3 px-2 font-bold"><LucideIcon name="award" size={24} className="text-amber-500" /> TOP 5 สินค้าขายดีที่สุด</h3>
-                                    <div className="space-y-6">
-                                        {analysisData.topProducts.map((p, idx) => (
-                                            <div key={idx} className="bg-slate-50/50 p-4 rounded-3xl border border-slate-100 shadow-sm transition-all flex flex-col gap-4">
-                                                <div className="flex items-center gap-4">
-                                                    <span className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black ${idx === 0 ? 'bg-amber-100 text-amber-600 border-2 border-amber-300' : 'bg-slate-50 text-slate-400 border'}`}>{idx + 1}</span>
-                                                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-50 border shrink-0"><img src={p.image} className="w-full h-full object-cover shadow-inner" /></div>
-                                                    <div className="flex-1 min-w-0"><p className="text-sm font-black text-slate-700 truncate">{p.name}</p></div>
-                                                    <div className="text-right"><span className="text-xl font-black text-indigo-600">{p.qty}</span><span className="text-[10px] font-bold text-slate-400 ml-1 uppercase">Pcs</span></div>
-                                                </div>
-                                                <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden border p-0.5"><div className="h-full bg-indigo-500 rounded-full animate-progress" style={{ width: `${(p.qty / (analysisData.totalQty || 1)) * 100}%` }}></div></div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ✅ Manage Tab */}
+                        {/* Manage Tab */}
                         {activeTab === 'manage' && (
                              <div className="space-y-6 animate-in fade-in duration-300 pb-10">
                                 <div className="flex justify-center">
                                     <div className="bg-white p-2 rounded-[1.2rem] border border-slate-200 inline-flex shadow-sm">
-                                        <button onClick={() => setManageSubTab('search')} className={`px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all ${manageSubTab === 'search' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="search" size={16} /> จัดการสินค้า</button>
+                                        <button onClick={() => setManageSubTab('search')} className={`px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${manageSubTab === 'search' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}><LucideIcon name="search" size={16} /> คลังสินค้า</button>
                                         {currentUserRank !== 'User' && (
-                                            <button onClick={() => setManageSubTab('add')} className={`px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all ${manageSubTab === 'add' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="plus-circle" size={16} /> เพิ่มใหม่</button>
+                                            <button onClick={() => setManageSubTab('add')} className={`px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all ${manageSubTab === 'add' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}><LucideIcon name="plus-circle" size={16} /> เพิ่มใหม่</button>
                                         )}
                                     </div>
                                 </div>
                                 {manageSubTab === 'search' ? (
                                     <>
-                                        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 custom-shadow text-center space-y-5">
-                                            <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">Product Inventory</h2>
-                                            <div className="max-w-xl mx-auto relative"><input type="text" placeholder="ค้นหาชื่อสินค้า..." className="w-full h-16 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-center text-slate-700 outline-none shadow-inner" value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} /><div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-focus-within:text-indigo-500 transition-colors"><LucideIcon name="search" size={24} /></div></div>
+                                        <div className="bg-white rounded-[2.5rem] p-8 border custom-shadow text-center space-y-4 shadow-inner">
+                                            <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase tracking-widest">Master Product</h2>
+                                            <div className="max-w-xl mx-auto relative"><input type="text" placeholder="พิมพ์ชื่อสินค้า..." className="w-full h-16 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-center text-slate-700 outline-none shadow-inner" value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} /><div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300"><LucideIcon name="search" size={24} /></div></div>
                                         </div>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                                             {searchedMasterList.map((p, idx) => (
-                                                <div key={idx} className="bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-sm group relative overflow-hidden transition-all hover:shadow-2xl hover:scale-105">
+                                                <div key={idx} className="bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-sm group relative overflow-hidden transition-all hover:shadow-2xl">
                                                     <div className="aspect-square bg-slate-50 rounded-3xl overflow-hidden mb-4 border-2 border-slate-50 shadow-inner"><img src={p.imgUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-125" /></div>
-                                                    <p className="text-[11px] font-black text-slate-600 truncate text-center uppercase tracking-tight">{p.name}</p>
+                                                    <p className="text-[11px] font-black text-slate-600 truncate text-center uppercase tracking-tighter">{p.name}</p>
                                                     <div className="absolute inset-0 bg-indigo-900/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2 backdrop-blur-[2px]">
                                                         {currentUserRank !== 'User' && (
-                                                            <button onClick={() => setEditMasterItem({ originalName: p.name, name: p.name, imgUrl: p.imgUrl })} className="bg-white text-indigo-600 p-3 rounded-2xl shadow-xl hover:bg-indigo-50 transition-all active:scale-90"><LucideIcon name="pencil" size={18} /></button>
+                                                            <button onClick={() => setEditMasterItem({ originalName: p.name, name: p.name, imgUrl: p.imgUrl })} className="bg-white text-indigo-600 p-3 rounded-2xl shadow-xl active:scale-90 shadow-white/50"><LucideIcon name="pencil" size={18} /></button>
                                                         )}
-                                                        <button onClick={() => setPreviewImage(p.imgUrl)} className="bg-white text-emerald-600 p-3 rounded-2xl shadow-xl hover:bg-emerald-50 transition-all active:scale-90"><LucideIcon name="maximize" size={18} /></button>
+                                                        <button onClick={() => setPreviewImage(p.imgUrl)} className="bg-white text-emerald-600 p-3 rounded-2xl shadow-xl active:scale-90 shadow-white/50"><LucideIcon name="maximize" size={18} /></button>
                                                         {currentUserRank !== 'User' && (
-                                                            <button onClick={() => setMasterItemToDelete(p.name)} className="bg-white text-red-500 p-3 rounded-2xl shadow-xl hover:bg-red-50 transition-all active:scale-90"><LucideIcon name="trash-2" size={18} /></button>
+                                                            <button onClick={() => setMasterItemToDelete(p.name)} className="bg-white text-red-500 p-3 rounded-2xl shadow-xl active:scale-90 shadow-white/50"><LucideIcon name="trash-2" size={18} /></button>
                                                         )}
                                                     </div>
                                                 </div>
@@ -688,12 +639,12 @@
                                     <div className="bg-white rounded-[3rem] p-10 md:p-14 border custom-shadow animate-in fade-in duration-300">
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
                                             <div className="space-y-10">
-                                                <div className="space-y-3"><label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้าใหม่</label><input type="text" placeholder="กรอกชื่อสินค้า..." className="w-full h-16 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-lg text-slate-700 outline-none transition-all shadow-inner" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} /></div>
-                                                <div className="space-y-3"><label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">รูปภาพประกอบ</label><div className="relative group"><input type="file" accept="image/*" onChange={(e) => handleFileChangeInternal(e, setNewProduct)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" /><div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 flex flex-col items-center justify-center gap-4 transition-all group-hover:bg-indigo-50/50 group-hover:border-indigo-300"><div className="p-5 bg-white rounded-full shadow-md text-indigo-400 group-hover:text-indigo-600 transition-colors"><LucideIcon name="upload-cloud" size={48} /></div><div className="text-center"><p className="font-black text-slate-600">คลิกที่นี่เพื่ออัปโหลดรูปภาพ</p><p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Square Format Recommended</p></div></div></div></div>
-                                                <button onClick={handleAddProductMaster} disabled={!newProduct.name || !newProduct.imageBase64 || isAddingProduct} className="w-full h-[76px] bg-indigo-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-[2rem] font-black text-xl shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4">{isAddingProduct ? <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : <><LucideIcon name="plus" size={24} /> เพิ่มเข้าระบบสินค้าหลัก</>}</button>
+                                                <div className="space-y-3"><label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้าใหม่</label><input type="text" placeholder="..." className="w-full h-16 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-lg text-slate-700 outline-none shadow-inner" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} /></div>
+                                                <div className="space-y-3"><label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">รูปภาพสินค้า</label><div className="relative group"><input type="file" accept="image/*" onChange={(e) => handleFileChangeInternal(e, setNewProduct)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" /><div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 flex flex-col items-center justify-center gap-4 transition-all group-hover:bg-indigo-50/50 group-hover:border-indigo-300 shadow-inner"><LucideIcon name="upload-cloud" size={48} className="text-indigo-400" /><p className="font-black text-slate-600 text-center uppercase text-sm font-bold">Choose Image</p></div></div></div>
+                                                <button onClick={handleAddProductMaster} disabled={!newProduct.name || !newProduct.imageBase64 || isAddingProduct} className="w-full h-[76px] bg-indigo-600 disabled:bg-slate-200 text-white rounded-[2rem] font-black text-xl shadow-2xl active:scale-95 transition-all">บันทึกข้อมูลสินค้า</button>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center bg-slate-50/50 rounded-[4rem] p-10 border border-slate-100 min-h-[450px] shadow-inner">
-                                                {newProduct.preview ? <div className="animate-in zoom-in duration-500"><img src={newProduct.preview} className="max-w-full max-h-[400px] object-contain rounded-3xl shadow-2xl border-4 border-white rotate-1 hover:rotate-0 transition-transform" /></div> : <div className="text-center opacity-10"><LucideIcon name="image" size={150} className="mb-6 mx-auto" /><p className="font-black text-3xl uppercase tracking-[0.3em]">No Image</p></div>}
+                                            <div className="flex flex-col items-center justify-center bg-slate-50 rounded-[4rem] p-10 border border-slate-100 shadow-inner">
+                                                {newProduct.preview ? <img src={newProduct.preview} className="max-w-full max-h-[400px] object-contain rounded-3xl shadow-2xl border-4 border-white rotate-1" /> : <div className="text-center opacity-10 font-black text-3xl uppercase tracking-widest">Preview</div>}
                                             </div>
                                         </div>
                                     </div>
@@ -705,21 +656,20 @@
                         {activeTab === 'dev' && currentUserRank === 'Dev' && (
                              <div className="space-y-6 animate-in fade-in duration-300 pb-10">
                                 <div className="bg-white rounded-[2.5rem] p-8 md:p-12 border border-slate-100 custom-shadow">
-                                    <div className="flex items-center gap-4 mb-10"><div className="bg-red-50 p-4 rounded-3xl text-red-600"><LucideIcon name="command" size={32} /></div><div><h2 className="text-2xl font-black text-slate-800 tracking-tight">Developer Control Panel</h2><p className="text-sm font-bold text-slate-400 tracking-tight uppercase">System configuration & database cleanup</p></div></div>
-                                    
+                                    <div className="flex items-center gap-4 mb-10"><div className="bg-red-50 p-4 rounded-3xl text-red-600 shadow-sm"><LucideIcon name="command" size={32} /></div><div><h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Dev Panel</h2><p className="text-sm font-bold text-slate-400 tracking-tight">System configuration & cleanup</p></div></div>
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                                         <div className="space-y-6">
                                             <h3 className="font-black text-slate-800 flex items-center gap-2 px-2 uppercase text-sm tracking-widest"><LucideIcon name="users" size={20} className="text-indigo-600" /> จัดการพนักงาน</h3>
                                             <div className="grid gap-3 max-h-[500px] overflow-y-auto no-scrollbar pr-1">
                                                 {usersData.map(u => (
-                                                    <div key={u.name} className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 flex items-center justify-between gap-4 transition-all hover:border-indigo-200 shadow-sm">
+                                                    <div key={u.name} className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 flex items-center justify-between gap-4 transition-all hover:border-indigo-200 shadow-sm shadow-indigo-100/50">
                                                         <div className="min-w-0">
                                                             <p className="font-black text-slate-700 truncate">{u.name}</p>
                                                             <div className="flex flex-wrap gap-2 mt-1">
                                                                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-sm border ${u.rank === 'Dev' ? 'bg-red-100 text-red-600 border-red-200' : (u.rank === 'Admin' ? 'bg-indigo-100 text-indigo-600 border-indigo-200' : 'bg-white text-slate-400 border-slate-200')}`}>{u.rank}</span>
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-[10px] font-bold text-emerald-600 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 font-mono shadow-sm">Pass: {visiblePasswords.has(u.name) ? (u.pass || 'None') : '****'}</span>
-                                                                    <button onClick={() => setVisiblePasswords(prev => { const next = new Set(prev); if(next.has(u.name)) next.delete(u.name); else next.add(u.name); return next; })} className="text-slate-300 hover:text-indigo-500 transition-colors p-1 active:scale-90"><LucideIcon name={visiblePasswords.has(u.name) ? "eye-off" : "eye"} size={14} /></button>
+                                                                    <span className="text-[10px] font-bold text-emerald-600 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 font-mono shadow-inner">Pass: {visiblePasswords.has(u.name) ? (u.pass || 'None') : '****'}</span>
+                                                                    <button onClick={() => setVisiblePasswords(prev => { const next = new Set(prev); if(next.has(u.name)) next.delete(u.name); else next.add(u.name); return next; })} className="text-slate-300 hover:text-indigo-500 transition-colors p-1 active:scale-90 shadow-sm bg-white rounded-md"><LucideIcon name={visiblePasswords.has(u.name) ? "eye-off" : "eye"} size={14} /></button>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -732,7 +682,7 @@
                                             </div>
                                         </div>
                                         <div className="space-y-6">
-                                            <h3 className="font-black text-slate-800 flex items-center gap-2 px-2 uppercase text-sm tracking-widest"><LucideIcon name="database" size={20} className="text-red-600" /> ฐานข้อมูล & พื้นที่จัดเก็บ</h3>
+                                            <h3 className="font-black text-slate-800 flex items-center gap-2 px-2 uppercase text-sm tracking-widest"><LucideIcon name="database" size={20} className="text-red-600" /> ฐานข้อมูล & การล้างค่า</h3>
                                             <div className="space-y-4 bg-red-50/50 p-6 rounded-[2.5rem] border border-red-100 shadow-inner">
                                                 <div className="bg-white p-6 rounded-3 shadow-sm border border-red-100 group"><p className="font-black text-slate-800 mb-1">ล้างประวัติการใช้งาน (Logs)</p><button onClick={() => setDevActionModal('clear_logs')} className="w-full py-4 rounded-2xl bg-red-50 text-red-600 font-black text-sm border-2 border-transparent hover:border-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95">Clear Logs History</button></div>
                                                 <div className="bg-white p-6 rounded-3 shadow-sm border border-red-100 group"><p className="font-black text-slate-800 mb-1">ล้างรายการบันทึกงาน (Daily Records)</p><button onClick={() => setDevActionModal('clear_all_records')} className="w-full py-4 rounded-2xl bg-red-50 text-red-600 font-black text-sm border-2 border-transparent hover:border-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95">Delete All Tasks Data</button></div>
@@ -744,32 +694,48 @@
                         )}
                     </main>
 
-                    {/* ✅ Standard Modals */}
+                    {/* ✅ GLOBAL MODALS */}
                     {devActionModal && (
                         <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
-                            <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full text-center border-t-[10px] border-red-500">
+                            <div className="bg-white p-10 rounded-[3.5rem] shadow-2xl max-w-sm w-full text-center border-t-[10px] border-red-500">
                                 <LucideIcon name="alert-triangle" size={64} className="text-red-500 mx-auto mb-6" />
-                                <h3 className="font-black text-2xl text-slate-800 mb-2">ยืนยันการล้างข้อมูล?</h3>
-                                <p className="text-slate-400 text-sm font-bold leading-relaxed mb-8">กรุณาใส่รหัส login ของคุณเพื่อยืนยันการลบแบบถาวร</p>
-                                <input type="password" placeholder="รหัสผ่านของคุณ" className={`w-full py-4 px-6 rounded-2xl border-2 text-center font-bold text-slate-700 outline-none mb-6 ${passError ? 'border-red-500 bg-red-50 animate-shake' : 'border-slate-100 bg-slate-50 focus:border-red-500'}`} onKeyDown={(e) => { if (e.key === 'Enter') { const myData = usersData.find(u => u.name === currentUser); if (myData && String(e.target.value) === String(myData.pass)) handleClearSheet(devActionModal); else { setPassError(true); setTimeout(() => setPassError(false), 500); } } }} />
+                                <h3 className="font-black text-2xl text-slate-800 mb-2">ยืนยันรหัสผ่าน?</h3>
+                                <p className="text-slate-400 text-sm font-bold leading-relaxed mb-8">กรุณากรอกรหัสผ่านของคุณเพื่อยืนยันการทำรายการล้างชีทแบบถาวร</p>
+                                <input type="password" inputMode="numeric" pattern="[0-9]*" placeholder="รหัสผ่านของคุณ" className={`w-full py-4 px-6 rounded-2xl border-2 text-center font-black text-3xl text-slate-700 outline-none mb-6 shadow-inner ${passError ? 'border-red-500 bg-red-50 animate-shake' : 'border-slate-100 bg-slate-50'}`} onKeyDown={(e) => { if (e.key === 'Enter') { const myData = usersData.find(u => u.name === currentUser); if (myData && String(e.target.value) === String(myData.pass)) handleClearSheet(devActionModal); else { setPassError(true); setTimeout(() => setPassError(false), 500); } } }} />
                                 <div className="grid grid-cols-2 gap-4">
-                                    <button onClick={() => setDevActionModal(null)} className="h-14 rounded-2xl font-bold text-slate-400 bg-slate-50 transition-colors">ยกเลิก</button>
-                                    <button onClick={() => { const passField = document.querySelector('input[placeholder="รหัสผ่านของคุณ"]'); const myData = usersData.find(u => u.name === currentUser); if (myData && String(passField.value) === String(myData.pass)) handleClearSheet(devActionModal); else { setPassError(true); setTimeout(() => setPassError(false), 500); } }} className="h-14 rounded-2xl font-black bg-red-600 text-white shadow-lg active:scale-95">{isDevWorking ? '...' : 'ยืนยัน'}</button>
+                                    <button onClick={() => setDevActionModal(null)} className="h-14 rounded-2xl font-bold text-slate-400 bg-slate-50 active:scale-95 transition-all">ยกเลิก</button>
+                                    <button onClick={() => { const passField = document.querySelector('input[placeholder="รหัสผ่านของคุณ"]'); const myData = usersData.find(u => u.name === currentUser); if (myData && String(passField.value) === String(myData.pass)) handleClearSheet(devActionModal); else { setPassError(true); setTimeout(() => setPassError(false), 500); } }} className="h-14 rounded-2xl font-black bg-red-600 text-white shadow-lg active:scale-95 transition-all">{isDevWorking ? '...' : 'ยืนยัน'}</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Edit Rank / Pass Modals */}
+                    {/* Quantity Edit Modal */}
+                    {editQuantityItem && (
+                        <div className="fixed inset-0 z-[110] bg-black/70 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
+                            <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full relative border-2 border-white">
+                                <button onClick={() => setEditQuantityItem(null)} className="absolute top-6 right-6 bg-slate-100 p-2.5 rounded-full text-slate-400 hover:bg-red-50 transition-colors active:scale-90"><LucideIcon name="x" size={20} /></button>
+                                <h3 className="font-black text-2xl text-slate-800 mb-2 text-center">แก้ไขจำนวน</h3>
+                                <div className="flex items-center justify-center gap-6 mb-10 mt-6 font-bold">
+                                    <button onClick={() => adjustQuantity(-1, false)} className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-500 font-black text-3xl active:scale-90 shadow-sm">-</button>
+                                    <input type="number" inputMode="numeric" className="w-28 h-16 bg-slate-50 border-2 border-indigo-100 rounded-2xl font-black text-4xl text-center text-indigo-600 outline-none shadow-inner" value={editQuantityValue} onChange={(e) => setEditQuantityValue(e.target.value.replace(/[^0-9]/g, ''))} />
+                                    <button onClick={() => adjustQuantity(1, false)} className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 font-black text-3xl active:scale-90 shadow-sm">+</button>
+                                </div>
+                                <button onClick={confirmEditQuantity} className="w-full h-16 bg-indigo-600 text-white rounded-[1.8rem] font-black text-lg shadow-xl hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-3"><LucideIcon name="save" size={20} /> บันทึกการแก้ไข</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Rank/Pass Management Modals */}
                     {editUserRankModal && (
                         <div className="fixed inset-0 z-[210] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
                             <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-indigo-600">
                                 <LucideIcon name="shield-check" size={64} className="text-indigo-600 mx-auto mb-6" />
                                 <h3 className="font-black text-2xl text-slate-800 mb-2">เปลี่ยนตำแหน่ง</h3>
-                                <p className="text-slate-400 mb-8 text-sm font-bold">พนักงาน: <span className="text-slate-700">{editUserRankModal.name}</span></p>
+                                <p className="text-slate-400 mb-8 text-sm font-bold font-mono">"{editUserRankModal.name}"</p>
                                 <div className="space-y-3">
-                                    {['Dev', 'Admin', 'User'].map(r => (<button key={r} onClick={() => handleUpdateUserSetting(editUserRankModal.name, r, editUserRankModal.pass)} className={`w-full py-4 rounded-2xl border-2 font-black transition-all active:scale-95 ${editUserRankModal.rank === r ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl' : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'}`}>{r}</button>))}
-                                    <button onClick={() => setEditUserRankModal(null)} className="w-full py-3 mt-4 text-slate-400 font-bold hover:text-red-500 transition-colors">ยกเลิก</button>
+                                    {['Dev', 'Admin', 'User'].map(r => (<button key={r} onClick={() => handleUpdateUserSetting(editUserRankModal.name, r, editUserRankModal.pass)} className={`w-full py-4 rounded-2xl border-2 font-black transition-all active:scale-95 shadow-sm ${editUserRankModal.rank === r ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl' : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'}`}>{r}</button>))}
+                                    <button onClick={() => setEditUserRankModal(null)} className="w-full py-3 mt-4 text-slate-400 font-bold hover:text-red-500 transition-colors uppercase tracking-widest text-xs">Cancel</button>
                                 </div>
                             </div>
                         </div>
@@ -779,42 +745,14 @@
                         <div className="fixed inset-0 z-[210] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
                             <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-amber-500">
                                 <LucideIcon name="key" size={64} className="text-amber-500 mx-auto mb-6" />
-                                <h3 className="font-black text-2xl text-slate-800 mb-2">ตั้งค่ารหัส Login</h3>
-                                <p className="text-slate-400 mb-8 text-sm font-bold">พนักงาน: <span className="text-slate-700">{editUserPassModal.name}</span></p>
+                                <h3 className="font-black text-2xl text-slate-800 mb-2">Login Password</h3>
+                                <p className="text-slate-400 mb-8 text-sm font-bold font-mono">"{editUserPassModal.name}"</p>
                                 <div className="space-y-6">
-                                    <input autoFocus type="number" inputMode="numeric" placeholder="ตัวเลข 4 หลัก" className="w-full py-5 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-amber-500 text-center font-black text-4xl text-amber-600 outline-none shadow-inner" value={newPassValue} onChange={(e) => setNewPassValue(e.target.value.slice(0, 4))} />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <button onClick={() => setEditUserPassModal(null)} className="h-14 rounded-2xl font-bold text-slate-400 bg-slate-50 transition-colors">ยกเลิก</button>
-                                        <button onClick={() => handleUpdateUserSetting(editUserPassModal.name, editUserPassModal.rank, newPassValue)} className="h-14 rounded-2xl font-black bg-amber-500 text-white shadow-lg active:scale-95">บันทึกรหัส</button>
+                                    <input autoFocus type="number" inputMode="numeric" placeholder="4 digits" className="w-full py-5 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-amber-500 text-center font-black text-4xl text-amber-600 outline-none shadow-inner" value={newPassValue} onChange={(e) => setNewPassValue(e.target.value.slice(0, 4))} />
+                                    <div className="grid grid-cols-2 gap-4 font-bold">
+                                        <button onClick={() => setEditUserPassModal(null)} className="h-14 rounded-2xl text-slate-400 bg-slate-50 active:scale-95 shadow-sm">ยกเลิก</button>
+                                        <button onClick={() => handleUpdateUserSetting(editUserPassModal.name, editUserPassModal.rank, newPassValue)} className="h-14 rounded-2xl bg-amber-500 text-white shadow-lg active:scale-95">บันทึก</button>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {editQuantityItem && (
-                        <div className="fixed inset-0 z-[110] bg-black/70 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
-                            <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full relative border-2 border-white">
-                                <button onClick={() => setEditQuantityItem(null)} className="absolute top-6 right-6 bg-slate-100 p-2.5 rounded-full text-slate-400 hover:bg-red-50 active:scale-90 transition-all"><LucideIcon name="x" size={20} /></button>
-                                <h3 className="font-black text-2xl text-slate-800 mb-2 text-center">แก้ไขจำนวน</h3>
-                                <div className="flex items-center justify-center gap-6 mb-10 mt-6">
-                                    <button onClick={() => adjustQuantity(-1, false)} className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-500 font-black text-3xl active:scale-90 transition-all shadow-sm border">-</button>
-                                    <input type="number" inputMode="numeric" className="w-28 h-16 bg-slate-50 border-2 border-indigo-100 rounded-2xl font-black text-4xl text-center text-indigo-600 outline-none focus:border-indigo-500 transition-all shadow-inner" value={editQuantityValue} onChange={(e) => setEditQuantityValue(e.target.value.replace(/[^0-9]/g, ''))} />
-                                    <button onClick={() => adjustQuantity(1, false)} className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 font-black text-3xl active:scale-90 transition-all shadow-sm border-2 border-indigo-100">+</button>
-                                </div>
-                                <button onClick={confirmEditQuantity} className="w-full h-16 bg-indigo-600 text-white rounded-[1.8rem] font-black text-lg shadow-xl hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-3"><LucideIcon name="save" size={20} /> บันทึกการแก้ไข</button>
-                            </div>
-                        </div>
-                    )}
-
-                    {itemToDelete && (
-                        <div className="fixed inset-0 z-[110] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
-                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-red-500">
-                                <div className="bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce"><LucideIcon name="trash-2" size={48} className="text-red-500" /></div>
-                                <h3 className="font-black text-2xl text-slate-800 mb-3 uppercase tracking-tight">Delete entry?</h3>
-                                <div className="grid grid-cols-2 gap-4 pt-10">
-                                    <button onClick={() => setItemToDelete(null)} className="h-14 rounded-2xl font-black text-slate-400 bg-slate-50 hover:bg-slate-100 transition-colors">ยกเลิก</button>
-                                    <button onClick={confirmDelete} className="h-14 rounded-2xl font-black bg-red-500 text-white shadow-lg shadow-red-100 active:scale-95 transition-all">ลบทันที</button>
                                 </div>
                             </div>
                         </div>
@@ -829,24 +767,14 @@
                         </div>
                     )}
 
-                    {editMasterItem && (
-                        <div className="fixed inset-0 z-[210] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
-                            <div className="bg-white p-8 md:p-10 rounded-[3.5rem] shadow-2xl max-w-md w-full relative">
-                                <button onClick={() => setEditMasterItem(null)} className="absolute top-8 right-8 bg-slate-100 p-2.5 rounded-full hover:bg-red-50 transition-all"><LucideIcon name="x" size={20} /></button>
-                                <h3 className="font-black text-2xl text-slate-800 mb-10 text-center">แก้ไขข้อมูลสินค้าหลัก</h3>
-                                <div className="space-y-7">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้าที่แสดง</label>
-                                        <input type="text" className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold outline-none transition-all shadow-inner" value={editMasterItem.name} onChange={(e) => setEditMasterItem({...editMasterItem, name: e.target.value})} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">อัปเดตรูปภาพใหม่</label>
-                                        <div className="relative group h-44 w-full bg-slate-50 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all hover:bg-indigo-50">
-                                            <input type="file" accept="image/*" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => handleFileChangeInternal(e, setEditMasterItem)} />
-                                            {editMasterItem.preview || editMasterItem.imgUrl ? <img src={editMasterItem.preview || editMasterItem.imgUrl} className="h-full w-full object-contain p-2" /> : <div className="text-center"><LucideIcon name="image-plus" size={32} className="text-slate-300 mx-auto mb-2" /><p className="text-[10px] font-bold text-slate-400">Click to change</p></div>}
-                                        </div>
-                                    </div>
-                                    <button onClick={handleUpdateMaster} disabled={isEditingMaster} className="w-full h-16 bg-indigo-600 text-white rounded-[2rem] font-black text-lg shadow-xl shadow-indigo-100 active:scale-95 transition-all flex items-center justify-center gap-3">{isEditingMaster ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : <><LucideIcon name="check-circle" /> บันทึกการแก้ไขสินค้า</>}</button>
+                    {itemToDelete && (
+                        <div className="fixed inset-0 z-[110] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
+                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-red-500">
+                                <div className="bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce"><LucideIcon name="trash-2" size={48} className="text-red-500" /></div>
+                                <h3 className="font-black text-2xl text-slate-800 mb-3 uppercase tracking-tighter">Confirm Delete?</h3>
+                                <div className="grid grid-cols-2 gap-4 pt-10 font-bold">
+                                    <button onClick={() => setItemToDelete(null)} className="h-14 rounded-2xl text-slate-400 bg-slate-50 hover:bg-slate-100 active:scale-95 transition-all shadow-sm">No</button>
+                                    <button onClick={confirmDelete} className="h-14 rounded-2xl bg-red-500 text-white shadow-lg active:scale-95 transition-all shadow-red-200">Yes</button>
                                 </div>
                             </div>
                         </div>
@@ -856,20 +784,20 @@
                         <div className="fixed inset-0 z-[110] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
                             <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-red-600">
                                 <LucideIcon name="alert-triangle" size={64} className="text-red-600 mx-auto mb-6" />
-                                <h3 className="font-black text-2xl text-slate-800">ลบจากสินค้าหลัก?</h3>
-                                <p className="text-slate-400 text-sm mt-3 mb-8 font-bold leading-relaxed">การลบจะทำให้พนักงานไม่สามารถค้นหาสินค้านี้เจอได้อีก<br/><span className="text-red-500 block mt-2 text-base font-bold">"{masterItemToDelete}"</span></p>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button onClick={() => setMasterItemToDelete(null)} className="h-14 rounded-2xl font-black text-slate-400 bg-slate-50 transition-colors">ยกเลิก</button>
-                                    <button onClick={confirmDeleteMaster} className="h-14 rounded-2xl font-black bg-red-600 text-white shadow-lg active:scale-95 transition-all">ยืนยันลบ</button>
+                                <h3 className="font-black text-2xl text-slate-800 mb-2">ลบสินค้าจากคลัง?</h3>
+                                <p className="text-slate-400 text-sm mt-3 mb-8 leading-relaxed font-bold italic shadow-sm px-2 py-1 bg-red-50 rounded-lg">"{masterItemToDelete}"</p>
+                                <div className="grid grid-cols-2 gap-4 font-bold">
+                                    <button onClick={() => setMasterItemToDelete(null)} className="h-14 rounded-2xl text-slate-400 bg-slate-50 active:scale-95 shadow-sm">ยกเลิก</button>
+                                    <button onClick={confirmDeleteMaster} className="h-14 rounded-2xl bg-red-600 text-white shadow-lg active:scale-95">ลบทันที</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <footer className="bg-white/90 backdrop-blur-sm border-t border-slate-200 p-5 mt-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        <span className="flex items-center gap-2 font-bold"><LucideIcon name="shield-check" size={12} className="text-emerald-500" /> SEBOFFICIAL V2.8.5 PRO WORKFLOW</span>
+                    <footer className="bg-white/90 backdrop-blur-sm border-t border-slate-200 p-5 mt-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest shadow-inner">
+                        <span className="flex items-center gap-2 font-bold"><LucideIcon name="shield-check" size={12} className="text-emerald-500" /> SEBOFFICIAL V2.8.8 PRO WORKFLOW</span>
                         <div className="flex items-center gap-4">
-                            <span className="flex items-center gap-1.5"><LucideIcon name="database" size={12} /> Google Cloud Integrated</span>
+                            <span className="flex items-center gap-1.5 font-bold"><LucideIcon name="database" size={12} /> Google Cloud Integrated</span>
                             <span className="hidden sm:block">Logged in as: {currentUser} ({currentUserRank})</span>
                         </div>
                     </footer>
