@@ -8,8 +8,6 @@
     <!-- App Name for Home Screen (iOS & Android) -->
     <meta name="apple-mobile-web-app-title" content="SEB">
     <meta name="application-name" content="SEB">
-    
-    <!-- Web App Manifest -->
     <link rel="manifest" href='data:application/manifest+json,{"name":"SEBOFFICIAL","short_name":"SEB","start_url":".","display":"standalone","background_color":"#f1f5f9","theme_color":"#ffffff","icons":[{"src":"sebo.png","sizes":"192x192","type":"image/png"}]}'>
 
     <!-- App Icons -->
@@ -29,31 +27,26 @@
             font-family: 'Anuphan', sans-serif; 
             background-color: #f1f5f9; 
             color: #334155; 
+            -webkit-tap-highlight-color: transparent;
         }
         .custom-shadow { box-shadow: 0 4px 20px -5px rgba(148, 163, 184, 0.25); } 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        .autocomplete-dropdown {
-            max-height: 250px;
-            overflow-y: auto;
-            z-index: 100;
-        }
-        
-        /* Modal Animation */
-        @keyframes modal-pop {
-            0% { transform: scale(0.9); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes modal-pop { 
+            0% { transform: scale(0.95); opacity: 0; } 
+            100% { transform: scale(1); opacity: 1; } 
         }
         .animate-modal { animation: modal-pop 0.2s ease-out forwards; }
         
-        /* Progress Bar Animation */
-        @keyframes progress-grow {
-            from { width: 0%; }
+        @keyframes shake { 
+            10%, 90% { transform: translate3d(-1px, 0, 0); } 
+            20%, 80% { transform: translate3d(2px, 0, 0); } 
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 
+            40%, 60% { transform: translate3d(4px, 0, 0); } 
         }
-        .animate-progress { animation: progress-grow 1s ease-out forwards; }
+        .animate-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
 
-        /* Remove arrow from number input */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
@@ -61,34 +54,18 @@
         }
         input[type=number] { -moz-appearance: textfield; }
 
-        /* 🔥 Urgent Card Pulse Glow Effect 🔥 */
-        @keyframes red-glow-pulse {
-            0%, 100% { 
-                box-shadow: 0 0 2px rgba(239, 68, 68, 0.3); 
-                border-color: rgba(239, 68, 68, 0.6);
-            }
-            50% { 
-                box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); 
-                border-color: #ef4444; 
-            }
+        @keyframes red-glow-pulse { 
+            0%, 100% { box-shadow: 0 0 2px rgba(239, 68, 68, 0.3); border-color: rgba(239, 68, 68, 0.6); } 
+            50% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); border-color: #ef4444; } 
         }
-        
         .urgent-card {
             background-color: white;
             border-width: 2px;
             border-style: solid;
             animation: red-glow-pulse 2s ease-in-out infinite;
         }
-        
-        .animate-shake {
-            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-        }
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-1px, 0, 0); }
-            20%, 80% { transform: translate3d(2px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-            40%, 60% { transform: translate3d(4px, 0, 0); }
-        }
+
+        .autocomplete-dropdown { max-height: 280px; overflow-y: auto; z-index: 100; }
     </style>
 </head>
 <body>
@@ -100,7 +77,7 @@
         // ==========================================
         // ⚡️ SETUP AREA
         // ==========================================
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyUyOktbSLpqy4THJicXNkAYk6PV9AO3BU3gyMcpo4WRs6qFNjeznOhEsbxkRhAisaOYw/exec"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyckwlg1ltnfWSlU-9MkGZFHZ7Z6jjwgYftF0iqv7KJtGIsA-xoaFDTVZJDQMyUipd72Q/exec"; 
         const SHEET_ID = "14sIYvQUKDtOeBbhPz7z0CLTrLbMdSYWMDFSzje-Qyys";
         const MASTER_GID = "519893714"; 
         const RECORDS_GID = "379151214";
@@ -127,7 +104,7 @@
         };
 
         const App = () => {
-            // Basic State
+            // --- Global States ---
             const [masterProducts, setMasterProducts] = useState([]);
             const [loading, setLoading] = useState(true);
             const [recordsLoading, setRecordsLoading] = useState(false);
@@ -135,17 +112,18 @@
             const [viewSubTab, setViewSubTab] = useState('pending'); 
             const [manageSubTab, setManageSubTab] = useState('search');
             
-            // User & Settings States
-            const [categories, setCategories] = useState(['กำไล', 'สายคล้องโทรศัพท์', 'สร้อย', 'แหวน']); 
-            const [usersData, setUsersData] = useState([]); // [{ name, pass }]
+            // --- Auth States ---
+            const [categories, setCategories] = useState(['กำไล', 'สร้อย', 'แหวน']); 
+            const [usersData, setUsersData] = useState([]); // [{ name, pass, rank }]
             const [currentUser, setCurrentUser] = useState(''); 
+            const [currentUserRank, setCurrentUserRank] = useState('User'); 
             const [showUserModal, setShowUserModal] = useState(false);
-            const [modalStep, setModalStep] = useState('select'); // 'select' | 'password'
+            const [modalStep, setModalStep] = useState('select'); 
             const [selectedTempUser, setSelectedTempUser] = useState(null);
             const [passwordInput, setPasswordInput] = useState('');
             const [passError, setPassError] = useState(false);
 
-            // Form States
+            // --- Form States ---
             const [searchTerm, setSearchTerm] = useState('');
             const [showSuggestions, setShowSuggestions] = useState(false);
             const [form, setForm] = useState({
@@ -153,22 +131,59 @@
             });
             const [isSaving, setIsSaving] = useState(false);
 
-            // Item States
+            // --- Lists & Analysis ---
             const [savedItems, setSavedItems] = useState([]);
             const [previewImage, setPreviewImage] = useState(null);
             const [itemToDelete, setItemToDelete] = useState(null);
+            const [exitingItems, setExitingItems] = useState(new Set());
+            const [analysisRange, setAnalysisRange] = useState('7d');
+
+            // --- Manage Product ---
+            const [productSearchInput, setProductSearchInput] = useState('');
             const [newProduct, setNewProduct] = useState({ name: '', imageBase64: '', imageType: '', preview: '' });
             const [isAddingProduct, setIsAddingProduct] = useState(false);
-            const [productSearchInput, setProductSearchInput] = useState('');
             const [editMasterItem, setEditMasterItem] = useState(null);
             const [isEditingMaster, setIsEditingMaster] = useState(false);
             const [masterItemToDelete, setMasterItemToDelete] = useState(null);
             const [editQuantityItem, setEditQuantityItem] = useState(null);
             const [editQuantityValue, setEditQuantityValue] = useState('');
-            const [exitingItems, setExitingItems] = useState(new Set());
-            const [analysisRange, setAnalysisRange] = useState('7d');
 
-            // --- Data Fetching ---
+            // --- Dev Controls ---
+            const [visiblePasswords, setVisiblePasswords] = useState(new Set());
+            const [editUserRankModal, setEditUserRankModal] = useState(null); 
+            const [editUserPassModal, setEditUserPassModal] = useState(null);
+            const [newPassValue, setNewPassValue] = useState('');
+            const [devActionModal, setDevActionModal] = useState(null); 
+            const [isDevWorking, setIsDevWorking] = useState(false);
+
+            // --- Helper Functions ---
+            const formatDriveUrl = (url) => {
+                if (!url || typeof url !== 'string') return '';
+                if (url.includes('drive.google.com')) {
+                    let fileId = '';
+                    const matchD = url.match(/\/d\/([^\/]+)/);
+                    const matchId = url.match(/id=([^&]+)/);
+                    fileId = matchD ? matchD[1] : (matchId ? matchId[1] : '');
+                    if (fileId) return `https://lh3.googleusercontent.com/d/${fileId}`;
+                }
+                return url;
+            };
+
+            const parseThaiDate = (dateStr) => {
+                if (!dateStr) return new Date(0); 
+                try {
+                    const parts = dateStr.match(/(\d+)\/(\d+)\/(\d+)/);
+                    if (parts) {
+                        const d = parseInt(parts[1], 10);
+                        const m = parseInt(parts[2], 10) - 1;
+                        let y = parseInt(parts[3]);
+                        if (y > 2400) y -= 543;
+                        return new Date(y, m, d);
+                    }
+                    return new Date(dateStr); 
+                } catch (e) { return new Date(0); }
+            };
+
             const fetchCsvData = async (gid) => {
                 const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}&ts=${Date.now()}`;
                 const strategies = [
@@ -189,7 +204,6 @@
             const fetchData = async () => {
                 setLoading(true);
                 try {
-                    // Fetch Master Products
                     const masterText = await fetchCsvData(MASTER_GID);
                     const masterLines = masterText.split(/\r?\n/);
                     const products = [];
@@ -202,7 +216,6 @@
                     });
                     setMasterProducts(products);
 
-                    // Fetch Settings (Categories, Employees, Passwords)
                     const settingsText = await fetchCsvData(SETTINGS_GID);
                     const settingsLines = settingsText.split(/\r?\n/);
                     const cats = [];
@@ -211,11 +224,15 @@
                         const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
                         const row = matches ? matches.map(m => m.replace(/^"|"$/g, '')) : [];
                         if (row[0] && row[0].trim()) cats.push(row[0].trim());
-                        if (row[1] && row[1].trim()) usrs.push({ name: row[1].trim(), pass: (row[2] || "").trim() });
+                        if (row[1] && row[1].trim()) usrs.push({ 
+                            name: row[1].trim(), 
+                            pass: (row[2] || "").trim(),
+                            rank: (row[3] || "User").trim() 
+                        });
                     });
                     if (cats.length > 0) {
                         setCategories(cats);
-                        setForm(prev => ({ ...prev, type: cats.includes('กำไล') ? 'กำไล' : cats[0] }));
+                        setForm(prev => ({ ...prev, type: prev.type || cats[0] }));
                     }
                     if (usrs.length > 0) setUsersData(usrs);
 
@@ -247,17 +264,21 @@
                 fetchData();
                 fetchSavedRecords();
                 const storedUser = localStorage.getItem('seb_current_user');
-                if (storedUser) setCurrentUser(storedUser);
-                else setShowUserModal(true);
+                const storedRank = localStorage.getItem('seb_current_rank');
+                if (storedUser) {
+                    setCurrentUser(storedUser);
+                    setCurrentUserRank(storedRank || 'User');
+                } else {
+                    setShowUserModal(true);
+                }
             }, []);
 
             useEffect(() => {
                 if (activeTab === 'view') fetchSavedRecords();
+                if (activeTab === 'record' || activeTab === 'manage' || activeTab === 'dev') fetchData();
             }, [activeTab]);
 
             // --- Handlers ---
-            
-            // ✅ Fixed handleInputChange
             const handleInputChange = (e) => {
                 const val = e.target.value;
                 setSearchTerm(val);
@@ -265,42 +286,17 @@
                 setShowSuggestions(true);
             };
 
-            const formatDriveUrl = (url) => {
-                if (!url || typeof url !== 'string') return '';
-                if (url.includes('drive.google.com')) {
-                    const matchD = url.match(/\/d\/([^\/]+)/);
-                    const matchId = url.match(/id=([^&]+)/);
-                    const fileId = matchD ? matchD[1] : (matchId ? matchId[1] : '');
-                    if (fileId) return `https://lh3.googleusercontent.com/d/${fileId}`;
-                }
-                return url;
-            };
-
-            const parseThaiDate = (dateStr) => {
-                if (!dateStr) return new Date(0); 
-                try {
-                    const parts = dateStr.match(/(\d+)\/(\d+)\/(\d+)/);
-                    if (parts) {
-                        const d = parseInt(parts[1]), m = parseInt(parts[2]) - 1;
-                        let y = parseInt(parts[3]);
-                        if (y > 2400) y -= 543;
-                        return new Date(y, m, d);
-                    }
-                    return new Date(dateStr); 
-                } catch (e) { return new Date(0); }
-            };
-
-            // Login Handlers
             const handleUserSelect = (userObj) => {
-                if (!userObj.pass) {
-                    // No password defined, skip directly
+                // ✅ Update Login Logic: skip if pass is empty or "none" (case insensitive)
+                const passStr = String(userObj.pass).toLowerCase();
+                if (!userObj.pass || passStr === "" || passStr === "none") {
                     setCurrentUser(userObj.name);
+                    setCurrentUserRank(userObj.rank);
                     localStorage.setItem('seb_current_user', userObj.name);
+                    localStorage.setItem('seb_current_rank', userObj.rank);
                     setShowUserModal(false);
                     setModalStep('select');
-                    setSelectedTempUser(null);
                 } else {
-                    // Password exists, show auth step
                     setSelectedTempUser(userObj);
                     setModalStep('password');
                     setPasswordInput('');
@@ -311,7 +307,9 @@
             const handleVerifyPassword = () => {
                 if (passwordInput === selectedTempUser.pass) {
                     setCurrentUser(selectedTempUser.name);
+                    setCurrentUserRank(selectedTempUser.rank);
                     localStorage.setItem('seb_current_user', selectedTempUser.name);
+                    localStorage.setItem('seb_current_rank', selectedTempUser.rank);
                     setShowUserModal(false);
                     setModalStep('select');
                     setSelectedTempUser(null);
@@ -369,51 +367,10 @@
             };
 
             const adjustQuantity = (delta, isForm = true) => {
-                if (isForm) {
-                    setForm(prev => ({ ...prev, quantity: String(Math.max(1, (parseInt(prev.quantity) || 1) + delta)) }));
-                } else {
-                    setEditQuantityValue(prev => String(Math.max(1, (parseInt(prev) || 1) + delta)));
-                }
-            };
-
-            const handleSelectProductFromList = (p) => {
-                setForm({ ...form, productName: p.name, imageUrl: p.imgUrl });
-                setSearchTerm(p.name);
-                setShowSuggestions(false);
-            };
-
-            const handleFileChangeInternal = (e, setter) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => setter(prev => ({ ...prev, imageBase64: reader.result.split(',')[1], imageType: file.type, preview: reader.result }));
-                    reader.readAsDataURL(file);
-                }
-            };
-
-            const handleAddProductMaster = async () => {
-                if (!newProduct.name || !newProduct.imageBase64) return;
-                setIsAddingProduct(true);
-                try {
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                        method: "POST", mode: "no-cors",
-                        body: JSON.stringify({ action: 'add_master', productName: newProduct.name, imageBase64: newProduct.imageBase64, imageType: newProduct.imageType, user: currentUser })
-                    });
-                    setNewProduct({ name: '', imageBase64: '', imageType: '', preview: '' });
-                    setTimeout(() => { setManageSubTab('search'); fetchData(); setIsAddingProduct(false); }, 3000);
-                } catch (e) { setIsAddingProduct(false); }
-            };
-
-            const handleUpdateMaster = async () => {
-                if (!editMasterItem || !editMasterItem.name) return;
-                setIsEditingMaster(true);
-                try {
-                    const payload = { action: 'update_master', originalName: editMasterItem.originalName, newName: editMasterItem.name, user: currentUser };
-                    if (editMasterItem.imageBase64) { payload.imageBase64 = editMasterItem.imageBase64; payload.imageType = editMasterItem.imageType; }
-                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
-                    setEditMasterItem(null);
-                    setTimeout(fetchData, 1000);
-                } catch (e) {} finally { setIsEditingMaster(false); }
+                const current = parseInt(isForm ? form.quantity : editQuantityValue) || 1;
+                const next = String(Math.max(1, current + delta));
+                if (isForm) setForm(prev => ({ ...prev, quantity: next }));
+                else setEditQuantityValue(next);
             };
 
             const confirmDelete = async () => {
@@ -427,44 +384,56 @@
                 } catch (e) { fetchSavedRecords(); }
             };
 
-            const confirmDeleteMaster = async () => {
-                if (!masterItemToDelete) return;
-                const pName = masterItemToDelete;
-                setMasterItemToDelete(null);
-                setMasterProducts(prev => prev.filter(p => p.name !== pName));
+            const handleUpdateUserSetting = async (targetUserName, newRank, newPass) => {
+                setIsDevWorking(true);
                 try {
-                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: 'delete_master', productName: pName, user: currentUser }) });
+                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: 'update_user_setting', targetUser: targetUserName, rank: newRank, pass: newPass, user: currentUser }) });
+                    setEditUserRankModal(null);
+                    setEditUserPassModal(null);
                     setTimeout(fetchData, 1000);
-                } catch (e) { fetchData(); }
+                } catch (e) {} finally { setIsDevWorking(false); }
             };
 
-            // Memos & Computed
-            const suggestionsItems = useMemo(() => {
-                if (!searchTerm.trim()) return [];
-                const q = searchTerm.toLowerCase();
-                return masterProducts.filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
-            }, [searchTerm, masterProducts]);
+            const handleClearSheet = async (actionType) => {
+                setIsDevWorking(true);
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: actionType, user: currentUser }) });
+                    setDevActionModal(null);
+                    setTimeout(() => { fetchData(); fetchSavedRecords(); setIsDevWorking(false); }, 2000);
+                } catch (e) { setIsDevWorking(false); }
+            };
 
+            const handleFileChangeInternal = (e, setter) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setter(prev => ({ ...prev, imageBase64: reader.result.split(',')[1], imageType: file.type, preview: reader.result }));
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            // --- Computed Values ---
+            // ✅ Fixed ReferenceError by standardizing on suggestionsItems
+            const suggestionsItems = useMemo(() => masterProducts.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).slice(0, 8), [searchTerm, masterProducts]);
             const filteredItemsMemo = useMemo(() => savedItems.filter(item => viewSubTab === 'pending' ? !item.isDone : item.isDone), [savedItems, viewSubTab]);
-            const searchedProductsMemo = useMemo(() => masterProducts.filter(p => p.name.toLowerCase().includes(productSearchInput.toLowerCase())).slice(0, 50), [productSearchInput, masterProducts]);
+            const searchedMasterList = useMemo(() => masterProducts.filter(p => p.name.toLowerCase().includes(productSearchInput.toLowerCase())).slice(0, 50), [productSearchInput, masterProducts]);
 
             const analysisData = useMemo(() => {
                 const now = new Date();
-                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                let start = new Date(today);
-                if (analysisRange === '7d') start.setDate(today.getDate() - 7);
-                else if (analysisRange === '30d') start.setDate(today.getDate() - 30);
-                else if (analysisRange === '90d') start.setDate(today.getDate() - 90);
-                else if (analysisRange === '365d') start.setDate(today.getDate() - 365);
+                let start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                if (analysisRange === '7d') start.setDate(start.getDate() - 7);
+                else if (analysisRange === '30d') start.setDate(start.getDate() - 30);
+                else if (analysisRange === '90d') start.setDate(start.getDate() - 90);
+                else if (analysisRange === '365d') start.setDate(start.getDate() - 365);
                 
-                const filtered = savedItems.filter(i => parseThaiDate(i.timestamp) >= start);
+                const filtered = savedItems.filter(item => parseThaiDate(item.timestamp) >= start);
                 const agg = {};
                 let total = 0;
                 filtered.forEach(i => {
-                    const qty = parseInt(i.quantity) || 0;
+                    const q = parseInt(i.quantity) || 0;
                     if (!agg[i.productName]) agg[i.productName] = { name: i.productName, qty: 0, image: i.imageUrl };
-                    agg[i.productName].qty += qty;
-                    total += qty;
+                    agg[i.productName].qty += q;
+                    total += q;
                 });
                 return { totalQty: total, totalRecords: filtered.length, topProducts: Object.values(agg).sort((a, b) => b.qty - a.qty).slice(0, 5) };
             }, [savedItems, analysisRange]);
@@ -473,27 +442,27 @@
                 <div className="min-h-screen flex flex-col pb-6">
                     {/* User Auth Modal */}
                     {showUserModal && (
-                        <div className="fixed inset-0 z-[120] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
-                            <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
+                        <div className="fixed inset-0 z-[150] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
+                            <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
                                 <LucideIcon name={modalStep === 'select' ? "users" : "lock"} size={48} className="text-indigo-600 mx-auto mb-4" />
-                                <h3 className="font-black text-xl text-slate-800 mb-2">
-                                    {modalStep === 'select' ? 'ใครกำลังใช้งาน?' : `ยืนยันรหัสผ่าน: ${selectedTempUser?.name}`}
+                                <h3 className="font-black text-2xl text-slate-800 mb-2">
+                                    {modalStep === 'select' ? 'กรุณาเลือกชื่อพนักงาน' : `ยืนยันรหัสผ่าน: ${selectedTempUser?.name}`}
                                 </h3>
                                 
                                 {modalStep === 'select' ? (
-                                    <div className="space-y-2 mt-6 max-h-[350px] overflow-y-auto no-scrollbar">
-                                        {usersData.map(u => (
-                                            <button key={u.name} onClick={() => handleUserSelect(u)} className="w-full py-4 rounded-2xl border border-slate-100 font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all flex items-center justify-center gap-2 group">
-                                                {u.name} {u.pass && <LucideIcon name="key" size={12} className="opacity-30 group-hover:opacity-100" />}
+                                    <div className="space-y-2 mt-6 max-h-[350px] overflow-y-auto no-scrollbar pr-1">
+                                        {usersData.length > 0 ? usersData.map(u => (
+                                            <button key={u.name} onClick={() => handleUserSelect(u)} className="w-full py-4 rounded-2xl border border-slate-100 font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all flex items-center justify-center gap-2 group active:scale-95">
+                                                {u.name} {u.pass && String(u.pass).toLowerCase() !== 'none' && <LucideIcon name="lock" size={12} className="opacity-30 group-hover:opacity-100" />}
                                             </button>
-                                        ))}
+                                        )) : <p className="text-slate-400 italic py-4">กำลังโหลดข้อมูล...</p>}
                                     </div>
                                 ) : (
                                     <div className="mt-4 space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                                        <input autoFocus type="password" placeholder="ใส่รหัส login..." className={`w-full py-4 px-4 rounded-2xl border-2 text-center font-bold text-slate-700 outline-none transition-all ${passError ? 'border-red-500 animate-shake' : 'border-slate-100 focus:border-indigo-500 bg-slate-50'}`} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleVerifyPassword()} />
+                                        <input autoFocus type="password" placeholder="ระบุรหัส login" className={`w-full py-4 px-4 rounded-2xl border-2 text-center font-bold text-slate-700 outline-none transition-all ${passError ? 'border-red-500 animate-shake' : 'border-slate-100 focus:border-indigo-500 bg-slate-50'}`} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleVerifyPassword()} />
                                         <div className="grid grid-cols-2 gap-3 pt-2">
-                                            <button onClick={() => setModalStep('select')} className="py-3.5 rounded-xl font-bold text-slate-400">ย้อนกลับ</button>
-                                            <button onClick={handleVerifyPassword} className="py-3.5 rounded-xl font-black bg-indigo-600 text-white shadow-lg">ยืนยัน</button>
+                                            <button onClick={() => setModalStep('select')} className="py-3.5 rounded-xl font-bold text-slate-400 hover:bg-slate-50">ย้อนกลับ</button>
+                                            <button onClick={handleVerifyPassword} className="py-3.5 rounded-xl font-black bg-indigo-600 text-white shadow-lg active:scale-95">ยืนยัน</button>
                                         </div>
                                     </div>
                                 )}
@@ -505,50 +474,60 @@
                     <nav className="bg-white/90 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50 px-6 py-4 shadow-sm flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl overflow-hidden shadow border border-slate-100"><img src="https://cf.shopee.co.th/file/th-11134216-81ztq-mi72il8os3cwaf" className="w-full h-full object-cover" /></div>
-                            <h1 className="font-black text-xl text-slate-800 tracking-tight">SEBOFFICIAL</h1>
+                            <div>
+                                <h1 className="font-black text-xl text-slate-800 tracking-tight leading-none mb-1">SEBOFFICIAL</h1>
+                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">{currentUserRank} ACCESS</span>
+                            </div>
                         </div>
-                        <div onClick={() => { setModalStep('select'); setShowUserModal(true); }} className="flex items-center gap-2 bg-slate-50 hover:bg-indigo-50 px-3 py-1.5 rounded-full cursor-pointer border border-slate-200 transition-colors">
+                        <div onClick={() => { setModalStep('select'); setShowUserModal(true); }} className="flex items-center gap-2 bg-slate-50 hover:bg-indigo-50 px-4 py-2 rounded-full cursor-pointer border border-slate-200 transition-all active:scale-95 group">
                             <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">{currentUser ? currentUser.charAt(0).toUpperCase() : '?'}</div>
-                            <span className="text-xs font-bold text-slate-600 hidden sm:block">{currentUser || 'เลือกพนักงาน'}</span>
+                            <span className="text-xs font-bold text-slate-600 hidden sm:block">{currentUser || 'ระบุตัวตน'}</span>
                         </div>
                     </nav>
 
                     <main className="max-w-5xl mx-auto w-full p-4 md:p-8 space-y-6 flex-1">
-                        <div className="flex p-1 bg-white border border-slate-200 rounded-[1.5rem] overflow-x-auto no-scrollbar shadow-sm">
-                            <button onClick={() => setActiveTab('record')} className={`flex-1 min-w-[80px] py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'record' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400'}`}><LucideIcon name="edit-3" size={16} /> บันทึก</button>
-                            <button onClick={() => setActiveTab('view')} className={`flex-1 min-w-[80px] py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'view' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400'}`}><LucideIcon name="list" size={16} /> งาน</button>
-                            <button onClick={() => setActiveTab('analysis')} className={`flex-1 min-w-[80px] py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'analysis' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400'}`}><LucideIcon name="bar-chart-2" size={16} /> สถิติ</button>
-                            <button onClick={() => setActiveTab('manage')} className={`flex-1 min-w-[80px] py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'manage' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400'}`}><LucideIcon name="settings" size={16} /> สินค้า</button>
+                        {/* Tab Switcher */}
+                        <div className="flex p-1.5 bg-white border border-slate-200 rounded-[1.5rem] overflow-x-auto no-scrollbar shadow-sm">
+                            <button onClick={() => setActiveTab('record')} className={`flex-1 min-w-[85px] py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'record' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="edit-3" size={16} /> บันทึก</button>
+                            <button onClick={() => setActiveTab('view')} className={`flex-1 min-w-[85px] py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'view' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="list" size={16} /> งาน</button>
+                            {/* ✅ User Limitation: Cannot see Analysis tab */}
+                            {currentUserRank !== 'User' && (
+                                <button onClick={() => setActiveTab('analysis')} className={`flex-1 min-w-[85px] py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'analysis' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="bar-chart-2" size={16} /> สถิติ</button>
+                            )}
+                            <button onClick={() => setActiveTab('manage')} className={`flex-1 min-w-[85px] py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'manage' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="settings" size={16} /> สินค้า</button>
+                            {currentUserRank === 'Dev' && (
+                                <button onClick={() => setActiveTab('dev')} className={`flex-1 min-w-[85px] py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${activeTab === 'dev' ? 'bg-red-50 text-red-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="command" size={16} /> Dev</button>
+                            )}
                         </div>
 
-                        {/* ✅ Record Tab - Corrected Layout Fixed Overlap */}
+                        {/* ✅ Record Tab - Fixed Overlap for PC */}
                         {activeTab === 'record' && (
                             <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-slate-100 custom-shadow animate-in fade-in duration-300 relative overflow-hidden">
-                                {isSaving && <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center flex-col gap-3 backdrop-blur-sm"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div><span className="font-bold text-indigo-600 animate-pulse">กำลังบันทึก...</span></div>}
-                                
-                                <div className="flex items-center gap-3 mb-8"><div className="bg-indigo-50 p-2.5 rounded-2xl text-indigo-600"><LucideIcon name="edit-3" /></div><h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">ลงรายการงานใหม่</h2></div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                    <div className="lg:col-span-7 space-y-6">
-                                        {/* Row 1: Category & Search */}
+                                {isSaving && <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center flex-col gap-3 backdrop-blur-sm"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div><span className="font-bold text-indigo-600 animate-pulse">กำลังบันทึกข้อมูล...</span></div>}
+                                <div className="flex items-center gap-3 mb-10"><div className="bg-indigo-50 p-3 rounded-2xl text-indigo-600 shadow-sm"><LucideIcon name="plus-square" size={24} /></div><div><h2 className="text-xl font-black text-slate-800">ลงรายการงานใหม่</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Create Daily Work Record</p></div></div>
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                                    <div className="lg:col-span-7 space-y-8">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                            <div className="space-y-1.5">
+                                            <div className="flex flex-col gap-2">
                                                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">หมวดหมู่</label>
-                                                <select className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold text-slate-700 outline-none appearance-none cursor-pointer" value={form.type} onChange={(e) => setForm({...form, type: e.target.value})}>
-                                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                                </select>
+                                                <div className="relative group">
+                                                    <select className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold text-slate-700 outline-none appearance-none cursor-pointer transition-all" value={form.type} onChange={(e) => setForm({...form, type: e.target.value})}>
+                                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                                    </select>
+                                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-hover:text-indigo-500"><LucideIcon name="chevron-down" size={18} /></div>
+                                                </div>
                                             </div>
-                                            <div className="space-y-1.5 relative">
+                                            <div className="flex flex-col gap-2 relative">
                                                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้า</label>
-                                                <div className="relative">
-                                                    <input type="text" placeholder="พิมพ์ชื่อสินค้า..." className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold text-slate-700 outline-none" value={searchTerm} onChange={handleInputChange} onFocus={() => setShowSuggestions(true)} />
-                                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300"><LucideIcon name="search" size={18} /></div>
+                                                <div className="relative group">
+                                                    <input type="text" placeholder="พิมพ์ชื่อสินค้า..." className="w-full h-14 bg-slate-50 border-2 border-transparent group-hover:bg-white focus:border-indigo-500 rounded-2xl px-5 font-bold text-slate-700 outline-none transition-all shadow-inner" value={searchTerm} onChange={handleInputChange} onFocus={() => setShowSuggestions(true)} />
+                                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-indigo-500"><LucideIcon name="search" size={18} /></div>
                                                 </div>
                                                 {showSuggestions && suggestionsItems.length > 0 && (
-                                                    <div className="absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl autocomplete-dropdown overflow-hidden">
+                                                    <div className="absolute z-50 w-full top-[105%] bg-white border border-slate-100 rounded-2xl shadow-2xl autocomplete-dropdown overflow-hidden animate-modal">
                                                         {suggestionsItems.map((p, i) => (
-                                                            <div key={i} className="px-5 py-3.5 hover:bg-indigo-50 cursor-pointer flex items-center gap-4 border-b last:border-0" onClick={() => handleSelectProductFromList(p)}>
-                                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0 border"><img src={p.imgUrl} className="w-full h-full object-cover" /></div>
+                                                            <div key={i} className="px-5 py-4 hover:bg-indigo-50 cursor-pointer flex items-center gap-4 border-b border-slate-50 last:border-0 transition-colors" onClick={() => { setForm({...form, productName: p.name, imageUrl: p.imgUrl}); setSearchTerm(p.name); setShowSuggestions(false); }}>
+                                                                <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 shadow-sm"><img src={p.imgUrl} className="w-full h-full object-cover" /></div>
                                                                 <span className="font-bold text-sm text-slate-600 truncate">{p.name}</span>
                                                             </div>
                                                         ))}
@@ -556,43 +535,36 @@
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* Row 2: Fixed Quantity & Memo Layout */}
-                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-                                            <div className="md:col-span-5 space-y-1.5">
-                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">จำนวน</label>
-                                                <div className="flex items-center gap-2 h-14">
-                                                    <button onClick={() => adjustQuantity(-1)} className="w-14 h-full bg-slate-100 text-slate-500 rounded-2xl font-black text-xl hover:bg-slate-200 active:scale-95 transition-all">-</button>
-                                                    <input type="number" inputMode="numeric" pattern="[0-9]*" className="flex-1 h-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl font-black text-center text-indigo-600 text-xl outline-none" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value.replace(/[^0-9]/g, '')})} onBlur={() => { if(!form.quantity || parseInt(form.quantity) < 1) setForm({...form, quantity: '1'}) }} />
-                                                    <button onClick={() => adjustQuantity(1)} className="w-14 h-full bg-indigo-50 text-indigo-600 rounded-2xl font-black text-xl hover:bg-indigo-100 active:scale-95 transition-all">+</button>
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
+                                            <div className="md:col-span-5 flex flex-col gap-2">
+                                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">จำนวน (ชิ้น)</label>
+                                                <div className="flex items-center gap-2 h-[58px] bg-slate-50 p-1.5 rounded-2xl border-2 border-transparent focus-within:border-indigo-500 focus-within:bg-white transition-all shadow-inner">
+                                                    <button onClick={() => adjustQuantity(-1)} className="w-14 h-full bg-white text-slate-500 rounded-xl font-black text-2xl hover:bg-red-50 active:scale-90 transition-all shadow-sm border border-slate-100">-</button>
+                                                    <input type="number" inputMode="numeric" className="flex-1 h-full bg-transparent font-black text-center text-indigo-600 text-3xl outline-none" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value.replace(/[^0-9]/g, '')})} onBlur={() => { if(!form.quantity || parseInt(form.quantity) < 1) setForm({...form, quantity: '1'}) }} />
+                                                    <button onClick={() => adjustQuantity(1)} className="w-14 h-full bg-white text-indigo-600 rounded-xl font-black text-2xl hover:bg-indigo-50 active:scale-90 transition-all shadow-sm border border-slate-100">+</button>
                                                 </div>
                                             </div>
-                                            <div className="md:col-span-7 space-y-1.5">
+                                            <div className="md:col-span-7 flex flex-col gap-2">
                                                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">หมายเหตุ</label>
-                                                <input type="text" placeholder="..." className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold text-slate-700 outline-none" value={form.memo} onChange={(e) => setForm({...form, memo: e.target.value})} />
+                                                <input type="text" placeholder="..." className="w-full h-[58px] bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-slate-700 outline-none transition-all shadow-inner" value={form.memo} onChange={(e) => setForm({...form, memo: e.target.value})} />
                                             </div>
                                         </div>
-
-                                        {/* Row 3: Action Buttons */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                                            <button onClick={() => setForm({...form, isUrgent: !form.isUrgent})} className={`h-16 rounded-[1.5rem] font-bold flex items-center justify-center gap-3 transition-all border-2 ${form.isUrgent ? 'bg-red-50 border-red-500 text-red-600 shadow-md shadow-red-50' : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'}`}>
-                                                <LucideIcon name={form.isUrgent ? "alert-circle" : "circle"} /> {form.isUrgent ? 'งานด่วนมาก 🔥' : 'งานปกติ'}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6">
+                                            <button onClick={() => setForm({...form, isUrgent: !form.isUrgent})} className={`h-[72px] rounded-[1.8rem] font-bold flex items-center justify-center gap-4 transition-all border-2 ${form.isUrgent ? 'bg-red-50 border-red-500 text-red-600 shadow-xl shadow-red-100' : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'}`}>
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${form.isUrgent ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-200 shadow-inner'}`}><LucideIcon name={form.isUrgent ? "zap" : "check"} size={20} /></div>
+                                                {form.isUrgent ? 'งานด่วนมาก 🔥' : 'ระดับความสำคัญปกติ'}
                                             </button>
-                                            <button onClick={handleAddItem} disabled={!form.productName || isSaving} className="h-16 bg-indigo-600 disabled:bg-slate-100 text-white rounded-[1.5rem] font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3"><LucideIcon name="save" /> บันทึกข้อมูล</button>
+                                            <button onClick={handleAddItem} disabled={!form.productName || isSaving} className="h-[72px] bg-indigo-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-[1.8rem] font-black text-xl shadow-2xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 active:scale-95"><LucideIcon name="plus-circle" size={24} /> บันทึกงานประจำวัน</button>
                                         </div>
                                     </div>
-                                    
-                                    {/* Right Side: Image Preview */}
-                                    <div className="lg:col-span-5 flex flex-col items-center justify-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 p-8 min-h-[320px]">
+                                    <div className="lg:col-span-5 flex flex-col items-center justify-center bg-slate-50/50 rounded-[3rem] border-2 border-dashed border-slate-200 p-8 min-h-[350px] relative transition-all hover:bg-indigo-50/30">
                                         {form.imageUrl ? (
-                                            <div className="flex flex-col items-center gap-5 cursor-zoom-in group" onClick={() => setPreviewImage(form.imageUrl)}>
-                                                <div className="bg-white p-4 rounded-3xl shadow-xl border border-slate-100 transition-transform group-hover:scale-105">
-                                                    <img src={form.imageUrl} className="max-w-full max-h-[220px] object-contain rounded-xl" />
-                                                </div>
-                                                <span className="text-[10px] font-black text-indigo-500 uppercase bg-white px-5 py-2 rounded-full border border-indigo-100 shadow-sm flex items-center gap-2"><LucideIcon name="zoom-in" size={14} /> ดูรูปขนาดเต็ม</span>
+                                            <div className="flex flex-col items-center gap-6 cursor-zoom-in group" onClick={() => setPreviewImage(form.imageUrl)}>
+                                                <div className="bg-white p-5 rounded-[2.8rem] shadow-2xl border border-slate-100 transition-all group-hover:rotate-1 group-hover:scale-105"><img src={form.imageUrl} className="max-w-full max-h-[220px] object-contain rounded-2xl" /></div>
+                                                <span className="text-[11px] font-black text-indigo-500 uppercase bg-white px-6 py-2.5 rounded-full border border-indigo-100 shadow-md flex items-center gap-2 group-hover:bg-indigo-600 group-hover:text-white transition-all"><LucideIcon name="eye" size={14} /> ดูรูปขนาดเต็ม</span>
                                             </div>
                                         ) : (
-                                            <div className="text-center opacity-20"><div className="bg-slate-200 p-8 rounded-full mb-4 inline-block"><LucideIcon name="image" size={60} className="text-slate-400" /></div><p className="font-black text-slate-500 uppercase tracking-widest">Image Preview</p></div>
+                                            <div className="text-center opacity-15"><LucideIcon name="image" size={100} className="mx-auto mb-4 text-slate-400" /><p className="font-black text-xl text-slate-500 uppercase tracking-[0.2em]">Product Preview</p></div>
                                         )}
                                     </div>
                                 </div>
@@ -601,75 +573,75 @@
 
                         {/* View Tab */}
                         {activeTab === 'view' && (
-                            <div className="space-y-6 pb-10 animate-in fade-in duration-300">
+                             <div className="space-y-6 pb-10 animate-in fade-in duration-300">
                                 <div className="flex items-center justify-between px-4">
-                                    <div className="flex gap-2 p-1 bg-white rounded-full border border-slate-100 shadow-sm">
-                                        <button onClick={() => setViewSubTab('pending')} className={`px-6 py-2 rounded-full font-bold text-xs transition-all ${viewSubTab === 'pending' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}>งานค้าง ({savedItems.filter(i => !i.isDone).length})</button>
-                                        <button onClick={() => setViewSubTab('completed')} className={`px-6 py-2 rounded-full font-bold text-xs transition-all ${viewSubTab === 'completed' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400'}`}>เสร็จแล้ว ({savedItems.filter(i => i.isDone).length})</button>
+                                    <div className="flex gap-2 p-1.5 bg-white rounded-full border border-slate-100 shadow-sm">
+                                        <button onClick={() => setViewSubTab('pending')} className={`px-6 py-2.5 rounded-full font-bold text-xs transition-all ${viewSubTab === 'pending' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>งานค้าง ({savedItems.filter(i => !i.isDone).length})</button>
+                                        <button onClick={() => setViewSubTab('completed')} className={`px-6 py-2.5 rounded-full font-bold text-xs transition-all ${viewSubTab === 'completed' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>เสร็จแล้ว ({savedItems.filter(i => i.isDone).length})</button>
                                     </div>
-                                    <button onClick={fetchSavedRecords} className="p-2.5 bg-white rounded-full border shadow-sm text-slate-400 hover:text-indigo-600 transition-colors"><LucideIcon name="refresh-cw" size={18} className={recordsLoading ? "animate-spin" : ""} /></button>
+                                    <button onClick={fetchSavedRecords} className="p-3 bg-white rounded-full border shadow-sm text-slate-400 hover:text-indigo-600 active:scale-90 transition-all"><LucideIcon name="refresh-cw" size={18} className={recordsLoading ? "animate-spin" : ""} /></button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    {filteredItemsMemo.map((item) => {
+                                    {filteredItemsMemo.length > 0 ? filteredItemsMemo.map((item) => {
                                         const key = item.timestamp + item.productName;
                                         const isExiting = exitingItems.has(key);
                                         const visualDone = isExiting ? !item.isDone : item.isDone; 
                                         return (
-                                            <div key={key} className={`group relative p-5 rounded-[2.2rem] border flex items-center gap-5 hover:shadow-2xl transition-all duration-1000 ease-out ${isExiting ? 'opacity-0 scale-95 translate-x-6 pointer-events-none' : 'opacity-100'} ${item.isUrgent && !visualDone ? 'urgent-card' : 'bg-white border-slate-100 shadow-sm'} ${visualDone ? 'border-emerald-100 bg-white/50' : ''}`}>
-                                                <button onClick={() => toggleStatus(item)} className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border-2 transition-all ${visualDone ? 'bg-emerald-500 border-emerald-400 text-white' : 'bg-slate-50 border-slate-100 active:scale-90'}`}><LucideIcon name={visualDone ? "check-circle" : "circle"} size={28} /></button>
+                                            <div key={key} className={`group relative p-5 rounded-[2.2rem] border flex items-center gap-5 hover:shadow-2xl transition-all duration-1000 ease-out ${isExiting ? 'opacity-0 scale-95 translate-x-10 pointer-events-none' : 'opacity-100'} ${item.isUrgent && !visualDone ? 'urgent-card' : 'bg-white border-slate-100 shadow-sm'} ${visualDone ? 'border-emerald-100 bg-white/50' : ''}`}>
+                                                <button onClick={() => toggleStatus(item)} className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border-2 transition-all ${visualDone ? 'bg-emerald-500 border-emerald-400 text-white shadow-inner' : 'bg-slate-50 border-slate-100 active:scale-90'}`}><LucideIcon name={visualDone ? "check-circle" : "circle"} size={28} /></button>
                                                 <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 cursor-zoom-in" onClick={() => item.imageUrl && setPreviewImage(item.imageUrl)}><img src={item.imageUrl || 'https://via.placeholder.com/100'} className="w-full h-full object-cover" /></div>
                                                 <div className="flex-1 min-w-0 pr-6">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-[10px] font-black text-indigo-500 uppercase px-2 py-0.5 bg-indigo-50 rounded-md">{item.type}</span>
+                                                        <span className="text-[10px] font-black text-indigo-500 uppercase px-2 py-0.5 bg-indigo-50 rounded-md shadow-sm border border-indigo-100">{item.type}</span>
                                                         <span className="text-[10px] text-slate-400 italic truncate">{item.timestamp}</span>
                                                     </div>
-                                                    <h4 className={`font-bold text-sm truncate ${visualDone ? 'text-slate-400 line-through' : 'text-slate-800'}`}>{item.productName}</h4>
+                                                    <h4 className={`font-bold text-sm truncate ${visualDone ? 'text-slate-400 line-through italic' : 'text-slate-800'}`}>{item.productName}</h4>
                                                     <div className="text-[11px] font-bold flex items-center gap-3 mt-1.5">
-                                                        <span onClick={(e) => { e.stopPropagation(); handleEditQuantity(item); }} className="bg-slate-100 px-3 py-1 rounded-lg text-slate-600 cursor-pointer hover:bg-indigo-100 transition-colors flex items-center gap-1.5 font-bold">จำนวน: {item.quantity} <LucideIcon name="pencil" size={10} /></span>
+                                                        <span onClick={(e) => { e.stopPropagation(); handleEditQuantity(item); }} className="bg-slate-100 px-3 py-1 rounded-lg text-slate-600 cursor-pointer hover:bg-indigo-100 transition-colors flex items-center gap-1.5 font-bold shadow-sm border border-slate-200/50">จำนวน: {item.quantity} <LucideIcon name="pencil" size={10} /></span>
                                                         {item.memo && <span className="truncate text-slate-400">| {item.memo}</span>}
                                                     </div>
                                                 </div>
                                                 <button onClick={() => setItemToDelete(item)} className="absolute top-5 right-5 p-2 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><LucideIcon name="trash-2" size={16} /></button>
                                             </div>
                                         )
-                                    })}
+                                    }) : <div className="col-span-full py-20 text-center opacity-30 animate-in fade-in duration-500"><LucideIcon name="inbox" size={64} className="mx-auto mb-4 text-slate-300" /><p className="font-bold text-slate-400 uppercase tracking-widest">No entries found</p></div>}
                                 </div>
                             </div>
                         )}
 
-                        {/* Analysis Tab (kept same) */}
-                        {activeTab === 'analysis' && (
+                        {/* ✅ Analysis Tab - Protected */}
+                        {activeTab === 'analysis' && currentUserRank !== 'User' && (
                              <div className="space-y-6 pb-10 animate-in fade-in duration-300">
-                                <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 custom-shadow">
-                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
-                                        <div className="flex items-center gap-3"><div className="bg-indigo-50 p-2.5 rounded-2xl text-indigo-600"><LucideIcon name="bar-chart-2" /></div><h2 className="text-xl font-black text-slate-800 tracking-tight">สถิติยอดสินค้า</h2></div>
-                                        <div className="flex gap-1 bg-slate-100 p-1.5 rounded-2xl overflow-x-auto no-scrollbar max-w-full">
+                                <div className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 custom-shadow">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-10">
+                                        <div className="flex items-center gap-3"><div className="bg-indigo-50 p-3.5 rounded-2xl text-indigo-600 shadow-sm"><LucideIcon name="bar-chart-2" size={24} /></div><h2 className="text-2xl font-black text-slate-800 tracking-tight">สรุปยอดประจำช่วงเวลา</h2></div>
+                                        <div className="flex gap-1 bg-slate-100 p-1.5 rounded-2xl overflow-x-auto no-scrollbar max-w-full shadow-inner">
                                             {['1d', '7d', '1m', '3m', '1y'].map(range => (
-                                                <button key={range} onClick={() => setAnalysisRange(range)} className={`px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all ${analysisRange === range ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>{range}</button>
+                                                <button key={range} onClick={() => setAnalysisRange(range)} className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase transition-all ${analysisRange === range ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>{range}</button>
                                             ))}
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-5 mb-10 text-center">
-                                        <div className="bg-gradient-to-br from-indigo-50 to-white p-6 rounded-[2.2rem] border border-indigo-100">
-                                            <p className="text-[11px] font-black text-indigo-400 uppercase tracking-widest mb-2">รวมจำนวนทั้งหมด</p>
-                                            <div className="flex items-baseline justify-center gap-2"><span className="text-4xl font-black text-indigo-900">{analysisData.totalQty}</span><span className="text-xs font-bold text-indigo-400">ชิ้น</span></div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12 text-center">
+                                        <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-100 text-white relative overflow-hidden">
+                                            <p className="text-indigo-100 text-xs font-black uppercase tracking-[0.2em] mb-3">รวมจำนวนสินค้าทั้งหมด</p>
+                                            <div className="flex items-baseline justify-center gap-2"><span className="text-5xl font-black">{analysisData.totalQty}</span><span className="text-sm font-bold opacity-75 uppercase">Units</span></div>
                                         </div>
-                                        <div className="bg-gradient-to-br from-emerald-50 to-white p-6 rounded-[2.2rem] border border-emerald-100">
-                                            <p className="text-[11px] font-black text-emerald-400 uppercase tracking-widest mb-2">งานที่บันทึก</p>
-                                            <div className="flex items-baseline justify-center gap-2"><span className="text-4xl font-black text-emerald-900">{analysisData.totalRecords}</span><span className="text-xs font-bold text-emerald-400">งาน</span></div>
+                                        <div className="bg-gradient-to-br from-emerald-400 to-emerald-600 p-8 rounded-[2.5rem] shadow-xl shadow-emerald-100 text-white relative overflow-hidden">
+                                            <p className="text-emerald-50 text-xs font-black uppercase tracking-[0.2em] mb-3">งานที่บันทึกสำเร็จ</p>
+                                            <div className="flex items-baseline justify-center gap-2"><span className="text-5xl font-black">{analysisData.totalRecords}</span><span className="text-sm font-bold opacity-75 uppercase">Works</span></div>
                                         </div>
                                     </div>
-                                    <h3 className="font-black text-slate-800 mb-6 flex items-center gap-2 ml-2"><LucideIcon name="award" size={20} className="text-amber-500" /> 5 สินค้ายอดนิยม</h3>
+                                    <h3 className="font-black text-slate-800 text-lg mb-8 flex items-center gap-3 px-2 font-bold"><LucideIcon name="award" size={24} className="text-amber-500" /> TOP 5 สินค้าขายดีที่สุด</h3>
                                     <div className="space-y-6">
                                         {analysisData.topProducts.map((p, idx) => (
-                                            <div key={idx} className="bg-slate-50/50 p-4 rounded-3xl border border-slate-100">
-                                                <div className="flex items-center gap-4 mb-3">
-                                                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${idx === 0 ? 'bg-amber-100 text-amber-600 border-2 border-amber-200' : 'bg-white text-slate-400 border'}`}>{idx + 1}</span>
-                                                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border shrink-0 shadow-sm">{p.image && <img src={p.image} className="w-full h-full object-cover" />}</div>
-                                                    <span className="text-sm font-bold text-slate-700 truncate flex-1">{p.name}</span>
-                                                    <span className="text-sm font-black text-indigo-600">{p.qty} ชิ้น</span>
+                                            <div key={idx} className="bg-slate-50/50 p-4 rounded-3xl border border-slate-100 shadow-sm transition-all flex flex-col gap-4">
+                                                <div className="flex items-center gap-4">
+                                                    <span className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black ${idx === 0 ? 'bg-amber-100 text-amber-600 border-2 border-amber-300' : 'bg-slate-50 text-slate-400 border'}`}>{idx + 1}</span>
+                                                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-50 border shrink-0"><img src={p.image} className="w-full h-full object-cover shadow-inner" /></div>
+                                                    <div className="flex-1 min-w-0"><p className="text-sm font-black text-slate-700 truncate">{p.name}</p></div>
+                                                    <div className="text-right"><span className="text-xl font-black text-indigo-600">{p.qty}</span><span className="text-[10px] font-bold text-slate-400 ml-1 uppercase">Pcs</span></div>
                                                 </div>
-                                                <div className="h-3 w-full bg-white rounded-full overflow-hidden border p-0.5"><div className="h-full bg-indigo-500 rounded-full animate-progress" style={{ width: `${(p.qty / (analysisData.totalQty || 1)) * 100}%` }}></div></div>
+                                                <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden border p-0.5"><div className="h-full bg-indigo-500 rounded-full animate-progress" style={{ width: `${(p.qty / (analysisData.totalQty || 1)) * 100}%` }}></div></div>
                                             </div>
                                         ))}
                                     </div>
@@ -677,136 +649,229 @@
                             </div>
                         )}
 
-                        {/* Manage Tab (kept same) */}
+                        {/* ✅ Manage Tab */}
                         {activeTab === 'manage' && (
                              <div className="space-y-6 animate-in fade-in duration-300 pb-10">
                                 <div className="flex justify-center">
-                                    <div className="bg-white p-1.5 rounded-2xl border border-slate-200 inline-flex shadow-sm">
-                                        <button onClick={() => setManageSubTab('search')} className={`px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 ${manageSubTab === 'search' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}><LucideIcon name="search" size={16} /> ค้นหา/แก้ไข</button>
-                                        <button onClick={() => setManageSubTab('add')} className={`px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 ${manageSubTab === 'add' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}><LucideIcon name="plus-circle" size={16} /> เพิ่มใหม่</button>
+                                    <div className="bg-white p-2 rounded-[1.2rem] border border-slate-200 inline-flex shadow-sm">
+                                        <button onClick={() => setManageSubTab('search')} className={`px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all ${manageSubTab === 'search' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="search" size={16} /> จัดการสินค้า</button>
+                                        {currentUserRank !== 'User' && (
+                                            <button onClick={() => setManageSubTab('add')} className={`px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all ${manageSubTab === 'add' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}><LucideIcon name="plus-circle" size={16} /> เพิ่มใหม่</button>
+                                        )}
                                     </div>
                                 </div>
                                 {manageSubTab === 'search' ? (
                                     <>
-                                        <div className="bg-white rounded-[2.5rem] p-6 border custom-shadow text-center space-y-4">
-                                            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">คลังข้อมูลสินค้าหลัก</h2>
-                                            <div className="max-w-xl mx-auto relative"><input type="text" placeholder="พิมพ์ชื่อสินค้า..." className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-center text-slate-700 outline-none" value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} /><div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400"><LucideIcon name="search" /></div></div>
+                                        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 custom-shadow text-center space-y-5">
+                                            <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">Product Inventory</h2>
+                                            <div className="max-w-xl mx-auto relative"><input type="text" placeholder="ค้นหาชื่อสินค้า..." className="w-full h-16 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-center text-slate-700 outline-none shadow-inner" value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} /><div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none group-focus-within:text-indigo-500 transition-colors"><LucideIcon name="search" size={24} /></div></div>
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                                            {searchedProductsMemo.map((p, idx) => (
-                                                <div key={idx} className="bg-white p-3.5 rounded-[2rem] border border-slate-100 shadow-sm group relative overflow-hidden transition-all hover:shadow-xl">
-                                                    <div className="aspect-square bg-slate-50 rounded-2xl overflow-hidden mb-3 border"><img src={p.imgUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /></div>
-                                                    <p className="text-[11px] font-black text-slate-600 truncate text-center mb-1">{p.name}</p>
-                                                    <div className="absolute inset-0 bg-white/90 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2 backdrop-blur-[2px]">
-                                                        <button onClick={() => setEditMasterItem({ originalName: p.name, name: p.name, imgUrl: p.imgUrl })} className="bg-indigo-600 text-white p-3 rounded-full shadow-lg active:scale-90"><LucideIcon name="pencil" size={18} /></button>
-                                                        <button onClick={() => setPreviewImage(p.imgUrl)} className="bg-emerald-500 text-white p-3 rounded-full shadow-lg active:scale-90"><LucideIcon name="zoom-in" size={18} /></button>
-                                                        <button onClick={() => setMasterItemToDelete(p.name)} className="bg-red-500 text-white p-3 rounded-full shadow-lg active:scale-90"><LucideIcon name="trash-2" size={18} /></button>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                                            {searchedMasterList.map((p, idx) => (
+                                                <div key={idx} className="bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-sm group relative overflow-hidden transition-all hover:shadow-2xl hover:scale-105">
+                                                    <div className="aspect-square bg-slate-50 rounded-3xl overflow-hidden mb-4 border-2 border-slate-50 shadow-inner"><img src={p.imgUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-125" /></div>
+                                                    <p className="text-[11px] font-black text-slate-600 truncate text-center uppercase tracking-tight">{p.name}</p>
+                                                    <div className="absolute inset-0 bg-indigo-900/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2 backdrop-blur-[2px]">
+                                                        {currentUserRank !== 'User' && (
+                                                            <button onClick={() => setEditMasterItem({ originalName: p.name, name: p.name, imgUrl: p.imgUrl })} className="bg-white text-indigo-600 p-3 rounded-2xl shadow-xl hover:bg-indigo-50 transition-all active:scale-90"><LucideIcon name="pencil" size={18} /></button>
+                                                        )}
+                                                        <button onClick={() => setPreviewImage(p.imgUrl)} className="bg-white text-emerald-600 p-3 rounded-2xl shadow-xl hover:bg-emerald-50 transition-all active:scale-90"><LucideIcon name="maximize" size={18} /></button>
+                                                        {currentUserRank !== 'User' && (
+                                                            <button onClick={() => setMasterItemToDelete(p.name)} className="bg-white text-red-500 p-3 rounded-2xl shadow-xl hover:bg-red-50 transition-all active:scale-90"><LucideIcon name="trash-2" size={18} /></button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="bg-white rounded-[3rem] p-8 md:p-12 border custom-shadow animate-in fade-in duration-300">
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                                            <div className="space-y-7">
-                                                <div className="space-y-2"><label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้าใหม่</label><input type="text" placeholder="..." className="w-full h-16 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-lg text-slate-700 outline-none transition-all" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} /></div>
-                                                <div className="space-y-2"><label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">รูปภาพสินค้า</label><div className="relative group"><input type="file" accept="image/*" onChange={(e) => handleFileChangeInternal(e, setNewProduct)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" /><div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-10 flex flex-col items-center justify-center gap-4 transition-all group-hover:bg-indigo-50 group-hover:border-indigo-200"><LucideIcon name="upload-cloud" size={56} className="text-indigo-400" /><p className="font-black text-slate-400 text-center">คลิกเพื่ออัปโหลดรูปภาพสินค้า</p></div></div></div>
-                                                <button onClick={handleAddProductMaster} disabled={!newProduct.name || !newProduct.imageBase64 || isAddingProduct} className="w-full h-16 bg-indigo-600 disabled:bg-slate-100 text-white rounded-[2rem] font-black text-xl shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3">{isAddingProduct ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : <><LucideIcon name="plus" /> เพิ่มสินค้าใหม่</>}</button>
+                                    <div className="bg-white rounded-[3rem] p-10 md:p-14 border custom-shadow animate-in fade-in duration-300">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                                            <div className="space-y-10">
+                                                <div className="space-y-3"><label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้าใหม่</label><input type="text" placeholder="กรอกชื่อสินค้า..." className="w-full h-16 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-6 font-bold text-lg text-slate-700 outline-none transition-all shadow-inner" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} /></div>
+                                                <div className="space-y-3"><label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">รูปภาพประกอบ</label><div className="relative group"><input type="file" accept="image/*" onChange={(e) => handleFileChangeInternal(e, setNewProduct)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" /><div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 flex flex-col items-center justify-center gap-4 transition-all group-hover:bg-indigo-50/50 group-hover:border-indigo-300"><div className="p-5 bg-white rounded-full shadow-md text-indigo-400 group-hover:text-indigo-600 transition-colors"><LucideIcon name="upload-cloud" size={48} /></div><div className="text-center"><p className="font-black text-slate-600">คลิกที่นี่เพื่ออัปโหลดรูปภาพ</p><p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Square Format Recommended</p></div></div></div></div>
+                                                <button onClick={handleAddProductMaster} disabled={!newProduct.name || !newProduct.imageBase64 || isAddingProduct} className="w-full h-[76px] bg-indigo-600 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-[2rem] font-black text-xl shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4">{isAddingProduct ? <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : <><LucideIcon name="plus" size={24} /> เพิ่มเข้าระบบสินค้าหลัก</>}</button>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center bg-slate-50 rounded-[3rem] p-10 border border-slate-200 min-h-[450px]">
-                                                {newProduct.preview ? <img src={newProduct.preview} className="max-w-full max-h-[380px] object-contain rounded-3xl shadow-2xl border-4 border-white" /> : <div className="text-center opacity-20"><LucideIcon name="image" size={120} className="mb-6" /><p className="font-black text-xl italic">Preview</p></div>}
+                                            <div className="flex flex-col items-center justify-center bg-slate-50/50 rounded-[4rem] p-10 border border-slate-100 min-h-[450px] shadow-inner">
+                                                {newProduct.preview ? <div className="animate-in zoom-in duration-500"><img src={newProduct.preview} className="max-w-full max-h-[400px] object-contain rounded-3xl shadow-2xl border-4 border-white rotate-1 hover:rotate-0 transition-transform" /></div> : <div className="text-center opacity-10"><LucideIcon name="image" size={150} className="mb-6 mx-auto" /><p className="font-black text-3xl uppercase tracking-[0.3em]">No Image</p></div>}
                                             </div>
                                         </div>
                                     </div>
                                 )}
-                            </div>
+                             </div>
+                        )}
+
+                        {/* ✅ Dev Menu Tab */}
+                        {activeTab === 'dev' && currentUserRank === 'Dev' && (
+                             <div className="space-y-6 animate-in fade-in duration-300 pb-10">
+                                <div className="bg-white rounded-[2.5rem] p-8 md:p-12 border border-slate-100 custom-shadow">
+                                    <div className="flex items-center gap-4 mb-10"><div className="bg-red-50 p-4 rounded-3xl text-red-600"><LucideIcon name="command" size={32} /></div><div><h2 className="text-2xl font-black text-slate-800 tracking-tight">Developer Control Panel</h2><p className="text-sm font-bold text-slate-400 tracking-tight uppercase">System configuration & database cleanup</p></div></div>
+                                    
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                        <div className="space-y-6">
+                                            <h3 className="font-black text-slate-800 flex items-center gap-2 px-2 uppercase text-sm tracking-widest"><LucideIcon name="users" size={20} className="text-indigo-600" /> จัดการพนักงาน</h3>
+                                            <div className="grid gap-3 max-h-[500px] overflow-y-auto no-scrollbar pr-1">
+                                                {usersData.map(u => (
+                                                    <div key={u.name} className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 flex items-center justify-between gap-4 transition-all hover:border-indigo-200 shadow-sm">
+                                                        <div className="min-w-0">
+                                                            <p className="font-black text-slate-700 truncate">{u.name}</p>
+                                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-sm border ${u.rank === 'Dev' ? 'bg-red-100 text-red-600 border-red-200' : (u.rank === 'Admin' ? 'bg-indigo-100 text-indigo-600 border-indigo-200' : 'bg-white text-slate-400 border-slate-200')}`}>{u.rank}</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[10px] font-bold text-emerald-600 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 font-mono shadow-sm">Pass: {visiblePasswords.has(u.name) ? (u.pass || 'None') : '****'}</span>
+                                                                    <button onClick={() => setVisiblePasswords(prev => { const next = new Set(prev); if(next.has(u.name)) next.delete(u.name); else next.add(u.name); return next; })} className="text-slate-300 hover:text-indigo-500 transition-colors p-1 active:scale-90"><LucideIcon name={visiblePasswords.has(u.name) ? "eye-off" : "eye"} size={14} /></button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2 shrink-0">
+                                                            <button onClick={() => setEditUserRankModal(u)} className="p-3 bg-white border border-slate-200 rounded-2xl text-indigo-500 hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-90"><LucideIcon name="shield" size={16} /></button>
+                                                            <button onClick={() => { setEditUserPassModal(u); setNewPassValue(u.pass); }} className="p-3 bg-white border border-slate-200 rounded-2xl text-amber-500 hover:bg-amber-600 hover:text-white transition-all shadow-sm active:scale-90"><LucideIcon name="key" size={16} /></button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-6">
+                                            <h3 className="font-black text-slate-800 flex items-center gap-2 px-2 uppercase text-sm tracking-widest"><LucideIcon name="database" size={20} className="text-red-600" /> ฐานข้อมูล & พื้นที่จัดเก็บ</h3>
+                                            <div className="space-y-4 bg-red-50/50 p-6 rounded-[2.5rem] border border-red-100 shadow-inner">
+                                                <div className="bg-white p-6 rounded-3 shadow-sm border border-red-100 group"><p className="font-black text-slate-800 mb-1">ล้างประวัติการใช้งาน (Logs)</p><button onClick={() => setDevActionModal('clear_logs')} className="w-full py-4 rounded-2xl bg-red-50 text-red-600 font-black text-sm border-2 border-transparent hover:border-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95">Clear Logs History</button></div>
+                                                <div className="bg-white p-6 rounded-3 shadow-sm border border-red-100 group"><p className="font-black text-slate-800 mb-1">ล้างรายการบันทึกงาน (Daily Records)</p><button onClick={() => setDevActionModal('clear_all_records')} className="w-full py-4 rounded-2xl bg-red-50 text-red-600 font-black text-sm border-2 border-transparent hover:border-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95">Delete All Tasks Data</button></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                             </div>
                         )}
                     </main>
 
-                    {/* ✅ Modal Edit Quantity */}
+                    {/* ✅ Standard Modals */}
+                    {devActionModal && (
+                        <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
+                            <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full text-center border-t-[10px] border-red-500">
+                                <LucideIcon name="alert-triangle" size={64} className="text-red-500 mx-auto mb-6" />
+                                <h3 className="font-black text-2xl text-slate-800 mb-2">ยืนยันการล้างข้อมูล?</h3>
+                                <p className="text-slate-400 text-sm font-bold leading-relaxed mb-8">กรุณาใส่รหัส login ของคุณเพื่อยืนยันการลบแบบถาวร</p>
+                                <input type="password" placeholder="รหัสผ่านของคุณ" className={`w-full py-4 px-6 rounded-2xl border-2 text-center font-bold text-slate-700 outline-none mb-6 ${passError ? 'border-red-500 bg-red-50 animate-shake' : 'border-slate-100 bg-slate-50 focus:border-red-500'}`} onKeyDown={(e) => { if (e.key === 'Enter') { const myData = usersData.find(u => u.name === currentUser); if (myData && String(e.target.value) === String(myData.pass)) handleClearSheet(devActionModal); else { setPassError(true); setTimeout(() => setPassError(false), 500); } } }} />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={() => setDevActionModal(null)} className="h-14 rounded-2xl font-bold text-slate-400 bg-slate-50 transition-colors">ยกเลิก</button>
+                                    <button onClick={() => { const passField = document.querySelector('input[placeholder="รหัสผ่านของคุณ"]'); const myData = usersData.find(u => u.name === currentUser); if (myData && String(passField.value) === String(myData.pass)) handleClearSheet(devActionModal); else { setPassError(true); setTimeout(() => setPassError(false), 500); } }} className="h-14 rounded-2xl font-black bg-red-600 text-white shadow-lg active:scale-95">{isDevWorking ? '...' : 'ยืนยัน'}</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Edit Rank / Pass Modals */}
+                    {editUserRankModal && (
+                        <div className="fixed inset-0 z-[210] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
+                            <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-indigo-600">
+                                <LucideIcon name="shield-check" size={64} className="text-indigo-600 mx-auto mb-6" />
+                                <h3 className="font-black text-2xl text-slate-800 mb-2">เปลี่ยนตำแหน่ง</h3>
+                                <p className="text-slate-400 mb-8 text-sm font-bold">พนักงาน: <span className="text-slate-700">{editUserRankModal.name}</span></p>
+                                <div className="space-y-3">
+                                    {['Dev', 'Admin', 'User'].map(r => (<button key={r} onClick={() => handleUpdateUserSetting(editUserRankModal.name, r, editUserRankModal.pass)} className={`w-full py-4 rounded-2xl border-2 font-black transition-all active:scale-95 ${editUserRankModal.rank === r ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl' : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'}`}>{r}</button>))}
+                                    <button onClick={() => setEditUserRankModal(null)} className="w-full py-3 mt-4 text-slate-400 font-bold hover:text-red-500 transition-colors">ยกเลิก</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {editUserPassModal && (
+                        <div className="fixed inset-0 z-[210] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
+                            <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-amber-500">
+                                <LucideIcon name="key" size={64} className="text-amber-500 mx-auto mb-6" />
+                                <h3 className="font-black text-2xl text-slate-800 mb-2">ตั้งค่ารหัส Login</h3>
+                                <p className="text-slate-400 mb-8 text-sm font-bold">พนักงาน: <span className="text-slate-700">{editUserPassModal.name}</span></p>
+                                <div className="space-y-6">
+                                    <input autoFocus type="number" inputMode="numeric" placeholder="ตัวเลข 4 หลัก" className="w-full py-5 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-amber-500 text-center font-black text-4xl text-amber-600 outline-none shadow-inner" value={newPassValue} onChange={(e) => setNewPassValue(e.target.value.slice(0, 4))} />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button onClick={() => setEditUserPassModal(null)} className="h-14 rounded-2xl font-bold text-slate-400 bg-slate-50 transition-colors">ยกเลิก</button>
+                                        <button onClick={() => handleUpdateUserSetting(editUserPassModal.name, editUserPassModal.rank, newPassValue)} className="h-14 rounded-2xl font-black bg-amber-500 text-white shadow-lg active:scale-95">บันทึกรหัส</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {editQuantityItem && (
                         <div className="fixed inset-0 z-[110] bg-black/70 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
-                            <div className="bg-white p-8 rounded-[3rem] shadow-2xl max-w-sm w-full relative">
-                                <button onClick={() => setEditQuantityItem(null)} className="absolute top-6 right-6 bg-slate-100 p-2.5 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><LucideIcon name="x" size={20} /></button>
+                            <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full relative border-2 border-white">
+                                <button onClick={() => setEditQuantityItem(null)} className="absolute top-6 right-6 bg-slate-100 p-2.5 rounded-full text-slate-400 hover:bg-red-50 active:scale-90 transition-all"><LucideIcon name="x" size={20} /></button>
                                 <h3 className="font-black text-2xl text-slate-800 mb-2 text-center">แก้ไขจำนวน</h3>
-                                <p className="text-center text-slate-400 mb-8 text-sm italic">{editQuantityItem.productName}</p>
-                                <div className="flex items-center justify-center gap-5 mb-8">
-                                    <button onClick={() => adjustQuantity(-1, false)} className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 font-black text-2xl active:scale-90 transition-all">-</button>
-                                    <input type="number" inputMode="numeric" className="w-28 h-16 bg-slate-50 border-2 border-indigo-100 rounded-2xl font-black text-4xl text-center text-indigo-600 outline-none" value={editQuantityValue} onChange={(e) => setEditQuantityValue(e.target.value.replace(/[^0-9]/g, ''))} />
-                                    <button onClick={() => adjustQuantity(1, false)} className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 font-black text-2xl active:scale-90 transition-all">+</button>
+                                <div className="flex items-center justify-center gap-6 mb-10 mt-6">
+                                    <button onClick={() => adjustQuantity(-1, false)} className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-500 font-black text-3xl active:scale-90 transition-all shadow-sm border">-</button>
+                                    <input type="number" inputMode="numeric" className="w-28 h-16 bg-slate-50 border-2 border-indigo-100 rounded-2xl font-black text-4xl text-center text-indigo-600 outline-none focus:border-indigo-500 transition-all shadow-inner" value={editQuantityValue} onChange={(e) => setEditQuantityValue(e.target.value.replace(/[^0-9]/g, ''))} />
+                                    <button onClick={() => adjustQuantity(1, false)} className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 font-black text-3xl active:scale-90 transition-all shadow-sm border-2 border-indigo-100">+</button>
                                 </div>
-                                <button onClick={confirmEditQuantity} className="w-full h-16 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all"><LucideIcon name="check-circle" className="inline mr-2" /> ยืนยันการแก้ไข</button>
+                                <button onClick={confirmEditQuantity} className="w-full h-16 bg-indigo-600 text-white rounded-[1.8rem] font-black text-lg shadow-xl hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-3"><LucideIcon name="save" size={20} /> บันทึกการแก้ไข</button>
                             </div>
                         </div>
                     )}
 
-                    {/* ✅ Confirm Delete Entry Modal */}
                     {itemToDelete && (
                         <div className="fixed inset-0 z-[110] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
-                            <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
-                                <div className="bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6"><LucideIcon name="trash-2" size={48} className="text-red-500" /></div>
-                                <h3 className="font-black text-2xl text-slate-800 mb-3">ต้องการลบรายการนี้?</h3>
-                                <div className="grid grid-cols-2 gap-4 pt-8">
-                                    <button onClick={() => setItemToDelete(null)} className="h-14 rounded-2xl font-bold text-slate-400 bg-slate-50">ยกเลิก</button>
-                                    <button onClick={confirmDelete} className="h-14 rounded-2xl font-black bg-red-500 text-white shadow-lg active:scale-95">ลบรายการ</button>
+                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-red-500">
+                                <div className="bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce"><LucideIcon name="trash-2" size={48} className="text-red-500" /></div>
+                                <h3 className="font-black text-2xl text-slate-800 mb-3 uppercase tracking-tight">Delete entry?</h3>
+                                <div className="grid grid-cols-2 gap-4 pt-10">
+                                    <button onClick={() => setItemToDelete(null)} className="h-14 rounded-2xl font-black text-slate-400 bg-slate-50 hover:bg-slate-100 transition-colors">ยกเลิก</button>
+                                    <button onClick={confirmDelete} className="h-14 rounded-2xl font-black bg-red-500 text-white shadow-lg shadow-red-100 active:scale-95 transition-all">ลบทันที</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* ✅ Modal Edit Master Product */}
+                    {previewImage && (
+                        <div className="fixed inset-0 z-[250] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setPreviewImage(null)}>
+                            <div className="bg-white p-3 rounded-[3rem] max-w-2xl max-h-[90vh] overflow-hidden animate-modal shadow-2xl relative border-4 border-white">
+                                <button className="absolute top-6 right-6 bg-black/50 text-white p-3 rounded-full hover:bg-red-500 transition-all z-20 shadow-xl active:scale-90"><LucideIcon name="x" size={24} /></button>
+                                <img src={previewImage} className="w-full h-full object-contain rounded-[2.5rem]" />
+                            </div>
+                        </div>
+                    )}
+
                     {editMasterItem && (
-                        <div className="fixed inset-0 z-[110] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
-                            <div className="bg-white p-8 rounded-[3rem] shadow-2xl max-w-md w-full relative">
-                                <button onClick={() => setEditMasterItem(null)} className="absolute top-6 right-6 bg-slate-100 p-2.5 rounded-full"><LucideIcon name="x" size={20} /></button>
-                                <h3 className="font-black text-2xl text-slate-800 mb-8 text-center">แก้ไขสินค้าหลัก</h3>
-                                <div className="space-y-6">
+                        <div className="fixed inset-0 z-[210] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
+                            <div className="bg-white p-8 md:p-10 rounded-[3.5rem] shadow-2xl max-w-md w-full relative">
+                                <button onClick={() => setEditMasterItem(null)} className="absolute top-8 right-8 bg-slate-100 p-2.5 rounded-full hover:bg-red-50 transition-all"><LucideIcon name="x" size={20} /></button>
+                                <h3 className="font-black text-2xl text-slate-800 mb-10 text-center">แก้ไขข้อมูลสินค้าหลัก</h3>
+                                <div className="space-y-7">
                                     <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้า</label>
-                                        <input type="text" className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold outline-none" value={editMasterItem.name} onChange={(e) => setEditMasterItem({...editMasterItem, name: e.target.value})} />
+                                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้าที่แสดง</label>
+                                        <input type="text" className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold outline-none transition-all shadow-inner" value={editMasterItem.name} onChange={(e) => setEditMasterItem({...editMasterItem, name: e.target.value})} />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">เปลี่ยนรูปภาพ</label>
+                                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">อัปเดตรูปภาพใหม่</label>
                                         <div className="relative group h-44 w-full bg-slate-50 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all hover:bg-indigo-50">
                                             <input type="file" accept="image/*" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => handleFileChangeInternal(e, setEditMasterItem)} />
-                                            {editMasterItem.preview || editMasterItem.imgUrl ? <img src={editMasterItem.preview || editMasterItem.imgUrl} className="h-full w-full object-contain" /> : <LucideIcon name="image-plus" className="text-slate-300" />}
+                                            {editMasterItem.preview || editMasterItem.imgUrl ? <img src={editMasterItem.preview || editMasterItem.imgUrl} className="h-full w-full object-contain p-2" /> : <div className="text-center"><LucideIcon name="image-plus" size={32} className="text-slate-300 mx-auto mb-2" /><p className="text-[10px] font-bold text-slate-400">Click to change</p></div>}
                                         </div>
                                     </div>
-                                    <button onClick={handleUpdateMaster} disabled={isEditingMaster} className="w-full h-16 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl active:scale-95 flex items-center justify-center gap-3 transition-all">{isEditingMaster ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : "บันทึกการแก้ไข"}</button>
+                                    <button onClick={handleUpdateMaster} disabled={isEditingMaster} className="w-full h-16 bg-indigo-600 text-white rounded-[2rem] font-black text-lg shadow-xl shadow-indigo-100 active:scale-95 transition-all flex items-center justify-center gap-3">{isEditingMaster ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : <><LucideIcon name="check-circle" /> บันทึกการแก้ไขสินค้า</>}</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* ✅ Modal Delete Master Confirmation */}
                     {masterItemToDelete && (
                         <div className="fixed inset-0 z-[110] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
-                            <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
+                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-red-600">
                                 <LucideIcon name="alert-triangle" size={64} className="text-red-600 mx-auto mb-6" />
-                                <h3 className="font-black text-2xl text-slate-800">ลบสินค้าจากคลัง?</h3>
-                                <p className="text-slate-400 text-sm mt-2 mb-8 italic">"{masterItemToDelete}"</p>
+                                <h3 className="font-black text-2xl text-slate-800">ลบจากสินค้าหลัก?</h3>
+                                <p className="text-slate-400 text-sm mt-3 mb-8 font-bold leading-relaxed">การลบจะทำให้พนักงานไม่สามารถค้นหาสินค้านี้เจอได้อีก<br/><span className="text-red-500 block mt-2 text-base font-bold">"{masterItemToDelete}"</span></p>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <button onClick={() => setMasterItemToDelete(null)} className="h-14 rounded-2xl font-bold text-slate-400 bg-slate-50">ยกเลิก</button>
-                                    <button onClick={confirmDeleteMaster} className="h-14 rounded-2xl font-black bg-red-600 text-white shadow-lg active:scale-95">ยืนยันลบ</button>
+                                    <button onClick={() => setMasterItemToDelete(null)} className="h-14 rounded-2xl font-black text-slate-400 bg-slate-50 transition-colors">ยกเลิก</button>
+                                    <button onClick={confirmDeleteMaster} className="h-14 rounded-2xl font-black bg-red-600 text-white shadow-lg active:scale-95 transition-all">ยืนยันลบ</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Full Preview Image Modal */}
-                    {previewImage && (
-                        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setPreviewImage(null)}>
-                            <div className="bg-white p-2.5 rounded-[2.5rem] max-w-2xl max-h-[90vh] overflow-hidden animate-modal shadow-2xl relative">
-                                <button className="absolute top-5 right-5 bg-black/50 text-white p-2.5 rounded-full hover:bg-black/70 transition-all z-10"><LucideIcon name="x" size={24} /></button>
-                                <img src={previewImage} className="w-full h-full object-contain rounded-[2rem]" />
-                            </div>
+                    <footer className="bg-white/90 backdrop-blur-sm border-t border-slate-200 p-5 mt-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <span className="flex items-center gap-2 font-bold"><LucideIcon name="shield-check" size={12} className="text-emerald-500" /> SEBOFFICIAL V2.8.5 PRO WORKFLOW</span>
+                        <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1.5"><LucideIcon name="database" size={12} /> Google Cloud Integrated</span>
+                            <span className="hidden sm:block">Logged in as: {currentUser} ({currentUserRank})</span>
                         </div>
-                    )}
-
-                    <footer className="bg-white/90 backdrop-blur-sm border-t border-slate-200 p-4 mt-auto flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5"><LucideIcon name="shield-check" size={12} className="text-emerald-500" /> SEBOFFICIAL V2.7 SECURE</span>
-                        <span className="hidden sm:block">Integrated Workflow System</span>
                     </footer>
                 </div>
             );
