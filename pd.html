@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Search Pro - Live Google Sheet</title>
+    <title>Product Search Pro</title>
     
     <!-- Scripts: React, Babel, Tailwind, Lucide Icons -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -11,208 +11,191 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@100;400;700&display=swap');
+        body { font-family: 'Anuphan', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans">
+<body class="bg-slate-50">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // ไอคอนคอมโพเนนต์ (จำลอง Lucide ใน React)
-        const Icon = ({ name, className }) => {
-            const [iconSvg, setIconSvg] = useState('');
+        // ฟังก์ชันช่วยแสดงไอคอน
+        const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => {
-                if (window.lucide) {
-                    const svg = window.lucide.createIcons();
-                }
+                if (window.lucide) window.lucide.createIcons();
             }, []);
-            return <i data-lucide={name} className={className}></i>;
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
         };
 
         const App = () => {
-            const [productMap, setProductMap] = useState([]);
+            const [data, setData] = useState([]);
+            const [searchQuery, setSearchQuery] = useState('');
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState('');
-            const [searchQuery, setSearchQuery] = useState('');
             const [selectedProduct, setSelectedProduct] = useState(null);
 
-            // URL สำหรับดึงข้อมูลจาก Google Sheet (CSV format)
+            // ลิงก์ตรงสำหรับดึง CSV จาก Google Sheet
             const SHEET_URL = "https://docs.google.com/spreadsheets/d/14p8wdIhTHVSRfPr4aBUbbv4SeJ4lT8ow-nche8Vkwws/export?format=csv&gid=2045658957";
+
+            // ฟังก์ชันแปลงลิงก์ Google Drive ให้แสดงรูปได้ (Direct Link)
+            const formatDriveUrl = (url) => {
+                if (!url || typeof url !== 'string') return '';
+                if (url.includes('drive.google.com')) {
+                    let fileId = '';
+                    const matchD = url.match(/\/d\/([^\/]+)/);
+                    const matchId = url.match(/id=([^&]+)/);
+                    fileId = matchD ? matchD[1] : (matchId ? matchId[1] : '');
+                    
+                    if (fileId) return `https://lh3.googleusercontent.com/d/${fileId}`;
+                }
+                return url;
+            };
 
             const fetchData = async () => {
                 setLoading(true);
                 setError('');
                 try {
                     const response = await fetch(SHEET_URL);
-                    if (!response.ok) throw new Error('ไม่สามารถเข้าถึงข้อมูลใน Google Sheet ได้');
+                    if (!response.ok) throw new Error('ไม่สามารถเชื่อมต่อกับ Google Sheet ได้');
+                    const text = await response.text();
                     
-                    const csvText = await response.text();
-                    parseCSVData(csvText);
+                    // ระบบ Parse CSV อย่างง่าย
+                    const rows = text.split('\n').map(row => {
+                        const matches = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                        return matches ? matches.map(m => m.replace(/^"|"$/g, '')) : [];
+                    });
+
+                    const allProducts = [];
+                    // วนลูปคู่คอลัมน์ A-B, C-D ... (0-1, 2-3 ...)
+                    for (let col = 0; col < 26; col += 2) {
+                        for (let row = 1; row < rows.length; row++) {
+                            const name = rows[row][col]?.trim();
+                            const imgLink = rows[row][col+1]?.trim();
+                            
+                            if (name && imgLink && imgLink.startsWith('http')) {
+                                allProducts.push({
+                                    id: `col-${col}-row-${row}`,
+                                    name: name,
+                                    imgUrl: formatDriveUrl(imgLink),
+                                    originalUrl: imgLink,
+                                    pair: `${String.fromCharCode(65 + col)}-${String.fromCharCode(65 + col + 1)}`
+                                });
+                            }
+                        }
+                    }
+                    setData(allProducts);
                 } catch (err) {
-                    setError('เกิดข้อผิดพลาด: ' + err.message + ' (โปรดตรวจสอบการแชร์ Sheet เป็น Public)');
+                    setError('โหลดข้อมูลไม่สำเร็จ: ' + err.message);
+                } finally {
                     setLoading(false);
                 }
             };
 
             useEffect(() => {
                 fetchData();
-                // Initialize Lucide icons
-                setTimeout(() => {
-                    if (window.lucide) window.lucide.createIcons();
-                }, 500);
             }, []);
 
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [loading, searchQuery, productMap, selectedProduct]);
-
-            const parseCSVData = (csvText) => {
-                const lines = csvText.split(/\r?\n/);
-                const matrix = lines.map(line => {
-                    // จัดการ CSV แถวที่มี comma ใน quote
-                    const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                    return matches ? matches.map(m => m.replace(/^"|"$/g, '')) : [];
-                });
-
-                if (matrix.length < 1) return;
-
-                const extractedData = [];
-                const numCols = matrix[0].length;
-
-                // จับคู่ A-B, C-D ... จนถึง Y-Z (0-1, 2-3... 24-25)
-                for (let colIdx = 0; colIdx < Math.min(numCols, 26); colIdx += 2) {
-                    const colLetterName = String.fromCharCode(65 + colIdx);
-                    const colLetterImg = String.fromCharCode(65 + colIdx + 1);
-                    const pairName = `${colLetterName}-${colLetterImg}`;
-
-                    for (let rowIdx = 1; rowIdx < matrix.length; rowIdx++) {
-                        const productName = matrix[rowIdx][colIdx]?.trim();
-                        const imageUrl = matrix[rowIdx][colIdx + 1]?.trim();
-
-                        if (productName && imageUrl && (imageUrl.startsWith('http') || imageUrl.startsWith('https'))) {
-                            extractedData.push({
-                                name: productName,
-                                url: imageUrl,
-                                pair: pairName,
-                                id: `${pairName}-${rowIdx}`
-                            });
-                        }
-                    }
-                }
-
-                setProductMap(extractedData);
-                setLoading(false);
-            };
-
-            const filteredProducts = useMemo(() => {
+            // กรองข้อมูลตามคำค้นหา
+            const filteredData = useMemo(() => {
                 if (!searchQuery.trim()) return [];
-                const query = searchQuery.toLowerCase();
-                return productMap.filter(p => p.name.toLowerCase().includes(query));
-            }, [searchQuery, productMap]);
+                const q = searchQuery.toLowerCase();
+                return data.filter(item => item.name.toLowerCase().includes(q));
+            }, [searchQuery, data]);
 
             return (
-                <div className="min-h-screen">
-                    {/* Navigation */}
-                    <nav className="bg-white border-b sticky top-0 z-30 shadow-sm">
-                        <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3 shrink-0">
-                                <div className="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-200 text-white flex items-center justify-center">
-                                    <Icon name="image" className="w-6 h-6" />
+                <div className="min-h-screen flex flex-col">
+                    {/* Header & Search */}
+                    <header className="bg-white border-b sticky top-0 z-40 p-4 shadow-sm">
+                        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 items-center">
+                            <div className="flex items-center gap-2 shrink-0">
+                                <div className="bg-indigo-600 p-2 rounded-lg text-white">
+                                    <Icon name="search" size={24} />
                                 </div>
-                                <div>
-                                    <h1 className="font-black text-xl tracking-tight text-indigo-900 hidden md:block">PRODUCT SEARCH</h1>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest hidden md:block">Live Google Sheet Data</p>
-                                </div>
+                                <h1 className="font-bold text-xl text-indigo-900 tracking-tight">PRODUCT SEARCH</h1>
                             </div>
                             
-                            <div className="flex-1 max-w-2xl">
-                                <div className="relative group">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
-                                        <Icon name="search" className="w-5 h-5" />
-                                    </div>
-                                    <input 
-                                        type="text"
-                                        placeholder="พิมพ์ชื่อสินค้าเพื่อค้นหาจากทุกคอลัมน์ (A-Z)..."
-                                        className="w-full pl-12 pr-4 py-3.5 bg-slate-100 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50/50 transition-all text-base font-medium outline-none"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                    />
+                            <div className="relative flex-1 w-full">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                                    <Icon name="search" size={18} />
                                 </div>
+                                <input 
+                                    type="text"
+                                    placeholder="พิมพ์ชื่อผลิตภัณฑ์เพื่อค้นหา..."
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-100 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
                             </div>
 
-                            <button 
-                                onClick={fetchData}
-                                className="p-3 bg-slate-100 text-slate-500 rounded-2xl hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95"
-                                title="รีเฟรชข้อมูล"
-                            >
-                                <Icon name="refresh-cw" className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                            <button onClick={fetchData} className="p-3 hover:bg-slate-100 rounded-xl transition-colors text-slate-500">
+                                <Icon name="refresh-cw" className={loading ? "animate-spin" : ""} />
                             </button>
                         </div>
-                    </nav>
+                    </header>
 
-                    <main className="max-w-7xl mx-auto p-4 md:p-8">
-                        {error && (
-                            <div className="bg-red-50 border-2 border-red-100 text-red-700 p-6 rounded-3xl mb-8 flex items-center gap-4 animate-in slide-in-from-top-4 duration-300">
-                                <Icon name="alert-circle" className="w-8 h-8 flex-shrink-0" />
-                                <div>
-                                    <p className="font-bold text-lg">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
-                                    <p className="text-sm opacity-80">{error}</p>
-                                </div>
+                    {/* Main Content */}
+                    <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-8">
+                        {loading && (
+                            <div className="flex flex-col items-center justify-center py-20 text-indigo-600">
+                                <Icon name="loader-2" size={48} className="animate-spin mb-4" />
+                                <p className="font-bold">กำลังโหลดข้อมูลจาก Google Sheet...</p>
                             </div>
                         )}
 
-                        {loading && (
-                            <div className="flex flex-col items-center justify-center py-32 opacity-50">
-                                <div className="animate-spin text-indigo-600 mb-4">
-                                    <Icon name="loader-2" className="w-12 h-12" />
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 text-red-600 p-6 rounded-2xl flex items-center gap-4">
+                                <Icon name="alert-circle" size={32} />
+                                <div>
+                                    <p className="font-bold">เกิดข้อผิดพลาด</p>
+                                    <p className="text-sm">{error}</p>
                                 </div>
-                                <p className="font-bold text-slate-500 animate-pulse font-thai">กำลังดึงข้อมูลจาก Google Sheet...</p>
                             </div>
                         )}
 
                         {!loading && !error && !searchQuery && (
-                            <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200 shadow-sm">
-                                <div className="bg-slate-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
-                                    <Icon name="image" className="w-10 h-10" />
-                                </div>
-                                <h3 className="text-2xl font-black text-slate-700">พร้อมค้นหาแล้ว!</h3>
-                                <p className="text-slate-400 mt-2 max-w-xs mx-auto">พิมพ์ชื่อสินค้าที่ช่องด้านบน เพื่อค้นหารูปภาพจากฐานข้อมูล {productMap.length} รายการ</p>
+                            <div className="text-center py-20 opacity-40">
+                                <Icon name="image" size={80} className="mx-auto mb-4 text-slate-300" />
+                                <p className="text-xl font-bold">พร้อมค้นหาแล้ว</p>
+                                <p>ป้อนชื่อสินค้าในช่องค้นหาเพื่อแสดงรูปภาพจากคอลัมน์ A-Z</p>
                             </div>
                         )}
 
                         {searchQuery && (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                                {filteredProducts.map((item) => (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 animate-in fade-in duration-300">
+                                {filteredData.map(item => (
                                     <div 
-                                        key={item.id}
-                                        className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer group relative"
+                                        key={item.id} 
+                                        className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-slate-100 group cursor-pointer"
                                         onClick={() => setSelectedProduct(item)}
                                     >
-                                        <div className="aspect-[4/5] bg-slate-50 relative overflow-hidden">
+                                        <div className="aspect-[1/1] bg-slate-100 relative overflow-hidden">
                                             <img 
-                                                src={item.url} 
+                                                src={item.imgUrl} 
                                                 alt={item.name}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                                                loading="lazy"
-                                                onError={(e) => { e.target.src = 'https://via.placeholder.com/400x500?text=No+Image'; }}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                onError={(e) => { e.target.src = 'https://via.placeholder.com/400?text=No+Image'; }}
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            <div className="absolute bottom-3 left-3 right-3 text-white text-[10px] font-black uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">
-                                                คู่คอลัมน์ {item.pair}
+                                            <div className="absolute top-2 left-2 bg-indigo-600/90 text-white text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-sm">
+                                                {item.pair}
                                             </div>
                                         </div>
-                                        {/* ส่วนท้ายการ์ด ปรับปรุงเพิ่มปุ่ม Link */}
-                                        <div className="p-4 flex items-start justify-between gap-3">
-                                            <h4 className="font-bold text-sm text-slate-800 line-clamp-2 leading-snug flex-1">{item.name}</h4>
+                                        <div className="p-4 flex items-start justify-between gap-2">
+                                            <p className="font-bold text-sm text-slate-800 line-clamp-2 leading-snug">{item.name}</p>
                                             <a 
-                                                href={item.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-2 bg-slate-100 text-slate-400 rounded-full hover:bg-indigo-50 hover:text-indigo-600 transition-colors shrink-0"
-                                                onClick={(e) => e.stopPropagation()} // ป้องกันไม่ให้คลิกแล้วเปิด Modal
-                                                title="เปิดลิงก์รูปภาพต้นฉบับ"
+                                                href={item.originalUrl} 
+                                                target="_blank" 
+                                                className="shrink-0 p-2 bg-slate-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-colors"
+                                                onClick={(e) => e.stopPropagation()}
+                                                title="ไปที่ลิงก์รูปภาพ"
                                             >
-                                                <Icon name="external-link" className="w-4 h-4" />
+                                                <Icon name="external-link" size={14} />
                                             </a>
                                         </div>
                                     </div>
@@ -220,51 +203,40 @@
                             </div>
                         )}
 
-                        {searchQuery && filteredProducts.length === 0 && (
-                            <div className="text-center py-32 text-slate-300 text-lg font-medium italic">
-                                ไม่พบสินค้าที่ตรงกับคำว่า "{searchQuery}"
+                        {searchQuery && filteredData.length === 0 && (
+                            <div className="text-center py-20 text-slate-400">
+                                <p>ไม่พบสินค้าที่ตรงกับคำว่า "{searchQuery}"</p>
                             </div>
                         )}
                     </main>
 
-                    {/* Modal */}
+                    {/* Footer */}
+                    <footer className="p-8 text-center text-slate-400 text-xs">
+                        <p>ดึงข้อมูลจาก Google Sheet อัตโนมัติ (A-B, C-D ... Y-Z)</p>
+                    </footer>
+
+                    {/* Image Viewer Modal */}
                     {selectedProduct && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md" onClick={() => setSelectedProduct(null)}>
-                            <div className="bg-white rounded-[2rem] overflow-hidden max-w-5xl w-full flex flex-col md:flex-row shadow-2xl" onClick={e => e.stopPropagation()}>
-                                <div className="md:w-2/3 bg-slate-100 flex items-center justify-center p-4 relative">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedProduct(null)}>
+                            <div className="bg-white rounded-[2rem] overflow-hidden max-w-4xl w-full flex flex-col md:flex-row shadow-2xl" onClick={e => e.stopPropagation()}>
+                                <div className="md:w-3/5 bg-slate-200 flex items-center justify-center p-4 min-h-[300px]">
                                     <img 
-                                        src={selectedProduct.url} 
+                                        src={selectedProduct.imgUrl} 
                                         alt={selectedProduct.name}
                                         className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-lg"
+                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/800?text=Image+Not+Found'; }}
                                     />
                                 </div>
-                                
-                                <div className="md:w-1/3 p-8 md:p-10 flex flex-col justify-between bg-white">
+                                <div className="md:w-2/5 p-8 flex flex-col justify-between">
                                     <div>
-                                        <div className="flex items-center gap-2 mb-6">
-                                            <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black tracking-widest uppercase">
-                                                จากคอลัมน์ {selectedProduct.pair}
-                                            </span>
-                                        </div>
+                                        <div className="mb-4"><span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-3 py-1 rounded-full uppercase">Column Pair {selectedProduct.pair}</span></div>
                                         <h2 className="text-2xl font-black text-slate-900 leading-tight mb-4">{selectedProduct.name}</h2>
-                                        <div className="h-1 w-12 bg-indigo-500 rounded-full" />
                                     </div>
-
-                                    <div className="mt-12 space-y-3">
-                                        <a 
-                                            href={selectedProduct.url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="flex items-center justify-center gap-3 w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-200 transition-all active:scale-95"
-                                        >
-                                            <Icon name="external-link" className="w-5 h-5" /> เปิดรูปต้นฉบับ
+                                    <div className="space-y-3">
+                                        <a href={selectedProduct.originalUrl} target="_blank" className="flex items-center justify-center gap-2 w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+                                            <Icon name="external-link" size={18} /> ไปที่ลิงก์รูปต้นฉบับ
                                         </a>
-                                        <button 
-                                            onClick={() => setSelectedProduct(null)}
-                                            className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold hover:bg-slate-200 transition-all"
-                                        >
-                                            ปิดหน้าต่าง
-                                        </button>
+                                        <button onClick={() => setSelectedProduct(null)} className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold hover:bg-slate-200 transition">ปิด</button>
                                     </div>
                                 </div>
                             </div>
@@ -279,3 +251,4 @@
     </script>
 </body>
 </html>
+
