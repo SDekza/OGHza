@@ -5,11 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Work Management - Product Tracker</title>
     
-    <!-- App Icons (Mobile & Desktop) -->
+    <!-- App Name for Home Screen (iOS & Android) -->
+    <meta name="apple-mobile-web-app-title" content="SEB">
+    <meta name="application-name" content="SEB">
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"SEBOFFICIAL","short_name":"SEB","start_url":".","display":"standalone","background_color":"#f1f5f9","theme_color":"#ffffff","icons":[{"src":"sebo.png","sizes":"192x192","type":"image/png"}]}'>
+
+    <!-- App Icons -->
     <link rel="icon" type="image/png" href="sebo.png">
     <link rel="apple-touch-icon" href="sebo.png">
     
-    <!-- Scripts: React, Babel, Tailwind, Lucide Icons -->
+    <!-- Scripts -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -20,9 +27,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&display=swap');
         body { 
             font-family: 'Anuphan', sans-serif; 
-            background-color: #f8fafc;
+            background-color: #f1f5f9; 
+            color: #334155; 
         }
-        .custom-shadow { box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.12); }
+        .custom-shadow { box-shadow: 0 4px 20px -5px rgba(148, 163, 184, 0.25); } 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
@@ -44,6 +52,35 @@
             from { width: 0%; }
         }
         .animate-progress { animation: progress-grow 1s ease-out forwards; }
+
+        /* Remove arrow from number input */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* 🔥 Urgent Card Pulse Glow Effect (New) 🔥 */
+        @keyframes red-glow-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 2px rgba(239, 68, 68, 0.3); 
+                border-color: rgba(239, 68, 68, 0.6);
+            }
+            50% { 
+                box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); 
+                border-color: #ef4444; /* Red-500 */
+            }
+        }
+        
+        .urgent-card {
+            background-color: white;
+            border-width: 2px;
+            border-style: solid;
+            animation: red-glow-pulse 2s ease-in-out infinite;
+        }
     </style>
 </head>
 <body>
@@ -55,7 +92,7 @@
         // ==========================================
         // ⚡️ SETUP AREA
         // ==========================================
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5cRbneTUdGEmX7Zsk6zdT97uw7KW3XsHNixaiE22YrxlVWWPOB5kRlCkzUaq6hStpUw/exec"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdsCvbGUMF7yMKt3Awn_XyEpwvW1hdXDNO9Cd3DjckWA6gCOx9qZnRzhC48QBHXOggkA/exec"; 
         
         const SHEET_ID = "14sIYvQUKDtOeBbhPz7z0CLTrLbMdSYWMDFSzje-Qyys";
         const MASTER_GID = "519893714"; 
@@ -96,8 +133,15 @@
 
             const [searchTerm, setSearchTerm] = useState('');
             const [showSuggestions, setShowSuggestions] = useState(false);
+            
             const [form, setForm] = useState({
-                type: '', productName: '', imageUrl: '', quantity: '1', memo: '', isUrgent: false, isDone: false
+                type: 'กำไล', 
+                productName: '', 
+                imageUrl: '', 
+                quantity: '1', 
+                memo: '', 
+                isUrgent: false, 
+                isDone: false
             });
             const [isSaving, setIsSaving] = useState(false);
             const [saveStatus, setSaveStatus] = useState(null);
@@ -114,6 +158,13 @@
             const [editMasterItem, setEditMasterItem] = useState(null);
             const [isEditingMaster, setIsEditingMaster] = useState(false);
             const [masterItemToDelete, setMasterItemToDelete] = useState(null);
+
+            // Editing Quantity (View Tab)
+            const [editQuantityItem, setEditQuantityItem] = useState(null);
+            const [editQuantityValue, setEditQuantityValue] = useState('');
+
+            // 🔥 State สำหรับเก็บรายการที่กำลังจะหายไป (Animation)
+            const [exitingItems, setExitingItems] = useState(new Set());
 
             const getTodayDate = () => new Date().toLocaleDateString('en-GB');
 
@@ -260,7 +311,7 @@
             }, []);
 
             useEffect(() => {
-                if (activeTab === 'view' || activeTab === 'analysis') fetchSavedRecords();
+                if (activeTab === 'view') fetchSavedRecords();
                 if (activeTab === 'manage' || activeTab === 'record') fetchMasterData();
             }, [activeTab]);
 
@@ -389,23 +440,87 @@
                         method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ action: 'add', ...form, timestamp: ts }),
                     });
-                    setForm({ ...form, type: '', productName: '', imageUrl: '', quantity: '1', memo: '', isUrgent: false, isDone: false });
+                    setForm({ ...form, type: 'กำไล', productName: '', imageUrl: '', quantity: '1', memo: '', isUrgent: false, isDone: false });
                     setSearchTerm('');
                     setSaveStatus('success');
                     setTimeout(() => { setSaveStatus(null); fetchSavedRecords(); }, 2000);
                 } catch (e) {} finally { setIsSaving(false); }
             };
 
-            const toggleStatus = async (item) => {
-                const newStatus = !item.isDone;
-                setSavedItems(prev => prev.map(i => (i.timestamp === item.timestamp && i.productName === item.productName) ? { ...i, isDone: newStatus } : i));
+            const handleEditQuantity = (item) => {
+                setEditQuantityItem(item);
+                setEditQuantityValue(item.quantity);
+            };
+
+            const confirmEditQuantity = async () => {
+                if (!editQuantityItem) return;
+                const newQty = editQuantityValue;
+                
+                if (!newQty || parseInt(newQty) <= 0) {
+                    alert('จำนวนต้องเป็นตัวเลขมากกว่า 0');
+                    return;
+                }
+
+                setSavedItems(prev => prev.map(i =>
+                    (i.timestamp === editQuantityItem.timestamp && i.productName === editQuantityItem.productName)
+                    ? { ...i, quantity: newQty }
+                    : i
+                ));
+
+                setEditQuantityItem(null); 
+
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, {
-                        method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ action: 'update', productName: item.productName, timestamp: item.timestamp, isDone: newStatus }),
+                        method: "POST",
+                        mode: "no-cors",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: 'update_quantity',
+                            productName: editQuantityItem.productName,
+                            timestamp: editQuantityItem.timestamp,
+                            quantity: newQty
+                        }),
                     });
                     setTimeout(fetchSavedRecords, 1000);
-                } catch (e) { fetchSavedRecords(); }
+                } catch (e) {
+                    console.error("Update qty failed", e);
+                    fetchSavedRecords(); 
+                }
+            };
+
+            // 🔥 Function to handle smooth toggle with 1s fade out
+            const toggleStatus = (item) => {
+                const uniqueKey = item.timestamp + item.productName;
+                
+                // 1. Mark item as exiting to trigger CSS transition
+                setExitingItems(prev => new Set(prev).add(uniqueKey));
+
+                // 2. Wait 1000ms for animation to complete before removing from list & API call
+                setTimeout(async () => {
+                    const newStatus = !item.isDone;
+                    
+                    // Optimistic update (Remove from current view or move)
+                    setSavedItems(prev => prev.map(i => 
+                        (i.timestamp === item.timestamp && i.productName === item.productName) 
+                        ? { ...i, isDone: newStatus } 
+                        : i
+                    ));
+
+                    // Cleanup animation state (optional, as item might be gone from this view)
+                    setExitingItems(prev => {
+                        const next = new Set(prev);
+                        next.delete(uniqueKey);
+                        return next;
+                    });
+
+                    try {
+                        await fetch(GOOGLE_SCRIPT_URL, {
+                            method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ action: 'update', productName: item.productName, timestamp: item.timestamp, isDone: newStatus }),
+                        });
+                        setTimeout(fetchSavedRecords, 1000);
+                    } catch (e) { fetchSavedRecords(); }
+                }, 1000); // 1.0s delay
             };
 
             const confirmDelete = async () => {
@@ -422,9 +537,27 @@
                 } catch (e) { fetchSavedRecords(); }
             };
 
+            const adjustQuantity = (delta, isForm = true) => {
+                if (isForm) {
+                    setForm(prev => {
+                        const current = parseInt(prev.quantity) || 0;
+                        const next = Math.max(1, current + delta);
+                        return { ...prev, quantity: String(next) };
+                    });
+                } else {
+                    setEditQuantityValue(prev => {
+                        const current = parseInt(prev) || 0;
+                        const next = Math.max(1, current + delta);
+                        return String(next);
+                    });
+                }
+            };
+
             return (
                 <div className="min-h-screen flex flex-col">
                     {/* --- MODALS --- */}
+                    
+                    {/* Delete Confirmation Modal */}
                     {itemToDelete && (
                         <div className="fixed inset-0 z-[110] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
                             <div className="bg-white p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center space-y-4">
@@ -434,6 +567,48 @@
                                     <button onClick={() => setItemToDelete(null)} className="py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100">ยกเลิก</button>
                                     <button onClick={confirmDelete} className="py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 shadow-lg">ลบรายการ</button>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ✅ Edit Quantity Modal */}
+                    {editQuantityItem && (
+                        <div className="fixed inset-0 z-[110] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
+                            <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl max-w-sm w-full relative">
+                                <button onClick={() => setEditQuantityItem(null)} className="absolute top-4 right-4 bg-slate-100 p-2 rounded-full hover:bg-slate-200"><LucideIcon name="x" size={20} /></button>
+                                <h3 className="font-black text-xl text-slate-800 mb-2 text-center">แก้ไขจำนวนสินค้า</h3>
+                                <p className="text-center text-slate-500 mb-6 text-sm">{editQuantityItem.productName}</p>
+                                
+                                <div className="flex items-center justify-center gap-4 mb-6">
+                                    <button 
+                                        onClick={() => adjustQuantity(-1, false)}
+                                        className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 active:scale-90 transition-all font-bold text-xl"
+                                    >
+                                        -
+                                    </button>
+                                    <input 
+                                        type="number" 
+                                        inputMode="numeric" 
+                                        pattern="[0-9]*" 
+                                        className="w-24 bg-slate-50 border-2 border-indigo-100 rounded-2xl px-2 py-3 font-black text-2xl text-center text-indigo-600 outline-none focus:border-indigo-500" 
+                                        value={editQuantityValue} 
+                                        onChange={(e) => setEditQuantityValue(e.target.value.replace(/[^0-9]/g, ''))}
+                                        onBlur={() => { if(!editQuantityValue) setEditQuantityValue('1') }}
+                                    />
+                                    <button 
+                                        onClick={() => adjustQuantity(1, false)}
+                                        className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center hover:bg-indigo-200 active:scale-90 transition-all font-bold text-xl"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+
+                                <button 
+                                    onClick={confirmEditQuantity}
+                                    className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors"
+                                >
+                                    <LucideIcon name="save" size={20} /> บันทึก
+                                </button>
                             </div>
                         </div>
                     )}
@@ -459,7 +634,7 @@
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้า</label>
-                                        <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 font-bold" value={editMasterItem.name} onChange={(e) => setEditMasterItem({...editMasterItem, name: e.target.value})} />
+                                        <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 font-bold text-slate-800" value={editMasterItem.name} onChange={(e) => setEditMasterItem({...editMasterItem, name: e.target.value})} />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">รูปภาพใหม่</label>
@@ -468,7 +643,7 @@
                                             {editMasterItem.preview || editMasterItem.imgUrl ? <img src={editMasterItem.preview || editMasterItem.imgUrl} className="h-full w-full object-contain" /> : <LucideIcon name="image-plus" className="text-slate-300" />}
                                         </div>
                                     </div>
-                                    <button onClick={handleUpdateMaster} disabled={isEditingMaster} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 mt-4">
+                                    <button onClick={handleUpdateMaster} disabled={isEditingMaster} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 mt-4 hover:bg-indigo-700 transition-colors">
                                         {isEditingMaster ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><LucideIcon name="save" size={20} /> บันทึกการแก้ไข</>}
                                     </button>
                                 </div>
@@ -477,7 +652,7 @@
                     )}
 
                     {previewImage && (
-                        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setPreviewImage(null)}>
+                        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setPreviewImage(null)}>
                             <div className="bg-white p-2 rounded-3xl max-w-2xl max-h-[90vh] overflow-hidden animate-modal shadow-2xl relative">
                                 <button className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70"><LucideIcon name="x" size={20} /></button>
                                 <img src={previewImage} className="w-full h-full object-contain rounded-2xl" />
@@ -486,9 +661,9 @@
                     )}
 
                     {/* Navbar */}
-                    <nav className="bg-white border-b sticky top-0 z-50 px-6 py-4 shadow-sm flex items-center justify-between">
+                    <nav className="bg-white/90 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50 px-6 py-4 shadow-sm flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg border border-slate-100">
+                            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-md border border-slate-100 bg-white">
                                 <img src="https://cf.shopee.co.th/file/th-11134216-81ztq-mi72il8os3cwaf" className="w-full h-full object-cover" alt="SEBOFFICIAL Logo" />
                             </div>
                             <div>
@@ -496,31 +671,31 @@
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Master Data Integrated</p>
                             </div>
                         </div>
-                        <div className="hidden sm:flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-emerald-500">
+                        <div className="hidden sm:flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-emerald-600">
                             <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Cloud Connected</span>
                         </div>
                     </nav>
 
                     <main className="max-w-5xl mx-auto w-full p-4 md:p-8 space-y-6 flex-1">
                         {/* Tab Switcher */}
-                        <div className="flex p-1.5 bg-slate-100 rounded-[1.5rem] overflow-x-auto no-scrollbar gap-1">
-                            <button onClick={() => setActiveTab('record')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'record' ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                        <div className="flex p-1.5 bg-white border border-slate-200 rounded-[1.5rem] overflow-x-auto no-scrollbar gap-1 shadow-sm">
+                            <button onClick={() => setActiveTab('record')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'record' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}>
                                 <LucideIcon name="edit-3" size={16} /> บันทึก
                             </button>
-                            <button onClick={() => setActiveTab('view')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'view' ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                            <button onClick={() => setActiveTab('view')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'view' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}>
                                 <LucideIcon name="list" size={16} /> งาน
                             </button>
-                            <button onClick={() => setActiveTab('analysis')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'analysis' ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                            <button onClick={() => setActiveTab('analysis')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'analysis' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}>
                                 <LucideIcon name="bar-chart-2" size={16} /> สถิติ
                             </button>
-                            <button onClick={() => setActiveTab('manage')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'manage' ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                            <button onClick={() => setActiveTab('manage')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'manage' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}>
                                 <LucideIcon name="settings" size={16} /> สินค้า
                             </button>
                         </div>
 
                         {/* ✅ Tab Content: Record */}
                         {activeTab === 'record' && (
-                            <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-slate-100 custom-shadow animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-slate-100 custom-shadow animate-in fade-in slide-in-from-bottom-2 duration-300 relative overflow-hidden">
                                 {isSaving && (
                                     <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center flex-col gap-3 backdrop-blur-sm">
                                         <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
@@ -536,7 +711,7 @@
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                                             <div className="md:col-span-4 space-y-1.5">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ประเภท</label>
-                                                <select className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold appearance-none cursor-pointer" value={form.type} onChange={(e) => setForm({...form, type: e.target.value})}>
+                                                <select className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold appearance-none cursor-pointer text-slate-700" value={form.type} onChange={(e) => setForm({...form, type: e.target.value})}>
                                                     <option value="">เลือก...</option>
                                                     <option value="กำไล">กำไล</option><option value="สายคล้องโทรศัพท์">สายคล้องโทรศัพท์</option>
                                                     <option value="สร้อย">สร้อย</option><option value="จี้">จี้</option>
@@ -546,15 +721,15 @@
                                             <div className="md:col-span-8 space-y-1.5 relative">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">สินค้า</label>
                                                 <div className="relative">
-                                                    <input type="text" placeholder="พิมพ์เพื่อค้นหา..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold" value={searchTerm} onChange={handleInputChange} onFocus={() => setShowSuggestions(true)} />
-                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300"><LucideIcon name="search" size={16} /></div>
+                                                    <input type="text" placeholder="พิมพ์เพื่อค้นหา..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold placeholder-slate-400 text-slate-700" value={searchTerm} onChange={handleInputChange} onFocus={() => setShowSuggestions(true)} />
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"><LucideIcon name="search" size={16} /></div>
                                                 </div>
                                                 {showSuggestions && suggestions.length > 0 && (
                                                     <div className="absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl autocomplete-dropdown">
                                                         {suggestions.map((p, i) => (
-                                                            <div key={i} className="px-4 py-3.5 hover:bg-indigo-50 cursor-pointer flex items-center gap-3 border-b border-slate-50 last:border-0" onClick={() => handleSelectProduct(p)}>
-                                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0"><img src={p.imgUrl} className="w-full h-full object-cover" /></div>
-                                                                <span className="font-bold text-sm text-slate-700 truncate">{p.name}</span>
+                                                            <div key={i} className="px-4 py-3.5 hover:bg-indigo-50 cursor-pointer flex items-center gap-3 border-b border-slate-100 last:border-0" onClick={() => handleSelectProduct(p)}>
+                                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100"><img src={p.imgUrl} className="w-full h-full object-cover" /></div>
+                                                                <span className="font-bold text-sm text-slate-600 truncate">{p.name}</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -562,23 +737,36 @@
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                            {/* ✅ Qty Input with Buttons */}
                                             <div className="md:col-span-3 space-y-1.5">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">จำนวน</label>
-                                                <input type="number" className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold text-center" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value})} />
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={() => adjustQuantity(-1)} className="w-10 h-full bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-500 hover:bg-slate-200 active:scale-95 transition-all">-</button>
+                                                    <input 
+                                                        type="number" 
+                                                        inputMode="numeric"
+                                                        pattern="[0-9]*"
+                                                        className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-2 py-3.5 outline-none transition-all font-bold text-center text-slate-700" 
+                                                        value={form.quantity} 
+                                                        onChange={(e) => setForm({...form, quantity: e.target.value.replace(/[^0-9]/g, '')})}
+                                                        onBlur={() => { if(!form.quantity || parseInt(form.quantity) < 1) setForm({...form, quantity: '1'}) }}
+                                                    />
+                                                    <button onClick={() => adjustQuantity(1)} className="w-10 h-full bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-500 hover:bg-slate-200 active:scale-95 transition-all">+</button>
+                                                </div>
                                             </div>
                                             <div className="md:col-span-4 space-y-1.5">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ความสำคัญ</label>
-                                                <button onClick={() => setForm({...form, isUrgent: !form.isUrgent})} className={`w-full h-[54px] rounded-2xl px-4 flex items-center gap-3 transition-all border-2 ${form.isUrgent ? 'bg-red-50 border-red-200 text-red-500' : 'bg-slate-50 border-transparent text-slate-400'}`}>
+                                                <button onClick={() => setForm({...form, isUrgent: !form.isUrgent})} className={`w-full h-[54px] rounded-2xl px-4 flex items-center gap-3 transition-all border-2 ${form.isUrgent ? 'bg-red-50 border-red-200 text-red-500' : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'}`}>
                                                     <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${form.isUrgent ? 'bg-red-500 text-white' : 'bg-slate-200'}`}>{form.isUrgent && <LucideIcon name="check" size={14} />}</div>
                                                     <span className="font-bold">งานด่วน 🔥</span>
                                                 </button>
                                             </div>
                                             <div className="md:col-span-5 space-y-1.5">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">หมายเหตุ</label>
-                                                <input type="text" placeholder="..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold" value={form.memo} onChange={(e) => setForm({...form, memo: e.target.value})} />
+                                                <input type="text" placeholder="..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold placeholder-slate-400 text-slate-700" value={form.memo} onChange={(e) => setForm({...form, memo: e.target.value})} />
                                             </div>
                                         </div>
-                                        <button onClick={handleAddItem} disabled={!form.productName || isSaving} className="w-full bg-indigo-600 disabled:bg-slate-100 text-white py-4.5 rounded-3xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 h-[64px]">
+                                        <button onClick={handleAddItem} disabled={!form.productName || isSaving} className="w-full bg-indigo-600 disabled:bg-slate-100 disabled:text-slate-400 text-white py-4.5 rounded-3xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 h-[64px]">
                                             <LucideIcon name="save" size={20} /> บันทึกข้อมูล
                                         </button>
                                     </div>
@@ -601,34 +789,59 @@
                             <div className="space-y-6 pb-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <div className="flex items-center justify-between px-4">
                                     <div className="flex gap-2">
-                                        <button onClick={() => setViewSubTab('pending')} className={`px-6 py-2 rounded-full font-bold text-xs transition-all ${viewSubTab === 'pending' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>งานค้าง ({savedItems.filter(i => !i.isDone).length})</button>
-                                        <button onClick={() => setViewSubTab('completed')} className={`px-6 py-2 rounded-full font-bold text-xs transition-all ${viewSubTab === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>เสร็จแล้ว ({savedItems.filter(i => i.isDone).length})</button>
+                                        <button onClick={() => setViewSubTab('pending')} className={`px-6 py-2 rounded-full font-bold text-xs transition-all ${viewSubTab === 'pending' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white text-slate-400 border border-slate-100 hover:bg-slate-50'}`}>งานค้าง ({savedItems.filter(i => !i.isDone).length})</button>
+                                        <button onClick={() => setViewSubTab('completed')} className={`px-6 py-2 rounded-full font-bold text-xs transition-all ${viewSubTab === 'completed' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' : 'bg-white text-slate-400 border border-slate-100 hover:bg-slate-50'}`}>เสร็จแล้ว ({savedItems.filter(i => i.isDone).length})</button>
                                     </div>
-                                    <button onClick={fetchSavedRecords} className="p-2 text-slate-400"><LucideIcon name="refresh-cw" size={18} className={recordsLoading ? "animate-spin" : ""} /></button>
+                                    <button onClick={fetchSavedRecords} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><LucideIcon name="refresh-cw" size={18} className={recordsLoading ? "animate-spin" : ""} /></button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {filteredItems.map((item, idx) => (
-                                        <div key={idx} className={`group relative bg-white p-5 rounded-[2rem] border flex items-center gap-5 hover:shadow-xl transition-all ${item.isDone ? 'border-emerald-100 opacity-75' : (item.isUrgent ? 'border-red-100 bg-red-50/10' : 'border-slate-100 shadow-sm')}`}>
-                                            <button onClick={() => toggleStatus(item)} className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border transition-all ${item.isDone ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-slate-100 text-slate-300 border-slate-200 hover:bg-emerald-50 hover:text-emerald-400 active:scale-90'}`}><LucideIcon name={item.isDone ? "check-circle" : "circle"} size={24} /></button>
-                                            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-50 shrink-0 cursor-zoom-in" onClick={() => item.imageUrl && setPreviewImage(item.imageUrl)}><img src={item.imageUrl || 'https://via.placeholder.com/100'} className="w-full h-full object-cover" /></div>
-                                            <div className="flex-1 min-w-0 pr-6">
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <span className="text-[10px] font-black text-indigo-500 uppercase">{item.type || 'N/A'}</span>
-                                                    <span className="text-[10px] text-slate-300 font-bold italic truncate max-w-[100px]">{item.timestamp}</span>
-                                                    {item.isUrgent && !item.isDone && <span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold ml-auto animate-pulse">🔥 ด่วน</span>}
-                                                    {item.isDone && <span className="text-[10px] font-bold text-emerald-500 ml-auto uppercase tracking-tighter">สำเร็จ</span>}
+                                    {filteredItems.map((item) => {
+                                        const uniqueKey = item.timestamp + item.productName;
+                                        const isExiting = exitingItems.has(uniqueKey);
+                                        // ✅ VISUAL DONE LOGIC: If exiting, we want to visually show the opposite state (Done/Green) before fading out
+                                        const visualDone = isExiting ? !item.isDone : item.isDone; 
+
+                                        return (
+                                            <div 
+                                                key={uniqueKey} 
+                                                className={`group relative p-5 rounded-[2rem] border flex items-center gap-5 hover:shadow-xl transition-all duration-1000 ease-out 
+                                                    ${isExiting ? 'opacity-0 scale-95 translate-x-4 pointer-events-none' : 'opacity-100 scale-100'} 
+                                                    ${item.isUrgent && !visualDone ? 'urgent-card' : 'bg-white border-slate-100 shadow-sm'}
+                                                    ${visualDone ? 'border-emerald-100 bg-white/50' : ''}
+                                                `}
+                                            >
+                                                {/* Button visually reflects 'visualDone' immediately */}
+                                                <button onClick={() => toggleStatus(item)} className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border transition-all ${visualDone ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-slate-100 text-slate-300 border-slate-200 hover:bg-emerald-50 hover:text-emerald-400 active:scale-90'}`}><LucideIcon name={visualDone ? "check-circle" : "circle"} size={24} /></button>
+                                                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-50 shrink-0 cursor-zoom-in border border-slate-100" onClick={() => item.imageUrl && setPreviewImage(item.imageUrl)}><img src={item.imageUrl || 'https://via.placeholder.com/100'} className="w-full h-full object-cover" /></div>
+                                                <div className="flex-1 min-w-0 pr-6">
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        <span className="text-[10px] font-black text-indigo-500 uppercase">{item.type || 'N/A'}</span>
+                                                        <span className="text-[10px] text-slate-300 font-bold italic truncate max-w-[100px]">{item.timestamp}</span>
+                                                        {item.isUrgent && !visualDone && <span className="flex items-center gap-1 bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold ml-auto animate-pulse">🔥 ด่วน</span>}
+                                                        {visualDone && <span className="text-[10px] font-bold text-emerald-500 ml-auto uppercase tracking-tighter">สำเร็จ</span>}
+                                                    </div>
+                                                    <h4 className={`font-bold text-sm truncate ${visualDone ? 'text-slate-400 line-through italic' : 'text-slate-700'}`}>{item.productName}</h4>
+                                                    
+                                                    {/* ✅ Quantity Editable Area (Trigger Modal) */}
+                                                    <div className="text-[10px] font-bold text-slate-400 flex items-center gap-3 mt-1">
+                                                        <span 
+                                                            onClick={(e) => { e.stopPropagation(); handleEditQuantity(item); }}
+                                                            className="bg-slate-100 px-2 py-0.5 rounded text-slate-600 cursor-pointer hover:bg-indigo-100 hover:text-indigo-600 transition-colors flex items-center gap-1"
+                                                        >
+                                                            จำนวน: {item.quantity} <LucideIcon name="pencil" size={10} />
+                                                        </span>
+                                                        {item.memo && <span className="truncate text-slate-400">| {item.memo}</span>}
+                                                    </div>
                                                 </div>
-                                                <h4 className={`font-bold text-sm truncate ${item.isDone ? 'text-slate-400 line-through italic' : 'text-slate-800'}`}>{item.productName}</h4>
-                                                <div className="text-[10px] font-bold text-slate-400 flex items-center gap-3 mt-1"><span className="bg-slate-100 px-2 py-0.5 rounded">จำนวน: {item.quantity}</span>{item.memo && <span className="truncate">| {item.memo}</span>}</div>
+                                                <button onClick={() => setItemToDelete(item)} className="absolute top-4 right-4 p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><LucideIcon name="trash-2" size={16} /></button>
                                             </div>
-                                            <button onClick={() => setItemToDelete(item)} className="absolute top-4 right-4 p-2 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><LucideIcon name="trash-2" size={16} /></button>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )}
 
-                        {/* ✅ Tab Content: Analysis */}
+                        {/* ... (Analysis, Manage tabs) ... */}
                         {activeTab === 'analysis' && (
                             <div className="space-y-6 pb-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 custom-shadow">
@@ -698,16 +911,15 @@
                             </div>
                         )}
 
-                        {/* ✅ Tab Content: Manage (Search + Add) */}
                         {activeTab === 'manage' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-10">
                                 {/* Sub-Tab Navigation for Manage */}
                                 <div className="flex justify-center mb-4">
                                     <div className="bg-slate-100 p-1 rounded-xl inline-flex">
-                                        <button onClick={() => setManageSubTab('search')} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${manageSubTab === 'search' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>
+                                        <button onClick={() => setManageSubTab('search')} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${manageSubTab === 'search' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
                                             <LucideIcon name="search" size={16} /> ค้นหา/แก้ไข
                                         </button>
-                                        <button onClick={() => setManageSubTab('add')} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${manageSubTab === 'add' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>
+                                        <button onClick={() => setManageSubTab('add')} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${manageSubTab === 'add' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
                                             <LucideIcon name="plus-circle" size={16} /> เพิ่มสินค้าใหม่
                                         </button>
                                     </div>
@@ -718,25 +930,27 @@
                                         <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 custom-shadow text-center space-y-4">
                                             <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">ค้นหาสินค้า</h2>
                                             <div className="max-w-xl mx-auto relative">
-                                                <input type="text" placeholder="พิมพ์ชื่อสินค้า..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-lg text-center" value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} />
+                                                <input type="text" placeholder="พิมพ์ชื่อสินค้า..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-lg text-center placeholder-slate-400 text-slate-700" value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} />
                                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"><LucideIcon name="search" size={20} /></div>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                             {searchedProducts.map((p, idx) => (
                                                 <div key={idx} className="bg-white p-3 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all group relative">
-                                                    <div className="aspect-square bg-slate-50 rounded-2xl overflow-hidden mb-3 cursor-zoom-in" onClick={() => setPreviewImage(p.imgUrl)}><img src={p.imgUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /></div>
-                                                    <p className="text-[11px] font-black text-slate-700 truncate text-center mb-2">{p.name}</p>
-                                                    <div className="absolute inset-0 bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none group-hover:pointer-events-auto">
+                                                    <div className="aspect-square bg-slate-50 rounded-2xl overflow-hidden mb-3 cursor-zoom-in border border-slate-100" onClick={() => setPreviewImage(p.imgUrl)}><img src={p.imgUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /></div>
+                                                    <p className="text-[11px] font-black text-slate-600 truncate text-center mb-2">{p.name}</p>
+                                                    
+                                                    {/* Edit & Delete Buttons Overlay */}
+                                                    <div className="absolute inset-0 bg-white/80 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none group-hover:pointer-events-auto backdrop-blur-sm">
                                                         <button 
                                                             onClick={() => setEditMasterItem({ originalName: p.name, name: p.name, imgUrl: p.imgUrl })}
-                                                            className="bg-white text-indigo-600 p-2 rounded-full hover:bg-indigo-50 shadow-lg"
+                                                            className="bg-white border border-slate-100 text-indigo-600 p-2 rounded-full hover:bg-indigo-50 shadow-md"
                                                         >
                                                             <LucideIcon name="pencil" size={16} />
                                                         </button>
                                                         <button 
                                                             onClick={() => setPreviewImage(p.imgUrl)}
-                                                            className="bg-white text-emerald-600 p-2 rounded-full hover:bg-emerald-50 shadow-lg"
+                                                            className="bg-white border border-slate-100 text-emerald-600 p-2 rounded-full hover:bg-emerald-50 shadow-md"
                                                         >
                                                             <LucideIcon name="zoom-in" size={16} />
                                                         </button>
@@ -753,7 +967,7 @@
                                             <div className="space-y-6">
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้าใหม่</label>
-                                                    <input type="text" placeholder="ระบุชื่อสินค้า..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-lg" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+                                                    <input type="text" placeholder="ระบุชื่อสินค้า..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-lg text-slate-700" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">รูปภาพสินค้า</label>
@@ -765,16 +979,16 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <button onClick={handleAddProductMaster} disabled={!newProduct.name || !newProduct.imageBase64 || isAddingProduct} className="w-full bg-indigo-600 disabled:bg-slate-100 text-white py-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
+                                                <button onClick={handleAddProductMaster} disabled={!newProduct.name || !newProduct.imageBase64 || isAddingProduct} className="w-full bg-indigo-600 disabled:bg-slate-100 disabled:text-slate-400 text-white py-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
                                                     {isAddingProduct ? (<div className="flex items-center gap-2"><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> <span>กำลังบันทึก...</span></div>) : (<><LucideIcon name="upload" size={24} /> ยืนยันเพิ่มสินค้า</>)}
                                                 </button>
                                                 {addProductStatus === 'success' && <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-center font-bold animate-bounce flex items-center justify-center gap-2"><LucideIcon name="check-circle" size={18} /> สำเร็จ!</div>}
                                             </div>
-                                            <div className="flex flex-col items-center justify-center bg-slate-900 rounded-[2.5rem] p-8 min-h-[400px] shadow-2xl relative overflow-hidden">
+                                            <div className="flex flex-col items-center justify-center bg-slate-100 rounded-[2.5rem] p-8 min-h-[400px] relative overflow-hidden border border-slate-200">
                                                 {newProduct.preview ? (
-                                                    <div className="bg-white p-2 rounded-2xl shadow-lg animate-modal"><img src={newProduct.preview} className="max-w-full max-h-[320px] object-contain rounded-xl shadow-inner" /></div>
+                                                    <div className="bg-white p-2 rounded-2xl shadow-lg animate-modal border border-slate-200"><img src={newProduct.preview} className="max-w-full max-h-[320px] object-contain rounded-xl shadow-inner" /></div>
                                                 ) : (
-                                                    <div className="text-center text-slate-600"><LucideIcon name="image" size={80} className="mb-4 opacity-20" /><p className="font-bold">ตัวอย่างรูป</p></div>
+                                                    <div className="text-center text-slate-400"><LucideIcon name="image" size={80} className="mb-4 opacity-50" /><p className="font-bold">ตัวอย่างรูป</p></div>
                                                 )}
                                             </div>
                                         </div>
@@ -784,7 +998,7 @@
                         )}
                     </main>
 
-                    <footer className="bg-white border-t border-slate-100 p-4 sticky bottom-0 z-40 flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <footer className="bg-white/90 backdrop-blur-sm border-t border-slate-200 p-4 sticky bottom-0 z-40 flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         <span className="flex items-center gap-1.5"><LucideIcon name="shield-check" size={12} className="text-emerald-500" /> V2.2 Full Analytics</span>
                         <span className="hidden sm:block">Integrated System</span>
                     </footer>
