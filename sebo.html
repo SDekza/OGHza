@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Management - Product Tracker</title>
+    
+    <!-- Scripts: React, Babel, Tailwind, Lucide Icons -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&display=swap');
+        body { 
+            font-family: 'Anuphan', sans-serif; 
+            background-color: #f8fafc;
+        }
+        .custom-shadow { box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.12); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .autocomplete-dropdown {
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        
+        /* Modal Animation */
+        @keyframes modal-pop {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-modal { animation: modal-pop 0.2s ease-out forwards; }
+        
+        /* Progress Bar Animation */
+        @keyframes progress-grow {
+            from { width: 0%; }
+        }
+        .animate-progress { animation: progress-grow 1s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // ==========================================
+        // ⚡️ SETUP AREA
+        // ==========================================
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5cRbneTUdGEmX7Zsk6zdT97uw7KW3XsHNixaiE22YrxlVWWPOB5kRlCkzUaq6hStpUw/exec"; 
+        
+        const SHEET_ID = "14sIYvQUKDtOeBbhPz7z0CLTrLbMdSYWMDFSzje-Qyys";
+        const MASTER_GID = "519893714"; 
+        const RECORDS_GID = "379151214";
+        // ==========================================
+
+        const LucideIcon = ({ name, size = 20, className = "" }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                if (window.lucide && ref.current) {
+                    const element = ref.current;
+                    element.innerHTML = '';
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', name);
+                    element.appendChild(i);
+                    window.lucide.createIcons({
+                        root: element,
+                        nameAttr: 'data-lucide',
+                        attrs: { width: size, height: size, class: "lucide-icon-svg" }
+                    });
+                }
+            }, [name, size]);
+            return <span ref={ref} className={`inline-flex items-center justify-center ${className}`} style={{ width: size, height: size }} />;
+        };
+
+        const App = () => {
+            const [masterProducts, setMasterProducts] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [recordsLoading, setRecordsLoading] = useState(false);
+            
+            // Tab States: Added 'analysis'
+            const [activeTab, setActiveTab] = useState('record'); // 'record' | 'view' | 'analysis' | 'manage'
+            const [viewSubTab, setViewSubTab] = useState('pending'); 
+            const [manageSubTab, setManageSubTab] = useState('search');
+            
+            // Analysis State
+            const [analysisRange, setAnalysisRange] = useState('7d'); // 1d, 7d, 30d, 90d, 365d
+
+            const [searchTerm, setSearchTerm] = useState('');
+            const [showSuggestions, setShowSuggestions] = useState(false);
+            const [form, setForm] = useState({
+                type: '', productName: '', imageUrl: '', quantity: '1', memo: '', isUrgent: false, isDone: false
+            });
+            const [isSaving, setIsSaving] = useState(false);
+            const [saveStatus, setSaveStatus] = useState(null);
+
+            const [newProduct, setNewProduct] = useState({ name: '', imageBase64: '', imageType: '', preview: '' });
+            const [isAddingProduct, setIsAddingProduct] = useState(false);
+            const [addProductStatus, setAddProductStatus] = useState(null);
+
+            const [productSearchInput, setProductSearchInput] = useState('');
+            const [savedItems, setSavedItems] = useState([]);
+            const [previewImage, setPreviewImage] = useState(null);
+            const [itemToDelete, setItemToDelete] = useState(null);
+
+            const [editMasterItem, setEditMasterItem] = useState(null);
+            const [isEditingMaster, setIsEditingMaster] = useState(false);
+            const [masterItemToDelete, setMasterItemToDelete] = useState(null);
+
+            const getTodayDate = () => new Date().toLocaleDateString('en-GB');
+
+            const formatDriveUrl = (url) => {
+                if (!url || typeof url !== 'string') return '';
+                if (url.includes('drive.google.com')) {
+                    let fileId = '';
+                    const matchD = url.match(/\/d\/([^\/]+)/);
+                    const matchId = url.match(/id=([^&]+)/);
+                    fileId = matchD ? matchD[1] : (matchId ? matchId[1] : '');
+                    if (fileId) return `https://lh3.googleusercontent.com/d/${fileId}`;
+                }
+                return url;
+            };
+
+            // Helper to parse Thai date string dd/mm/yyyy HH:mm:ss to Date Object
+            const parseThaiDate = (dateStr) => {
+                if (!dateStr) return new Date(0); // Return old date if invalid
+                try {
+                    // Expect format: "16/02/2026, 21:04:00" or similar
+                    const parts = dateStr.match(/(\d+)\/(\d+)\/(\d+)/);
+                    if (parts) {
+                        const day = parseInt(parts[1], 10);
+                        const month = parseInt(parts[2], 10) - 1;
+                        let year = parseInt(parts[3], 10);
+                        
+                        // Handle Buddhist Year (if year > 2400, assumes BE)
+                        if (year > 2400) year -= 543;
+                        
+                        // Create date (ignore time for daily comparison or include if needed)
+                        // Currently string often comes with time, but date parts are enough for day filtering
+                        return new Date(year, month, day);
+                    }
+                    return new Date(dateStr); // Fallback standard parse
+                } catch (e) {
+                    return new Date(0);
+                }
+            };
+
+            const getAnalysisData = useMemo(() => {
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Midnight today
+                
+                let rangeStart = new Date(today);
+                
+                switch (analysisRange) {
+                    case '1d': rangeStart = today; break;
+                    case '7d': rangeStart.setDate(today.getDate() - 7); break;
+                    case '30d': rangeStart.setDate(today.getDate() - 30); break;
+                    case '90d': rangeStart.setDate(today.getDate() - 90); break;
+                    case '365d': rangeStart.setDate(today.getDate() - 365); break;
+                    default: rangeStart.setDate(today.getDate() - 7);
+                }
+
+                // 1. Filter items within range
+                const filtered = savedItems.filter(item => {
+                    const itemDate = parseThaiDate(item.timestamp);
+                    return itemDate >= rangeStart;
+                });
+
+                // 2. Aggregate quantities by Product Name
+                const aggregator = {};
+                let totalQty = 0;
+
+                filtered.forEach(item => {
+                    const qty = parseInt(item.quantity) || 0;
+                    if (!aggregator[item.productName]) {
+                        aggregator[item.productName] = {
+                            name: item.productName,
+                            qty: 0,
+                            image: item.imageUrl,
+                            count: 0
+                        };
+                    }
+                    aggregator[item.productName].qty += qty;
+                    aggregator[item.productName].count += 1;
+                    totalQty += qty;
+                });
+
+                // 3. Convert to array and sort
+                const sorted = Object.values(aggregator).sort((a, b) => b.qty - a.qty);
+                
+                // 4. Get Top 5
+                const top5 = sorted.slice(0, 5);
+
+                return {
+                    totalQty,
+                    totalRecords: filtered.length,
+                    topProducts: top5,
+                    allRanked: sorted
+                };
+            }, [savedItems, analysisRange]);
+
+            const fetchCsvData = async (gid) => {
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}&ts=${Date.now()}`;
+                const strategies = [
+                    { name: 'Direct', url: csvUrl },
+                    { name: 'CorsProxy', url: `https://corsproxy.io/?${encodeURIComponent(csvUrl)}` },
+                    { name: 'AllOrigins', url: `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}` }
+                ];
+                for (const s of strategies) {
+                    try {
+                        const res = await fetch(s.url);
+                        if (!res.ok) continue;
+                        const text = await res.text();
+                        if (text.includes("google.com/accounts")) continue;
+                        return text;
+                    } catch (e) {}
+                }
+                throw new Error("Fetch failed");
+            };
+
+            const fetchMasterData = async () => {
+                setLoading(true);
+                try {
+                    const text = await fetchCsvData(MASTER_GID);
+                    const lines = text.split(/\r?\n/);
+                    const matrix = lines.map(line => {
+                        const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                        return matches ? matches.map(m => m.replace(/^"|"$/g, '')) : [];
+                    });
+                    
+                    const products = [];
+                    for (let row = 0; row < matrix.length; row++) {
+                        const name = matrix[row][0]?.trim();
+                        const img = matrix[row][1]?.trim();
+                        if (name) products.push({ name, imgUrl: formatDriveUrl(img) });
+                    }
+                    setMasterProducts(products);
+                } catch (e) { console.error(e); }
+                finally { setLoading(false); }
+            };
+
+            const fetchSavedRecords = async () => {
+                setRecordsLoading(true);
+                try {
+                    const text = await fetchCsvData(RECORDS_GID);
+                    const lines = text.split(/\r?\n/);
+                    const records = lines.slice(1).map((line, index) => {
+                        const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                        if (!parts) return null;
+                        const row = parts.map(m => m.replace(/^"|"$/g, ''));
+                        return {
+                            id: index, timestamp: row[0], type: row[1], productName: row[2],
+                            imageUrl: row[3], quantity: row[4], isDone: String(row[5]).toUpperCase() === 'TRUE',
+                            isUrgent: String(row[6]).toUpperCase() === 'TRUE', memo: row[7]
+                        };
+                    }).filter(item => item !== null);
+                    setSavedItems(records);
+                } catch (e) { console.error(e); }
+                finally { setRecordsLoading(false); }
+            };
+
+            useEffect(() => {
+                fetchMasterData();
+                fetchSavedRecords();
+            }, []);
+
+            useEffect(() => {
+                if (activeTab === 'view' || activeTab === 'analysis') fetchSavedRecords();
+                if (activeTab === 'manage' || activeTab === 'record') fetchMasterData();
+            }, [activeTab]);
+
+            const filteredItems = useMemo(() => savedItems.filter(item => viewSubTab === 'pending' ? !item.isDone : item.isDone), [savedItems, viewSubTab]);
+
+            const searchedProducts = useMemo(() => {
+                if (!productSearchInput.trim()) return masterProducts.slice(0, 20);
+                const q = productSearchInput.toLowerCase();
+                return masterProducts.filter(p => p.name.toLowerCase().includes(q));
+            }, [productSearchInput, masterProducts]);
+
+            const suggestions = useMemo(() => {
+                if (!searchTerm.trim()) return [];
+                const q = searchTerm.toLowerCase();
+                return masterProducts.filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
+            }, [searchTerm, masterProducts]);
+
+            const handleSelectProduct = (p) => {
+                setForm({ ...form, productName: p.name, imageUrl: p.imgUrl });
+                setSearchTerm(p.name);
+                setShowSuggestions(false);
+            };
+
+            const handleInputChange = (e) => {
+                const val = e.target.value;
+                setSearchTerm(val);
+                setForm(prev => ({ ...prev, productName: val }));
+                setShowSuggestions(true);
+            };
+
+            const handleFileChange = (e, targetStateSetter) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64String = reader.result.split(',')[1];
+                        targetStateSetter(prev => ({
+                            ...prev,
+                            imageBase64: base64String,
+                            imageType: file.type,
+                            preview: reader.result
+                        }));
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const handleAddProductMaster = async () => {
+                if (!newProduct.name || !newProduct.imageBase64) return;
+                setIsAddingProduct(true);
+                setAddProductStatus(null);
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: "POST",
+                        mode: "no-cors",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            action: 'add_master',
+                            productName: newProduct.name,
+                            imageBase64: newProduct.imageBase64,
+                            imageType: newProduct.imageType
+                        })
+                    });
+                    setAddProductStatus('success');
+                    setNewProduct({ name: '', imageBase64: '', imageType: '', preview: '' });
+                    setTimeout(() => {
+                        setAddProductStatus(null);
+                        setManageSubTab('search');
+                        fetchMasterData();
+                    }, 3000);
+                } catch (e) {
+                    setAddProductStatus('error');
+                } finally {
+                    setIsAddingProduct(false);
+                }
+            };
+
+            const handleDeleteMaster = (productName) => {
+                setMasterItemToDelete(productName);
+            };
+
+            const confirmDeleteMaster = async () => {
+                if (!masterItemToDelete) return;
+                const productName = masterItemToDelete;
+                setMasterItemToDelete(null);
+                setMasterProducts(prev => prev.filter(p => p.name !== productName));
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: 'delete_master', productName: productName }),
+                    });
+                    setTimeout(fetchMasterData, 2000);
+                } catch (e) { fetchMasterData(); }
+            };
+
+            const handleUpdateMaster = async () => {
+                if (!editMasterItem || !editMasterItem.name) return;
+                setIsEditingMaster(true);
+                try {
+                    const payload = {
+                        action: 'update_master',
+                        originalName: editMasterItem.originalName,
+                        newName: editMasterItem.name,
+                    };
+                    if (editMasterItem.imageBase64) {
+                        payload.imageBase64 = editMasterItem.imageBase64;
+                        payload.imageType = editMasterItem.imageType;
+                    }
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    });
+                    setEditMasterItem(null);
+                    setTimeout(fetchMasterData, 2000);
+                } catch (e) {} 
+                finally { setIsEditingMaster(false); }
+            };
+
+            const handleAddItem = async () => {
+                if (!form.productName) return;
+                setIsSaving(true);
+                const now = new Date();
+                const ts = now.toLocaleString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: 'add', ...form, timestamp: ts }),
+                    });
+                    setForm({ ...form, type: '', productName: '', imageUrl: '', quantity: '1', memo: '', isUrgent: false, isDone: false });
+                    setSearchTerm('');
+                    setSaveStatus('success');
+                    setTimeout(() => { setSaveStatus(null); fetchSavedRecords(); }, 2000);
+                } catch (e) {} finally { setIsSaving(false); }
+            };
+
+            const toggleStatus = async (item) => {
+                const newStatus = !item.isDone;
+                setSavedItems(prev => prev.map(i => (i.timestamp === item.timestamp && i.productName === item.productName) ? { ...i, isDone: newStatus } : i));
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: 'update', productName: item.productName, timestamp: item.timestamp, isDone: newStatus }),
+                    });
+                    setTimeout(fetchSavedRecords, 1000);
+                } catch (e) { fetchSavedRecords(); }
+            };
+
+            const confirmDelete = async () => {
+                if (!itemToDelete) return;
+                const item = itemToDelete;
+                setSavedItems(prev => prev.filter(i => !(i.timestamp === item.timestamp && i.productName === item.productName)));
+                setItemToDelete(null);
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: 'delete', productName: item.productName, timestamp: item.timestamp }),
+                    });
+                    setTimeout(fetchSavedRecords, 1000);
+                } catch (e) { fetchSavedRecords(); }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* --- MODALS --- */}
+                    {itemToDelete && (
+                        <div className="fixed inset-0 z-[110] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
+                            <div className="bg-white p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center space-y-4">
+                                <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto"><LucideIcon name="trash-2" size={32} /></div>
+                                <h3 className="font-black text-xl text-slate-800">ยืนยันการลบ?</h3>
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <button onClick={() => setItemToDelete(null)} className="py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100">ยกเลิก</button>
+                                    <button onClick={confirmDelete} className="py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 shadow-lg">ลบรายการ</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {masterItemToDelete && (
+                        <div className="fixed inset-0 z-[110] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
+                            <div className="bg-white p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center space-y-4 border border-red-100">
+                                <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-sm"><LucideIcon name="alert-triangle" size={32} /></div>
+                                <div><h3 className="font-black text-xl text-slate-800">ยืนยันลบสินค้า?</h3><p className="text-slate-500 mt-2 text-sm">"{masterItemToDelete}"</p></div>
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <button onClick={() => setMasterItemToDelete(null)} className="py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100">ยกเลิก</button>
+                                    <button onClick={confirmDeleteMaster} className="py-3 rounded-xl font-bold bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-200">ยืนยันลบ</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {editMasterItem && (
+                        <div className="fixed inset-0 z-[110] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
+                            <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl max-w-md w-full relative">
+                                <button onClick={() => setEditMasterItem(null)} className="absolute top-4 right-4 bg-slate-100 p-2 rounded-full hover:bg-slate-200"><LucideIcon name="x" size={20} /></button>
+                                <h3 className="font-black text-xl text-slate-800 mb-6 text-center">แก้ไขข้อมูลสินค้า</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้า</label>
+                                        <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 font-bold" value={editMasterItem.name} onChange={(e) => setEditMasterItem({...editMasterItem, name: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">รูปภาพใหม่</label>
+                                        <div className="relative group h-32 w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 overflow-hidden">
+                                            <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={(e) => handleFileChange(e, setEditMasterItem)} />
+                                            {editMasterItem.preview || editMasterItem.imgUrl ? <img src={editMasterItem.preview || editMasterItem.imgUrl} className="h-full w-full object-contain" /> : <LucideIcon name="image-plus" className="text-slate-300" />}
+                                        </div>
+                                    </div>
+                                    <button onClick={handleUpdateMaster} disabled={isEditingMaster} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 mt-4">
+                                        {isEditingMaster ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><LucideIcon name="save" size={20} /> บันทึกการแก้ไข</>}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {previewImage && (
+                        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setPreviewImage(null)}>
+                            <div className="bg-white p-2 rounded-3xl max-w-2xl max-h-[90vh] overflow-hidden animate-modal shadow-2xl relative">
+                                <button className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70"><LucideIcon name="x" size={20} /></button>
+                                <img src={previewImage} className="w-full h-full object-contain rounded-2xl" />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Navbar */}
+                    <nav className="bg-white border-b sticky top-0 z-50 px-6 py-4 shadow-sm flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg border border-slate-100">
+                                <img src="https://cf.shopee.co.th/file/th-11134216-81ztq-mi72il8os3cwaf" className="w-full h-full object-cover" alt="SEBOFFICIAL Logo" />
+                            </div>
+                            <div>
+                                <h1 className="font-black text-xl text-slate-800 tracking-tight">SEBOFFICIAL</h1>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Master Data Integrated</p>
+                            </div>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-emerald-500">
+                            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Cloud Connected</span>
+                        </div>
+                    </nav>
+
+                    <main className="max-w-5xl mx-auto w-full p-4 md:p-8 space-y-6 flex-1">
+                        {/* Tab Switcher */}
+                        <div className="flex p-1.5 bg-slate-100 rounded-[1.5rem] overflow-x-auto no-scrollbar gap-1">
+                            <button onClick={() => setActiveTab('record')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'record' ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                                <LucideIcon name="edit-3" size={16} /> บันทึก
+                            </button>
+                            <button onClick={() => setActiveTab('view')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'view' ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                                <LucideIcon name="list" size={16} /> งานประจำวัน
+                            </button>
+                            <button onClick={() => setActiveTab('analysis')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'analysis' ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                                <LucideIcon name="bar-chart-2" size={16} /> สถิติ
+                            </button>
+                            <button onClick={() => setActiveTab('manage')} className={`flex-1 min-w-[100px] py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${activeTab === 'manage' ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                                <LucideIcon name="settings" size={16} /> จัดการสินค้า
+                            </button>
+                        </div>
+
+                        {/* ✅ Tab Content: Record */}
+                        {activeTab === 'record' && (
+                            <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-slate-100 custom-shadow animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                {isSaving && (
+                                    <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center flex-col gap-3 backdrop-blur-sm">
+                                        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                        <span className="font-bold text-indigo-600 animate-pulse">กำลังบันทึกลง Sheet...</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-2 mb-8">
+                                    <div className="bg-indigo-50 p-2 rounded-xl"><LucideIcon name="edit-3" className="text-indigo-600" /></div>
+                                    <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">บันทึกรายการงาน</h2>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                    <div className="lg:col-span-7 space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                            <div className="md:col-span-4 space-y-1.5">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ประเภท</label>
+                                                <select className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold appearance-none cursor-pointer" value={form.type} onChange={(e) => setForm({...form, type: e.target.value})}>
+                                                    <option value="">เลือก...</option>
+                                                    <option value="กำไล">กำไล</option><option value="สายคล้องโทรศัพท์">สายคล้องโทรศัพท์</option>
+                                                    <option value="สร้อย">สร้อย</option><option value="จี้">จี้</option>
+                                                    <option value="พวงกุญแจ">พวงกุญแจ</option><option value="แหวน">แหวน</option>
+                                                </select>
+                                            </div>
+                                            <div className="md:col-span-8 space-y-1.5 relative">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">สินค้า</label>
+                                                <div className="relative">
+                                                    <input type="text" placeholder="พิมพ์เพื่อค้นหา..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold" value={searchTerm} onChange={handleInputChange} onFocus={() => setShowSuggestions(true)} />
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300"><LucideIcon name="search" size={16} /></div>
+                                                </div>
+                                                {showSuggestions && suggestions.length > 0 && (
+                                                    <div className="absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl autocomplete-dropdown">
+                                                        {suggestions.map((p, i) => (
+                                                            <div key={i} className="px-4 py-3.5 hover:bg-indigo-50 cursor-pointer flex items-center gap-3 border-b border-slate-50 last:border-0" onClick={() => handleSelectProduct(p)}>
+                                                                <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 shrink-0"><img src={p.imgUrl} className="w-full h-full object-cover" /></div>
+                                                                <span className="font-bold text-sm text-slate-700 truncate">{p.name}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                            <div className="md:col-span-3 space-y-1.5">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">จำนวน</label>
+                                                <input type="number" className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold text-center" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value})} />
+                                            </div>
+                                            <div className="md:col-span-4 space-y-1.5">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ความสำคัญ</label>
+                                                <button onClick={() => setForm({...form, isUrgent: !form.isUrgent})} className={`w-full h-[54px] rounded-2xl px-4 flex items-center gap-3 transition-all border-2 ${form.isUrgent ? 'bg-red-50 border-red-200 text-red-500' : 'bg-slate-50 border-transparent text-slate-400'}`}>
+                                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${form.isUrgent ? 'bg-red-500 text-white' : 'bg-slate-200'}`}>{form.isUrgent && <LucideIcon name="check" size={14} />}</div>
+                                                    <span className="font-bold">งานด่วน 🔥</span>
+                                                </button>
+                                            </div>
+                                            <div className="md:col-span-5 space-y-1.5">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">หมายเหตุ</label>
+                                                <input type="text" placeholder="..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-4 py-3.5 outline-none transition-all font-bold" value={form.memo} onChange={(e) => setForm({...form, memo: e.target.value})} />
+                                            </div>
+                                        </div>
+                                        <button onClick={handleAddItem} disabled={!form.productName || isSaving} className="w-full bg-indigo-600 disabled:bg-slate-100 text-white py-4.5 rounded-3xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 h-[64px]">
+                                            <LucideIcon name="save" size={20} /> บันทึกข้อมูล
+                                        </button>
+                                    </div>
+                                    <div className="lg:col-span-5 flex flex-col items-center justify-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200 p-8 min-h-[300px]">
+                                        {form.imageUrl ? (
+                                            <div className="flex flex-col items-center gap-4 cursor-zoom-in group" onClick={() => setPreviewImage(form.imageUrl)}>
+                                                <div className="bg-white p-4 rounded-3xl shadow-xl transition-transform group-hover:scale-105 border border-slate-100"><img src={form.imageUrl} className="max-w-full max-h-[220px] object-contain rounded-xl" /></div>
+                                                <span className="text-[10px] font-black text-indigo-500 uppercase bg-white px-4 py-1.5 rounded-full border border-indigo-100 shadow-sm flex items-center gap-2"><LucideIcon name="zoom-in" size={12} /> คลิกขยาย</span>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center opacity-30"><LucideIcon name="image" size={60} className="text-slate-400 mb-2" /><p className="font-bold text-slate-500">รอเลือกสินค้า</p></div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ✅ Tab Content: View Records */}
+                        {activeTab === 'view' && (
+                            <div className="space-y-6 pb-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="flex items-center justify-between px-4">
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setViewSubTab('pending')} className={`px-6 py-2 rounded-full font-bold text-xs transition-all ${viewSubTab === 'pending' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>งานค้าง ({savedItems.filter(i => !i.isDone).length})</button>
+                                        <button onClick={() => setViewSubTab('completed')} className={`px-6 py-2 rounded-full font-bold text-xs transition-all ${viewSubTab === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>เสร็จแล้ว ({savedItems.filter(i => i.isDone).length})</button>
+                                    </div>
+                                    <button onClick={fetchSavedRecords} className="p-2 text-slate-400"><LucideIcon name="refresh-cw" size={18} className={recordsLoading ? "animate-spin" : ""} /></button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {filteredItems.map((item, idx) => (
+                                        <div key={idx} className={`group relative bg-white p-5 rounded-[2rem] border flex items-center gap-5 hover:shadow-xl transition-all ${item.isDone ? 'border-emerald-100 opacity-75' : (item.isUrgent ? 'border-red-100 bg-red-50/10' : 'border-slate-100 shadow-sm')}`}>
+                                            <button onClick={() => toggleStatus(item)} className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border transition-all ${item.isDone ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-slate-100 text-slate-300 border-slate-200 hover:bg-emerald-50 hover:text-emerald-400 active:scale-90'}`}><LucideIcon name={item.isDone ? "check-circle" : "circle"} size={24} /></button>
+                                            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-50 shrink-0 cursor-zoom-in" onClick={() => item.imageUrl && setPreviewImage(item.imageUrl)}><img src={item.imageUrl || 'https://via.placeholder.com/100'} className="w-full h-full object-cover" /></div>
+                                            <div className="flex-1 min-w-0 pr-6">
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <span className="text-[10px] font-black text-indigo-500 uppercase">{item.type || 'N/A'}</span>
+                                                    <span className="text-[10px] text-slate-300 font-bold italic truncate max-w-[100px]">{item.timestamp}</span>
+                                                    {item.isUrgent && !item.isDone && <span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold ml-auto animate-pulse">🔥 ด่วน</span>}
+                                                    {item.isDone && <span className="text-[10px] font-bold text-emerald-500 ml-auto uppercase tracking-tighter">สำเร็จ</span>}
+                                                </div>
+                                                <h4 className={`font-bold text-sm truncate ${item.isDone ? 'text-slate-400 line-through italic' : 'text-slate-800'}`}>{item.productName}</h4>
+                                                <div className="text-[10px] font-bold text-slate-400 flex items-center gap-3 mt-1"><span className="bg-slate-100 px-2 py-0.5 rounded">จำนวน: {item.quantity}</span>{item.memo && <span className="truncate">| {item.memo}</span>}</div>
+                                            </div>
+                                            <button onClick={() => setItemToDelete(item)} className="absolute top-4 right-4 p-2 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><LucideIcon name="trash-2" size={16} /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ✅ Tab Content: Analysis */}
+                        {activeTab === 'analysis' && (
+                            <div className="space-y-6 pb-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 custom-shadow">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-2">
+                                            <div className="bg-indigo-50 p-2 rounded-xl text-indigo-600"><LucideIcon name="bar-chart-2" /></div>
+                                            <h2 className="text-xl font-black text-slate-800 tracking-tight">วิเคราะห์ยอดขาย</h2>
+                                        </div>
+                                        <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                                            {['1d', '7d', '1m', '3m', '1y'].map(range => (
+                                                <button 
+                                                    key={range}
+                                                    onClick={() => setAnalysisRange(range)}
+                                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${analysisRange === range ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                                >
+                                                    {range}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Stats Cards */}
+                                    <div className="grid grid-cols-2 gap-4 mb-8">
+                                        <div className="bg-indigo-50 p-5 rounded-[2rem] border border-indigo-100">
+                                            <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">ยอดรวมทั้งหมด</p>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-3xl font-black text-indigo-900">{getAnalysisData.totalQty}</span>
+                                                <span className="text-xs font-bold text-indigo-400">ชิ้น</span>
+                                            </div>
+                                        </div>
+                                        <div className="bg-emerald-50 p-5 rounded-[2rem] border border-emerald-100">
+                                            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">รายการบันทึก</p>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-3xl font-black text-emerald-900">{getAnalysisData.totalRecords}</span>
+                                                <span className="text-xs font-bold text-emerald-400">รายการ</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Top Products Chart */}
+                                    <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><LucideIcon name="trending-up" size={16} className="text-amber-500" /> 5 อันดับสินค้าขายดี</h3>
+                                    <div className="space-y-4">
+                                        {getAnalysisData.topProducts.length > 0 ? (
+                                            getAnalysisData.topProducts.map((p, idx) => (
+                                                <div key={idx} className="relative">
+                                                    <div className="flex items-center gap-3 mb-1.5 relative z-10">
+                                                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${idx === 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>{idx + 1}</span>
+                                                        <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-50 border border-slate-100 shrink-0">
+                                                            {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><LucideIcon name="image" size={12} /></div>}
+                                                        </div>
+                                                        <span className="text-xs font-bold text-slate-700 truncate flex-1">{p.name}</span>
+                                                        <span className="text-xs font-black text-indigo-600">{p.qty}</span>
+                                                    </div>
+                                                    <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-indigo-500 rounded-full animate-progress" 
+                                                            style={{ width: `${(p.qty / getAnalysisData.totalQty) * 100}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-10 text-slate-400 text-xs">ไม่มีข้อมูลในช่วงเวลานี้</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ✅ Tab Content: Manage (Search + Add) */}
+                        {activeTab === 'manage' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-10">
+                                {/* Sub-Tab Navigation for Manage */}
+                                <div className="flex justify-center mb-4">
+                                    <div className="bg-slate-100 p-1 rounded-xl inline-flex">
+                                        <button onClick={() => setManageSubTab('search')} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${manageSubTab === 'search' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>
+                                            <LucideIcon name="search" size={16} /> ค้นหา/แก้ไข
+                                        </button>
+                                        <button onClick={() => setManageSubTab('add')} className={`px-6 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${manageSubTab === 'add' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>
+                                            <LucideIcon name="plus-circle" size={16} /> เพิ่มสินค้าใหม่
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {manageSubTab === 'search' && (
+                                    <>
+                                        <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 custom-shadow text-center space-y-4">
+                                            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">ค้นหาสินค้า</h2>
+                                            <div className="max-w-xl mx-auto relative">
+                                                <input type="text" placeholder="พิมพ์ชื่อสินค้า..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-lg text-center" value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} />
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"><LucideIcon name="search" size={20} /></div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                            {searchedProducts.map((p, idx) => (
+                                                <div key={idx} className="bg-white p-3 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all group relative">
+                                                    <div className="aspect-square bg-slate-50 rounded-2xl overflow-hidden mb-3 cursor-zoom-in" onClick={() => setPreviewImage(p.imgUrl)}><img src={p.imgUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /></div>
+                                                    <p className="text-[11px] font-black text-slate-700 truncate text-center mb-2">{p.name}</p>
+                                                    <div className="absolute inset-0 bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none group-hover:pointer-events-auto">
+                                                        <button onClick={() => setEditMasterItem({ originalName: p.name, name: p.name, imgUrl: p.imgUrl })} className="bg-white text-indigo-600 p-2 rounded-full hover:bg-indigo-50"><LucideIcon name="pencil" size={16} /></button>
+                                                        <button onClick={() => handleDeleteMaster(p.name)} className="bg-white text-red-500 p-2 rounded-full hover:bg-red-50"><LucideIcon name="trash-2" size={16} /></button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+
+                                {manageSubTab === 'add' && (
+                                    <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-slate-100 custom-shadow animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                            <div className="space-y-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อสินค้าใหม่</label>
+                                                    <input type="text" placeholder="ระบุชื่อสินค้า..." className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500 focus:bg-white rounded-2xl px-6 py-4 outline-none transition-all font-bold text-lg" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">รูปภาพสินค้า</label>
+                                                    <div className="relative group">
+                                                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, setNewProduct)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                                                        <div className="w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all group-hover:bg-slate-100 group-hover:border-indigo-300">
+                                                            <div className="bg-white p-3 rounded-full text-slate-400 group-hover:text-indigo-500 shadow-sm transition-colors"><LucideIcon name="upload-cloud" size={32} /></div>
+                                                            <p className="font-bold text-slate-500 group-hover:text-slate-700">คลิกเพื่อเลือกรูป</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button onClick={handleAddProductMaster} disabled={!newProduct.name || !newProduct.imageBase64 || isAddingProduct} className="w-full bg-indigo-600 disabled:bg-slate-100 text-white py-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-3">
+                                                    {isAddingProduct ? (<div className="flex items-center gap-2"><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> <span>กำลังบันทึก...</span></div>) : (<><LucideIcon name="upload" size={24} /> ยืนยันเพิ่มสินค้า</>)}
+                                                </button>
+                                                {addProductStatus === 'success' && <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-center font-bold animate-bounce flex items-center justify-center gap-2"><LucideIcon name="check-circle" size={18} /> สำเร็จ!</div>}
+                                            </div>
+                                            <div className="flex flex-col items-center justify-center bg-slate-900 rounded-[2.5rem] p-8 min-h-[400px] shadow-2xl relative overflow-hidden">
+                                                {newProduct.preview ? (
+                                                    <div className="bg-white p-2 rounded-2xl shadow-lg animate-modal"><img src={newProduct.preview} className="max-w-full max-h-[320px] object-contain rounded-xl shadow-inner" /></div>
+                                                ) : (
+                                                    <div className="text-center text-slate-600"><LucideIcon name="image" size={80} className="mb-4 opacity-20" /><p className="font-bold">ตัวอย่างรูป</p></div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </main>
+
+                    <footer className="bg-white border-t border-slate-100 p-4 sticky bottom-0 z-40 flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5"><LucideIcon name="shield-check" size={12} className="text-emerald-500" /> V2.2 Full Analytics</span>
+                        <span className="hidden sm:block">Integrated System</span>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
