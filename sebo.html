@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Work Management - SEBOFFICIAL</title>
     
+    <!-- ✅ App Icons & Mobile Config -->
+    <link rel="icon" type="image/png" href="sebo.png">
+    <link rel="apple-touch-icon" href="sebo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SEB">
+    <link rel="manifest" href='data:application/manifest+json,{"name":"SEBOFFICIAL","short_name":"SEB","start_url":".","display":"standalone","background_color":"#f1f5f9","theme_color":"#f1f5f9","icons":[{"src":"sebo.png","sizes":"192x192","type":"image/png"}]}'>
+
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -205,7 +213,6 @@
                 setRecordsLoading(true);
                 try {
                     const text = await fetchCsvData(RECORDS_GID);
-                    // ✅ Slice(2) for Dummy Row
                     const records = parseCSV(text).slice(2).map((row, index) => {
                         if (row.length < 3) return null;
                         return {
@@ -214,7 +221,7 @@
                             isDoing: String(row[6]).toUpperCase() === 'TRUE',
                             isUrgent: String(row[7]).toUpperCase() === 'TRUE',
                             memo: row[8],
-                            uuid: row[10] // ✅ Load UUID from Column K (Index 10)
+                            uuid: row[10]
                         };
                     }).filter(Boolean);
                     setSavedItems(records);
@@ -356,7 +363,6 @@
                 }
             };
 
-            // ✅ Generate UUID function
             const generateUUID = () => {
                 return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                     var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -369,7 +375,7 @@
                 if (!form.productName) return;
                 setIsSaving(true);
                 const ts = new Date().toLocaleString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const uuid = generateUUID(); // ✅ Generate UUID for new item
+                const uuid = generateUUID(); 
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, { 
                         method: "POST", mode: "no-cors", 
@@ -380,7 +386,7 @@
                             isDone: false, 
                             timestamp: ts, 
                             user: currentUser,
-                            uuid: uuid // ✅ Send UUID to backend
+                            uuid: uuid 
                         }) 
                     });
                     setForm({ ...form, productName: '', quantity: '1', memo: '', isUrgent: false }); 
@@ -408,7 +414,7 @@
                                 action: 'update_status_3way', 
                                 productName: item.productName, 
                                 timestamp: item.timestamp,
-                                uuid: item.uuid, // ✅ Use UUID
+                                uuid: item.uuid,
                                 isDoing: nextStatus.isDoing, 
                                 isDone: nextStatus.isDone 
                             }) 
@@ -432,7 +438,7 @@
                             action: 'update_quantity', 
                             productName: target.productName, 
                             timestamp: target.timestamp, 
-                            uuid: target.uuid, // ✅ Use UUID
+                            uuid: target.uuid,
                             quantity: newQty 
                         }),
                     });
@@ -447,15 +453,7 @@
                 setSavedItems(prev => prev.filter(i => !(i.timestamp === item.timestamp && i.productName === item.productName)));
                 setItemToDelete(null);
                 try {
-                    await fetch(GOOGLE_SCRIPT_URL, { 
-                        method: "POST", mode: "no-cors", 
-                        body: JSON.stringify({ 
-                            action: 'delete', 
-                            productName: item.productName, 
-                            timestamp: item.timestamp,
-                            uuid: item.uuid // ✅ Send UUID for deletion
-                        }) 
-                    });
+                    await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: 'delete', productName: item.productName, timestamp: item.timestamp, uuid: item.uuid }) });
                     setTimeout(fetchSavedRecords, 2000); 
                 } catch (e) {}
             };
@@ -616,7 +614,7 @@
 
             return (
                 <div className="min-h-screen flex flex-col pb-24 md:pb-6 relative">
-                    {/* User Selection Modal with Numpad */}
+                    {/* User Selection Modal */}
                     {showUserModal && (
                         <div className="fixed inset-0 z-[200] bg-[#141414] flex flex-col items-center justify-center p-6 animate-modal text-center">
                             <div className="max-w-6xl w-full">
@@ -875,7 +873,6 @@
                             </div>
                         )}
 
-                        {/* Content: Inventory Manage */}
                         {activeTab === 'manage' && (
                             <div className="space-y-6 animate-modal pb-10">
                                 <div className="flex justify-center"><div className="bg-white p-1.5 rounded-full border shadow-sm inline-flex font-bold">
@@ -1077,7 +1074,7 @@
                     </nav>
 
                     <footer className="hidden md:flex bg-white border-t p-5 mt-auto flex-col sm:flex-row justify-between items-center gap-3 text-[10px] font-black text-slate-300 tracking-widest uppercase shadow-inner font-bold font-black">
-                        <span>SEBOFFICIAL V4.3.0 ENTERPRISE</span>
+                        <span>SEBOFFICIAL V4.5.0 ENTERPRISE</span>
                         <div className="flex items-center gap-4 text-slate-400 font-bold uppercase tracking-tighter leading-none font-bold font-black">
                             <LucideIcon name="database" size={12} className="text-emerald-500 font-bold font-black" /> Google Cloud Sync | Active: {currentUser} ({currentUserRank})
                         </div>
