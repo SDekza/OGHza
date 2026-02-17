@@ -86,7 +86,7 @@
         // ==========================================
         // ⚡️ SETUP AREA
         // ==========================================
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuDZKw3ZeDqrPQWGqAlYVig4TBmCrhJTvAdx5i5x8li6C6DqRgAeDbMy_SXYNGXyd_MQ/exec"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyckwlg1ltnfWSlU-9MkGZFHZ7Z6jjwgYftF0iqv7KJtGIsA-xoaFDTVZJDQMyUipd72Q/exec"; 
         const SHEET_ID = "14sIYvQUKDtOeBbhPz7z0CLTrLbMdSYWMDFSzje-Qyys";
         const MASTER_GID = "519893714"; 
         const RECORDS_GID = "379151214";
@@ -253,12 +253,12 @@
 
             const handleUserSelect = (userObj) => {
                 const passLower = String(userObj.pass || "").toLowerCase().trim();
-                // If password is empty or "none", force setup
                 if (passLower === "" || passLower === "none") {
-                    setSelectedTempUser(userObj);
-                    setModalStep('setup_password');
-                    setNewPassValue('');
-                    setPassError(false);
+                    setCurrentUser(userObj.name);
+                    setCurrentUserRank(userObj.rank);
+                    localStorage.setItem('seb_current_user', userObj.name);
+                    localStorage.setItem('seb_current_rank', userObj.rank);
+                    setShowUserModal(false);
                 } else {
                     setSelectedTempUser(userObj);
                     setModalStep('password');
@@ -279,42 +279,6 @@
                 } else {
                     setPassError(true);
                     setTimeout(() => setPassError(false), 500);
-                }
-            };
-
-            const handleSetupInitialPassword = async () => {
-                if (newPassValue.length !== 4) {
-                    setPassError(true);
-                    setTimeout(() => setPassError(false), 500);
-                    return;
-                }
-
-                setIsDevWorking(true);
-                try {
-                    await fetch(GOOGLE_SCRIPT_URL, { 
-                        method: "POST", 
-                        mode: "no-cors", 
-                        body: JSON.stringify({ 
-                            action: 'update_user_setting', 
-                            targetUser: selectedTempUser.name, 
-                            rank: selectedTempUser.rank, 
-                            pass: newPassValue, 
-                            user: 'System Setup' 
-                        }) 
-                    });
-                    
-                    setCurrentUser(selectedTempUser.name);
-                    setCurrentUserRank(selectedTempUser.rank);
-                    localStorage.setItem('seb_current_user', selectedTempUser.name);
-                    localStorage.setItem('seb_current_rank', selectedTempUser.rank);
-                    setShowUserModal(false);
-                    setModalStep('select');
-                    setSelectedTempUser(null);
-                    fetchData(); 
-                } catch (e) {
-                    setPassError(true);
-                } finally {
-                    setIsDevWorking(false);
                 }
             };
 
@@ -466,6 +430,7 @@
                 }
             }, []);
 
+            // --- Netflix Helpers ---
             const getAvatarColor = (idx) => {
                 const colors = [
                     'bg-red-600', 'bg-blue-600', 'bg-green-600', 'bg-yellow-500', 
@@ -475,6 +440,7 @@
                 return colors[idx % colors.length];
             };
 
+            // --- Computed Values ---
             const suggestionsItems = useMemo(() => masterProducts.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())).slice(0, 8), [searchTerm, masterProducts]);
             const filteredItemsMemo = useMemo(() => savedItems.filter(i => viewSubTab === 'pending' ? !i.isDone : i.isDone), [savedItems, viewSubTab]);
             const searchedMasterList = useMemo(() => masterProducts.filter(p => p.name.toLowerCase().includes(productSearchInput.toLowerCase())).slice(0, 50), [productSearchInput, masterProducts]);
@@ -523,14 +489,14 @@
                                             )}
                                         </div>
                                     </>
-                                ) : modalStep === 'password' ? (
+                                ) : (
                                     <div className="max-w-sm mx-auto space-y-10 animate-in fade-in zoom-in duration-300">
                                         <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-xl flex items-center justify-center text-white text-5xl font-black mx-auto border-4 border-white ${getAvatarColor(usersData.findIndex(u => u.name === selectedTempUser?.name))}`}>
                                             {selectedTempUser?.name.charAt(0).toUpperCase()}
                                         </div>
                                         <div className="space-y-4">
                                             <h3 className="text-white text-2xl font-black">ระบุรหัสเข้าใช้งาน</h3>
-                                            <p className="text-slate-400 text-sm">ยินดีต้อนับกลับมา, <span className="text-white font-bold">{selectedTempUser?.name}</span></p>
+                                            <p className="text-slate-400 text-sm">ยินดีต้อนรับกลับมา, <span className="text-white font-bold">{selectedTempUser?.name}</span></p>
                                         </div>
                                         <div className="space-y-6">
                                             <input 
@@ -547,35 +513,6 @@
                                             <div className="grid grid-cols-2 gap-4">
                                                 <button onClick={() => setModalStep('select')} className="py-4 rounded-xl font-black text-slate-400 border border-slate-700 hover:bg-white/5 active:scale-95 transition-all">ย้อนกลับ</button>
                                                 <button onClick={handleVerifyPassword} className="py-4 rounded-xl font-black bg-white text-black shadow-lg active:scale-95 transition-all">เข้าสู่ระบบ</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    /* Setup Password Step */
-                                    <div className="max-w-sm mx-auto space-y-10 animate-in fade-in zoom-in duration-300">
-                                        <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-xl flex items-center justify-center text-white text-5xl font-black mx-auto border-4 border-white ${getAvatarColor(usersData.findIndex(u => u.name === selectedTempUser?.name))}`}>
-                                            {selectedTempUser?.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="space-y-4">
-                                            <h3 className="text-white text-2xl font-black">ตั้งรหัสผ่านใหม่</h3>
-                                            <p className="text-slate-400 text-sm leading-relaxed">คุณยังไม่ได้ตั้งรหัสผ่านสำหรับเข้าใช้งาน<br/><span className="text-amber-400 font-bold">กรุณาตั้งรหัสผ่าน 4 หลักก่อนเริ่มใช้งาน</span></p>
-                                        </div>
-                                        <div className="space-y-6">
-                                            <input 
-                                                autoFocus 
-                                                type="number" 
-                                                inputMode="numeric" 
-                                                placeholder="0000" 
-                                                className={`w-full py-5 px-6 rounded-2xl bg-[#333] border-2 text-center font-black text-4xl text-white outline-none transition-all ${passError ? 'border-red-600 animate-shake' : 'border-transparent focus:border-amber-500'}`}
-                                                value={newPassValue} 
-                                                onChange={(e) => setNewPassValue(e.target.value.slice(0, 4))} 
-                                                onKeyDown={(e) => e.key === 'Enter' && handleSetupInitialPassword()} 
-                                            />
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <button onClick={() => setModalStep('select')} className="py-4 rounded-xl font-black text-slate-400 border border-slate-700 hover:bg-white/5 active:scale-95 transition-all">ยกเลิก</button>
-                                                <button onClick={handleSetupInitialPassword} disabled={isDevWorking} className="py-4 rounded-xl font-black bg-amber-500 text-white shadow-lg active:scale-95 transition-all flex items-center justify-center">
-                                                    {isDevWorking ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'ตั้งรหัสผ่าน'}
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -613,7 +550,7 @@
                             )}
                         </div>
 
-                        {/* ✅ Record Tab */}
+                        {/* ✅ Record Tab - Corrected Layout for Mobile/PC */}
                         {activeTab === 'record' && (
                             <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-slate-100 custom-shadow animate-modal relative overflow-hidden">
                                 {isSaving && <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center flex-col gap-3 backdrop-blur-sm"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div><span className="font-bold text-indigo-600 animate-pulse">Saving...</span></div>}
@@ -720,7 +657,7 @@
                             </div>
                         )}
 
-                        {/* Analysis Tab */}
+                        {/* Analysis Tab (Protected) */}
                         {activeTab === 'analysis' && currentUserRank !== 'User' && (
                              <div className="space-y-6 pb-10 animate-in fade-in duration-300">
                                 <div className="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-sm">
@@ -929,7 +866,7 @@
                                 <h3 className="font-black text-2xl text-slate-800 mb-3 uppercase tracking-tighter leading-none font-black">Delete Task?</h3>
                                 <div className="grid grid-cols-2 gap-4 pt-10 font-bold">
                                     <button onClick={() => setItemToDelete(null)} className="h-14 rounded-2xl text-slate-400 bg-slate-50 hover:bg-slate-100 active:scale-95 transition-all border-2 border-transparent font-black leading-none uppercase font-black">ยกเลิก</button>
-                                    <button onClick={confirmDelete} className="h-14 rounded-2xl bg-red-600 text-white shadow-lg active:scale-95 transition-all shadow-red-200 font-black leading-none uppercase font-black">ยืนยันการลบ</button>
+                                    <button onClick={confirmDelete} className="h-14 rounded-2xl bg-red-50 text-white shadow-lg active:scale-95 transition-all shadow-red-200 font-black leading-none uppercase font-black">ยืนยันการลบ</button>
                                 </div>
                             </div>
                         </div>
@@ -937,7 +874,7 @@
 
                     {editMasterItem && (
                         <div className="fixed inset-0 z-[210] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal">
-                            <div className="bg-white p-8 md:p-10 rounded-[3.5rem] shadow-2xl max-md w-full relative border-t-8 border-indigo-600 shadow-indigo-100/50">
+                            <div className="bg-white p-8 md:p-10 rounded-[3.5rem] shadow-2xl max-w-md w-full relative border-t-8 border-indigo-600 shadow-indigo-100/50">
                                 <button onClick={() => setEditMasterItem(null)} className="absolute top-8 right-8 bg-slate-100 p-2.5 rounded-full hover:bg-red-50 transition-all active:scale-90"><LucideIcon name="x" size={20} /></button>
                                 <h3 className="font-black text-2xl text-slate-800 mb-10 text-center uppercase tracking-tighter font-black leading-none font-black">Modify Product</h3>
                                 <div className="space-y-7 font-bold">
@@ -973,7 +910,7 @@
                     )}
 
                     <footer className="bg-white/90 backdrop-blur-sm border-t border-slate-200 p-5 mt-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest shadow-inner">
-                        <span className="flex items-center gap-2 font-black tracking-[0.1em] leading-none"><LucideIcon name="shield-check" size={12} className="text-emerald-500" /> SEBOFFICIAL V2.9.2 PRO ENTERPRISE</span>
+                        <span className="flex items-center gap-2 font-black tracking-[0.1em] leading-none"><LucideIcon name="shield-check" size={12} className="text-emerald-500" /> SEBOFFICIAL V2.9.0 PRO ENTERPRISE</span>
                         <div className="flex items-center gap-4 leading-none">
                             <span className="flex items-center gap-1.5 font-bold leading-none font-black"><LucideIcon name="database" size={12} /> Google Cloud Sync</span>
                             <span className="hidden sm:block leading-none font-black">Active: {currentUser} ({currentUserRank})</span>
