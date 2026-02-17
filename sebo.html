@@ -52,6 +52,74 @@
             return <span ref={ref} className={`inline-flex items-center justify-center ${className}`} style={{ width: size, height: size, minWidth: size }} />;
         });
 
+        // ✅ Component: Image Preview with Zoom
+        const ImagePreviewModal = ({ src, onClose }) => {
+            const [scale, setScale] = useState(1);
+            const [translate, setTranslate] = useState({ x: 0, y: 0 });
+            
+            const lastTouchRef = useRef(null);
+            const lastDistRef = useRef(null);
+
+            const handleTouchStart = (e) => {
+                if (e.touches.length === 1) {
+                    lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                } else if (e.touches.length === 2) {
+                    const dist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    lastDistRef.current = dist;
+                }
+            };
+
+            const handleTouchMove = (e) => {
+                if (e.touches.length === 1 && scale > 1) {
+                    const dx = e.touches[0].clientX - lastTouchRef.current.x;
+                    const dy = e.touches[0].clientY - lastTouchRef.current.y;
+                    setTranslate(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+                    lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                } else if (e.touches.length === 2) {
+                    const dist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    if (lastDistRef.current) {
+                        const zoomFactor = dist / lastDistRef.current;
+                        const newScale = Math.min(Math.max(1, scale * zoomFactor), 4); // Max zoom 4x
+                        setScale(newScale);
+                    }
+                    lastDistRef.current = dist;
+                }
+            };
+            
+            const handleTouchEnd = () => {
+                lastTouchRef.current = null;
+                lastDistRef.current = null;
+                if (scale < 1.1) {
+                    setScale(1);
+                    setTranslate({ x: 0, y: 0 });
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 z-[500] bg-black/95 flex items-center justify-center p-0 md:p-4 touch-none" onClick={onClose}>
+                    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" onClick={e => e.stopPropagation()}>
+                         <img 
+                            src={src} 
+                            className="object-contain transition-transform duration-75 ease-linear will-change-transform max-h-screen max-w-full touch-none"
+                            style={{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})` }}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                         />
+                         <button onClick={onClose} className="absolute top-6 right-6 bg-black/50 text-white p-3 rounded-full backdrop-blur-sm shadow-lg active:scale-90 z-50 border border-white/20">
+                            <LucideIcon name="x" size={24} />
+                         </button>
+                    </div>
+                </div>
+            );
+        };
+
         const getAvatarColor = (idx) => {
             const colors = ['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-cyan-500'];
             return colors[idx % colors.length];
@@ -118,12 +186,10 @@
             const [passwordInput, setPasswordInput] = useState('');
             const [passError, setPassError] = useState(false);
             
-            // Password & Dev States
             const [newPasswordInput, setNewPasswordInput] = useState('');
             const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
             const [setPasswordError, setSetPasswordError] = useState('');
             const [isRegistering, setIsRegistering] = useState(false);
-            const [devPassInput, setDevPassInput] = useState(''); // ✅ New state for Dev Modal
 
             const [searchTerm, setSearchTerm] = useState('');
             const [showSuggestions, setShowSuggestions] = useState(false);
@@ -147,6 +213,7 @@
             const [newPassValue, setNewPassValue] = useState('');
             const [devActionModal, setDevActionModal] = useState(null);
             const [isDevWorking, setIsDevWorking] = useState(false);
+            const [devPassInput, setDevPassInput] = useState('');
 
             // --- Data Fetching ---
             const fetchCsvData = async (gid) => {
@@ -173,9 +240,7 @@
                         fetchCsvData(SETTINGS_GID) 
                     ]);
 
-                    if (!settingsText) {
-                        throw new Error("ไม่สามารถโหลดข้อมูลผู้ใช้ได้ กรุณาตรวจสอบการแชร์ไฟล์ Google Sheets");
-                    }
+                    if (!settingsText) throw new Error("ไม่สามารถโหลดข้อมูลผู้ใช้ได้ กรุณาตรวจสอบการแชร์ไฟล์ Google Sheets");
 
                     const products = parseCSV(masterText).slice(1).map(row => (row[0] ? { name: row[0].trim(), imgUrl: formatDriveUrl(row[1]) } : null)).filter(Boolean);
                     setMasterProducts(products);
@@ -208,7 +273,7 @@
                             isDoing: String(row[6]).toUpperCase() === 'TRUE',
                             isUrgent: String(row[7]).toUpperCase() === 'TRUE',
                             memo: row[8],
-                            uuid: row[10] // ✅ UUID
+                            uuid: row[10] // ✅ Load UUID from Column K (Index 10)
                         };
                     }).filter(Boolean);
                     setSavedItems(records);
@@ -297,7 +362,7 @@
                 }
             };
 
-            // ✅ Generate UUID
+            // ✅ Generate UUID function
             const generateUUID = () => {
                 return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                     var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -310,7 +375,7 @@
                 if (!form.productName) return;
                 setIsSaving(true);
                 const ts = new Date().toLocaleString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const uuid = generateUUID(); 
+                const uuid = generateUUID(); // ✅ Generate UUID for new item
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, { 
                         method: "POST", mode: "no-cors", 
@@ -321,7 +386,7 @@
                             isDone: false, 
                             timestamp: ts, 
                             user: currentUser,
-                            uuid: uuid
+                            uuid: uuid // ✅ Send UUID to backend
                         }) 
                     });
                     setForm({ ...form, productName: '', quantity: '1', memo: '', isUrgent: false }); 
@@ -349,7 +414,7 @@
                                 action: 'update_status_3way', 
                                 productName: item.productName, 
                                 timestamp: item.timestamp,
-                                uuid: item.uuid,
+                                uuid: item.uuid, // ✅ Use UUID
                                 isDoing: nextStatus.isDoing, 
                                 isDone: nextStatus.isDone 
                             }) 
@@ -373,7 +438,7 @@
                             action: 'update_quantity', 
                             productName: target.productName, 
                             timestamp: target.timestamp, 
-                            uuid: target.uuid,
+                            uuid: target.uuid, // ✅ Use UUID
                             quantity: newQty 
                         }),
                     });
@@ -394,7 +459,7 @@
                             action: 'delete', 
                             productName: item.productName, 
                             timestamp: item.timestamp,
-                            uuid: item.uuid
+                            uuid: item.uuid // ✅ Send UUID for deletion
                         }) 
                     });
                     setTimeout(fetchSavedRecords, 2000); 
@@ -446,8 +511,7 @@
                 } finally { setIsDevWorking(false); }
             };
 
-            // ✅ Fix: ใช้ devPassInput แทนการอ่าน DOM
-            const confirmClearSheet = async (type) => {
+            const handleClearSheet = async (type) => {
                 const userObj = usersData.find(u => u.name === currentUser);
                 if (userObj && String(devPassInput) === String(userObj.pass)) {
                     setDevActionModal(null);
@@ -492,6 +556,7 @@
                 if (viewSubTab === 'pending') return savedItems.filter(i => !i.isDoing && !i.isDone);
                 if (viewSubTab === 'doing') return savedItems.filter(i => i.isDoing && !i.isDone);
                 
+                // ✅ Filter Completed: Show only today's tasks
                 if (viewSubTab === 'completed') {
                     const today = new Date();
                     today.setHours(0,0,0,0);
@@ -516,6 +581,7 @@
                 };
             }, [savedItems]);
 
+            // ✅ Render Menu Tabs
             const renderMenuTabs = () => {
                 const tabs = [
                     { id: 'record', label: 'บันทึก', icon: 'edit-3', show: currentUserRank !== 'Guest' },
@@ -790,7 +856,6 @@
                                     <>
                                         <div className="bg-white rounded-[2rem] p-4 border flex items-center px-6 shadow-sm font-bold"><LucideIcon name="search" size={20} className="text-slate-300 mr-4"/><input type="text" placeholder="ค้นหา..." className="flex-1 bg-transparent font-bold outline-none text-slate-700 font-bold font-bold font-black" value={productSearchInput} onChange={(e) => setProductSearchInput(e.target.value)} /></div>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 font-bold font-black">
-                                            {/* Show items only if search input exists */}
                                             {productSearchInput && masterProducts.filter(p => p.name.toLowerCase().includes(productSearchInput.toLowerCase())).map((p, i) => (
                                                 <div key={i} className="bg-white p-3 rounded-[1.8rem] border shadow-sm group relative overflow-hidden transition-all hover:shadow-xl hover:border-indigo-200">
                                                     <div className="aspect-square bg-slate-50 rounded-2xl overflow-hidden mb-3 border shadow-inner"><img src={p.imgUrl} className="w-full h-full object-cover transition-transform group-hover:scale-110 shadow-sm" /></div>
@@ -864,7 +929,7 @@
                                         <div className="space-y-6 font-bold">
                                             <h3 className="font-black text-slate-800 flex items-center gap-2 px-2 uppercase text-xs tracking-[0.2em] font-black leading-none font-black"><LucideIcon name="database" size={20} className="text-red-600" /> Database Maintenance</h3>
                                             <div className="space-y-4 bg-red-50/50 p-6 rounded-[2.5rem] border border-red-100 shadow-inner">
-                                                <div className="bg-white p-6 rounded-3 shadow-sm border border-red-100 shadow-red-50"><p className="font-black text-slate-800 mb-1 uppercase tracking-tight text-[10px] leading-none font-black">Reset Activity Log</p><button onClick={() => setDevActionModal('clear_logs')} className="w-full py-4 rounded-2xl bg-red-600 text-white font-black text-sm border-2 border-transparent hover:border-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95 uppercase tracking-widest font-black leading-none shadow-sm">Clear Logs History</button></div>
+                                                <div className="bg-white p-6 rounded-3 shadow-sm border border-red-100 shadow-red-50"><p className="font-black text-slate-800 mb-1 uppercase tracking-tight text-[10px] leading-none font-black">Reset Activity Log</p><button onClick={() => setDevActionModal('clear_logs')} className="w-full py-4 rounded-2xl bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 font-black text-sm transition-all active:scale-95 uppercase tracking-widest leading-none shadow-sm">Clear Logs History</button></div>
                                                 <div className="bg-white p-6 rounded-3 shadow-sm border border-red-100 shadow-red-50"><p className="font-black text-slate-800 mb-1 uppercase tracking-tight text-[10px] leading-none font-black">Reset All Records</p><button onClick={() => setDevActionModal('clear_all_records')} className="w-full py-4 rounded-2xl bg-red-600 text-white font-black text-sm border-2 border-transparent hover:border-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95 uppercase tracking-widest font-black leading-none shadow-sm">Delete All Task Data</button></div>
                                             </div>
                                         </div>
@@ -978,7 +1043,7 @@
                     </nav>
 
                     <footer className="hidden md:flex bg-white border-t p-5 mt-auto flex-col sm:flex-row justify-between items-center gap-3 text-[10px] font-black text-slate-300 tracking-widest uppercase shadow-inner font-bold font-black">
-                        <span>SEBOFFICIAL V4.4.0 ENTERPRISE</span>
+                        <span>SEBOFFICIAL V4.3.0 ENTERPRISE</span>
                         <div className="flex items-center gap-4 text-slate-400 font-bold uppercase tracking-tighter leading-none font-bold font-black">
                             <LucideIcon name="database" size={12} className="text-emerald-500 font-bold font-black" /> Google Cloud Sync | Active: {currentUser} ({currentUserRank})
                         </div>
