@@ -5,86 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ROC GGT: Chrono Pass Calculator Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --roc-red: #e11d48; --roc-gold: #f59e0b; }
-        body { font-family: 'Kanit', sans-serif; background-color: #f1f5f9; color: #334155; }
+        :root { --roc-blue: #2563eb; --roc-gold: #f59e0b; --roc-bg: #f1f5f9; }
+        body { font-family: 'Kanit', sans-serif; background-color: var(--roc-bg); color: #334155; }
         .font-gaming { font-family: 'Rajdhani', sans-serif; }
-        .game-card { background: white; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .game-card { background: white; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; overflow: hidden; }
         .pkg-card { border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; position: relative; }
-        .pkg-card.active { border-color: var(--roc-red); background-color: #fef2f2; transform: translateY(-2px); box-shadow: 0 8px 15px rgba(225, 29, 72, 0.1); }
-        .pkg-card.active::after { content: '✓'; position: absolute; top: -1px; right: -1px; background: var(--roc-red); color: white; width: 20px; height: 20px; border-radius: 0 10px 0 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
-        .btn-roc { background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%); color: white; box-shadow: 0 4px 0 #7f1d1d; transition: all 0.1s; }
-        .btn-roc:active { transform: translateY(2px); box-shadow: 0 1px 0 #7f1d1d; }
+        .pkg-card.active { border-color: var(--roc-blue); background-color: #eff6ff; }
+        .pkg-card.active::after { content: '✓'; position: absolute; top: -1px; right: -1px; background: var(--roc-blue); color: white; width: 20px; height: 20px; border-radius: 0 10px 0 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+        .btn-roc { background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); color: white; box-shadow: 0 4px 0 #1e40af; transition: all 0.1s; }
+        .btn-roc:active { transform: translateY(2px); box-shadow: 0 1px 0 #1e40af; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
     </style>
 </head>
 <body class="pb-10">
 
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 p-4 shadow-sm">
+    <nav class="bg-white/90 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50 p-4 shadow-sm">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center text-white font-gaming text-xs font-bold leading-tight text-center">ROC<br>GGT</div>
-                <h1 class="font-gaming text-xl font-bold tracking-tight text-slate-800 uppercase">Chrono Pass <span class="text-red-600">Calculator</span></h1>
+                <a href="/index.html" class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:bg-blue-50 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <h1 class="font-gaming text-xl font-bold text-slate-800 uppercase tracking-tight">Chrono Pass <span class="text-blue-600">Calculator</span></h1>
             </div>
         </div>
     </nav>
 
     <main class="max-w-6xl mx-auto p-4 space-y-6">
         
-        <!-- STEP 1: STARTER PACKAGE -->
         <section class="space-y-3">
-            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <span class="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center text-[10px]">1</span> 
-                เลือกรูปแบบการเริ่มต้น (Package)
-            </h2>
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">1. เลือกแพ็กเกจเริ่มต้น</h2>
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <div onclick="setPkg('normal')" id="p-normal" class="pkg-card p-4 rounded-2xl active">
-                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Level 0 Start</div>
+                    <div class="text-[9px] font-bold text-slate-400 uppercase mb-1">Start Lv 0</div>
                     <div class="text-sm font-bold text-slate-700">Normal Pass</div>
-                    <div class="text-xs text-green-600 font-bold mt-1">0 SV</div>
+                    <div class="text-xs text-slate-500 font-bold mt-1">🆓 Free Tier</div>
                 </div>
                 <div onclick="setPkg('pre0')" id="p-pre0" class="pkg-card p-4 rounded-2xl">
-                    <div class="text-[10px] font-bold text-blue-400 uppercase mb-1">Level 0 Start</div>
+                    <div class="text-[9px] font-bold text-blue-400 uppercase mb-1">Start Lv 0</div>
                     <div class="text-sm font-bold text-slate-700">Premium Unlock</div>
-                    <div class="text-xs text-blue-600 font-bold mt-1">49 SV</div>
+                    <div class="text-xs text-blue-600 font-bold mt-1">💎 49 SV</div>
                 </div>
                 <div onclick="setPkg('pre25')" id="p-pre25" class="pkg-card p-4 rounded-2xl">
-                    <div class="text-[10px] font-bold text-orange-400 uppercase mb-1">Level 25 Start</div>
+                    <div class="text-[9px] font-bold text-orange-400 uppercase mb-1">Start Lv 25</div>
                     <div class="text-sm font-bold text-slate-700">Premium +25 Lv</div>
-                    <div class="text-xs text-orange-600 font-bold mt-1">115 SV</div>
+                    <div class="text-xs text-orange-600 font-bold mt-1">💎 115 SV</div>
                 </div>
                 <div onclick="setPkg('pre100')" id="p-pre100" class="pkg-card p-4 rounded-2xl">
-                    <div class="text-[10px] font-bold text-purple-400 uppercase mb-1">Level 100 Start</div>
+                    <div class="text-[9px] font-bold text-purple-400 uppercase mb-1">Start Lv 100</div>
                     <div class="text-sm font-bold text-slate-700">Premium +100 Lv</div>
-                    <div class="text-xs text-purple-600 font-bold mt-1">295 SV</div>
+                    <div class="text-xs text-purple-600 font-bold mt-1">💎 295 SV</div>
                 </div>
             </div>
         </section>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <!-- CONTROLS -->
             <div class="lg:col-span-5 space-y-6">
-                <!-- Settings Card -->
                 <div class="game-card p-5 space-y-5">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">เริ่มเล่นวันที่</label>
-                            <input type="date" id="currentDate" onchange="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm font-medium outline-none">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">เริ่มคำนวณวันที่</label>
+                            <input type="date" id="currentDate" onchange="calculate()" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm outline-none">
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">เป้าหมาย (Lv)</label>
-                            <input type="number" id="targetLevel" value="2500" onchange="calculate()" class="w-full bg-slate-100 border border-slate-200 rounded-xl p-2.5 font-gaming font-bold text-xl text-center text-red-600 outline-none">
+                            <input type="number" id="targetLevel" value="2500" onchange="calculate()" class="w-full bg-slate-100 border border-slate-200 rounded-xl p-2.5 font-gaming font-bold text-xl text-center text-blue-600 outline-none">
                         </div>
                     </div>
                     <div class="space-y-2 pt-4 border-t border-slate-50">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">ภารกิจที่ทำสำเร็จ (Quest Log)</p>
                         <div class="grid grid-cols-2 gap-2">
-                            <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-red-50 transition">
-                                <input type="checkbox" id="qDaily" checked onchange="calculate()" class="w-4 h-4 text-red-600 rounded">
+                            <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition">
+                                <input type="checkbox" id="qDaily" checked onchange="calculate()" class="w-4 h-4 text-blue-600 rounded">
                                 <span class="text-xs font-bold text-slate-700">Daily Quest</span>
                             </label>
                             <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-emerald-50 transition">
@@ -93,107 +88,98 @@
                             </label>
                         </div>
                         <div class="space-y-1 bg-slate-50 p-3 rounded-xl">
-                            <label class="flex items-center justify-between text-xs p-1 hover:bg-white rounded transition cursor-pointer"><span class="text-slate-600">Weekly 1: Amdarais</span><input type="checkbox" id="qW1" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"></label>
-                            <label class="flex items-center justify-between text-xs p-1 hover:bg-white rounded transition cursor-pointer"><span class="text-slate-600">Weekly 2: Evil Believer</span><input type="checkbox" id="qW2" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"></label>
-                            <label class="flex items-center justify-between text-xs p-1 hover:bg-white rounded transition cursor-pointer"><span class="text-slate-600">Weekly 3: Infinite Tao</span><input type="checkbox" id="qW3" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"></label>
-                            <label class="flex items-center justify-between text-xs p-1 hover:bg-white rounded transition cursor-pointer"><span class="text-red-500 font-bold">Weekly Zeny: 10M</span><input type="checkbox" id="qWZ" onchange="calculate()" class="w-4 h-4 text-red-500 rounded"></label>
+                            <label class="flex items-center justify-between text-xs p-1"><span class="text-slate-600">Weekly All Steps (300 XP)</span><input type="checkbox" id="qWeeklyAll" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"></label>
+                            <label class="flex items-center justify-between text-xs p-1"><span class="text-emerald-600 font-bold">Weekly Zeny 10M (40 XP)</span><input type="checkbox" id="qWZ" onchange="calculate()" class="w-4 h-4 text-emerald-500 rounded"></label>
                         </div>
                     </div>
                 </div>
 
-                <!-- Shop Card -->
-                <div class="game-card p-5 border-l-4 border-l-amber-400 bg-amber-50/20">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">🛒 ซื้อเลเวลเพิ่ม (Manual Shop)</h3>
-                        <div class="flex items-center gap-2">
-                             <label class="text-[9px] font-bold text-amber-600 uppercase" for="usePromo">Promo</label>
-                             <input type="checkbox" id="usePromo" checked onchange="calculate()" class="w-3 h-3 text-amber-500 rounded">
-                        </div>
-                    </div>
+                <div class="game-card p-5 border-l-4 border-amber-400 bg-amber-50/20">
+                    <h3 class="text-xs font-bold text-slate-700 mb-4 uppercase tracking-widest">🛒 Manual Shop</h3>
                     <div class="grid grid-cols-2 gap-3 mb-4">
                         <div class="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200">
                             <span class="text-[9px] font-bold text-slate-400 pl-1">1 Lv</span>
                             <div class="flex items-center gap-2">
                                 <button onclick="updateShop(1, -1)" class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold">-</button>
-                                <input type="number" id="s1" value="0" class="w-6 text-center font-gaming font-bold bg-transparent outline-none" onchange="calculate()">
+                                <input type="number" id="s1" value="0" class="w-8 text-center font-gaming font-bold bg-transparent outline-none" onchange="calculate()">
                                 <button onclick="updateShop(1, 1)" class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold">+</button>
                             </div>
                         </div>
                         <div class="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200">
                             <span class="text-[9px] font-bold text-slate-400 pl-1">10 Lv</span>
                             <div class="flex items-center gap-2">
-                                <button onclick="updateShop(10, -1)" class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold">-</button>
-                                <input type="number" id="s10" value="0" class="w-6 text-center font-gaming font-bold bg-transparent outline-none" onchange="calculate()">
-                                <button onclick="updateShop(10, 1)" class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold">+</button>
+                                <button onclick="updateShop(10, -10)" class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold">-</button>
+                                <input type="number" id="s10" value="0" class="w-8 text-center font-gaming font-bold bg-transparent outline-none" onchange="calculate()">
+                                <button onclick="updateShop(10, 10)" class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold">+</button>
                             </div>
                         </div>
-                        <div class="flex flex-col bg-white p-2 rounded-xl border border-amber-200 shadow-sm relative overflow-hidden group">
-                             <div class="flex items-center justify-between">
-                                <span class="text-[9px] font-bold text-amber-600 pl-1">100 Lv</span>
-                                <div class="flex items-center gap-2">
-                                    <button onclick="updateShop(100, -1)" class="w-6 h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold">-</button>
-                                    <input type="number" id="s100" value="0" class="w-6 text-center font-gaming font-bold bg-transparent outline-none" onchange="calculate()">
-                                    <button onclick="updateShop(100, 1)" class="w-6 h-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold">+</button>
-                                </div>
-                             </div>
-                             <div class="promo-hint text-[8px] font-bold text-amber-500 mt-1 pl-1 hidden">+500 Medal</div>
+                        <div class="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200">
+                            <span class="text-[9px] font-bold text-blue-600 pl-1">100 Lv</span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="updateShop(100, -100)" class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold">-</button>
+                                <input type="number" id="s100" value="0" class="w-10 text-center font-gaming font-bold bg-transparent outline-none" onchange="calculate()">
+                                <button onclick="updateShop(100, 100)" class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold">+</button>
+                            </div>
                         </div>
-                        <div class="flex flex-col bg-white p-2 rounded-xl border border-orange-200 shadow-sm relative overflow-hidden group">
-                             <div class="flex items-center justify-between">
-                                <span class="text-[9px] font-bold text-orange-700 pl-1">1000 Lv</span>
-                                <div class="flex items-center gap-2">
-                                    <button onclick="updateShop(1000, -1)" class="w-6 h-6 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center font-bold">-</button>
-                                    <input type="number" id="s1000" value="0" class="w-6 text-center font-gaming font-bold bg-transparent outline-none" onchange="calculate()">
-                                    <button onclick="updateShop(1000, 1)" class="w-6 h-6 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center font-bold">+</button>
-                                </div>
-                             </div>
-                             <div class="promo-hint text-[8px] font-bold text-orange-500 mt-1 pl-1 hidden">+6K Medal</div>
+                        <div class="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200">
+                            <span class="text-[9px] font-bold text-orange-600 pl-1">1000 Lv</span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="updateShop(1000, -1000)" class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold">-</button>
+                                <input type="number" id="s1000" value="0" class="w-10 text-center font-gaming font-bold bg-transparent outline-none" onchange="calculate()">
+                                <button onclick="updateShop(1000, 1000)" class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-bold">+</button>
+                            </div>
                         </div>
                     </div>
-                    <button onclick="magicFill()" class="w-full py-2.5 bg-white border-2 border-amber-400 text-amber-600 text-[10px] font-bold rounded-xl hover:bg-amber-400 hover:text-white transition-all uppercase tracking-widest">✨ Magic Fill (เติมให้ถึงเป้าหมาย)</button>
+                    <button onclick="magicFill()" class="w-full py-2.5 bg-white border-2 border-amber-400 text-amber-600 text-[10px] font-bold rounded-xl hover:bg-amber-400 transition-all uppercase tracking-widest">✨ Magic Fill</button>
                 </div>
 
-                <!-- SUMMARY DASHBOARD -->
                 <div class="game-card bg-slate-900 text-white p-6 relative overflow-hidden shadow-2xl">
-                    <div class="absolute -right-4 -top-4 w-24 h-24 bg-red-600/20 rounded-full blur-2xl"></div>
+                    <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-600/20 rounded-full blur-2xl"></div>
                     <div class="relative z-10 space-y-6">
                         <div class="flex justify-between items-center border-b border-white/10 pb-3">
-                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Summary Result</h3>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-red-600 uppercase font-gaming" id="resType">PREMIUM</span>
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Summary</h3>
+                            <span id="resType" class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-600 uppercase font-gaming">PREMIUM</span>
                         </div>
                         <div class="flex justify-between items-end">
-                            <div><p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Total Silvervine</p><div class="flex items-baseline gap-1"><span class="text-5xl font-gaming font-bold text-amber-400 leading-none" id="resSV">0</span><span class="text-xs font-bold text-amber-500">SV</span></div></div>
-                            <div class="text-right"><p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Final Level</p><div class="flex items-baseline gap-1 justify-end"><span class="text-4xl font-gaming font-bold leading-none" id="resLevel">0</span><span class="text-xs font-bold text-slate-500 uppercase">Lv</span></div></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 pt-4 text-[10px] font-medium border-t border-white/5">
-                             <div class="flex justify-between"><span class="opacity-50">Grind:</span><span class="text-blue-400 font-bold" id="resGrind">+0 Lv</span></div>
-                             <div class="flex justify-between"><span class="opacity-50">Shop:</span><span class="text-amber-400 font-bold" id="resShop">+0 Lv</span></div>
-                             <div class="flex justify-between border-t border-white/5 pt-2"><span class="opacity-50">Free Medal:</span><span class="text-amber-200 font-bold" id="resMedal">0</span></div>
-                             <div class="flex justify-between border-t border-white/5 pt-2"><span class="opacity-50">Quest Zeny:</span><span class="text-emerald-400 font-bold" id="resZeny">0M</span></div>
+                            <div><p class="text-[10px] font-bold text-slate-500 uppercase">Total Silvervine</p><div class="flex items-baseline gap-1"><span class="text-5xl font-gaming font-bold text-amber-400 leading-none" id="resSV">0</span><span class="text-xs font-bold text-amber-500">SV</span></div></div>
+                            <div class="text-right"><p class="text-[10px] font-bold text-slate-500 uppercase">Final Level</p><div class="flex items-baseline gap-1 justify-end"><span class="text-4xl font-gaming font-bold leading-none" id="resLevel">0</span><span class="text-xs font-bold text-slate-500 uppercase">Lv</span></div></div>
                         </div>
                     </div>
                 </div>
-                <button onclick="calculate()" class="w-full btn-roc py-5 rounded-2xl font-bold text-lg tracking-widest uppercase shadow-rose-200">RE-CALCULATE</button>
             </div>
 
-            <!-- INVENTORY -->
+            <!-- RIGHT: INVENTORY DETAIL -->
             <div class="lg:col-span-7">
-                <div class="game-card h-full flex flex-col max-h-[95vh] border-t-4 border-t-red-600">
-                    <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                        <h2 class="font-bold text-slate-700 flex items-center gap-2 tracking-wide uppercase"><span class="text-xl">🎒</span> Inventory Preview</h2>
-                        <div class="text-[10px] font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-100 uppercase">LV 0 - <span id="resFinalLv">0</span></div>
+                <div class="game-card h-full flex flex-col max-h-[95vh] border-t-4 border-blue-600">
+                    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                        <h2 class="font-bold text-slate-700 uppercase tracking-wide">🎒 Inventory Detail</h2>
+                        <div class="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 uppercase">TARGET LV <span id="resFinalLv">0</span></div>
                     </div>
                     <div class="flex-1 overflow-y-auto p-5 custom-scroll space-y-6 bg-slate-50/30">
                         <div class="space-y-3">
-                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Rare & Milestones</h3>
+                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">✨ Rare Milestones</h3>
                             <div id="rareList" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
                         </div>
-                        <div class="space-y-3">
-                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> All Items Summary</h3>
-                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                                <table class="w-full text-xs sm:text-sm">
-                                    <tbody id="totalList" class="divide-y divide-slate-50 text-slate-600"></tbody>
-                                </table>
+                        
+                        <div id="boxBonusSection" class="space-y-3 bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                            <h3 class="text-[10px] font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">📦 โบนัสกล่องสุ่ม (100+)</h3>
+                            <div id="boxBonusList" class="grid grid-cols-3 gap-2"></div>
+                            <p class="text-[8px] text-blue-400 italic mt-1 font-bold">* นับเมื่อเลเวลเกิน 100 และเป็น Premium เท่านั้น</p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">📊 Inventory Summary</h3>
+                            
+                            <div class="space-y-4">
+                                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                    <div class="bg-slate-50 px-4 py-2 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-widest">🆓 Free Rewards</div>
+                                    <table class="w-full text-xs"><tbody id="freeTotalList" class="divide-y divide-slate-50 text-slate-600"></tbody></table>
+                                </div>
+
+                                <div id="premiumInventorySection" class="bg-white rounded-2xl border border-blue-100 overflow-hidden shadow-sm">
+                                    <div class="bg-blue-50 px-4 py-2 border-b border-blue-100 text-[10px] font-bold text-blue-600 uppercase tracking-widest">💎 Premium Rewards</div>
+                                    <table class="w-full text-xs"><tbody id="premiumTotalList" class="divide-y divide-slate-50 text-slate-600"></tbody></table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -203,136 +189,142 @@
     </main>
 
     <script>
-        const XP_VAL = { daily: 30, dailyzeny: 30, w1: 80, w2: 100, w3: 120, wzeny: 40 };
         const EVENT_END = new Date('2026-03-25T05:59:00');
-        const PROMO_START = new Date('2026-02-18T00:00:00');
-        const PROMO_END = new Date('2026-02-25T05:59:00');
         const PKGS = {
-            'normal': { start: 0, cost: 0, type: 'normal', item: '[Normal] Chrono Battle Pass' },
-            'pre0': { start: 0, cost: 49, type: 'premium', item: '[Premium] Chrono Battle Pass' },
-            'pre25': { start: 25, cost: 115, type: 'premium', item: '[Premium] Chrono Battle Pass' },
-            'pre100': { start: 100, cost: 295, type: 'premium', item: '[Premium] Chrono Battle Pass' }
-        };
-        const REWARDS = {
-            1: [{n: "Premium Service 10Day Box", q: 1, rare: true}, {n: "Mysterious Medal", q: 10, rare: true}],
-            10: [{n: "Treasure Box I", q: 1}],
-            100: [{n: "Chrono Pass Ticket", q: 1, rare: true}],
-            200: [{n: "Costume Cosmic Connection", q: 1, rare: true}, {n: "Treasure Box III", q: 2}],
-            300: [{n: "[Not For Sale] Chrono Pass Ticket", q: 1, rare: true}, {n: "Treasure Box I", q: 30}, {n: "Treasure Box III", q: 3}],
-            350: [{n: "[Event] Special Enchant Temporal Boots Ticket", q: 1, rare: true}, {n: "Guarantee Weapon 7 Up Pack", q: 1, rare: true}],
-            400: [{n: "Guarantee Armor 7 Up Pack", q: 1, rare: true}],
-            500: [{n: "Treasure Box II", q: 30}],
-            600: [{n: "Guarantee Weapon 9 Up Pack", q: 1, rare: true}],
-            700: [{n: "Guarantee Armor 9 Up Pack", q: 1, rare: true}],
-            900: [{n: "Treasure Box III", q: 30}],
-            1000: [{n: "Treasure Box III", q: 10, rare: true}],
-            1500: [{n: "Guarantee Weapon 11 Up Pack", q: 1, rare: true}],
-            2000: [{n: "Guarantee Armor 11 Up Pack", q: 1, rare: true}],
-            2500: [{n: "Costume Golden Valkyrie Wings", q: 1, rare: true}]
+            'normal': { start: 0, cost: 0, type: 'normal', item: '[Normal] Chrono Pass' },
+            'pre0': { start: 0, cost: 49, type: 'premium', item: '[Premium] Chrono Pass' },
+            'pre25': { start: 25, cost: 115, type: 'premium', item: '[Premium] Chrono Pass' },
+            'pre100': { start: 100, cost: 295, type: 'premium', item: '[Premium] Chrono Pass' }
         };
 
-        const setUI = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-        const getNum = (id) => { const el = document.getElementById(id); return el ? (parseInt(el.value) || 0) : 0; };
+        const REWARDS = {
+            1: [{n: "Premium Service 10D Box", q: 1, rare: true, p: true}, {n: "Mysterious Medal", q: 10, rare: true, p: false}],
+            23: [{n: "Mysterious Medal", q: 3, p: false}],
+            100: [{n: "Chrono Pass Ticket", q: 1, rare: true, p: true}],
+            200: [{n: "Costume Cosmic Connection", q: 1, rare: true, p: true}, {n: "Treasure Box III", q: 2, p: true}],
+            300: [{n: "[NFS] Chrono Pass Ticket", q: 1, rare: true, p: true}, {n: "Treasure Box I", q: 30, p: true}, {n: "Treasure Box III", q: 3, p: true}],
+            350: [{n: "Temporal Boots Ticket", q: 1, rare: true, p: true}, {n: "Weapon 7 Up Pack", q: 1, rare: true, p: true}],
+            400: [{n: "Guarantee Armor 7 Up Pack", q: 1, rare: true, p: true}],
+            500: [{n: "Treasure Box II", q: 30, p: true}],
+            600: [{n: "Weapon 9 Up Pack", q: 1, rare: true, p: true}],
+            700: [{n: "Armor 9 Up Pack", q: 1, rare: true, p: true}],
+            900: [{n: "Treasure Box III", q: 30, p: true}],
+            1000: [{n: "Treasure Box III", q: 10, rare: true, p: true}],
+            1500: [{n: "Weapon 11 Up Pack", q: 1, rare: true, p: true}],
+            2000: [{n: "Armor 11 Up Pack", q: 1, rare: true, p: true}],
+            2500: [{n: "Costume Golden Valkyrie Wings", q: 1, rare: true, p: true}]
+        };
+
         let currentPkg = 'normal';
         document.getElementById('currentDate').valueAsDate = new Date();
 
-        function setPkg(id) {
-            currentPkg = id;
-            document.querySelectorAll('.pkg-card').forEach(el => el.classList.remove('active'));
-            const targetEl = document.getElementById(`p-${id}`); if (targetEl) targetEl.classList.add('active');
-            calculate();
+        function setPkg(id) { currentPkg = id; document.querySelectorAll('.pkg-card').forEach(el => el.classList.remove('active')); document.getElementById(`p-${id}`).classList.add('active'); calculate(); }
+        function updateShop(v, d) { const el = document.getElementById('s'+v); if(el) { el.value = Math.max(0, parseInt(el.value || 0) + d); calculate(); } }
+
+        function getItemEmoji(name) {
+            if (name.includes("Premium Service")) return "🎖️";
+            if (name.includes("Medal")) return "🏅";
+            if (name.includes("Ticket")) return "🎫";
+            if (name.includes("Costume")) return "🎭";
+            if (name.includes("Weapon")) return "⚔️";
+            if (name.includes("Armor")) return "🛡️";
+            if (name.includes("Treasure Box")) return "🎁";
+            if (name.includes("Wings")) return "🧚";
+            if (name.includes("Temporal Boots")) return "👢";
+            if (name.includes("Chrono Pass")) return "💎";
+            return "🔹";
         }
-        function updateShop(val, delta) { const el = document.getElementById('s' + val); if (el) { el.value = Math.max(0, parseInt(el.value || 0) + delta); calculate(); } }
-        function magicFill() {
-            ['s1', 's10', 's100', 's1000'].forEach(id => { const el = document.getElementById(id); if (el) el.value = 0; });
-            calculate(true);
-            const grind = window._grindLv || 0;
-            const target = getNum('targetLevel');
-            let needed = Math.max(0, target - PKGS[currentPkg].start - grind);
-            if(needed > 0) {
-                const sv = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
-                sv('s1000', Math.floor(needed / 1000)); needed %= 1000;
-                sv('s100', Math.floor(needed / 100)); needed %= 100;
-                sv('s10', Math.floor(needed / 10)); needed %= 10;
-                sv('s1', needed);
-            }
-            calculate();
-        }
-        function calculate(dryRun = false) {
+
+        function calculate() {
             const pkg = PKGS[currentPkg];
-            const target = getNum('targetLevel') || 2500;
-            const dateVal = document.getElementById('currentDate').value;
-            const now = dateVal ? new Date(dateVal) : new Date();
-            const usePromo = document.getElementById('usePromo')?.checked ?? true;
-
-            const days = Math.max(0, Math.ceil((EVENT_END - now) / 86400000)) + 1;
-            const weeks = Math.ceil(days / 7);
-            let dailyXP = 0;
-            if(document.getElementById('qDaily')?.checked) dailyXP += (pkg.type === 'premium' ? 30 : 20);
-            if(document.getElementById('qZenyD')?.checked) dailyXP += 30;
-            let weeklyXP = 0;
-            if(document.getElementById('qW1')?.checked) weeklyXP += XP_VAL.w1;
-            if(document.getElementById('qW2')?.checked) weeklyXP += XP_VAL.w2;
-            if(document.getElementById('qW3')?.checked) weeklyXP += XP_VAL.w3;
-            if(document.getElementById('qWZ')?.checked) weeklyXP += XP_VAL.wzeny;
-
-            const grindLv = Math.floor(((dailyXP * days) + (weeklyXP * weeks)) / 10);
-            window._grindLv = grindLv;
-            if(dryRun) return;
-
-            let s1 = getNum('s1'), s10 = getNum('s10'), s100 = getNum('s100'), s1000 = getNum('s1000');
-            let shopLv = (s1 * 1) + (s10 * 10) + (s100 * 100) + (s1000 * 1000);
-            let shopCost = (s1 * 3) + (s10 * 30) + (s100 * 300) + (s1000 * 3000);
+            const target = parseInt(document.getElementById('targetLevel').value) || 2500;
+            const now = new Date(document.getElementById('currentDate').value);
+            const daysLeft = Math.max(0, Math.ceil((EVENT_END - now) / 86400000)) + 1;
+            const weeksLeft = Math.ceil(daysLeft / 7);
             
-            let promoMedal = 0;
-            const isPromoTime = (now >= PROMO_START && now <= PROMO_END);
-            if(usePromo && isPromoTime) {
-                promoMedal += (s100 * 500) + (s1000 * 6000);
-                document.querySelectorAll('.promo-hint').forEach(el => el.classList.remove('hidden'));
-            } else {
-                document.querySelectorAll('.promo-hint').forEach(el => el.classList.add('hidden'));
-            }
+            let dailyXP = 0;
+            if(document.getElementById('qDaily').checked) dailyXP += (pkg.type === 'premium' ? 30 : 20);
+            if(document.getElementById('qZenyD').checked) dailyXP += 30;
+            let weeklyXP = (document.getElementById('qWeeklyAll').checked ? 300 : 0) + (document.getElementById('qWZ').checked ? 40 : 0);
+            
+            const grindLv = Math.floor(((dailyXP * daysLeft) + (weeklyXP * weeksLeft)) / 10);
+            const shopLv = (parseInt(document.getElementById('s1').value)||0) + (parseInt(document.getElementById('s10').value)||0) + (parseInt(document.getElementById('s100').value)||0) + (parseInt(document.getElementById('s1000').value)||0);
+            const finalLv = pkg.start + grindLv + shopLv;
+            
+            document.getElementById('resSV').innerText = (pkg.cost + (shopLv * 3)).toLocaleString();
+            document.getElementById('resLevel').innerText = finalLv.toLocaleString();
+            document.getElementById('resFinalLv').innerText = finalLv.toLocaleString();
+            document.getElementById('resType').innerText = pkg.type.toUpperCase();
 
-            let finalLv = pkg.start + grindLv + shopLv;
-            let costZeny = (document.getElementById('qZenyD')?.checked ? 1 * days : 0) + (document.getElementById('qWZ')?.checked ? 10 * weeks : 0);
+            let freeInv = {}; let preInv = {}; let rares = [];
+            let bonusBoxes = { "I": 0, "II": 0, "III": 0 };
+            
+            if(pkg.type === 'normal') freeInv[pkg.item] = 1; else preInv[pkg.item] = 1;
+            rares.push({n: pkg.item, q: 1, p: pkg.type !== 'normal'});
 
-            setUI('resSV', (pkg.cost + shopCost).toLocaleString());
-            setUI('resGrind', `+${grindLv} Lv`);
-            setUI('resShop', `+${shopLv} Lv`);
-            setUI('resMedal', promoMedal.toLocaleString());
-            setUI('resZeny', costZeny + 'M');
-            setUI('resLevel', finalLv.toLocaleString());
-            setUI('resFinalLv', finalLv.toLocaleString());
-            setUI('resType', pkg.type.toUpperCase());
-
-            let inventory = {}; let rares = [];
-            const add = (n, q, r) => { if(r) rares.push({n, q}); else { if(!inventory[n]) inventory[n]=0; inventory[n]+=q; } };
-            add(pkg.item, 1, true); 
-            if(promoMedal > 0) add("Mysterious Medal (Promo)", promoMedal, true);
-            for(let lv = 1; lv <= finalLv; lv++) {
-                if(REWARDS[lv]) REWARDS[lv].forEach(i => add(i.n, i.q, i.rare));
-                if(lv > 100 && pkg.type === 'premium') {
-                    if(lv%10===0) add("Treasure Box I", 1, false);
-                    if(lv%20===0) add("Treasure Box II", 1, false);
-                    if(lv%50===0) add("Treasure Box III", 1, false);
+            for(let l = 1; l <= finalLv; l++) {
+                if(REWARDS[l]) {
+                    REWARDS[l].forEach(item => {
+                        if(pkg.type === 'normal' && item.p) return;
+                        if(item.p) preInv[item.n] = (preInv[item.n] || 0) + item.q;
+                        else freeInv[item.n] = (freeInv[item.n] || 0) + item.q;
+                        if(item.rare) rares.push({...item});
+                    });
+                }
+                if(l > 100 && pkg.type === 'premium') {
+                    if(l % 10 === 0) { preInv["Treasure Box I"] = (preInv["Treasure Box I"] || 0) + 1; bonusBoxes["I"]++; }
+                    if(l % 20 === 0) { preInv["Treasure Box II"] = (preInv["Treasure Box II"] || 0) + 1; bonusBoxes["II"]++; }
+                    if(l % 50 === 0) { preInv["Treasure Box III"] = (preInv["Treasure Box III"] || 0) + 1; bonusBoxes["III"]++; }
                 }
             }
 
-            let rareHTML = ""; let aggRares = {};
-            rares.forEach(r => aggRares[r.n] = (aggRares[r.n]||0) + r.q);
-            Object.entries(aggRares).forEach(([n, q]) => {
-                let icon = n.includes("Medal") ? "🏅" : n.includes("Costume") ? "🎭" : n.includes("Ticket") ? "🎫" : n.includes("Pack") ? "📦" : "🔹";
-                rareHTML += `<div class="bg-white border border-slate-200 p-2.5 rounded-xl flex justify-between items-center shadow-sm group hover:border-rose-300 transition">
-                    <div class="flex items-center gap-2 overflow-hidden"><span class="text-lg">${icon}</span><span class="text-[10px] font-bold text-slate-700 truncate">${n}</span></div>
-                    <span class="text-[10px] font-gaming font-bold bg-slate-50 text-rose-600 px-2 rounded-md">x${q.toLocaleString()}</span>
-                </div>`;
-            });
-            const rl = document.getElementById('rareList'); if(rl) rl.innerHTML = rareHTML || `<div class="col-span-2 text-center text-xs text-slate-400 py-4 italic">ไม่มีไอเทมแรร์</div>`;
-            let totalHTML = "";
-            Object.entries(inventory).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n, q]) => {
-                totalHTML += `<tr class="hover:bg-slate-50 transition"><td class="p-3 pl-5 text-[11px] font-medium text-slate-600">${n}</td><td class="p-3 text-right pr-5 text-xs font-gaming font-bold text-slate-800">x${q.toLocaleString()}</td></tr>`;
-            });
-            const tl = document.getElementById('totalList'); if(tl) tl.innerHTML = totalHTML;
+            document.getElementById('rareList').innerHTML = rares.map(i => `
+                <div class="bg-white border ${i.p ? 'border-blue-100' : 'border-slate-100'} p-2.5 rounded-xl flex justify-between items-center shadow-sm">
+                    <span class="text-[10px] font-bold text-slate-700 flex items-center gap-1.5">
+                        <span class="text-xs">${getItemEmoji(i.n)}</span> ${i.n}
+                    </span>
+                    <span class="text-[10px] font-gaming font-bold ${i.p ? 'text-blue-600 bg-blue-50' : 'text-slate-500 bg-slate-50'} px-2 py-0.5 rounded-md">x${i.q}</span>
+                </div>`).join('');
+
+            const bonusSection = document.getElementById('boxBonusSection');
+            const preSection = document.getElementById('premiumInventorySection');
+            if(pkg.type === 'normal') { bonusSection.classList.add('hidden'); preSection.classList.add('hidden'); } 
+            else { bonusSection.classList.remove('hidden'); preSection.classList.remove('hidden'); }
+
+            document.getElementById('boxBonusList').innerHTML = `
+                <div class="bg-white border border-blue-200 p-2 rounded-xl text-center shadow-sm"><div class="text-[8px] font-bold text-slate-400 uppercase">Box I</div><div class="text-xl font-gaming font-bold text-blue-600">x${bonusBoxes["I"]}</div></div>
+                <div class="bg-white border border-blue-200 p-2 rounded-xl text-center shadow-sm"><div class="text-[8px] font-bold text-slate-400 uppercase">Box II</div><div class="text-xl font-gaming font-bold text-emerald-600">x${bonusBoxes["II"]}</div></div>
+                <div class="bg-white border border-blue-200 p-2 rounded-xl text-center shadow-sm"><div class="text-[8px] font-bold text-slate-400 uppercase">Box III</div><div class="text-xl font-gaming font-bold text-purple-600">x${bonusBoxes["III"]}</div></div>`;
+
+            const renderTable = (inv) => Object.entries(inv).sort((a,b)=>b[1]-a[1]).map(([n,q]) => `
+                <tr class="hover:bg-blue-50/30 transition">
+                    <td class="p-3 text-[11px] font-medium text-slate-600 flex items-center gap-2"><span>${getItemEmoji(n)}</span> ${n}</td>
+                    <td class="p-3 text-right font-gaming font-bold text-blue-800">x${q.toLocaleString()}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('freeTotalList').innerHTML = renderTable(freeInv) || '<tr><td colspan="2" class="p-4 text-center text-slate-300 italic text-xs font-bold uppercase">No Free Items</td></tr>';
+            document.getElementById('premiumTotalList').innerHTML = renderTable(preInv);
+        }
+
+        function magicFill() {
+            const target = parseInt(document.getElementById('targetLevel').value) || 2500;
+            ['s1', 's10', 's100', 's1000'].forEach(id => document.getElementById(id).value = 0);
+            calculate();
+            const pkg = PKGS[currentPkg];
+            const now = new Date(document.getElementById('currentDate').value);
+            const d = Math.max(0, Math.ceil((EVENT_END - now) / 86400000)) + 1;
+            const w = Math.ceil(d / 7);
+            const dailyXP = (pkg.type === 'premium' ? 30 : 20) + 30;
+            const currentGrind = Math.floor(((dailyXP * d) + (340 * w)) / 10);
+            let needed = Math.max(0, target - pkg.start - currentGrind);
+            if(needed > 0) {
+                document.getElementById('s1000').value = Math.floor(needed / 1000) * 1000; needed %= 1000;
+                document.getElementById('s100').value = Math.floor(needed / 100) * 100; needed %= 100;
+                document.getElementById('s10').value = Math.floor(needed / 10) * 10; needed %= 10;
+                document.getElementById('s1').value = needed;
+            }
+            calculate();
         }
         window.onload = calculate;
     </script>
