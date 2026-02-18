@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chrono Pass Daily Diary (ROC GGT Version)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --roc-blue: #3b82f6; --roc-red: #ef4444; }
+        body { font-family: 'Kanit', sans-serif; background-color: #e6ecf3; background-image: radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%); background-attachment: fixed; }
+        .font-gaming { font-family: 'Rajdhani', sans-serif; }
+        .rox-panel { background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.5) inset; border: 1px solid #dae1e7; overflow: hidden; }
+        .rox-header { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
+        .btn-roc { transition: all 0.1s active; box-shadow: 0 4px 0 #b91c1c; }
+        .btn-roc:active { transform: translateY(2px); box-shadow: 0 1px 0 #b91c1c; }
+        .rox-input { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; outline: none; }
+        
+        .quest-step { position: relative; padding-left: 30px; }
+        .quest-step::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: #e2e8f0; }
+        .quest-step:last-child::before { display: none; }
+        .step-bullet { position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; background: white; border: 2px solid #cbd5e1; z-index: 10; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+        .step-active .step-bullet { border-color: #ef4444; color: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.2); }
+        .step-done .step-bullet { background: #ef4444; border-color: #ef4444; color: white; }
+        
+        .package-card { cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .package-card.active { border-color: #ef4444; background-color: #fff1f2; }
+    </style>
+</head>
+<body class="p-3 md:p-6 text-slate-700">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center text-xs shadow-lg shadow-red-200 text-white font-gaming leading-tight text-center">ROC<br>GGT</div>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800 leading-tight">Chrono Pass <span class="text-red-600">Diary</span></h1>
+                    <p class="text-xs text-slate-500 font-medium">Ragnarok Online Classic - บันทึกเลเวลรายวัน</p>
+                </div>
+            </div>
+            <button onclick="resetData()" class="text-xs font-bold text-slate-400 bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 transition">Reset All</button>
+        </header>
+
+        <!-- STARTER PACKAGE -->
+        <div class="rox-panel mb-6 border-t-4 border-t-red-500 shadow-sm">
+            <div class="rox-header"><h2 class="font-bold text-slate-700 flex items-center gap-2">🎁 เลือกแพ็กเกจที่ซื้อ (Starter Package)</h2></div>
+            <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div onclick="selectPackage('normal')" id="pkg-normal" class="package-card p-4 rounded-xl border-slate-200 bg-white shadow-sm hover:shadow-md">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lv. 0 Start</div>
+                    <div class="text-base font-bold text-slate-700 mt-1">Normal Pass</div>
+                    <div class="text-xs text-green-600 font-bold mt-1">0 SV</div>
+                </div>
+                <div onclick="selectPackage('pre0')" id="pkg-pre0" class="package-card p-4 rounded-xl border-slate-200 bg-white shadow-sm hover:shadow-md">
+                    <div class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Lv. 0 Start</div>
+                    <div class="text-base font-bold text-slate-700 mt-1">Premium Unlock</div>
+                    <div class="text-xs text-blue-600 font-bold mt-1">49 SV</div>
+                </div>
+                <div onclick="selectPackage('pre25')" id="pkg-pre25" class="package-card p-4 rounded-xl border-slate-200 bg-white shadow-sm hover:shadow-md">
+                    <div class="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Lv. 25 Start</div>
+                    <div class="text-base font-bold text-slate-700 mt-1">Premium +25 Lv</div>
+                    <div class="text-xs text-orange-600 font-bold mt-1">115 SV</div>
+                </div>
+                <div onclick="selectPackage('pre100')" id="pkg-pre100" class="package-card p-4 rounded-xl border-slate-200 bg-white shadow-sm hover:shadow-md">
+                    <div class="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Lv. 100 Start</div>
+                    <div class="text-base font-bold text-slate-700 mt-1">Premium +100 Lv</div>
+                    <div class="text-xs text-purple-600 font-bold mt-1">295 SV</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- LEFT: Progress -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="rox-panel border-t-4 border-t-red-600">
+                    <div class="p-5">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Current Level</span>
+                            <span id="bpBadge" class="text-[9px] font-bold px-2 py-0.5 rounded-lg border border-red-100 bg-red-50 text-red-600">ROC GGT</span>
+                        </div>
+                        <div class="flex items-baseline gap-1 mb-4">
+                            <span class="text-6xl font-gaming font-bold text-slate-800" id="currentLevel">0</span>
+                            <span class="text-2xl font-gaming text-slate-400">/ 2500</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-2">
+                            <div id="progressBar" class="bg-red-500 h-full transition-all duration-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase pb-2">
+                            <span>Status</span><span id="percentDisp">0%</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-3 border-t border-slate-50">
+                            <span class="text-xs font-bold text-slate-500">TOTAL SPENT</span>
+                            <div class="text-right"><span class="text-xl font-gaming font-bold text-red-600" id="totalSpentDisp">0</span> <span class="text-[10px] font-bold text-red-400">SV</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rox-panel">
+                    <div class="rox-header flex justify-between items-center">
+                        <h2 class="font-bold text-sm text-slate-600">📊 ลำดับภารกิจ Weekly</h2>
+                        <!-- Added missing element that caused the error -->
+                        <div id="weekRangeDisp" class="text-[9px] bg-red-100 px-2 py-0.5 rounded text-red-600 font-bold">ยังไม่เริ่มสัปดาห์</div>
+                    </div>
+                    <div class="p-5 space-y-5">
+                        <div id="vStep1" class="quest-step step-active"><div class="step-bullet">1</div><div class="text-xs font-bold text-slate-700">Amdarais</div><div class="text-[10px] text-slate-400" id="vStatus1">ยังไม่เริ่ม</div></div>
+                        <div id="vStep2" class="quest-step"><div class="step-bullet">2</div><div class="text-xs font-bold text-slate-700">Evil Believer (x2)</div><div class="text-[10px] text-slate-400" id="vStatus2">ล็อกอยู่</div></div>
+                        <div id="vStep3" class="quest-step"><div class="step-bullet">3</div><div class="text-xs font-bold text-slate-700">Infinite Tao (x3)</div><div class="text-[10px] text-slate-400" id="vStatus3">ล็อกอยู่</div></div>
+                        <div id="vStepZ" class="quest-step"><div class="step-bullet">Z</div><div class="text-xs font-bold text-slate-700">10M Zeny</div><div class="text-[10px] text-slate-400" id="vStatusZ">ยังไม่ทำ</div></div>
+                        <div id="weekResetNotice" class="text-[10px] text-red-500 font-bold bg-red-50 p-2 rounded-lg hidden mt-2">⏳ รีเซ็ตใน <span id="daysToReset">0</span> วัน</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Logger -->
+            <div class="lg:col-span-8 space-y-6">
+                <div class="rox-panel border-t-4 border-t-yellow-400 shadow-lg shadow-slate-200">
+                    <div class="rox-header flex justify-between items-center">
+                        <h2 class="font-bold text-slate-700">✍️ บันทึกวันนี้</h2>
+                        <input type="date" id="logDate" onchange="updateFormUI()" class="bg-white border border-slate-200 rounded-lg p-1 text-xs font-bold text-red-600 shadow-sm outline-none">
+                    </div>
+                    <div class="p-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-4">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Daily Quest</p>
+                                <div class="space-y-2">
+                                    <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-red-50 transition border border-slate-100">
+                                        <input type="checkbox" id="qDaily" checked class="w-5 h-5 text-red-600 rounded border-slate-300 shadow-sm">
+                                        <div><div class="text-sm font-bold">Daily Quest</div><div class="text-[10px] text-red-400 font-bold" id="dailyXpHint">30 XP</div></div>
+                                    </label>
+                                    <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-emerald-50 transition border border-slate-100">
+                                        <input type="checkbox" id="qZenyD" checked class="w-5 h-5 text-emerald-600 rounded border-slate-300 shadow-sm">
+                                        <div><div class="text-sm font-bold">Daily Zeny 1M</div><div class="text-[10px] text-emerald-400 font-bold">30 XP</div></div>
+                                    </label>
+                                </div>
+                                <div id="weeklyInputArea" class="space-y-2 pt-2 border-t border-slate-50"></div>
+                            </div>
+                            <div class="space-y-4">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Buy Levels (SV)</p>
+                                <div class="bg-red-50 p-6 rounded-2xl border border-red-100">
+                                    <label class="block text-xs font-bold text-red-700 mb-3 uppercase">ซื้อเพิ่มวันนี้ (Lv)</label>
+                                    <div class="flex items-center gap-4">
+                                        <input type="number" id="buyLv" value="0" min="0" class="rox-input w-full text-center text-3xl font-gaming font-bold text-red-600 shadow-inner">
+                                        <div class="text-center min-w-[70px]"><div class="text-xl font-gaming font-bold text-red-800" id="svCostDisp">0</div><div class="text-[10px] font-bold text-red-400 uppercase">SV</div></div>
+                                    </div>
+                                </div>
+                                <button onclick="saveEntry()" class="w-full bg-red-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 active:scale-95 transition btn-roc text-lg uppercase tracking-widest">บันทึกข้อมูล (Save)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rox-panel"><div class="rox-header"><h2 class="font-bold text-slate-700">📖 History Log</h2></div><div id="diaryList" class="divide-y divide-slate-100 min-h-[100px]"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const XP_VAL = { daily: 30, dailyzeny: 30, w1: 80, w2: 100, w3: 120, wzeny: 40 };
+        const NORMAL_DAILY_XP = 20;
+        const PACKAGES = {
+            'normal': { name: 'Normal Pass', startLv: 0, cost: 0, bpItem: '[Normal] Chrono Battle Pass', type: 'normal' },
+            'pre0': { name: 'Premium Pass', startLv: 0, cost: 49, bpItem: '[Premium] Chrono Battle Pass', type: 'premium' },
+            'pre25': { name: 'Premium +25 Lv', startLv: 25, cost: 115, bpItem: '[Premium] Chrono Battle Pass', type: 'premium' },
+            'pre100': { name: 'Premium +100 Lv', startLv: 100, cost: 295, bpItem: '[Premium] Chrono Battle Pass', type: 'premium' }
+        };
+        const REWARDS = {
+            1: [{n: "Premium Service 10Day Box", q: 1, rare: true}, {n: "Mysterious Medal", q: 10, rare: true}],
+            10: [{n: "Treasure Box I", q: 1}],
+            100: [{n: "Chrono Pass Ticket", q: 1, rare: true}],
+            200: [{n: "Costume Cosmic Connection", q: 1, rare: true}],
+            300: [{n: "Chrono Pass Ticket", q: 1, rare: true}],
+            600: [{n: "Guarantee Weapon 9 Up Pack", q: 1, rare: true}],
+            1000: [{n: "Treasure Box III", q: 10, rare: true}],
+            2500: [{n: "Costume Golden Valkyrie Wings", q: 1, rare: true}]
+        };
+
+        let entries = JSON.parse(localStorage.getItem('roc_ggt_diary_v3_entries')) || [];
+        let config = JSON.parse(localStorage.getItem('roc_ggt_diary_v3_config')) || { package: 'normal' };
+
+        document.getElementById('logDate').valueAsDate = new Date();
+
+        function selectPackage(pkgId) {
+            config.package = pkgId;
+            localStorage.setItem('roc_ggt_diary_v3_config', JSON.stringify(config));
+            render();
+        }
+
+        function getWeeklyState(targetDateStr) {
+            const past = entries.filter(e => e.date < targetDateStr).sort((a,b) => a.date.localeCompare(b.date));
+            let start = null; let prog = { w1: false, w2: 0, w3: 0, wzeny: false };
+            past.forEach(e => {
+                if (start) { if (((new Date(e.date) - new Date(start)) / 86400000) >= 7) { start = null; prog = { w1: false, w2: 0, w3: 0, wzeny: false }; } }
+                if (!start && e.quests.some(q => ['w1', 'w2', 'w3', 'wzeny'].includes(q))) start = e.date;
+                if (start) {
+                    if (e.quests.includes('w1')) prog.w1 = true;
+                    if (e.quests.includes('w2')) prog.w2 += 1;
+                    if (e.quests.includes('w3')) prog.w3 += 1;
+                    if (e.quests.includes('wzeny')) prog.wzeny = true;
+                }
+            });
+            return { currentWeekStart: start, prog };
+        }
+
+        function updateFormUI() {
+            const dateStr = document.getElementById('logDate').value;
+            const pkg = PACKAGES[config.package];
+            const { currentWeekStart, prog } = getWeeklyState(dateStr);
+            const container = document.getElementById('weeklyInputArea');
+            const existing = entries.find(e => e.date === dateStr);
+            const quests = existing ? existing.quests : [];
+
+            let canDoW1 = !prog.w1;
+            let canDoW2 = prog.w1 && prog.w2 < 2;
+            let canDoW3 = prog.w1 && prog.w2 >= 2 && prog.w3 < 3;
+            let canDoZeny = !prog.wzeny;
+
+            let html = "";
+            html += createQuestCard('w1', 'Amdarais (1/1)', canDoW1, quests.includes('w1'), 'Step 1');
+            html += createQuestCard('w2', `Evil Believer (${prog.w2}/2)`, canDoW2, quests.includes('w2'), 'Step 2 (1/day)');
+            html += createQuestCard('w3', `Infinite Tao (${prog.w3}/3)`, canDoW3, quests.includes('w3'), 'Step 3 (1/day)');
+            html += createQuestCard('wzeny', 'Send 10M Zeny', canDoZeny, quests.includes('wzeny'), 'One-time');
+            if (container) container.innerHTML = html;
+
+            const pkgCard = document.getElementById(`pkg-${config.package}`);
+            if (pkgCard) {
+                document.querySelectorAll('.package-card').forEach(el => el.classList.remove('active'));
+                pkgCard.classList.add('active');
+            }
+
+            const bpBadge = document.getElementById('bpBadge');
+            if (bpBadge) bpBadge.innerText = pkg.name;
+
+            const dailyXpHint = document.getElementById('dailyXpHint');
+            if (dailyXpHint) dailyXpHint.innerText = pkg.type === 'premium' ? '30 XP' : '20 XP';
+
+            const rangeDisp = document.getElementById('weekRangeDisp');
+            const resetNotice = document.getElementById('weekResetNotice');
+            const daysToReset = document.getElementById('daysToReset');
+            
+            if (rangeDisp) {
+                if (currentWeekStart) {
+                    const rD = new Date(currentWeekStart); rD.setDate(rD.getDate() + 7);
+                    rangeDisp.innerText = `${new Date(currentWeekStart).toLocaleDateString('th-TH')} - ${rD.toLocaleDateString('th-TH')}`;
+                    let diff = 7 - Math.floor((new Date(dateStr) - new Date(currentWeekStart)) / (1000 * 60 * 60 * 24));
+                    if (resetNotice) resetNotice.classList.remove('hidden'); 
+                    if (daysToReset) daysToReset.innerText = Math.max(0, diff);
+                } else { 
+                    rangeDisp.innerText = "ยังไม่เริ่มสัปดาห์"; 
+                    if (resetNotice) resetNotice.classList.add('hidden'); 
+                }
+            }
+            updateVisualSteps(prog);
+        }
+
+        function createQuestCard(id, label, enabled, checked, hint) {
+            const finished = !enabled && !checked && (id==='w1' || id==='wzeny' || (id==='w2'&&label.includes('2/2')) || (id==='w3'&&label.includes('3/3')));
+            return `<label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 transition ${enabled ? 'cursor-pointer hover:bg-red-50 shadow-sm' : 'opacity-40 grayscale cursor-not-allowed'}">
+                <input type="checkbox" id="${id}" ${checked?'checked':''} ${enabled?'':'disabled'} class="w-5 h-5 text-red-600 rounded border-slate-300">
+                <div class="flex-1"><div class="text-sm font-bold text-slate-700">${label}</div><div class="text-[9px] font-bold ${finished?'text-green-500':'text-slate-400'} uppercase">${finished?'DONE IN WEEK':hint}</div></div>
+            </label>`;
+        }
+
+        function updateVisualSteps(prog) {
+            const set = (id, sid, state, c=0, m=1) => {
+                const e = document.getElementById(id); const s = document.getElementById(sid);
+                if (e && s) {
+                    e.className = 'quest-step ' + (state==='done' ? 'step-done' : state==='active' ? 'step-active' : 'opacity-30');
+                    s.innerText = state==='done'?'สำเร็จ':state==='active'?(m>1?`คืบหน้า ${c}/${m}`:'พร้อมทำ'):'ล็อก';
+                }
+            };
+            set('vStep1', 'vStatus1', prog.w1?'done':'active');
+            if(prog.w1) set('vStep2', 'vStatus2', prog.w2>=2?'done':'active', prog.w2, 2); else set('vStep2', 'vStatus2', 'locked');
+            if(prog.w2>=2) set('vStep3', 'vStatus3', prog.w3>=3?'done':'active', prog.w3, 3); else set('vStep3', 'vStatus3', 'locked');
+            set('vStepZ', 'vStatusZ', prog.wzeny?'done':'active');
+        }
+
+        function saveEntry() {
+            const date = document.getElementById('logDate').value;
+            const quests = [];
+            ['qDaily', 'qZenyD', 'w1', 'w2', 'w3', 'wzeny'].forEach(id => { if(document.getElementById(id)?.checked) quests.push(id.replace('q', '').toLowerCase()); });
+            const buyLv = parseInt(document.getElementById('buyLv').value) || 0;
+            const idx = entries.findIndex(e => e.date === date);
+            if(idx > -1) entries[idx] = { date, quests, buyLv }; else entries.push({ date, quests, buyLv });
+            localStorage.setItem('roc_ggt_diary_v3_entries', JSON.stringify(entries));
+            document.getElementById('buyLv').value = 0; render();
+        }
+
+        function render() {
+            entries.sort((a,b) => a.date.localeCompare(b.date));
+            const pkg = PACKAGES[config.package];
+            let currentLv = pkg.startLv; let currentXP = 0; let currentSV = pkg.cost;
+            let wStart = null; let wProg = { w1:false, w2:0, w3:0, wzeny:false };
+            const logs = [];
+
+            entries.forEach((e, idx) => {
+                const startLv = currentLv;
+                if(wStart) { if(((new Date(e.date)-new Date(wStart))/86400000)>=7) { wStart=null; wProg={w1:false,w2:0,w3:0,wzeny:false}; } }
+                currentLv += e.buyLv; currentSV += (e.buyLv * 3);
+                e.quests.forEach(q => {
+                    if(q==='daily') currentXP += (pkg.type==='premium'?30:NORMAL_DAILY_XP);
+                    if(q==='dailyzeny') currentXP += 30;
+                    if(['w1','w2','w3','wzeny'].includes(q) && !wStart) wStart = e.date;
+                    if(q==='w1'&&!wProg.w1) { wProg.w1=true; currentXP+=XP_VAL.w1; }
+                    if(q==='w2'&&wProg.w2<2) { wProg.w2+=1; if(wProg.w2===2) currentXP+=XP_VAL.w2; }
+                    if(q==='w3'&&wProg.w3<3) { wProg.w3+=1; if(wProg.w3===3) currentXP+=XP_VAL.w3; }
+                    if(q==='wzeny'&&!wProg.wzeny) { wProg.wzeny=true; currentXP+=XP_VAL.wzeny; }
+                });
+                currentLv += Math.floor(currentXP / 10); currentXP %= 10;
+                const gained = []; if(idx===0) gained.push({n: pkg.bpItem, q:1, rare:true});
+                for(let l=startLv+1; l<=currentLv; l++) {
+                    if(REWARDS[l]) gained.push(...REWARDS[l]);
+                    if(l>100 && pkg.type==='premium') { if(l%10===0) gained.push({n:"Treasure Box I", q:1}); if(l%20===0) gained.push({n:"Treasure Box II", q:1}); if(l%50===0) gained.push({n:"Treasure Box III", q:1}); }
+                }
+                logs.push({ ...e, endLv: currentLv, gained });
+            });
+
+            const currentLvEl = document.getElementById('currentLevel');
+            if (currentLvEl) currentLvEl.innerText = currentLv;
+            
+            const totalSpentDisp = document.getElementById('totalSpentDisp');
+            if (totalSpentDisp) totalSpentDisp.innerText = currentSV.toLocaleString();
+            
+            const perc = Math.min(100, (currentLv/2500)*100).toFixed(1);
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar) progressBar.style.width = perc + '%';
+            
+            const percentDisp = document.getElementById('percentDisp');
+            if (percentDisp) percentDisp.innerText = perc + '%';
+
+            const historyHTML = logs.reverse().map(e => `<div class="p-5 hover:bg-slate-50 transition flex gap-5 border-l-4 ${e.buyLv>0?'border-l-yellow-400':'border-l-transparent'}"><div class="flex-none w-16 text-center"><div class="text-[10px] font-bold text-slate-400 uppercase">${new Date(e.date).toLocaleDateString('th-TH',{day:'2-digit',month:'short'})}</div><div class="text-3xl font-gaming font-bold text-red-600 mt-1">${e.endLv}</div><div class="text-[9px] font-bold text-slate-300 mt-1 uppercase">LV</div></div><div class="flex-1 overflow-hidden"><div class="flex flex-wrap items-center gap-2 mb-3"><span class="text-[9px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">${e.quests.length} ภารกิจ</span>${e.buyLv>0?`<span class="text-[9px] font-bold text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-md border border-yellow-200">🛒 +${e.buyLv} LV</span>`:''}</div><div class="flex flex-wrap gap-1.5">${e.gained.length?e.gained.map(i=>`<span class="inline-block bg-white border border-blue-100 text-blue-700 text-[9px] px-2 py-0.5 rounded shadow-sm font-bold">${i.n} x${i.q}</span>`).join(''):'<span class="text-[9px] text-slate-300 italic">No Items</span>'}</div></div></div>`).join('');
+            const diaryList = document.getElementById('diaryList');
+            if (diaryList) diaryList.innerHTML = historyHTML || '<div class="p-20 text-center text-slate-300 text-sm italic font-bold">NO RECORDS FOUND</div>';
+            updateFormUI();
+        }
+
+        function resetData() { if(confirm('ยืนยันที่จะล้างบันทึกความคืบหน้าทั้งหมด?')){ entries = []; localStorage.removeItem('roc_ggt_diary_v3_entries'); render(); }}
+        document.getElementById('buyLv').addEventListener('input', (e) => { 
+            const svCostDisp = document.getElementById('svCostDisp');
+            if (svCostDisp) svCostDisp.innerText = (parseInt(e.target.value || 0) * 3).toLocaleString(); 
+        });
+        render();
+    </script>
+</body>
+</html>
