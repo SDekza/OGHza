@@ -2,7 +2,8 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- ✅ 2. แก้ไข Viewport ให้สามารถซูมได้ (user-scalable=yes, maximum-scale=5.0) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <title>Work Management - SEBOFFICIAL</title>
     
     <!-- ✅ PWA Settings: เปลี่ยน href เป็น URL เต็มของรูปภาพหากรันบน Google Apps Script -->
@@ -42,10 +43,20 @@
         .will-change-transform { will-change: transform; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         
+        /* ✅ 4. เพิ่ม Class สำหรับเว้นระยะ Safe Area ด้านบน (iPhone Notch) */
+        .pt-safe { padding-top: env(safe-area-inset-top); }
+        
         /* Pin Display Styles */
         .pin-dot { transition: all 0.2s; }
         .pin-dot.filled { background-color: white; transform: scale(1.1); }
         .pin-dot.empty { background-color: #334155; border: 2px solid #475569; }
+
+        /* Remove Number Arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
     </style>
 </head>
 <body>
@@ -117,7 +128,7 @@
             const MASTER_GID = "519893714"; 
             const RECORDS_GID = "379151214";
             const SETTINGS_GID = "1966833161"; 
-            const LOGS_GID = "2045434061"; // ✅ Added Logs GID
+            const LOGS_GID = "2045434061"; 
             // ==========================================
 
             const [masterProducts, setMasterProducts] = useState([]);
@@ -408,7 +419,8 @@
                         method: "POST", mode: "no-cors", 
                         body: JSON.stringify({ action: 'add', ...form, isDoing: false, isDone: false, timestamp: ts, user: currentUser, uuid: uuid }) 
                     });
-                    setForm({ ...form, productName: '', quantity: '1', memo: '', isUrgent: false }); 
+                    // ✅ 3. เคลียร์รูปภาพ (imageUrl: '') พร้อมกับข้อมูลอื่นๆ
+                    setForm({ ...form, productName: '', imageUrl: '', quantity: '1', memo: '', isUrgent: false }); 
                     setSearchTerm('');
                     setTimeout(() => { fetchSavedRecords(); setIsSaving(false); }, 1500);
                 } catch (e) { setIsSaving(false); }
@@ -713,7 +725,8 @@
                     )}
 
                     {/* Navbar */}
-                    <nav className="bg-white border-b sticky top-0 z-50 px-6 py-4 flex items-center justify-between shadow-sm">
+                    {/* ✅ 4. เพิ่ม class pt-safe ใน navbar */}
+                    <nav className="bg-white border-b sticky top-0 z-50 px-6 py-4 pt-safe flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-100"><img src="sebo.png" className="w-full h-full object-cover" /></div>
                             <div>
@@ -758,18 +771,32 @@
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1.5"><label className="text-xs font-black text-slate-400 uppercase tracking-widest font-bold leading-none">จำนวน</label>
-                                                <div className="flex items-center bg-slate-50 rounded-2xl border-2 border-transparent focus-within:border-indigo-500 p-1 shadow-inner font-black">
-                                                    <button onClick={() => { const cur = parseInt(form.quantity) || 1; setForm({...form, quantity: String(Math.max(1, cur - 1))}); }} className="w-12 h-12 flex items-center justify-center font-black text-xl text-slate-400 hover:text-indigo-600">-</button>
-                                                    <input type="number" className="flex-1 bg-transparent text-center font-black text-2xl text-indigo-600 outline-none font-bold" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value})} />
-                                                    <button onClick={() => { const cur = parseInt(form.quantity) || 1; setForm({...form, quantity: String(cur + 1)}); }} className="w-12 h-12 flex items-center justify-center font-black text-xl text-slate-400 hover:text-indigo-600">+</button>
+                                        
+                                        {/* ✅ 1. แก้ไข Layout: ใช้ Grid แถวเดียวบน Mobile และ 2 คอลัมน์บนจอใหญ่ (md) */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> 
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest font-bold leading-none">จำนวน</label>
+                                                <div className="flex items-center justify-between bg-slate-50 rounded-2xl border-2 border-transparent focus-within:border-indigo-500 p-1 shadow-inner h-14"> {/* Fixed height */}
+                                                    <button onClick={() => adjustQuantity(-1)} className="w-12 h-full flex items-center justify-center rounded-xl bg-white text-slate-400 hover:text-indigo-600 shadow-sm transition-all active:scale-90 shrink-0">
+                                                        <LucideIcon name="minus" size={20} />
+                                                    </button>
+                                                    <input 
+                                                        type="number" 
+                                                        className="flex-1 w-full bg-transparent text-center font-black text-2xl text-indigo-600 outline-none appearance-none m-0" 
+                                                        value={form.quantity} 
+                                                        onChange={(e) => setForm({...form, quantity: e.target.value})} 
+                                                    />
+                                                    <button onClick={() => adjustQuantity(1)} className="w-12 h-full flex items-center justify-center rounded-xl bg-white text-slate-400 hover:text-indigo-600 shadow-sm transition-all active:scale-90 shrink-0">
+                                                        <LucideIcon name="plus" size={20} />
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="space-y-1.5"><label className="text-xs font-black text-slate-400 uppercase tracking-widest font-bold leading-none">หมายเหตุ</label>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest font-bold leading-none">หมายเหตุ</label>
                                                 <input type="text" placeholder="..." className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold text-slate-700 outline-none shadow-sm transition-all font-bold" value={form.memo} onChange={(e) => setForm({...form, memo: e.target.value})} />
                                             </div>
                                         </div>
+
                                         <div className="flex gap-4">
                                             <button onClick={() => setForm({...form, isUrgent: !form.isUrgent})} className={`flex-1 h-14 rounded-2xl font-bold border-2 transition-all active:scale-95 ${form.isUrgent ? 'bg-red-50 border-red-500 text-red-600 shadow-md' : 'bg-slate-50 border-transparent text-slate-400'}`}>
                                                 {form.isUrgent ? 'ด่วนพิเศษ 🔥' : 'ระดับปกติ'}
