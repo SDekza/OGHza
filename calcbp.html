@@ -3,1033 +3,262 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chrono Pass Calculator (ROX Theme)</title>
+    <title>Chrono Pass Calculator (ROC GGT Edition)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --rox-blue: #3b82f6;
-            --rox-dark-blue: #1e3a8a;
-            --rox-gold: #fbbf24;
-            --rox-bg: #f0f4f8;
-            --rox-panel: #ffffff;
-            --rox-border: #dae1e7;
-        }
-
-        body { 
-            font-family: 'Kanit', sans-serif; 
-            background-color: #e6ecf3;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(251, 191, 36, 0.1) 0px, transparent 50%);
-            background-attachment: fixed;
-            color: #334155;
-        }
-        
+        :root { --roc-blue: #3b82f6; --roc-red: #ef4444; }
+        body { font-family: 'Kanit', sans-serif; background-color: #e6ecf3; background-image: radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%); background-attachment: fixed; color: #334155; }
         .font-gaming { font-family: 'Rajdhani', sans-serif; }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
+        .rox-panel { background: rgba(255, 255, 255, 0.95); border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; }
+        .rox-header { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); padding: 14px 20px; border-bottom: 1px solid #e2e8f0; }
+        .btn-roc-primary { background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%); color: white; box-shadow: 0 4px 0 #7f1d1d; border: 1px solid #ef4444; transition: all 0.1s; }
+        .btn-roc-primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #7f1d1d; }
+        .rox-input { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .rox-input:focus { background: white; border-color: #ef4444; outline: none; }
+        .package-select { border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
+        .package-select.active { border-color: #ef4444; background-color: #fef2f2; }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        /* Game Panel Style */
-        .rox-panel {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05), 0 0 0 1px rgba(255,255,255,0.5) inset;
-            border: 1px solid #e2e8f0;
-            overflow: hidden;
-            position: relative;
-        }
-        .rox-panel::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 4px;
-            background: linear-gradient(90deg, #3b82f6, #60a5fa);
-            opacity: 0.8;
-        }
-
-        .rox-header {
-            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-            padding: 14px 20px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        /* ROX Buttons */
-        .btn-rox-primary {
-            background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
-            color: white;
-            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4), 0 2px 0 #2563eb;
-            border: 1px solid #60a5fa;
-            transition: all 0.1s;
-        }
-        .btn-rox-primary:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-        }
-
-        .btn-rox-secondary {
-            background: white;
-            border: 1px solid #cbd5e1;
-            color: #475569;
-            box-shadow: 0 2px 0 #cbd5e1;
-        }
-        .btn-rox-secondary:active {
-            transform: translateY(2px);
-            box-shadow: none;
-        }
-
-        .btn-rox-gold {
-            background: linear-gradient(180deg, #fcd34d 0%, #f59e0b 100%);
-            color: #78350f;
-            text-shadow: 0 1px 0 rgba(255,255,255,0.4);
-            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.4), 0 2px 0 #d97706;
-            border: 1px solid #fbbf24;
-        }
-        .btn-rox-gold:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-        }
-
-        /* Inputs */
-        .rox-input {
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-            transition: all 0.2s;
-        }
-        .rox-input:focus {
-            background: white;
-            border-color: #3b82f6;
-            ring: 2px solid #93c5fd;
-            outline: none;
-        }
-
-        /* Toggles */
-        .toggle-checkbox:checked { right: 0; border-color: #fbbf24; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #f59e0b; }
-        
-        /* Badges */
-        .badge-number {
-            background: #3b82f6;
-            color: white;
-            width: 24px;
-            height: 24px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
-            transform: rotate(-5deg);
-        }
-
-        /* Sticky Footer for Mobile */
-        .sticky-footer {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            border-top: 1px solid #e2e8f0;
-            padding: 12px 16px;
-            z-index: 40;
-            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
-            display: none;
-        }
-        @media (max-width: 1024px) {
-            .sticky-footer { display: flex; justify-content: space-between; align-items: center; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-            .main-content { padding-bottom: 100px; }
-        }
-        
-        .modal-enter { opacity: 0; pointer-events: none; transform: scale(0.95); }
-        .modal-enter-active { opacity: 1; pointer-events: auto; transform: scale(1); transition: all 0.2s; }
     </style>
 </head>
 <body class="text-slate-700">
 
-    <!-- Navbar -->
     <nav class="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center text-xl shadow-lg shadow-blue-200 text-white">
-                    ⏳
-                </div>
+                <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center text-sm shadow-lg text-white font-gaming leading-tight text-center">ROC<br>GGT</div>
                 <div>
-                    <h1 class="font-gaming text-xl font-bold leading-none tracking-wide text-slate-800">CHRONO <span class="text-blue-600">PASS</span></h1>
-                    <p class="text-[10px] text-slate-500 font-medium tracking-wider">CALCULATOR ROX EDITION</p>
+                    <h1 class="font-gaming text-xl font-bold tracking-wide text-slate-800 uppercase leading-none">Chrono Pass <span class="text-red-600">Calculator</span></h1>
+                    <p class="text-[9px] font-bold text-slate-400 mt-0.5">Ragnarok Online Classic</p>
                 </div>
-            </div>
-            <div class="hidden lg:flex items-center gap-2 text-xs bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium">
-                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                Patch: 18-25 Feb Promo
             </div>
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto p-4 main-content">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <!-- LEFT COLUMN: INPUTS & CONTROLS -->
-            <div class="lg:col-span-5 space-y-6">
-                
-                <!-- 1. Player Profile Card -->
-                <div class="rox-panel">
-                    <div class="rox-header">
-                        <h2 class="font-bold text-slate-700 flex items-center gap-2">
-                            <span class="badge-number">1</span>
-                            ข้อมูลผู้เล่น (Profile)
-                        </h2>
-                    </div>
-                    <div class="p-5 space-y-5">
-                        <!-- Premium Switch -->
-                        <div class="flex items-center justify-between bg-blue-50/50 p-4 rounded-xl border border-blue-100 relative overflow-hidden group">
-                            <div class="absolute right-0 top-0 w-24 h-24 bg-blue-400/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                            <div>
-                                <div class="text-sm font-bold text-slate-800">สถานะ Battle Pass</div>
-                                <div class="text-xs font-medium mt-0.5" id="premiumStatusText">Normal (สายฟรี)</div>
-                            </div>
-                            <div class="relative inline-block w-14 h-7 align-middle select-none transition duration-200 ease-in">
-                                <input type="checkbox" name="toggle" id="isPremium" onchange="togglePremiumUI()" class="toggle-checkbox absolute block w-5 h-5 m-1 rounded-full bg-white border-2 border-slate-300 appearance-none cursor-pointer transition-all duration-300 top-0 left-0 checked:left-7 checked:border-yellow-400 shadow-sm" checked/>
-                                <label for="isPremium" class="toggle-label block overflow-hidden h-7 rounded-full bg-slate-200 cursor-pointer transition-colors duration-300 checked:bg-gradient-to-r checked:from-yellow-400 checked:to-orange-400 shadow-inner"></label>
-                            </div>
-                        </div>
+    <div class="max-w-7xl mx-auto p-4 space-y-6">
+        
+        <!-- 1. STARTER PACKAGE -->
+        <div class="rox-panel border-t-4 border-t-red-600 shadow-lg">
+            <div class="rox-header"><h2 class="font-bold text-slate-700">🎁 1. เลือกแพ็กเกจเริ่มต้น (Starter Package)</h2></div>
+            <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div onclick="setPkg('normal')" id="p-normal" class="package-select p-4 rounded-xl bg-white shadow-sm active">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lv. 0 Start</div>
+                    <div class="text-sm font-bold text-slate-700 mt-1">Normal Pass</div>
+                    <div class="text-xs text-green-600 font-bold">0 SV (Free)</div>
+                </div>
+                <div onclick="setPkg('pre0')" id="p-pre0" class="package-select p-4 rounded-xl bg-white shadow-sm">
+                    <div class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Lv. 0 Start</div>
+                    <div class="text-sm font-bold text-slate-700 mt-1">Premium Unlock</div>
+                    <div class="text-xs text-blue-600 font-bold">49 SV</div>
+                </div>
+                <div onclick="setPkg('pre25')" id="p-pre25" class="package-select p-4 rounded-xl bg-white shadow-sm">
+                    <div class="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Lv. 25 Start</div>
+                    <div class="text-sm font-bold text-slate-700 mt-1">Premium +25 Lv</div>
+                    <div class="text-xs text-orange-600 font-bold">115 SV</div>
+                </div>
+                <div onclick="setPkg('pre100')" id="p-pre100" class="package-select p-4 rounded-xl bg-white shadow-sm">
+                    <div class="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Lv. 100 Start</div>
+                    <div class="text-sm font-bold text-slate-700 mt-1">Premium +100 Lv</div>
+                    <div class="text-xs text-purple-600 font-bold">295 SV</div>
+                </div>
+            </div>
+        </div>
 
-                        <!-- Date & Target Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- SETTINGS -->
+            <div class="lg:col-span-5 space-y-6">
+                <div class="rox-panel">
+                    <div class="rox-header"><h2 class="font-bold text-slate-700">⚙️ 2. แผนการเล่น (Quest Plan)</h2></div>
+                    <div class="p-5 space-y-5">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">เริ่มเล่นวันที่</label>
-                                <input type="date" id="currentDate" onchange="calculate()" class="rox-input w-full p-2.5 text-sm font-medium text-slate-700">
-                                <div class="text-[10px] text-right text-blue-500 mt-1 font-bold" id="dateDisplay"></div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">เริ่มเล่นวันที่</label>
+                                <input type="date" id="currentDate" onchange="calculate()" class="rox-input w-full p-2.5 text-sm font-medium">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">เลเวลเป้าหมาย</label>
-                                <input type="number" id="targetLevel" value="2500" onchange="calculate()" class="rox-input w-full p-2.5 font-bold text-center text-lg text-blue-700">
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">เลเวลเป้าหมาย</label>
+                                <input type="number" id="targetLevel" value="2500" onchange="calculate()" class="rox-input w-full p-2.5 font-bold text-center text-lg text-red-700">
                             </div>
                         </div>
 
-                        <!-- Quick Target Buttons -->
-                        <div class="flex flex-wrap gap-2">
-                            <button onclick="setTarget(100)" class="btn-rox-secondary flex-1 py-1.5 px-2 rounded-lg text-xs font-bold">100</button>
-                            <button onclick="setTarget(600)" class="btn-rox-secondary flex-1 py-1.5 px-2 rounded-lg text-xs font-bold">600</button>
-                            <button onclick="setTarget(1500)" class="btn-rox-secondary flex-1 py-1.5 px-2 rounded-lg text-xs font-bold">1.5k</button>
-                            <button onclick="setTarget(2500)" class="btn-rox-gold flex-1 py-1.5 px-2 rounded-lg text-xs font-bold shadow-sm">Max</button>
+                        <!-- Quests -->
+                        <div class="space-y-2 pt-2 border-t border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">ภารกิจที่ทำได้จริง (Daily/Weekly)</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-red-50 transition border border-slate-100">
+                                    <input type="checkbox" id="qDaily" checked onchange="calculate()" class="w-4 h-4 text-red-600 rounded">
+                                    <div class="text-xs font-bold text-slate-700">Daily Quest</div>
+                                </label>
+                                <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-emerald-50 transition border border-slate-100">
+                                    <input type="checkbox" id="qZenyD" checked onchange="calculate()" class="w-4 h-4 text-emerald-600 rounded">
+                                    <div class="text-xs font-bold text-slate-700">Daily Zeny</div>
+                                </label>
+                            </div>
+                            <div class="grid grid-cols-1 gap-2">
+                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qW1" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"><span class="text-xs font-medium">Weekly 1: Amdarais (80 XP)</span></label>
+                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qW2" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"><span class="text-xs font-medium">Weekly 2: Evil Believer (100 XP)</span></label>
+                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qW3" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"><span class="text-xs font-medium">Weekly 3: Infinite Tao (120 XP)</span></label>
+                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qWZ" onchange="calculate()" class="w-4 h-4 text-slate-400 rounded"><span class="text-xs font-medium">Weekly Zeny: 10M (40 XP)</span></label>
+                            </div>
+                            <p class="text-[9px] text-slate-400 italic font-medium">*ระบบคำนวณแบบ 4 วันจบ Chain (Amdarais -> Evil -> Tao)</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2. Quests Card -->
-                <div class="rox-panel">
-                    <div class="rox-header">
-                        <h2 class="font-bold text-slate-700 flex items-center gap-2">
-                            <span class="badge-number">2</span>
-                            ภารกิจ (Quest Board)
-                        </h2>
-                    </div>
-                    <div class="p-5">
-                        <div class="grid grid-cols-2 gap-3 mb-4">
-                            <!-- Daily -->
-                            <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 flex items-start gap-3 hover:bg-indigo-50 transition cursor-pointer" onclick="document.getElementById('qDaily').click()">
-                                <input type="checkbox" id="qDaily" checked onchange="calculate()" class="mt-1 w-4 h-4 text-indigo-600 rounded border-indigo-300 focus:ring-indigo-500" onclick="event.stopPropagation()">
-                                <div>
-                                    <span class="text-sm font-bold text-indigo-900 block">Daily Quest</span>
-                                    <span class="text-xs font-medium text-indigo-500" id="lblDailyXP">30 XP</span>
-                                </div>
-                            </div>
-                            <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 flex items-start gap-3 hover:bg-emerald-50 transition cursor-pointer" onclick="document.getElementById('qZenyD').click()">
-                                <input type="checkbox" id="qZenyD" checked onchange="calculate()" class="mt-1 w-4 h-4 text-emerald-600 rounded border-emerald-300 focus:ring-emerald-500" onclick="event.stopPropagation()">
-                                <div>
-                                    <span class="text-sm font-bold text-emerald-900 block">Daily Zeny</span>
-                                    <span class="text-xs font-medium text-emerald-600">30 XP</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <div class="flex items-center justify-between p-2 hover:bg-white rounded-lg cursor-pointer transition" onclick="document.getElementById('qWeekly1').click()">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                    <span class="text-xs font-bold text-slate-600">Weekly: Amdarais (80 XP)</span>
-                                </div>
-                                <input type="checkbox" id="qWeekly1" checked onchange="calculate()" class="w-4 h-4 text-blue-600 rounded border-slate-300" onclick="event.stopPropagation()">
-                            </div>
-                            <div class="flex items-center justify-between p-2 hover:bg-white rounded-lg cursor-pointer transition" onclick="document.getElementById('qWeekly2').click()">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                    <span class="text-xs font-bold text-slate-600">Weekly: Evil Believer (100 XP)</span>
-                                </div>
-                                <input type="checkbox" id="qWeekly2" checked onchange="calculate()" class="w-4 h-4 text-blue-600 rounded border-slate-300" onclick="event.stopPropagation()">
-                            </div>
-                            <div class="flex items-center justify-between p-2 hover:bg-white rounded-lg cursor-pointer transition" onclick="document.getElementById('qWeekly3').click()">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                    <span class="text-xs font-bold text-slate-600">Weekly: Infinite Tao (120 XP)</span>
-                                </div>
-                                <input type="checkbox" id="qWeekly3" checked onchange="calculate()" class="w-4 h-4 text-blue-600 rounded border-slate-300" onclick="event.stopPropagation()">
-                            </div>
-                            <div class="border-t border-slate-100 my-1"></div>
-                            <div class="flex items-center justify-between p-2 hover:bg-white rounded-lg cursor-pointer transition" onclick="document.getElementById('qZenyW').click()">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                                    <span class="text-xs font-bold text-red-500">Weekly Zeny: 10M (40 XP)</span>
-                                </div>
-                                <input type="checkbox" id="qZenyW" onchange="calculate()" class="w-4 h-4 text-red-500 rounded border-slate-300" onclick="event.stopPropagation()">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. Shop Card -->
-                <div class="rox-panel ring-2 ring-yellow-400/20 border-yellow-200">
-                    <div class="rox-header bg-gradient-to-r from-yellow-50 to-orange-50">
-                        <h2 class="font-bold text-yellow-800 flex items-center gap-2">
-                            <span class="badge-number bg-yellow-500 text-white shadow-yellow-200">3</span>
-                            ร้านค้า (Shop)
-                        </h2>
-                        <div class="flex items-center gap-2 bg-white px-2 py-1 rounded-full border border-yellow-200 shadow-sm">
-                            <label class="text-xs font-bold text-yellow-700 cursor-pointer" for="usePromo">PROMO</label>
-                            <input type="checkbox" id="usePromo" onchange="calculate()" class="w-4 h-4 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500" checked/>
-                        </div>
-                    </div>
-                    <div class="p-5 space-y-4">
-                        <!-- Shop Item -->
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200 text-xl shadow-inner">📦</div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-slate-700">1 Level</span>
-                                    <span class="text-xs text-slate-400">3 Silvervine</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
-                                <button onclick="updatePack(1, -1)" class="w-8 h-8 rounded bg-white shadow text-slate-600 hover:text-blue-600 font-bold active:scale-95 transition">-</button>
-                                <input type="number" id="pack1" value="0" class="w-12 text-center bg-transparent font-bold text-slate-800 outline-none text-sm" onchange="calculate()">
-                                <button onclick="updatePack(1, 1)" class="w-8 h-8 rounded bg-white shadow text-slate-600 hover:text-blue-600 font-bold active:scale-95 transition">+</button>
-                            </div>
-                        </div>
-                        
-                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200 text-xl shadow-inner">📦</div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-slate-700">10 Levels</span>
-                                    <span class="text-xs text-slate-400">30 Silvervine</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
-                                <button onclick="updatePack(10, -1)" class="w-8 h-8 rounded bg-white shadow text-slate-600 hover:text-blue-600 font-bold active:scale-95 transition">-</button>
-                                <input type="number" id="pack10" value="0" class="w-12 text-center bg-transparent font-bold text-slate-800 outline-none text-sm" onchange="calculate()">
-                                <button onclick="updatePack(10, 1)" class="w-8 h-8 rounded bg-white shadow text-slate-600 hover:text-blue-600 font-bold active:scale-95 transition">+</button>
-                            </div>
-                        </div>
-
-                        <!-- Highlighted Packs -->
-                        <div class="flex items-center justify-between bg-gradient-to-r from-yellow-50 to-white -mx-2 px-2 py-2 rounded-lg border border-yellow-100">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center border border-yellow-200 text-xl shadow-inner">🎁</div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-yellow-800">100 Levels</span>
-                                    <span class="text-xs text-yellow-600 font-medium flex items-center gap-1">
-                                        300 SV 
-                                        <span class="promo-text text-[9px] bg-yellow-400 text-white px-1.5 py-0.5 rounded-full shadow-sm">+500 Medal</span>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="flex items-center bg-white/50 rounded-lg p-1 border border-yellow-200/50">
-                                <button onclick="updatePack(100, -1)" class="w-8 h-8 rounded bg-white shadow text-yellow-700 font-bold active:scale-95 transition">-</button>
-                                <input type="number" id="pack100" value="0" class="w-12 text-center bg-transparent font-bold text-yellow-800 outline-none text-sm" onchange="calculate()">
-                                <button onclick="updatePack(100, 1)" class="w-8 h-8 rounded bg-white shadow text-yellow-700 font-bold active:scale-95 transition">+</button>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center justify-between bg-gradient-to-r from-orange-50 to-white -mx-2 px-2 py-2 rounded-lg border border-orange-100">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center border border-orange-200 text-xl shadow-inner">👑</div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-yellow-900">1000 Levels</span>
-                                    <span class="text-xs text-yellow-700 font-medium flex items-center gap-1">
-                                        3,000 SV 
-                                        <span class="promo-text text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full shadow-sm">+6K Medal</span>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="flex items-center bg-white/50 rounded-lg p-1 border border-orange-200/50">
-                                <button onclick="updatePack(1000, -1)" class="w-8 h-8 rounded bg-white shadow text-yellow-900 font-bold active:scale-95 transition">-</button>
-                                <input type="number" id="pack1000" value="0" class="w-12 text-center bg-transparent font-bold text-yellow-900 outline-none text-sm" onchange="calculate()">
-                                <button onclick="updatePack(1000, 1)" class="w-8 h-8 rounded bg-white shadow text-yellow-900 font-bold active:scale-95 transition">+</button>
-                            </div>
-                        </div>
-
-                        <button onclick="autoFill()" class="w-full mt-2 btn-rox-primary rounded-xl py-3 font-bold flex items-center justify-center gap-2 text-sm shadow-lg shadow-blue-200">
-                            <span>✨ Magic Fill</span>
-                            <span class="font-normal opacity-80">(เติมให้ครบ)</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Desktop Summary -->
-                <div class="hidden lg:block rox-panel bg-slate-800 text-white border-none shadow-xl shadow-slate-300">
-                    <div class="p-5 relative overflow-hidden">
-                        <div class="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-3xl"></div>
-                        <div class="flex justify-between items-center mb-3 opacity-80">
-                            <span class="text-xs font-bold uppercase tracking-widest">Total Cost</span>
-                            <span class="text-xs font-bold uppercase tracking-widest">Target</span>
+                <!-- TOTAL CALC -->
+                <div class="rox-panel bg-slate-800 text-white border-none shadow-xl">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">Estimated Total Cost</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-red-400" id="resTypeDisp">PREMIUM</span>
                         </div>
                         <div class="flex justify-between items-end">
                             <div>
-                                <div class="text-3xl font-gaming font-bold text-yellow-400 drop-shadow-sm" id="deskSV">0</div>
-                                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Silvervine</div>
+                                <div class="text-4xl font-gaming font-bold text-yellow-400" id="resSV">0</div>
+                                <div class="text-[10px] font-bold text-slate-400 tracking-widest">SILVERVINE</div>
                             </div>
                             <div class="text-right">
-                                <div class="text-3xl font-gaming font-bold text-white drop-shadow-sm flex items-baseline gap-1 justify-end">
-                                    <span id="deskLv">0</span>
-                                    <span class="text-lg text-slate-500 font-normal">/ <span id="deskTarget">2500</span></span>
-                                </div>
-                                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Final Level</div>
+                                <div class="text-xl font-gaming font-bold" id="resBuyLv">0</div>
+                                <div class="text-[10px] font-bold text-slate-400 tracking-widest">LV TO BUY</div>
                             </div>
                         </div>
-                        <div class="mt-4 pt-3 border-t border-white/10 flex justify-between text-xs font-medium">
-                             <span class="text-yellow-300 flex items-center gap-1">🎁 +<span id="deskMedal">0</span> Medal</span>
-                             <span class="text-emerald-400 flex items-center gap-1">💰 <span id="deskZeny">0</span> M Zeny</span>
+                        <div class="mt-6 pt-4 border-t border-white/10 space-y-2">
+                             <div class="flex justify-between text-xs font-medium">
+                                <span>เลเวลจากเควสสะสม:</span>
+                                <span class="text-blue-400 font-bold">+<span id="resGrindLv">0</span> LV</span>
+                             </div>
+                             <div class="flex justify-between text-xs font-medium">
+                                <span>เลเวลเริ่มต้น (Package):</span>
+                                <span class="text-orange-400 font-bold">LV <span id="resPkgLv">0</span></span>
+                             </div>
                         </div>
                     </div>
                 </div>
 
-                <button onclick="calculate()" class="w-full btn-rox-primary py-4 rounded-xl font-bold text-white flex justify-center items-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95">
-                    <span class="text-xl animate-pulse">🚀</span> คำนวณผลลัพธ์ (Calculate)
-                </button>
-
-                <button onclick="toggleTimeline()" class="w-full btn-rox-secondary py-4 rounded-xl font-bold text-slate-600 flex justify-center items-center gap-2 shadow-sm hover:text-blue-600 hover:border-blue-300 transition-all group">
-                    <span class="group-hover:scale-110 transition">📅</span> ดูตารางรับของ (Timeline Detail)
-                </button>
+                <button onclick="calculate()" class="w-full btn-roc-primary py-4 rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition">คำนวณใหม่ (Recalculate)</button>
             </div>
 
-            <!-- RIGHT COLUMN: INVENTORY -->
+            <!-- INVENTORY PREVIEW -->
             <div class="lg:col-span-7">
-                <div class="rox-panel h-full flex flex-col max-h-[90vh]">
-                    <div class="rox-header sticky top-0 bg-white/95 backdrop-blur z-10">
-                        <h2 class="font-bold text-slate-800 flex items-center gap-2">
-                            <span class="text-xl">🎒</span> กระเป๋า (Inventory)
-                        </h2>
-                        <div class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200 font-gaming font-bold">
-                           LV 1 - <span id="invLevelDisp">0</span>
-                        </div>
+                <div class="rox-panel h-full flex flex-col max-h-[85vh]">
+                    <div class="rox-header flex justify-between items-center border-t-4 border-t-red-600">
+                        <h2 class="font-bold text-slate-800 flex items-center gap-2">🎒 ของรางวัลสะสม (Inventory)</h2>
+                        <div class="text-[10px] font-bold text-slate-400">LV 0 - <span id="resFinalLv">0</span></div>
                     </div>
-                    
-                    <div class="overflow-y-auto custom-scrollbar bg-slate-50/50 flex-1 p-5 space-y-6">
-                        <!-- Rares Section -->
-                        <div>
-                            <div class="flex items-center gap-2 mb-3 px-1">
-                                <div class="w-1.5 h-1.5 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div>
-                                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Rare Items & Milestones</h3>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="rareList">
-                                <!-- JS Injected -->
-                            </div>
-                        </div>
-
-                        <!-- All Items Section -->
-                        <div>
-                            <div class="flex items-center gap-2 mb-3 px-1">
-                                <div class="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
-                                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">All Items Summary</h3>
-                            </div>
+                    <div class="flex-1 overflow-y-auto p-5 custom-scrollbar bg-slate-50/50 space-y-6">
+                         <div>
+                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Rare Items & Milestones</h3>
+                            <div id="rareList" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                         </div>
+                         <div>
+                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">All Items Summary</h3>
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                 <table class="w-full text-sm">
-                                    <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 text-xs uppercase">
-                                        <tr>
-                                            <th class="p-3 text-left pl-4">Item Name</th>
-                                            <th class="p-3 text-right pr-4">Qty</th>
-                                        </tr>
-                                    </thead>
                                     <tbody id="totalList" class="divide-y divide-slate-50"></tbody>
                                 </table>
                             </div>
-                        </div>
+                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- STICKY FOOTER (MOBILE ONLY) -->
-    <div class="sticky-footer lg:hidden">
-        <div class="flex flex-col">
-            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wide">Silvervine Cost</span>
-            <div class="flex items-baseline gap-1">
-                <span class="text-2xl font-gaming font-bold text-blue-600 drop-shadow-sm" id="mobSV">0</span>
-                <span class="text-[10px] text-slate-400 font-bold">SV</span>
-            </div>
-        </div>
-        
-        <div class="h-8 w-px bg-slate-200 mx-4"></div>
-
-        <div class="flex flex-col text-right">
-            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wide">Final Level</span>
-            <div class="flex items-baseline justify-end gap-1">
-                <span class="text-2xl font-gaming font-bold text-slate-800" id="mobLv">0</span>
-                <span class="text-[10px] text-slate-400 font-bold">/ <span id="mobTarget">2500</span></span>
-            </div>
-        </div>
-        
-        <button onclick="toggleTimeline()" class="ml-4 btn-rox-primary w-12 h-12 rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition">
-            📅
-        </button>
-    </div>
-
-    <!-- TIMELINE MODAL -->
-    <div id="timelineModal" class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center modal-enter">
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="toggleTimeline()"></div>
-        <div class="bg-white w-full sm:w-11/12 md:max-w-4xl h-[85vh] sm:h-auto sm:max-h-[85vh] rounded-t-2xl sm:rounded-2xl shadow-2xl z-10 flex flex-col transform transition-transform duration-300">
-            <!-- Header -->
-            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 font-gaming tracking-wide">
-                        TIMELINE LOG
-                    </h3>
-                    <p class="text-xs text-slate-500">รางวัลที่จะได้รับในแต่ละวัน (Daily Progression)</p>
-                </div>
-                <button onclick="toggleTimeline()" class="w-8 h-8 rounded-full bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-500 transition shadow-sm">✕</button>
-            </div>
-            
-            <div class="flex-1 overflow-y-auto custom-scrollbar p-0 bg-white">
-                <table class="w-full text-sm text-left">
-                    <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold border-b border-slate-100">
-                        <tr>
-                            <th scope="col" class="px-5 py-3 w-32">Date</th>
-                            <th scope="col" class="px-5 py-3 w-24 text-center">Level</th>
-                            <th scope="col" class="px-5 py-3">Rewards</th>
-                        </tr>
-                    </thead>
-                    <tbody id="timelineBody" class="divide-y divide-slate-50"></tbody>
-                </table>
-            </div>
-            
-            <div class="p-4 border-t border-slate-100 bg-white sm:rounded-b-2xl">
-                <button onclick="toggleTimeline()" class="w-full btn-rox-secondary py-3 rounded-xl font-bold transition">Close</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- CONFIG & CONSTANTS ---
-        const EVENT_END = new Date('2026-03-25T05:59:00'); 
-        const PROMO_START = new Date('2026-02-18T00:00:00');
-        const PROMO_END = new Date('2026-02-25T05:59:00');
-
-        // --- DATABASE ---
-        const NORMAL_DB = {
-            1: [{n: "[Not For Sale] Small Life Potion", q: 5}, {n: "[Not For Sale] Ultimate Cook", q: 5}, {n: "[Not For Sale] Small Mana Potion", q: 2}, {n: "Thai Perfume (MATK)", q: 2}, {n: "Thai Perfume (ATK)", q: 2}, {n: "Thai Perfume (ASPD)", q: 2}, {n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 10}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 10}],
-            4: [{n: "[Not For Sale] Small Life Potion", q: 5}],
-            7: [{n: "[Not For Sale] Ultimate Cook", q: 3}],
-            8: [{n: "Treasure Box I", q: 1}],
-            10: [{n: "[Not For Sale] Small Mana Potion", q: 2}],
-            13: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 10}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 10}],
-            16: [{n: "Thai Perfume (ATK)", q: 2}],
-            17: [{n: "Treasure Box I", q: 1}],
-            19: [{n: "[Not For Sale] Small Life Potion", q: 5}],
-            22: [{n: "[Not For Sale] Ultimate Cook", q: 3}],
-            25: [{n: "[Not For Sale] Small Mana Potion", q: 2}],
-            27: [{n: "Treasure Box I", q: 1}],
-            28: [{n: "Thai Perfume (ATK)", q: 2}],
-            31: [{n: "Costume Bubble Archangeling Hairband", q: 1, rare: true}, {n: "Treasure Box I", q: 1}],
-            34: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 10}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 10}],
-            37: [{n: "Thai Perfume (ATK)", q: 2}],
-            40: [{n: "[Not For Sale] Small Life Potion", q: 5}],
-            43: [{n: "[Not For Sale] Ultimate Cook", q: 3}],
-            44: [{n: "Treasure Box I", q: 1}],
-            47: [{n: "[Not For Sale] Small Mana Potion", q: 2}],
-            50: [{n: "Thai Perfume (ATK)", q: 2}],
-            53: [{n: "[Not For Sale] Small Mana Potion", q: 2}],
-            56: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 10}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 10}],
-            57: [{n: "Treasure Box I", q: 1}],
-            59: [{n: "Thai Perfume (MATK)", q: 2}],
-            62: [{n: "Thai Perfume (ASPD)", q: 2}],
-            65: [{n: "[Not For Sale] Ultimate Cook", q: 3}],
-            66: [{n: "Treasure Box I", q: 1}],
-            68: [{n: "Thai Perfume (ASPD)", q: 2}],
-            71: [{n: "Thai Perfume (ATK)", q: 2}],
-            74: [{n: "[Not For Sale] Small Life Potion", q: 5}],
-            77: [{n: "Thai Perfume (MATK)", q: 2}],
-            80: [{n: "[Not For Sale] Small Mana Potion", q: 2}],
-            83: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 10}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 10}],
-            86: [{n: "Thai Perfume (ASPD)", q: 2}],
-            89: [{n: "[Not For Sale] Ultimate Cook", q: 3}],
-            92: [{n: "[Not For Sale] Small Life Potion", q: 5}],
-            95: [{n: "[Not For Sale] Small Mana Potion", q: 2}],
-            98: [{n: "Thai Perfume (ATK)", q: 2}],
-            99: [{n: "Thai Perfume (MATK)", q: 2}],
-            100: [{n: "[Event] Enchant Temporal & Diabolus Slot4 Ticket", q: 1, rare: true}]
+        const XP_VAL = { daily: 30, dailyzeny: 30, w1: 80, w2: 100, w3: 120, wzeny: 40 };
+        const EVENT_END = new Date('2026-03-25T05:59:00');
+        
+        const PKGS = {
+            'normal': { start: 0, cost: 0, type: 'normal', item: '[Normal] Chrono Battle Pass' },
+            'pre0': { start: 0, cost: 49, type: 'premium', item: '[Premium] Chrono Battle Pass' },
+            'pre25': { start: 25, cost: 115, type: 'premium', item: '[Premium] Chrono Battle Pass' },
+            'pre100': { start: 100, cost: 295, type: 'premium', item: '[Premium] Chrono Battle Pass' }
         };
 
-        const PREMIUM_DB = {
-            1: [{n: "Premium Service 10Day Box", q: 1, rare: true}, {n: "Mysterious Medal", q: 10, rare: true}, {n: "Treasure Box I", q: 3}, {n: "Thai Perfume (MATK)", q: 2}, {n: "Thai Perfume (ATK)", q: 2}, {n: "Thai Perfume (ASPD)", q: 2}, {n: "[Not For Sale] Small Life Potion", q: 20}, {n: "[Not For Sale] Ultimate Cook", q: 10}, {n: "[Not For Sale] Small Mana Potion", q: 15}, {n: "[Not For Sale] Advanced Field Manual", q: 10}, {n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 30}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 30}],
-            2: [{n: "[Not For Sale] Small Life Potion", q: 10}],
-            3: [{n: "[Not For Sale] Ultimate Cook", q: 5}],
-            4: [{n: "Treasure Box I", q: 1}],
-            5: [{n: "[Not For Sale] Small Mana Potion", q: 3}],
-            6: [{n: "Thai Perfume (MATK)", q: 5}],
-            7: [{n: "Thai Perfume (ATK)", q: 5}],
-            8: [{n: "Thai Perfume (ASPD)", q: 5}],
-            9: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 15}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 15}],
+        const REWARDS = {
+            1: [{n: "Premium Service 10Day Box", q: 1, rare: true}, {n: "Mysterious Medal", q: 10, rare: true}],
             10: [{n: "Treasure Box I", q: 1}],
-            11: [{n: "[Not For Sale] Ultimate Cook", q: 5}],
-            12: [{n: "Treasure Box II", q: 1}],
-            13: [{n: "[Not For Sale] Small Life Potion", q: 10}],
-            14: [{n: "[Not For Sale] Small Mana Potion", q: 3}],
-            15: [{n: "Treasure Box I", q: 1}],
-            16: [{n: "Thai Perfume (MATK)", q: 5}],
-            17: [{n: "Thai Perfume (ATK)", q: 5}],
-            18: [{n: "Thai Perfume (ASPD)", q: 5}],
-            19: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 15}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 15}],
-            20: [{n: "Treasure Box I", q: 1}],
-            21: [{n: "[Not For Sale] Kafra Card", q: 5}],
-            22: [{n: "[Not For Sale] JOB Battle Manual", q: 3}],
-            23: [{n: "Mysterious Medal", q: 3, rare: true}],
-            24: [{n: "Treasure Box II", q: 1}],
-            25: [{n: "Treasure Box I", q: 1}],
-            26: [{n: "[Not For Sale] Ultimate Cook", q: 5}],
-            27: [{n: "[Not For Sale] Small Life Potion", q: 10}],
-            28: [{n: "[Not For Sale] Small Mana Potion", q: 3}],
-            29: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 15}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 15}],
-            30: [{n: "Treasure Box I", q: 1}],
-            31: [{n: "Thai Perfume (MATK)", q: 5}],
-            32: [{n: "Thai Perfume (ATK)", q: 5}],
-            33: [{n: "Thai Perfume (ASPD)", q: 5}],
-            34: [{n: "Treasure Box II", q: 1}],
-            35: [{n: "Treasure Box I", q: 1}],
-            36: [{n: "Mysterious Medal", q: 3, rare: true}],
-            37: [{n: "[Not For Sale] Advanced Field Manual", q: 5}],
-            38: [{n: "[Not For Sale] Kafra Card", q: 5}],
-            39: [{n: "[Not For Sale] JOB Battle Manual", q: 3}],
-            40: [{n: "Treasure Box I", q: 1}],
-            41: [{n: "[Not For Sale] Ultimate Cook", q: 5}],
-            42: [{n: "[Not For Sale] Small Life Potion", q: 10}],
-            43: [{n: "[Not For Sale] Small Mana Potion", q: 3}],
-            44: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 15}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 15}],
-            45: [{n: "Treasure Box I", q: 1}],
-            46: [{n: "Mysterious Medal", q: 3, rare: true}],
-            47: [{n: "Thai Perfume (MATK)", q: 5}],
-            48: [{n: "Thai Perfume (ATK)", q: 5}],
-            49: [{n: "Thai Perfume (ASPD)", q: 5}],
-            50: [{n: "Treasure Box I", q: 1}],
-            51: [{n: "Treasure Box I", q: 1}],
-            52: [{n: "[Not For Sale] Ultimate Cook", q: 5}],
-            53: [{n: "[Not For Sale] Small Life Potion", q: 10}],
-            54: [{n: "[Not For Sale] Small Mana Potion", q: 3}],
-            55: [{n: "Treasure Box I", q: 1}],
-            56: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 15}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 15}],
-            57: [{n: "[Not For Sale] Advanced Field Manual", q: 5}],
-            58: [{n: "[Not For Sale] Kafra Card", q: 5}],
-            59: [{n: "[Not For Sale] JOB Battle Manual", q: 3}],
-            60: [{n: "Treasure Box I", q: 1}],
-            61: [{n: "Treasure Box II", q: 1}],
-            62: [{n: "Mysterious Medal", q: 3, rare: true}],
-            63: [{n: "[Not For Sale] Small Life Potion", q: 10}],
-            64: [{n: "[Not For Sale] Small Mana Potion", q: 3}],
-            65: [{n: "Treasure Box I", q: 1}],
-            66: [{n: "[Not For Sale] Ultimate Cook", q: 5}],
-            67: [{n: "Thai Perfume (MATK)", q: 5}],
-            68: [{n: "Thai Perfume (ATK)", q: 5}],
-            69: [{n: "Thai Perfume (ASPD)", q: 5}],
-            70: [{n: "Treasure Box I", q: 1}],
-            71: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 15}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 15}],
-            72: [{n: "[Not For Sale] Small Life Potion", q: 10}],
-            73: [{n: "Treasure Box II", q: 1}],
-            74: [{n: "[Not For Sale] Small Mana Potion", q: 3}],
-            75: [{n: "Treasure Box I", q: 1}],
-            76: [{n: "[Not For Sale] Ultimate Cook", q: 5}],
-            77: [{n: "Thai Perfume (MATK)", q: 5}],
-            78: [{n: "Thai Perfume (ATK)", q: 5}],
-            79: [{n: "Thai Perfume (ASPD)", q: 5}],
-            80: [{n: "Treasure Box I", q: 1}],
-            81: [{n: "Treasure Box II", q: 1}],
-            82: [{n: "Mysterious Medal", q: 3, rare: true}],
-            83: [{n: "[Not For Sale] Kafra Card", q: 5}],
-            84: [{n: "[Not For Sale] Advanced Field Manual", q: 5}],
-            85: [{n: "Treasure Box I", q: 1}],
-            86: [{n: "[Not For Sale] Small Mana Potion", q: 3}],
-            87: [{n: "[Not For Sale] Small Life Potion", q: 10}],
-            88: [{n: "Treasure Box III", q: 1}],
-            89: [{n: "[Not For Sale] Increase Agility Lv.10 Scroll", q: 15}, {n: "[Not For Sale] Blessing Lv.10 Scroll", q: 15}],
-            90: [{n: "Treasure Box I", q: 1}],
-            91: [{n: "Treasure Box II", q: 1}],
-            92: [{n: "Thai Perfume (MATK)", q: 5}],
-            93: [{n: "Thai Perfume (ATK)", q: 5}],
-            94: [{n: "Thai Perfume (ASPD)", q: 5}],
-            95: [{n: "Treasure Box I", q: 1}],
-            96: [{n: "[Not For Sale] Advanced Field Manual", q: 5}],
-            97: [{n: "[Not For Sale] Small Mana Potion", q: 3}],
-            98: [{n: "[Not For Sale] Small Life Potion", q: 10}],
-            99: [{n: "[Not For Sale] Ultimate Cook", q: 5}],
-            100: [{n: "[Not For Sale] Chrono Pass Ticket", q: 1, rare: true}, {n: "Treasure Box III", q: 1}]
-        };
-
-        const HIGH_LEVEL_MILESTONES = {
-            200: [{n: "Costume Cosmic Connection", q: 1, rare: true}, {n: "Treasure Box III", q: 2}],
-            300: [{n: "[Not For Sale] Chrono Pass Ticket", q: 1, rare: true}, {n: "Treasure Box I", q: 30}, {n: "Treasure Box III", q: 3}],
-            350: [{n: "[Event] Special Enchant Temporal Boots Ticket", q: 1, rare: true}, {n: "Guarantee Weapon 7 Up Pack", q: 1, rare: true}],
-            400: [{n: "Guarantee Armor 7 Up Pack", q: 1, rare: true}],
-            500: [{n: "Treasure Box II", q: 30}],
+            100: [{n: "Chrono Pass Ticket", q: 1, rare: true}],
+            200: [{n: "Costume Cosmic Connection", q: 1, rare: true}],
             600: [{n: "Guarantee Weapon 9 Up Pack", q: 1, rare: true}],
-            700: [{n: "Guarantee Armor 9 Up Pack", q: 1, rare: true}],
-            900: [{n: "Treasure Box III", q: 30}],
-            1500: [{n: "Guarantee Weapon 11 Up Pack", q: 1, rare: true}],
-            2000: [{n: "Guarantee Armor 11 Up Pack", q: 1, rare: true}],
+            1000: [{n: "Treasure Box III", q: 10, rare: true}],
             2500: [{n: "Costume Golden Valkyrie Wings", q: 1, rare: true}]
         };
 
-        // Initialize Date
+        let currentPkg = 'normal';
         document.getElementById('currentDate').valueAsDate = new Date();
 
-        // --- CORE FUNCTIONS ---
-
-        function togglePremiumUI() {
-            const isPremium = document.getElementById('isPremium').checked;
-            const statusText = document.getElementById('premiumStatusText');
-            const lblDailyXP = document.getElementById('lblDailyXP');
-
-            if(isPremium) {
-                statusText.innerText = "Premium (สายเปย์)";
-                statusText.className = "text-xs font-bold text-yellow-600";
-                lblDailyXP.innerText = "30 XP";
-            } else {
-                statusText.innerText = "Normal (สายฟรี)";
-                statusText.className = "text-xs font-medium text-slate-400";
-                lblDailyXP.innerText = "20 XP";
-            }
+        function setPkg(id) {
+            currentPkg = id;
+            document.querySelectorAll('.package-select').forEach(el => el.classList.remove('active'));
+            document.getElementById(`p-${id}`).classList.add('active');
             calculate();
         }
 
-        function setTarget(val) {
-            document.getElementById('targetLevel').value = val;
-            calculate();
-        }
-
-        function updatePack(pack, delta) {
-            const el = document.getElementById(`pack${pack}`);
-            let val = parseInt(el.value) || 0;
-            val = Math.max(0, val + delta);
-            el.value = val;
-            calculate();
-        }
-
-        function getItemsForLevel(lv, isPremium) {
-            let items = [];
-            if(NORMAL_DB[lv]) items.push(...NORMAL_DB[lv]);
-            if(isPremium && PREMIUM_DB[lv]) items.push(...PREMIUM_DB[lv]);
-            
-            if(isPremium && lv > 100) {
-                if(lv % 10 === 0) items.push({n: "Treasure Box I", q: 1});
-                if(lv % 20 === 0) items.push({n: "Treasure Box II", q: 1});
-                if(lv % 50 === 0) items.push({n: "Treasure Box III", q: 1});
-                if(HIGH_LEVEL_MILESTONES[lv]) items.push(...HIGH_LEVEL_MILESTONES[lv]);
-            }
-            return items;
-        }
-
-        function autoFill() {
-            document.getElementById('pack1').value = 0;
-            document.getElementById('pack10').value = 0;
-            document.getElementById('pack100').value = 0;
-            document.getElementById('pack1000').value = 0;
-            
-            calculate(true);
-            const grindLv = window._lastGrindLv || 0;
+        function calculate() {
+            const pkg = PKGS[currentPkg];
             const target = parseInt(document.getElementById('targetLevel').value) || 2500;
-            
-            let needed = Math.max(0, target - grindLv);
-            
-            if(needed > 0) {
-                let p1000 = Math.floor(needed/1000); needed %= 1000;
-                let p100 = Math.floor(needed/100); needed %= 100;
-                let p10 = Math.floor(needed/10); needed %= 10;
-                let p1 = needed;
-                
-                document.getElementById('pack1000').value = p1000;
-                document.getElementById('pack100').value = p100;
-                document.getElementById('pack10').value = p10;
-                document.getElementById('pack1').value = p1;
-            }
-            calculate();
-        }
-
-        function calculate(dryRun = false) {
             const now = new Date(document.getElementById('currentDate').value);
-            if(!isNaN(now)) {
-                document.getElementById('dateDisplay').innerText = now.toLocaleDateString('en-GB');
-                
-                const usePromo = document.getElementById('usePromo').checked;
-                const isPromoTime = (now >= PROMO_START && now <= PROMO_END);
-                const showPromo = usePromo && isPromoTime;
-                
-                document.querySelectorAll('.promo-text').forEach(el => {
-                   el.classList.toggle('opacity-30', !showPromo);
-                   el.classList.toggle('line-through', !showPromo);
-                   el.classList.toggle('grayscale', !showPromo);
-                });
-            }
 
-            const targetLv = parseInt(document.getElementById('targetLevel').value) || 1;
-            const isPremium = document.getElementById('isPremium').checked;
-            const usePromo = document.getElementById('usePromo').checked;
+            const days = Math.max(0, Math.ceil((EVENT_END - now) / 86400000)) + 1;
+            const weeks = Math.ceil(days / 7);
+            
+            let dailyXP = 0;
+            if(document.getElementById('qDaily').checked) dailyXP += (pkg.type === 'premium' ? 30 : 20);
+            if(document.getElementById('qZenyD').checked) dailyXP += 30;
+            
+            let weeklyXP = 0;
+            if(document.getElementById('qW1').checked) weeklyXP += 80;
+            if(document.getElementById('qW2').checked) weeklyXP += 100;
+            if(document.getElementById('qW3').checked) weeklyXP += 120;
+            if(document.getElementById('qWZ').checked) weeklyXP += 40;
 
-            // 1. GRIND CALC
-            const daysLeft = Math.max(0, Math.ceil((EVENT_END - now) / (1000 * 60 * 60 * 24))) + 1;
-            const weeksLeft = Math.ceil(daysLeft / 7);
-            
-            let dailyExp = 0;
-            if(document.getElementById('qDaily').checked) dailyExp += (isPremium ? 30 : 20);
-            if(document.getElementById('qZenyD').checked) dailyExp += 30;
-            
-            let weeklyExp = 0;
-            if(document.getElementById('qWeekly1').checked) weeklyExp += 80;
-            if(document.getElementById('qWeekly2').checked) weeklyExp += 100;
-            if(document.getElementById('qWeekly3').checked) weeklyExp += 120;
-            if(document.getElementById('qZenyW').checked) weeklyExp += 40;
+            const grindLv = Math.floor(((dailyXP * days) + (weeklyXP * weeks)) / 10);
+            const neededLv = Math.max(0, target - pkg.start - grindLv);
+            const costSV = pkg.cost + (neededLv * 3);
 
-            const grindLv = Math.floor(((dailyExp * daysLeft) + (weeklyExp * weeksLeft)) / 10);
-            window._lastGrindLv = grindLv;
-            
-            if(dryRun) return;
+            document.getElementById('resSV').innerText = costSV.toLocaleString();
+            document.getElementById('resBuyLv').innerText = `+${neededLv}`;
+            document.getElementById('resGrindLv').innerText = grindLv;
+            document.getElementById('resPkgLv').innerText = pkg.start;
+            document.getElementById('resTypeDisp').innerText = pkg.type.toUpperCase();
+            document.getElementById('resFinalLv').innerText = target;
 
-            // 2. SHOP CALC
-            let p1 = parseInt(document.getElementById('pack1').value) || 0;
-            let p10 = parseInt(document.getElementById('pack10').value) || 0;
-            let p100 = parseInt(document.getElementById('pack100').value) || 0;
-            let p1000 = parseInt(document.getElementById('pack1000').value) || 0;
-
-            let shopLv = (p1 * 1) + (p10 * 10) + (p100 * 100) + (p1000 * 1000);
-            let costSV = (p1 * 3) + (p10 * 30) + (p100 * 300) + (p1000 * 3000);
-            
-            let promoMedals = 0;
-            const isPromoTime = (now >= PROMO_START && now <= PROMO_END);
-            if (usePromo && isPromoTime) {
-                promoMedals += (p100 * 500);
-                promoMedals += (p1000 * 6000);
-            }
-
-            let finalLv = grindLv + shopLv;
-            if(finalLv > 2500) finalLv = 2500;
-            
-            let costZeny = (document.getElementById('qZenyD').checked ? 1000000*daysLeft : 0) + 
-                           (document.getElementById('qZenyW').checked ? 10000000*weeksLeft : 0);
-
-            // Display Update
-            ['deskSV', 'mobSV'].forEach(id => document.getElementById(id).innerText = costSV.toLocaleString());
-            ['deskLv', 'mobLv'].forEach(id => document.getElementById(id).innerText = finalLv.toLocaleString());
-            ['deskTarget', 'mobTarget'].forEach(id => document.getElementById(id).innerText = targetLv.toLocaleString());
-            
-            document.getElementById('deskMedal').innerText = promoMedals.toLocaleString();
-            document.getElementById('deskZeny').innerText = (costZeny/1000000).toFixed(1);
-            
-            document.getElementById('invLevelDisp').innerText = finalLv.toLocaleString();
-
-            // 3. INVENTORY MERGE
-            let inventory = {};
-            let rares = [];
-            
-            const addItem = (n, q, isRare) => {
-                if(isRare) {
-                    rares.push({name: n, qty: q});
-                } else {
-                    if(!inventory[n]) inventory[n] = 0;
-                    inventory[n] += q;
-                }
+            let inventory = {}; let rares = [];
+            const add = (n, q, r) => {
+                if(r) rares.push({n, q});
+                else { if(!inventory[n]) inventory[n]=0; inventory[n]+=q; }
             };
 
-            for(let lv = 1; lv <= finalLv; lv++) {
-                let items = getItemsForLevel(lv, isPremium);
-                items.forEach(i => addItem(i.n, i.q, i.rare));
+            add(pkg.item, 1, true); 
+            for(let lv = 1; lv <= target; lv++) {
+                if(REWARDS[lv]) REWARDS[lv].forEach(i => add(i.n, i.q, i.rare));
+                if(lv > 100 && pkg.type === 'premium') {
+                    if(lv%10===0) add("Treasure Box I", 1, false);
+                    if(lv%20===0) add("Treasure Box II", 1, false);
+                    if(lv%50===0) add("Treasure Box III", 1, false);
+                }
             }
 
-            if(promoMedals > 0) {
-                rares.unshift({name: "Mysterious Medal (Promo)", qty: promoMedals});
-            }
-
-            // Render Rares
             let rareHTML = "";
-            let combinedRares = {};
-            rares.forEach(r => {
-                if(!combinedRares[r.name]) combinedRares[r.name] = 0;
-                combinedRares[r.name] += r.qty;
+            let aggRares = {};
+            rares.forEach(r => aggRares[r.n] = (aggRares[r.n]||0) + r.q);
+            Object.entries(aggRares).forEach(([n, q]) => {
+                rareHTML += `<div class="bg-white border border-red-100 p-2.5 rounded-xl flex justify-between items-center shadow-sm">
+                    <span class="text-[10px] font-bold text-slate-700 truncate">${n}</span>
+                    <span class="text-[10px] font-gaming font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded-lg border border-red-100">x${q}</span>
+                </div>`;
             });
+            document.getElementById('rareList').innerHTML = rareHTML || `<div class="col-span-2 text-center text-xs text-slate-400 py-4">ไม่มีไอเทมแรร์</div>`;
 
-            if(Object.keys(combinedRares).length === 0) {
-                rareHTML = `<div class="col-span-2 text-slate-400 text-xs text-center py-8 bg-slate-50/50 rounded-lg border border-dashed border-slate-200">ไม่มีไอเทมแรร์ในระดับนี้</div>`;
-            } else {
-                Object.entries(combinedRares).forEach(([name, qty]) => {
-                    let icon = "🔹";
-                    let style = "bg-white border-blue-100 ring-1 ring-blue-50 text-blue-800";
-                    if(name.includes("Medal")) { icon = "🏅"; style = "bg-gradient-to-r from-yellow-50 to-white border-yellow-200 ring-1 ring-yellow-100 text-yellow-900"; }
-                    if(name.includes("Costume")) { icon = "🎭"; style = "bg-gradient-to-r from-pink-50 to-white border-pink-200 ring-1 ring-pink-100 text-pink-900"; }
-                    if(name.includes("Guarantee")) { icon = "🔨"; style = "bg-gradient-to-r from-purple-50 to-white border-purple-200 ring-1 ring-purple-100 text-purple-900"; }
-                    if(name.includes("Ticket")) { icon = "🎫"; style = "bg-white border-indigo-100 ring-1 ring-indigo-50 text-indigo-900"; }
-
-                    rareHTML += `
-                        <div class="flex items-center p-3 rounded-xl border shadow-sm ${style} relative overflow-hidden transition hover:shadow-md hover:-translate-y-0.5">
-                            <div class="text-xl mr-3 relative z-10">${icon}</div>
-                            <div class="flex-1 overflow-hidden relative z-10">
-                                <div class="text-xs font-bold truncate leading-tight">${name}</div>
-                            </div>
-                            <div class="font-gaming font-bold text-sm bg-white/60 backdrop-blur-sm px-2 py-0.5 rounded-md ml-2 border border-black/5 shadow-sm relative z-10">x${qty.toLocaleString()}</div>
-                        </div>
-                    `;
-                });
-            }
-            document.getElementById('rareList').innerHTML = rareHTML;
-
-            // Render Total
             let totalHTML = "";
-            Object.entries(inventory).sort((a,b) => a[0].localeCompare(b[0], 'th')).forEach(([name, qty]) => {
-                let rowClass = "hover:bg-slate-50 transition";
-                let qtyClass = "text-slate-500";
-                if(name.includes("Treasure Box")) { rowClass = "bg-blue-50/30 hover:bg-blue-50"; qtyClass = "text-blue-600 font-bold"; }
-                
-                totalHTML += `
-                    <tr class="border-b border-slate-50 last:border-0 ${rowClass}">
-                        <td class="p-3 pl-4 text-slate-700 font-medium truncate max-w-[180px]" title="${name}">${name}</td>
-                        <td class="p-3 pr-4 text-right font-gaming font-bold ${qtyClass}">x${qty.toLocaleString()}</td>
-                    </tr>
-                `;
+            Object.entries(inventory).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n, q]) => {
+                totalHTML += `<tr><td class="p-3 text-xs text-slate-600">${n}</td><td class="p-3 text-right text-xs font-gaming font-bold text-slate-800">x${q.toLocaleString()}</td></tr>`;
             });
             document.getElementById('totalList').innerHTML = totalHTML;
         }
 
-        // --- TIMELINE WITH ITEM DETAILS ---
-        function toggleTimeline() {
-            const modal = document.getElementById('timelineModal');
-            const body = document.body;
-            
-            if(modal.classList.contains('modal-enter')) {
-                // Open
-                modal.classList.remove('modal-enter');
-                modal.classList.add('modal-enter-active');
-                body.style.overflow = 'hidden'; 
-                generateTimeline();
-            } else {
-                // Close
-                modal.classList.remove('modal-enter-active');
-                modal.classList.add('modal-enter');
-                body.style.overflow = '';
-            }
-        }
-
-        function generateTimeline() {
-             const now = new Date(document.getElementById('currentDate').value);
-             const isPremium = document.getElementById('isPremium').checked;
-             
-             let p1 = parseInt(document.getElementById('pack1').value) || 0;
-             let p10 = parseInt(document.getElementById('pack10').value) || 0;
-             let p100 = parseInt(document.getElementById('pack100').value) || 0;
-             let p1000 = parseInt(document.getElementById('pack1000').value) || 0;
-             let buyLv = (p1 * 1) + (p10 * 10) + (p100 * 100) + (p1000 * 1000);
-
-             const daysLeft = Math.max(0, Math.ceil((EVENT_END - now) / (1000 * 60 * 60 * 24))) + 1;
-             
-             let dailyExp = 0;
-             if(document.getElementById('qDaily').checked) dailyExp += (isPremium ? 30 : 20);
-             if(document.getElementById('qZenyD').checked) dailyExp += 30;
-             
-             let weeklyExp = 0;
-             if(document.getElementById('qWeekly1').checked) weeklyExp += 80;
-             if(document.getElementById('qWeekly2').checked) weeklyExp += 100;
-             if(document.getElementById('qWeekly3').checked) weeklyExp += 120;
-             if(document.getElementById('qZenyW').checked) weeklyExp += 40;
-
-             let timelineHTML = "";
-             
-             // Day 0: Shop Purchase
-             if(buyLv > 0) {
-                 let shopItems = {};
-                 for(let l=1; l<=buyLv; l++) {
-                     let items = getItemsForLevel(l, isPremium);
-                     items.forEach(i => shopItems[i.n] = (shopItems[i.n]||0) + i.q);
-                 }
-                 
-                 let itemStr = Object.entries(shopItems)
-                    .map(([n,q]) => `<span class="inline-block bg-yellow-100 text-yellow-800 text-[10px] px-1.5 py-0.5 rounded border border-yellow-200 mr-1 mb-1 shadow-sm font-medium">${n} x${q}</span>`)
-                    .join("");
-
-                 timelineHTML += `
-                    <tr class="bg-yellow-50/50">
-                        <td class="px-5 py-4 text-yellow-800 font-bold align-top border-b border-yellow-100">
-                            ${now.toLocaleDateString('en-GB')}
-                            <div class="text-[10px] opacity-70 font-normal mt-1">🛒 SHOP PURCHASE</div>
-                        </td>
-                        <td class="px-5 py-4 text-center font-gaming font-bold text-yellow-800 align-top border-b border-yellow-100 text-lg">Lv. ${buyLv}</td>
-                        <td class="px-5 py-4 align-top border-b border-yellow-100">${itemStr}</td>
-                    </tr>
-                 `;
-             }
-
-             let currentSimXP = 0;
-             let currentSimLevel = buyLv;
-             let simDate = new Date(now);
-             let dayCount = 0;
-
-             while (simDate <= EVENT_END && currentSimLevel < 2500 && dayCount < 400) {
-                currentSimXP += dailyExp;
-                if (dayCount % 7 === 0) currentSimXP += weeklyExp;
-                
-                let newLevel = Math.floor(currentSimXP / 10) + buyLv;
-                if(newLevel > 2500) newLevel = 2500;
-
-                if (newLevel > currentSimLevel) {
-                     let earnedItems = {};
-                     let hasRare = false;
-                     
-                     for(let l = currentSimLevel + 1; l <= newLevel; l++) {
-                         let items = getItemsForLevel(l, isPremium);
-                         items.forEach(i => {
-                             earnedItems[i.n] = (earnedItems[i.n]||0) + i.q;
-                             if(i.rare || i.n.includes("Treasure")) hasRare = true;
-                         });
-                     }
-                     
-                     let itemStr = Object.entries(earnedItems)
-                        .map(([n,q]) => {
-                            let style = "bg-slate-100 text-slate-600 border-slate-200";
-                            if(n.includes("Treasure")) style = "bg-blue-50 text-blue-700 border-blue-200";
-                            if(n.includes("Ticket") || n.includes("Costume") || n.includes("Medal")) style = "bg-purple-50 text-purple-700 border-purple-200";
-                            return `<span class="inline-block ${style} text-[10px] px-1.5 py-0.5 rounded border mr-1 mb-1 shadow-sm font-medium">${n} x${q}</span>`;
-                        })
-                        .join("");
-
-                     let rowClass = hasRare ? "bg-blue-50/20" : "";
-                     
-                     timelineHTML += `
-                        <tr class="hover:bg-slate-50 transition ${rowClass}">
-                            <td class="px-5 py-4 border-b border-slate-50 text-slate-600 align-top text-xs font-medium">
-                                ${simDate.toLocaleDateString('en-GB')}
-                                <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                                    +${newLevel - currentSimLevel} Lv
-                                </div>
-                            </td>
-                            <td class="px-5 py-4 text-center border-b border-slate-50 font-gaming font-bold text-blue-600 align-top text-lg">${newLevel}</td>
-                            <td class="px-5 py-4 border-b border-slate-50 align-top">${itemStr}</td>
-                        </tr>
-                     `;
-                     currentSimLevel = newLevel;
-                }
-                simDate.setDate(simDate.getDate() + 1);
-                dayCount++;
-             }
-
-             if(timelineHTML === "") {
-                 timelineHTML = `<tr><td colspan="3" class="text-center py-12 text-slate-400">No progression data found.</td></tr>`;
-             }
-
-             document.getElementById('timelineBody').innerHTML = timelineHTML;
-        }
-
-        // Init
         calculate();
     </script>
 </body>
