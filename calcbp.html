@@ -3,71 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chrono Pass Calculator (Pro Edition)</title>
+    <title>Chrono Pass Calculator (ROX Theme)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; }
+        :root {
+            --rox-blue: #3b82f6;
+            --rox-dark-blue: #1e3a8a;
+            --rox-gold: #fbbf24;
+            --rox-bg: #f0f4f8;
+            --rox-panel: #ffffff;
+            --rox-border: #dae1e7;
+        }
+
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            background-color: #e6ecf3;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(251, 191, 36, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #334155;
+        }
+        
         .font-gaming { font-family: 'Rajdhani', sans-serif; }
         
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #e5e7eb; }
-        ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Mobile Optimization */
-        .tap-target { min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; }
+        /* Game Panel Style */
+        .rox-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05), 0 0 0 1px rgba(255,255,255,0.5) inset;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            position: relative;
+        }
+        .rox-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            opacity: 0.8;
+        }
+
+        .rox-header {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 14px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ROX Buttons */
+        .btn-rox-primary {
+            background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4), 0 2px 0 #2563eb;
+            border: 1px solid #60a5fa;
+            transition: all 0.1s;
+        }
+        .btn-rox-primary:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .btn-rox-secondary {
+            background: white;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            box-shadow: 0 2px 0 #cbd5e1;
+        }
+        .btn-rox-secondary:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        .btn-rox-gold {
+            background: linear-gradient(180deg, #fcd34d 0%, #f59e0b 100%);
+            color: #78350f;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.4), 0 2px 0 #d97706;
+            border: 1px solid #fbbf24;
+        }
+        .btn-rox-gold:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Inputs */
+        .rox-input {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+        .rox-input:focus {
+            background: white;
+            border-color: #3b82f6;
+            ring: 2px solid #93c5fd;
+            outline: none;
+        }
+
+        /* Toggles */
+        .toggle-checkbox:checked { right: 0; border-color: #fbbf24; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #f59e0b; }
         
-        /* Card Styles */
-        .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border: 1px solid #f3f4f6; overflow: hidden; }
-        .card-header { padding: 16px; border-bottom: 1px solid #f3f4f6; background: #fafafa; display: flex; align-items: center; justify-content: space-between; }
-        .card-body { padding: 16px; }
-
-        /* Animation */
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Badges */
+        .badge-number {
+            background: #3b82f6;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+            transform: rotate(-5deg);
+        }
 
         /* Sticky Footer for Mobile */
         .sticky-footer {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid #e2e8f0;
             padding: 12px 16px;
             z-index: 40;
-            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
             display: none;
         }
         @media (max-width: 1024px) {
             .sticky-footer { display: flex; justify-content: space-between; align-items: center; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
             .main-content { padding-bottom: 100px; }
         }
-
-        /* Toggle Switch */
-        .toggle-checkbox:checked { right: 0; border-color: #68D391; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
         
-        /* Modal */
         .modal-enter { opacity: 0; pointer-events: none; transform: scale(0.95); }
         .modal-enter-active { opacity: 1; pointer-events: auto; transform: scale(1); transition: all 0.2s; }
-        .modal-exit { opacity: 1; pointer-events: auto; transform: scale(1); }
-        .modal-exit-active { opacity: 0; pointer-events: none; transform: scale(0.95); transition: all 0.2s; }
     </style>
 </head>
-<body class="text-gray-800">
+<body class="text-slate-700">
 
     <!-- Navbar -->
-    <nav class="bg-indigo-900 text-white sticky top-0 z-50 shadow-lg">
+    <nav class="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <span class="text-2xl">⏳</span>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center text-xl shadow-lg shadow-blue-200 text-white">
+                    ⏳
+                </div>
                 <div>
-                    <h1 class="font-gaming text-xl font-bold leading-none tracking-wide text-yellow-400">CHRONO PASS</h1>
-                    <p class="text-[10px] text-indigo-300 opacity-80">CALCULATOR PRO</p>
+                    <h1 class="font-gaming text-xl font-bold leading-none tracking-wide text-slate-800">CHRONO <span class="text-blue-600">PASS</span></h1>
+                    <p class="text-[10px] text-slate-500 font-medium tracking-wider">CALCULATOR ROX EDITION</p>
                 </div>
             </div>
-            <div class="hidden lg:block text-xs bg-indigo-800 px-3 py-1 rounded-full text-indigo-200">
-                Verified Data: 18-25 Feb Promo
+            <div class="hidden lg:flex items-center gap-2 text-xs bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-medium">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                Patch: 18-25 Feb Promo
             </div>
         </div>
     </nav>
@@ -79,237 +179,275 @@
             <div class="lg:col-span-5 space-y-6">
                 
                 <!-- 1. Player Profile Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="font-bold text-gray-700 flex items-center gap-2">
-                            <span class="bg-indigo-100 text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                <div class="rox-panel">
+                    <div class="rox-header">
+                        <h2 class="font-bold text-slate-700 flex items-center gap-2">
+                            <span class="badge-number">1</span>
                             ข้อมูลผู้เล่น (Profile)
                         </h2>
                     </div>
-                    <div class="card-body space-y-5">
+                    <div class="p-5 space-y-5">
                         <!-- Premium Switch -->
-                        <div class="flex items-center justify-between bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                        <div class="flex items-center justify-between bg-blue-50/50 p-4 rounded-xl border border-blue-100 relative overflow-hidden group">
+                            <div class="absolute right-0 top-0 w-24 h-24 bg-blue-400/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
                             <div>
-                                <div class="text-sm font-bold text-indigo-900">Battle Pass Type</div>
-                                <div class="text-xs text-indigo-500" id="premiumStatusText">Normal (Free)</div>
+                                <div class="text-sm font-bold text-slate-800">สถานะ Battle Pass</div>
+                                <div class="text-xs font-medium mt-0.5" id="premiumStatusText">Normal (สายฟรี)</div>
                             </div>
-                            <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
-                                <input type="checkbox" name="toggle" id="isPremium" onchange="togglePremiumUI()" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-gray-300 appearance-none cursor-pointer transition-all duration-300 top-0 left-0 checked:left-6 checked:border-green-400" checked/>
-                                <label for="isPremium" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300 checked:bg-green-400"></label>
+                            <div class="relative inline-block w-14 h-7 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle" id="isPremium" onchange="togglePremiumUI()" class="toggle-checkbox absolute block w-5 h-5 m-1 rounded-full bg-white border-2 border-slate-300 appearance-none cursor-pointer transition-all duration-300 top-0 left-0 checked:left-7 checked:border-yellow-400 shadow-sm" checked/>
+                                <label for="isPremium" class="toggle-label block overflow-hidden h-7 rounded-full bg-slate-200 cursor-pointer transition-colors duration-300 checked:bg-gradient-to-r checked:from-yellow-400 checked:to-orange-400 shadow-inner"></label>
                             </div>
                         </div>
 
                         <!-- Date & Target Grid -->
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">เริ่มเล่นวันที่</label>
-                                <input type="date" id="currentDate" onchange="calculate()" class="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
-                                <div class="text-[10px] text-right text-indigo-500 mt-1 font-medium" id="dateDisplay"></div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">เริ่มเล่นวันที่</label>
+                                <input type="date" id="currentDate" onchange="calculate()" class="rox-input w-full p-2.5 text-sm font-medium text-slate-700">
+                                <div class="text-[10px] text-right text-blue-500 mt-1 font-bold" id="dateDisplay"></div>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">เลเวลเป้าหมาย</label>
-                                <input type="number" id="targetLevel" value="2500" onchange="calculate()" class="w-full bg-gray-50 border border-gray-200 text-indigo-700 font-bold text-center text-lg rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2">
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">เลเวลเป้าหมาย</label>
+                                <input type="number" id="targetLevel" value="2500" onchange="calculate()" class="rox-input w-full p-2.5 font-bold text-center text-lg text-blue-700">
                             </div>
                         </div>
 
                         <!-- Quick Target Buttons -->
                         <div class="flex flex-wrap gap-2">
-                            <button onclick="setTarget(100)" class="flex-1 min-w-[60px] py-1.5 px-2 bg-white border border-gray-200 rounded text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-200 transition">100</button>
-                            <button onclick="setTarget(600)" class="flex-1 min-w-[60px] py-1.5 px-2 bg-white border border-gray-200 rounded text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-200 transition">600</button>
-                            <button onclick="setTarget(1500)" class="flex-1 min-w-[60px] py-1.5 px-2 bg-white border border-gray-200 rounded text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-200 transition">1.5k</button>
-                            <button onclick="setTarget(2500)" class="flex-1 min-w-[60px] py-1.5 px-2 bg-yellow-100 border border-yellow-200 rounded text-xs font-bold text-yellow-800 hover:bg-yellow-200 transition">Max</button>
+                            <button onclick="setTarget(100)" class="btn-rox-secondary flex-1 py-1.5 px-2 rounded-lg text-xs font-bold">100</button>
+                            <button onclick="setTarget(600)" class="btn-rox-secondary flex-1 py-1.5 px-2 rounded-lg text-xs font-bold">600</button>
+                            <button onclick="setTarget(1500)" class="btn-rox-secondary flex-1 py-1.5 px-2 rounded-lg text-xs font-bold">1.5k</button>
+                            <button onclick="setTarget(2500)" class="btn-rox-gold flex-1 py-1.5 px-2 rounded-lg text-xs font-bold shadow-sm">Max</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- 2. Quests Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="font-bold text-gray-700 flex items-center gap-2">
-                            <span class="bg-indigo-100 text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
-                            ภารกิจที่ทำ (Quests)
+                <div class="rox-panel">
+                    <div class="rox-header">
+                        <h2 class="font-bold text-slate-700 flex items-center gap-2">
+                            <span class="badge-number">2</span>
+                            ภารกิจ (Quest Board)
                         </h2>
                     </div>
-                    <div class="card-body">
+                    <div class="p-5">
                         <div class="grid grid-cols-2 gap-3 mb-4">
                             <!-- Daily -->
-                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 flex items-start gap-3">
-                                <input type="checkbox" id="qDaily" checked onchange="calculate()" class="mt-1 w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                            <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 flex items-start gap-3 hover:bg-indigo-50 transition cursor-pointer" onclick="document.getElementById('qDaily').click()">
+                                <input type="checkbox" id="qDaily" checked onchange="calculate()" class="mt-1 w-4 h-4 text-indigo-600 rounded border-indigo-300 focus:ring-indigo-500" onclick="event.stopPropagation()">
                                 <div>
-                                    <label for="qDaily" class="text-sm font-bold text-gray-700 block cursor-pointer">Daily Quest</label>
-                                    <span class="text-xs text-indigo-500" id="lblDailyXP">30 XP</span>
+                                    <span class="text-sm font-bold text-indigo-900 block">Daily Quest</span>
+                                    <span class="text-xs font-medium text-indigo-500" id="lblDailyXP">30 XP</span>
                                 </div>
                             </div>
-                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 flex items-start gap-3">
-                                <input type="checkbox" id="qZenyD" checked onchange="calculate()" class="mt-1 w-4 h-4 text-green-600 rounded focus:ring-green-500">
+                            <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 flex items-start gap-3 hover:bg-emerald-50 transition cursor-pointer" onclick="document.getElementById('qZenyD').click()">
+                                <input type="checkbox" id="qZenyD" checked onchange="calculate()" class="mt-1 w-4 h-4 text-emerald-600 rounded border-emerald-300 focus:ring-emerald-500" onclick="event.stopPropagation()">
                                 <div>
-                                    <label for="qZenyD" class="text-sm font-bold text-gray-700 block cursor-pointer">Daily Zeny</label>
-                                    <span class="text-xs text-green-600">30 XP</span>
+                                    <span class="text-sm font-bold text-emerald-900 block">Daily Zeny</span>
+                                    <span class="text-xs font-medium text-emerald-600">30 XP</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer" onclick="document.getElementById('qWeekly1').click()">
-                                <span class="text-xs font-medium text-gray-600">Weekly: Amdarais (80 XP)</span>
-                                <input type="checkbox" id="qWeekly1" checked onchange="calculate()" class="w-4 h-4 text-blue-600 rounded" onclick="event.stopPropagation()">
+                        <div class="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <div class="flex items-center justify-between p-2 hover:bg-white rounded-lg cursor-pointer transition" onclick="document.getElementById('qWeekly1').click()">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    <span class="text-xs font-bold text-slate-600">Weekly: Amdarais (80 XP)</span>
+                                </div>
+                                <input type="checkbox" id="qWeekly1" checked onchange="calculate()" class="w-4 h-4 text-blue-600 rounded border-slate-300" onclick="event.stopPropagation()">
                             </div>
-                            <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer" onclick="document.getElementById('qWeekly2').click()">
-                                <span class="text-xs font-medium text-gray-600">Weekly: Evil Believer (100 XP)</span>
-                                <input type="checkbox" id="qWeekly2" checked onchange="calculate()" class="w-4 h-4 text-blue-600 rounded" onclick="event.stopPropagation()">
+                            <div class="flex items-center justify-between p-2 hover:bg-white rounded-lg cursor-pointer transition" onclick="document.getElementById('qWeekly2').click()">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    <span class="text-xs font-bold text-slate-600">Weekly: Evil Believer (100 XP)</span>
+                                </div>
+                                <input type="checkbox" id="qWeekly2" checked onchange="calculate()" class="w-4 h-4 text-blue-600 rounded border-slate-300" onclick="event.stopPropagation()">
                             </div>
-                            <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer" onclick="document.getElementById('qWeekly3').click()">
-                                <span class="text-xs font-medium text-gray-600">Weekly: Infinite Tao (120 XP)</span>
-                                <input type="checkbox" id="qWeekly3" checked onchange="calculate()" class="w-4 h-4 text-blue-600 rounded" onclick="event.stopPropagation()">
+                            <div class="flex items-center justify-between p-2 hover:bg-white rounded-lg cursor-pointer transition" onclick="document.getElementById('qWeekly3').click()">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    <span class="text-xs font-bold text-slate-600">Weekly: Infinite Tao (120 XP)</span>
+                                </div>
+                                <input type="checkbox" id="qWeekly3" checked onchange="calculate()" class="w-4 h-4 text-blue-600 rounded border-slate-300" onclick="event.stopPropagation()">
                             </div>
-                            <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer" onclick="document.getElementById('qZenyW').click()">
-                                <span class="text-xs font-medium text-red-500">Weekly Zeny: 10M (40 XP)</span>
-                                <input type="checkbox" id="qZenyW" onchange="calculate()" class="w-4 h-4 text-red-500 rounded" onclick="event.stopPropagation()">
+                            <div class="border-t border-slate-100 my-1"></div>
+                            <div class="flex items-center justify-between p-2 hover:bg-white rounded-lg cursor-pointer transition" onclick="document.getElementById('qZenyW').click()">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                    <span class="text-xs font-bold text-red-500">Weekly Zeny: 10M (40 XP)</span>
+                                </div>
+                                <input type="checkbox" id="qZenyW" onchange="calculate()" class="w-4 h-4 text-red-500 rounded border-slate-300" onclick="event.stopPropagation()">
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 3. Shop Card -->
-                <div class="card border-yellow-200 ring-2 ring-yellow-50">
-                    <div class="card-header bg-yellow-50/50">
+                <div class="rox-panel ring-2 ring-yellow-400/20 border-yellow-200">
+                    <div class="rox-header bg-gradient-to-r from-yellow-50 to-orange-50">
                         <h2 class="font-bold text-yellow-800 flex items-center gap-2">
-                            <span class="bg-yellow-200 text-yellow-800 w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+                            <span class="badge-number bg-yellow-500 text-white shadow-yellow-200">3</span>
                             ร้านค้า (Shop)
                         </h2>
-                        <div class="flex items-center gap-2">
-                            <label class="text-xs font-bold text-yellow-700 cursor-pointer" for="usePromo">Promo</label>
-                            <div class="relative inline-block w-8 h-4 align-middle select-none transition duration-200 ease-in">
-                                <input type="checkbox" id="usePromo" onchange="calculate()" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer checked:left-4 checked:border-yellow-500" checked/>
-                                <label for="usePromo" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer checked:bg-yellow-500"></label>
-                            </div>
+                        <div class="flex items-center gap-2 bg-white px-2 py-1 rounded-full border border-yellow-200 shadow-sm">
+                            <label class="text-xs font-bold text-yellow-700 cursor-pointer" for="usePromo">PROMO</label>
+                            <input type="checkbox" id="usePromo" onchange="calculate()" class="w-4 h-4 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500" checked/>
                         </div>
                     </div>
-                    <div class="card-body space-y-4">
-                        <!-- Shop Item: 1 Lv -->
+                    <div class="p-5 space-y-4">
+                        <!-- Shop Item -->
                         <div class="flex items-center justify-between">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-bold text-gray-700">1 Level</span>
-                                <span class="text-xs text-gray-400">3 Silvervine</span>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200 text-xl shadow-inner">📦</div>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-bold text-slate-700">1 Level</span>
+                                    <span class="text-xs text-slate-400">3 Silvervine</span>
+                                </div>
                             </div>
-                            <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                                <button onclick="updatePack(1, -1)" class="tap-target w-8 h-8 rounded bg-white shadow-sm text-gray-600 hover:text-indigo-600 font-bold">-</button>
-                                <input type="number" id="pack1" value="0" class="w-12 text-center bg-transparent font-bold text-gray-800 outline-none" onchange="calculate()">
-                                <button onclick="updatePack(1, 1)" class="tap-target w-8 h-8 rounded bg-white shadow-sm text-gray-600 hover:text-indigo-600 font-bold">+</button>
-                            </div>
-                        </div>
-                        <!-- Shop Item: 10 Lv -->
-                        <div class="flex items-center justify-between">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-bold text-gray-700">10 Levels</span>
-                                <span class="text-xs text-gray-400">30 Silvervine</span>
-                            </div>
-                            <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                                <button onclick="updatePack(10, -1)" class="tap-target w-8 h-8 rounded bg-white shadow-sm text-gray-600 hover:text-indigo-600 font-bold">-</button>
-                                <input type="number" id="pack10" value="0" class="w-12 text-center bg-transparent font-bold text-gray-800 outline-none" onchange="calculate()">
-                                <button onclick="updatePack(10, 1)" class="tap-target w-8 h-8 rounded bg-white shadow-sm text-gray-600 hover:text-indigo-600 font-bold">+</button>
+                            <div class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
+                                <button onclick="updatePack(1, -1)" class="w-8 h-8 rounded bg-white shadow text-slate-600 hover:text-blue-600 font-bold active:scale-95 transition">-</button>
+                                <input type="number" id="pack1" value="0" class="w-12 text-center bg-transparent font-bold text-slate-800 outline-none text-sm" onchange="calculate()">
+                                <button onclick="updatePack(1, 1)" class="w-8 h-8 rounded bg-white shadow text-slate-600 hover:text-blue-600 font-bold active:scale-95 transition">+</button>
                             </div>
                         </div>
-                        <!-- Shop Item: 100 Lv -->
-                        <div class="flex items-center justify-between bg-yellow-50 -mx-2 px-2 py-1 rounded-lg">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-bold text-yellow-900">100 Levels</span>
-                                <span class="text-xs text-yellow-700 font-medium">300 SV <span class="promo-text text-[10px] bg-yellow-200 px-1 rounded ml-1 text-yellow-800">+500 Medal</span></span>
+                        
+                         <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200 text-xl shadow-inner">📦</div>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-bold text-slate-700">10 Levels</span>
+                                    <span class="text-xs text-slate-400">30 Silvervine</span>
+                                </div>
                             </div>
-                            <div class="flex items-center bg-white/50 rounded-lg p-1">
-                                <button onclick="updatePack(100, -1)" class="tap-target w-8 h-8 rounded bg-white shadow-sm text-yellow-800 font-bold">-</button>
-                                <input type="number" id="pack100" value="0" class="w-12 text-center bg-transparent font-bold text-yellow-900 outline-none" onchange="calculate()">
-                                <button onclick="updatePack(100, 1)" class="tap-target w-8 h-8 rounded bg-white shadow-sm text-yellow-800 font-bold">+</button>
-                            </div>
-                        </div>
-                        <!-- Shop Item: 1000 Lv -->
-                        <div class="flex items-center justify-between bg-yellow-100 -mx-2 px-2 py-1 rounded-lg">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-bold text-yellow-900">1000 Levels</span>
-                                <span class="text-xs text-yellow-800 font-medium">3,000 SV <span class="promo-text text-[10px] bg-yellow-300 px-1 rounded ml-1 text-yellow-900">+6K Medal</span></span>
-                            </div>
-                            <div class="flex items-center bg-white/50 rounded-lg p-1">
-                                <button onclick="updatePack(1000, -1)" class="tap-target w-8 h-8 rounded bg-white shadow-sm text-yellow-900 font-bold">-</button>
-                                <input type="number" id="pack1000" value="0" class="w-12 text-center bg-transparent font-bold text-yellow-900 outline-none" onchange="calculate()">
-                                <button onclick="updatePack(1000, 1)" class="tap-target w-8 h-8 rounded bg-white shadow-sm text-yellow-900 font-bold">+</button>
+                            <div class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
+                                <button onclick="updatePack(10, -1)" class="w-8 h-8 rounded bg-white shadow text-slate-600 hover:text-blue-600 font-bold active:scale-95 transition">-</button>
+                                <input type="number" id="pack10" value="0" class="w-12 text-center bg-transparent font-bold text-slate-800 outline-none text-sm" onchange="calculate()">
+                                <button onclick="updatePack(10, 1)" class="w-8 h-8 rounded bg-white shadow text-slate-600 hover:text-blue-600 font-bold active:scale-95 transition">+</button>
                             </div>
                         </div>
 
-                        <button onclick="autoFill()" class="w-full mt-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md hover:shadow-lg active:scale-95 transition rounded-xl py-3 font-bold flex items-center justify-center gap-2">
+                        <!-- Highlighted Packs -->
+                        <div class="flex items-center justify-between bg-gradient-to-r from-yellow-50 to-white -mx-2 px-2 py-2 rounded-lg border border-yellow-100">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center border border-yellow-200 text-xl shadow-inner">🎁</div>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-bold text-yellow-800">100 Levels</span>
+                                    <span class="text-xs text-yellow-600 font-medium flex items-center gap-1">
+                                        300 SV 
+                                        <span class="promo-text text-[9px] bg-yellow-400 text-white px-1.5 py-0.5 rounded-full shadow-sm">+500 Medal</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center bg-white/50 rounded-lg p-1 border border-yellow-200/50">
+                                <button onclick="updatePack(100, -1)" class="w-8 h-8 rounded bg-white shadow text-yellow-700 font-bold active:scale-95 transition">-</button>
+                                <input type="number" id="pack100" value="0" class="w-12 text-center bg-transparent font-bold text-yellow-800 outline-none text-sm" onchange="calculate()">
+                                <button onclick="updatePack(100, 1)" class="w-8 h-8 rounded bg-white shadow text-yellow-700 font-bold active:scale-95 transition">+</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between bg-gradient-to-r from-orange-50 to-white -mx-2 px-2 py-2 rounded-lg border border-orange-100">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center border border-orange-200 text-xl shadow-inner">👑</div>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-bold text-yellow-900">1000 Levels</span>
+                                    <span class="text-xs text-yellow-700 font-medium flex items-center gap-1">
+                                        3,000 SV 
+                                        <span class="promo-text text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full shadow-sm">+6K Medal</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center bg-white/50 rounded-lg p-1 border border-orange-200/50">
+                                <button onclick="updatePack(1000, -1)" class="w-8 h-8 rounded bg-white shadow text-yellow-900 font-bold active:scale-95 transition">-</button>
+                                <input type="number" id="pack1000" value="0" class="w-12 text-center bg-transparent font-bold text-yellow-900 outline-none text-sm" onchange="calculate()">
+                                <button onclick="updatePack(1000, 1)" class="w-8 h-8 rounded bg-white shadow text-yellow-900 font-bold active:scale-95 transition">+</button>
+                            </div>
+                        </div>
+
+                        <button onclick="autoFill()" class="w-full mt-2 btn-rox-primary rounded-xl py-3 font-bold flex items-center justify-center gap-2 text-sm shadow-lg shadow-blue-200">
                             <span>✨ Magic Fill</span>
-                            <span class="text-xs font-normal opacity-80">(เติมให้ครบเป้าหมาย)</span>
+                            <span class="font-normal opacity-80">(เติมให้ครบ)</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Desktop Summary (Hidden on Mobile, shown in sidebar) -->
-                <div class="card border-l-4 border-purple-500 hidden lg:block">
-                    <div class="card-body">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Cost</span>
-                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Final Level</span>
+                <!-- Desktop Summary -->
+                <div class="hidden lg:block rox-panel bg-slate-800 text-white border-none shadow-xl shadow-slate-300">
+                    <div class="p-5 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-3xl"></div>
+                        <div class="flex justify-between items-center mb-3 opacity-80">
+                            <span class="text-xs font-bold uppercase tracking-widest">Total Cost</span>
+                            <span class="text-xs font-bold uppercase tracking-widest">Target</span>
                         </div>
                         <div class="flex justify-between items-end">
                             <div>
-                                <span class="text-3xl font-gaming font-bold text-purple-600" id="deskSV">0</span>
-                                <span class="text-sm text-gray-500 font-bold">SV</span>
+                                <div class="text-3xl font-gaming font-bold text-yellow-400 drop-shadow-sm" id="deskSV">0</div>
+                                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Silvervine</div>
                             </div>
                             <div class="text-right">
-                                <span class="text-3xl font-gaming font-bold text-gray-800" id="deskLv">0</span>
-                                <span class="text-sm text-gray-400">/ <span id="deskTarget">2500</span></span>
+                                <div class="text-3xl font-gaming font-bold text-white drop-shadow-sm flex items-baseline gap-1 justify-end">
+                                    <span id="deskLv">0</span>
+                                    <span class="text-lg text-slate-500 font-normal">/ <span id="deskTarget">2500</span></span>
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Final Level</div>
                             </div>
                         </div>
-                        <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between text-xs">
-                             <span class="text-yellow-600 font-bold">+<span id="deskMedal">0</span> Medal (Promo)</span>
-                             <span class="text-green-600 font-bold"><span id="deskZeny">0</span> M Zeny</span>
+                        <div class="mt-4 pt-3 border-t border-white/10 flex justify-between text-xs font-medium">
+                             <span class="text-yellow-300 flex items-center gap-1">🎁 +<span id="deskMedal">0</span> Medal</span>
+                             <span class="text-emerald-400 flex items-center gap-1">💰 <span id="deskZeny">0</span> M Zeny</span>
                         </div>
                     </div>
                 </div>
 
-                <button onclick="toggleTimeline()" class="w-full bg-white border-2 border-indigo-600 text-indigo-700 hover:bg-indigo-50 font-bold py-3.5 rounded-xl shadow-sm transition active:scale-95 text-base flex justify-center items-center gap-2">
-                    <span>📅</span> ดูตารางรับของ (Timeline)
+                <button onclick="calculate()" class="w-full btn-rox-primary py-4 rounded-xl font-bold text-white flex justify-center items-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95">
+                    <span class="text-xl animate-pulse">🚀</span> คำนวณผลลัพธ์ (Calculate)
+                </button>
+
+                <button onclick="toggleTimeline()" class="w-full btn-rox-secondary py-4 rounded-xl font-bold text-slate-600 flex justify-center items-center gap-2 shadow-sm hover:text-blue-600 hover:border-blue-300 transition-all group">
+                    <span class="group-hover:scale-110 transition">📅</span> ดูตารางรับของ (Timeline Detail)
                 </button>
             </div>
 
             <!-- RIGHT COLUMN: INVENTORY -->
             <div class="lg:col-span-7">
-                <div class="card h-full flex flex-col max-h-[90vh]">
-                    <div class="card-header sticky top-0 bg-white z-10 shadow-sm">
-                        <h2 class="font-bold text-gray-800 flex items-center gap-2">
-                            <span class="text-xl">🎒</span> กระเป๋าของรางวัล (Inventory)
+                <div class="rox-panel h-full flex flex-col max-h-[90vh]">
+                    <div class="rox-header sticky top-0 bg-white/95 backdrop-blur z-10">
+                        <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                            <span class="text-xl">🎒</span> กระเป๋า (Inventory)
                         </h2>
-                        <div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                           Lv 1 - <span id="invLevelDisp">0</span>
+                        <div class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200 font-gaming font-bold">
+                           LV 1 - <span id="invLevelDisp">0</span>
                         </div>
                     </div>
                     
-                    <div class="card-body overflow-y-auto custom-scrollbar bg-gray-50/50 flex-1 p-4">
+                    <div class="overflow-y-auto custom-scrollbar bg-slate-50/50 flex-1 p-5 space-y-6">
                         <!-- Rares Section -->
-                        <div class="mb-6">
-                            <div class="flex items-center gap-2 mb-3">
-                                <div class="w-1 h-4 bg-yellow-400 rounded-full"></div>
-                                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">ไอเทมแรร์ & Milestones</h3>
+                        <div>
+                            <div class="flex items-center gap-2 mb-3 px-1">
+                                <div class="w-1.5 h-1.5 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div>
+                                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Rare Items & Milestones</h3>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="rareList">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="rareList">
                                 <!-- JS Injected -->
                             </div>
                         </div>
 
                         <!-- All Items Section -->
                         <div>
-                            <div class="flex items-center gap-2 mb-3">
-                                <div class="w-1 h-4 bg-green-500 rounded-full"></div>
-                                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">รายการไอเทมรวม</h3>
+                            <div class="flex items-center gap-2 mb-3 px-1">
+                                <div class="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">All Items Summary</h3>
                             </div>
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                 <table class="w-full text-sm">
-                                    <thead class="bg-gray-50 text-gray-500 font-bold border-b border-gray-100">
+                                    <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 text-xs uppercase">
                                         <tr>
-                                            <th class="p-3 text-left pl-4">ชื่อไอเทม</th>
-                                            <th class="p-3 text-right pr-4">จำนวน</th>
+                                            <th class="p-3 text-left pl-4">Item Name</th>
+                                            <th class="p-3 text-right pr-4">Qty</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="totalList" class="divide-y divide-gray-50"></tbody>
+                                    <tbody id="totalList" class="divide-y divide-slate-50"></tbody>
                                 </table>
                             </div>
                         </div>
@@ -322,65 +460,58 @@
     <!-- STICKY FOOTER (MOBILE ONLY) -->
     <div class="sticky-footer lg:hidden">
         <div class="flex flex-col">
-            <span class="text-[10px] text-gray-500 font-bold uppercase">Silvervine Cost</span>
+            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wide">Silvervine Cost</span>
             <div class="flex items-baseline gap-1">
-                <span class="text-xl font-gaming font-bold text-purple-600" id="mobSV">0</span>
-                <span class="text-[10px] text-purple-400">SV</span>
+                <span class="text-2xl font-gaming font-bold text-blue-600 drop-shadow-sm" id="mobSV">0</span>
+                <span class="text-[10px] text-slate-400 font-bold">SV</span>
             </div>
         </div>
         
-        <div class="h-8 w-px bg-gray-200 mx-4"></div>
+        <div class="h-8 w-px bg-slate-200 mx-4"></div>
 
         <div class="flex flex-col text-right">
-            <span class="text-[10px] text-gray-500 font-bold uppercase">Final Level</span>
+            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wide">Final Level</span>
             <div class="flex items-baseline justify-end gap-1">
-                <span class="text-xl font-gaming font-bold text-gray-800" id="mobLv">0</span>
-                <span class="text-[10px] text-gray-400">/ <span id="mobTarget">2500</span></span>
+                <span class="text-2xl font-gaming font-bold text-slate-800" id="mobLv">0</span>
+                <span class="text-[10px] text-slate-400 font-bold">/ <span id="mobTarget">2500</span></span>
             </div>
         </div>
         
-        <button onclick="toggleTimeline()" class="ml-4 bg-indigo-600 text-white p-3 rounded-xl shadow-lg active:scale-95 transition">
+        <button onclick="toggleTimeline()" class="ml-4 btn-rox-primary w-12 h-12 rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition">
             📅
         </button>
     </div>
 
     <!-- TIMELINE MODAL -->
     <div id="timelineModal" class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center modal-enter">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" onclick="toggleTimeline()"></div>
-        
-        <!-- Modal Content -->
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="toggleTimeline()"></div>
         <div class="bg-white w-full sm:w-11/12 md:max-w-4xl h-[85vh] sm:h-auto sm:max-h-[85vh] rounded-t-2xl sm:rounded-2xl shadow-2xl z-10 flex flex-col transform transition-transform duration-300">
             <!-- Header -->
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
                 <div>
-                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        📅 Timeline Detail
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 font-gaming tracking-wide">
+                        TIMELINE LOG
                     </h3>
-                    <p class="text-xs text-gray-500">แสดงรายการของรางวัลที่ได้รับในแต่ละวัน</p>
+                    <p class="text-xs text-slate-500">รางวัลที่จะได้รับในแต่ละวัน (Daily Progression)</p>
                 </div>
-                <button onclick="toggleTimeline()" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 transition">✕</button>
+                <button onclick="toggleTimeline()" class="w-8 h-8 rounded-full bg-white border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-500 transition shadow-sm">✕</button>
             </div>
             
-            <!-- Body -->
-            <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-0 bg-white">
                 <table class="w-full text-sm text-left">
-                    <thead class="text-xs text-gray-500 uppercase bg-gray-50 sticky top-0 z-10 shadow-sm">
+                    <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm font-bold border-b border-slate-100">
                         <tr>
-                            <th scope="col" class="px-4 py-3 w-28">วันที่</th>
-                            <th scope="col" class="px-4 py-3 w-24 text-center">Level</th>
-                            <th scope="col" class="px-4 py-3">ได้รับไอเทม (Items)</th>
+                            <th scope="col" class="px-5 py-3 w-32">Date</th>
+                            <th scope="col" class="px-5 py-3 w-24 text-center">Level</th>
+                            <th scope="col" class="px-5 py-3">Rewards</th>
                         </tr>
                     </thead>
-                    <tbody id="timelineBody" class="divide-y divide-gray-100">
-                        <!-- JS Generated -->
-                    </tbody>
+                    <tbody id="timelineBody" class="divide-y divide-slate-50"></tbody>
                 </table>
             </div>
             
-            <!-- Footer -->
-            <div class="p-4 border-t border-gray-100 bg-white sm:rounded-b-2xl">
-                <button onclick="toggleTimeline()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition">ปิดหน้าต่าง</button>
+            <div class="p-4 border-t border-slate-100 bg-white sm:rounded-b-2xl">
+                <button onclick="toggleTimeline()" class="w-full btn-rox-secondary py-3 rounded-xl font-bold transition">Close</button>
             </div>
         </div>
     </div>
@@ -564,12 +695,12 @@
             const lblDailyXP = document.getElementById('lblDailyXP');
 
             if(isPremium) {
-                statusText.innerText = "Premium (All Rewards)";
-                statusText.className = "text-xs text-yellow-600 font-bold";
+                statusText.innerText = "Premium (สายเปย์)";
+                statusText.className = "text-xs font-bold text-yellow-600";
                 lblDailyXP.innerText = "30 XP";
             } else {
-                statusText.innerText = "Normal (Free Rewards)";
-                statusText.className = "text-xs text-gray-500";
+                statusText.innerText = "Normal (สายฟรี)";
+                statusText.className = "text-xs font-medium text-slate-400";
                 lblDailyXP.innerText = "20 XP";
             }
             calculate();
@@ -640,6 +771,7 @@
                 document.querySelectorAll('.promo-text').forEach(el => {
                    el.classList.toggle('opacity-30', !showPromo);
                    el.classList.toggle('line-through', !showPromo);
+                   el.classList.toggle('grayscale', !showPromo);
                 });
             }
 
@@ -688,7 +820,7 @@
             let costZeny = (document.getElementById('qZenyD').checked ? 1000000*daysLeft : 0) + 
                            (document.getElementById('qZenyW').checked ? 10000000*weeksLeft : 0);
 
-            // Display Update (Desktop & Mobile)
+            // Display Update
             ['deskSV', 'mobSV'].forEach(id => document.getElementById(id).innerText = costSV.toLocaleString());
             ['deskLv', 'mobLv'].forEach(id => document.getElementById(id).innerText = finalLv.toLocaleString());
             ['deskTarget', 'mobTarget'].forEach(id => document.getElementById(id).innerText = targetLv.toLocaleString());
@@ -729,23 +861,23 @@
             });
 
             if(Object.keys(combinedRares).length === 0) {
-                rareHTML = `<div class="col-span-2 text-gray-400 text-xs text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-200">ยังไม่มีของแรร์</div>`;
+                rareHTML = `<div class="col-span-2 text-slate-400 text-xs text-center py-8 bg-slate-50/50 rounded-lg border border-dashed border-slate-200">ไม่มีไอเทมแรร์ในระดับนี้</div>`;
             } else {
                 Object.entries(combinedRares).forEach(([name, qty]) => {
                     let icon = "🔹";
-                    let style = "bg-white border-blue-100 text-blue-900";
-                    if(name.includes("Medal")) { icon = "🏅"; style = "bg-yellow-50 border-yellow-200 text-yellow-900"; }
-                    if(name.includes("Costume")) { icon = "🎭"; style = "bg-pink-50 border-pink-200 text-pink-900"; }
-                    if(name.includes("Guarantee")) { icon = "🔨"; style = "bg-purple-50 border-purple-200 text-purple-900"; }
-                    if(name.includes("Ticket")) { icon = "🎫"; }
+                    let style = "bg-white border-blue-100 ring-1 ring-blue-50 text-blue-800";
+                    if(name.includes("Medal")) { icon = "🏅"; style = "bg-gradient-to-r from-yellow-50 to-white border-yellow-200 ring-1 ring-yellow-100 text-yellow-900"; }
+                    if(name.includes("Costume")) { icon = "🎭"; style = "bg-gradient-to-r from-pink-50 to-white border-pink-200 ring-1 ring-pink-100 text-pink-900"; }
+                    if(name.includes("Guarantee")) { icon = "🔨"; style = "bg-gradient-to-r from-purple-50 to-white border-purple-200 ring-1 ring-purple-100 text-purple-900"; }
+                    if(name.includes("Ticket")) { icon = "🎫"; style = "bg-white border-indigo-100 ring-1 ring-indigo-50 text-indigo-900"; }
 
                     rareHTML += `
-                        <div class="flex items-center p-2.5 rounded-lg border shadow-sm ${style} transition hover:scale-[1.02]">
-                            <div class="text-xl mr-2">${icon}</div>
-                            <div class="flex-1 overflow-hidden">
-                                <div class="text-xs font-bold truncate">${name}</div>
+                        <div class="flex items-center p-3 rounded-xl border shadow-sm ${style} relative overflow-hidden transition hover:shadow-md hover:-translate-y-0.5">
+                            <div class="text-xl mr-3 relative z-10">${icon}</div>
+                            <div class="flex-1 overflow-hidden relative z-10">
+                                <div class="text-xs font-bold truncate leading-tight">${name}</div>
                             </div>
-                            <div class="font-gaming font-bold text-sm bg-white/50 px-2 rounded ml-2">x${qty.toLocaleString()}</div>
+                            <div class="font-gaming font-bold text-sm bg-white/60 backdrop-blur-sm px-2 py-0.5 rounded-md ml-2 border border-black/5 shadow-sm relative z-10">x${qty.toLocaleString()}</div>
                         </div>
                     `;
                 });
@@ -755,14 +887,14 @@
             // Render Total
             let totalHTML = "";
             Object.entries(inventory).sort((a,b) => a[0].localeCompare(b[0], 'th')).forEach(([name, qty]) => {
-                let rowClass = "hover:bg-gray-50 transition";
-                let qtyClass = "text-gray-600";
-                if(name.includes("Treasure Box")) { rowClass = "bg-blue-50/50 hover:bg-blue-50"; qtyClass = "text-blue-600 font-bold"; }
+                let rowClass = "hover:bg-slate-50 transition";
+                let qtyClass = "text-slate-500";
+                if(name.includes("Treasure Box")) { rowClass = "bg-blue-50/30 hover:bg-blue-50"; qtyClass = "text-blue-600 font-bold"; }
                 
                 totalHTML += `
-                    <tr class="border-b border-gray-50 last:border-0 ${rowClass}">
-                        <td class="p-2.5 pl-4 text-gray-700 font-medium truncate max-w-[180px]" title="${name}">${name}</td>
-                        <td class="p-2.5 pr-4 text-right font-gaming font-bold ${qtyClass}">x${qty.toLocaleString()}</td>
+                    <tr class="border-b border-slate-50 last:border-0 ${rowClass}">
+                        <td class="p-3 pl-4 text-slate-700 font-medium truncate max-w-[180px]" title="${name}">${name}</td>
+                        <td class="p-3 pr-4 text-right font-gaming font-bold ${qtyClass}">x${qty.toLocaleString()}</td>
                     </tr>
                 `;
             });
@@ -778,7 +910,7 @@
                 // Open
                 modal.classList.remove('modal-enter');
                 modal.classList.add('modal-enter-active');
-                body.style.overflow = 'hidden'; // Prevent bg scrolling
+                body.style.overflow = 'hidden'; 
                 generateTimeline();
             } else {
                 // Close
@@ -814,7 +946,6 @@
              
              // Day 0: Shop Purchase
              if(buyLv > 0) {
-                 // Aggregate Shop Items
                  let shopItems = {};
                  for(let l=1; l<=buyLv; l++) {
                      let items = getItemsForLevel(l, isPremium);
@@ -822,17 +953,17 @@
                  }
                  
                  let itemStr = Object.entries(shopItems)
-                    .map(([n,q]) => `<span class="inline-block bg-yellow-100 text-yellow-800 text-[10px] px-1.5 rounded mr-1 mb-1 border border-yellow-200">${n} x${q}</span>`)
+                    .map(([n,q]) => `<span class="inline-block bg-yellow-100 text-yellow-800 text-[10px] px-1.5 py-0.5 rounded border border-yellow-200 mr-1 mb-1 shadow-sm font-medium">${n} x${q}</span>`)
                     .join("");
 
                  timelineHTML += `
-                    <tr class="bg-yellow-50">
-                        <td class="py-3 px-4 text-yellow-800 font-bold align-top border-b border-yellow-100">
+                    <tr class="bg-yellow-50/50">
+                        <td class="px-5 py-4 text-yellow-800 font-bold align-top border-b border-yellow-100">
                             ${now.toLocaleDateString('en-GB')}
-                            <div class="text-[10px] opacity-70">SHOP BUY</div>
+                            <div class="text-[10px] opacity-70 font-normal mt-1">🛒 SHOP PURCHASE</div>
                         </td>
-                        <td class="py-3 px-4 text-center font-bold text-yellow-800 align-top border-b border-yellow-100">Lv. ${buyLv}</td>
-                        <td class="py-3 px-4 align-top border-b border-yellow-100">${itemStr}</td>
+                        <td class="px-5 py-4 text-center font-gaming font-bold text-yellow-800 align-top border-b border-yellow-100 text-lg">Lv. ${buyLv}</td>
+                        <td class="px-5 py-4 align-top border-b border-yellow-100">${itemStr}</td>
                     </tr>
                  `;
              }
@@ -850,7 +981,6 @@
                 if(newLevel > 2500) newLevel = 2500;
 
                 if (newLevel > currentSimLevel) {
-                     // Collect items for ALL gained levels this day
                      let earnedItems = {};
                      let hasRare = false;
                      
@@ -864,23 +994,26 @@
                      
                      let itemStr = Object.entries(earnedItems)
                         .map(([n,q]) => {
-                            let style = "bg-gray-100 text-gray-600 border-gray-200";
+                            let style = "bg-slate-100 text-slate-600 border-slate-200";
                             if(n.includes("Treasure")) style = "bg-blue-50 text-blue-700 border-blue-200";
                             if(n.includes("Ticket") || n.includes("Costume") || n.includes("Medal")) style = "bg-purple-50 text-purple-700 border-purple-200";
-                            return `<span class="inline-block ${style} text-[10px] px-1.5 rounded mr-1 mb-1 border">${n} x${q}</span>`;
+                            return `<span class="inline-block ${style} text-[10px] px-1.5 py-0.5 rounded border mr-1 mb-1 shadow-sm font-medium">${n} x${q}</span>`;
                         })
                         .join("");
 
-                     let rowClass = hasRare ? "bg-indigo-50/30" : "";
+                     let rowClass = hasRare ? "bg-blue-50/20" : "";
                      
                      timelineHTML += `
-                        <tr class="hover:bg-gray-50 ${rowClass}">
-                            <td class="py-3 px-4 border-b border-gray-50 text-gray-600 align-top text-xs">
+                        <tr class="hover:bg-slate-50 transition ${rowClass}">
+                            <td class="px-5 py-4 border-b border-slate-50 text-slate-600 align-top text-xs font-medium">
                                 ${simDate.toLocaleDateString('en-GB')}
-                                <div class="text-[10px] opacity-50 mt-1">+${newLevel - currentSimLevel} Levels</div>
+                                <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                                    +${newLevel - currentSimLevel} Lv
+                                </div>
                             </td>
-                            <td class="py-3 px-4 text-center border-b border-gray-50 font-gaming font-bold text-indigo-600 align-top text-base">${newLevel}</td>
-                            <td class="py-3 px-4 border-b border-gray-50 align-top">${itemStr}</td>
+                            <td class="px-5 py-4 text-center border-b border-slate-50 font-gaming font-bold text-blue-600 align-top text-lg">${newLevel}</td>
+                            <td class="px-5 py-4 border-b border-slate-50 align-top">${itemStr}</td>
                         </tr>
                      `;
                      currentSimLevel = newLevel;
@@ -890,7 +1023,7 @@
              }
 
              if(timelineHTML === "") {
-                 timelineHTML = `<tr><td colspan="3" class="text-center py-8 text-gray-400">ยังไม่มีข้อมูลการเก็บเลเวล หรือเลเวลเต็มแล้ว</td></tr>`;
+                 timelineHTML = `<tr><td colspan="3" class="text-center py-12 text-slate-400">No progression data found.</td></tr>`;
              }
 
              document.getElementById('timelineBody').innerHTML = timelineHTML;
