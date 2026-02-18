@@ -3,180 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ROC GGT Tools Hub - Ragnarok Classic</title>
+    <title>ROC GGT Tools Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Kanit', 'sans-serif'],
-                    },
-                    colors: {
-                        roc: {
-                            blue: '#2589FF',
-                            light: '#F0F8FF',
-                            gold: '#FFD700',
-                            goldDark: '#B8860B',
-                            dark: '#1a365d',
-                        }
-                    },
-                    boxShadow: {
-                        'game-panel': '0 0 0 4px #425c7a, 0 0 0 7px #ffd700, 0 10px 40px rgba(0,0,0,0.6)',
-                        'btn-3d-blue': '0 4px 0 #1e40af',
-                        'btn-3d-emerald': '0 4px 0 #065f46',
-                        'btn-3d-amber': '0 4px 0 #92400e',
-                        'btn-3d-red': '0 4px 0 #991b1b',
-                    }
-                }
-            }
-        }
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            background-color: #0f172a;
-            background-image: 
-                radial-gradient(circle at top right, rgba(37, 137, 255, 0.15), transparent),
-                radial-gradient(circle at bottom left, rgba(37, 137, 255, 0.1), transparent);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* ปุ่มกดแล้วยุบ */
-        .btn-game {
-            transition: transform 0.05s ease-out, box-shadow 0.05s ease-out;
-        }
-        .btn-game:active {
-            transform: translateY(3px);
-            box-shadow: 0 1px 0 transparent !important;
-        }
-
-        .shine {
+        :root { --roc-blue: #2563eb; --roc-dark: #1e293b; --roc-bg: #f8fafc; }
+        body { font-family: 'Kanit', sans-serif; background-color: var(--roc-bg); color: #334155; }
+        .font-gaming { font-family: 'Rajdhani', sans-serif; }
+        
+        .hub-card { 
+            background: white; 
+            border-radius: 24px; 
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        .shine::after {
-            content: '';
-            position: absolute;
-            top: -50%; left: -100%; width: 50%; height: 200%;
-            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
-            transform: rotate(30deg);
-            transition: 0.6s;
+        .hub-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #cbd5e1;
         }
-        .shine:hover::after {
-            left: 150%;
+        .hub-card:active { transform: translateY(-2px); }
+
+        .icon-wrapper {
+            width: 60px; height: 60px;
+            border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+            margin-bottom: 16px;
+            transition: transform 0.3s;
         }
+        .hub-card:hover .icon-wrapper { transform: scale(1.1) rotate(5deg); }
+
+        /* Color Themes */
+        .theme-blue .icon-wrapper { background: #eff6ff; color: #2563eb; }
+        .theme-blue:hover { border-color: #bfdbfe; }
+        .theme-indigo .icon-wrapper { background: #eef2ff; color: #4f46e5; }
+        .theme-indigo:hover { border-color: #c7d2fe; }
+        .theme-amber .icon-wrapper { background: #fffbeb; color: #d97706; }
+        .theme-amber:hover { border-color: #fde68a; }
+        .theme-emerald .icon-wrapper { background: #ecfdf5; color: #059669; }
+        .theme-emerald:hover { border-color: #a7f3d0; }
+        .theme-rose .icon-wrapper { background: #fff1f2; color: #e11d48; }
+        .theme-rose:hover { border-color: #fecdd3; }
+
+        .btn-link {
+            margin-top: 15px;
+            padding: 10px 0;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            background: #f8fafc;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        .hub-card:hover .btn-link { background: #1e293b; color: white; }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="antialiased p-0 md:p-4">
+<body class="min-h-screen flex flex-col">
 
-    <!-- Main Container: Fullscreen on Mobile, Windowed on Desktop -->
-    <div class="w-full md:max-w-4xl min-h-screen md:min-h-0 bg-[#E6F3FF] md:rounded-2xl shadow-none md:shadow-game-panel relative flex flex-col overflow-hidden">
+    <!-- Header -->
+    <nav class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-gaming font-bold text-xs shadow-lg leading-tight text-center">ROC<br>GGT</div>
+                <div>
+                    <h1 class="font-gaming text-2xl font-bold text-slate-800 tracking-tight leading-none uppercase">Tools <span class="text-blue-600">Hub</span></h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Gaming Assistant</p>
+                </div>
+            </div>
+            <div class="hidden sm:flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Online</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-6 md:p-10 fade-in">
         
-        <!-- Game Header (Slimmer for mobile) -->
-        <div class="h-14 md:h-16 bg-gradient-to-r from-blue-700 via-blue-500 to-blue-600 border-b-2 md:border-b-4 border-roc-gold flex items-center justify-between px-4 md:px-6 relative z-20">
-            <div class="flex items-center space-x-2 md:space-x-3">
-                <i class="fa-solid fa-scroll text-white text-lg md:text-xl drop-shadow-md"></i>
-                <h1 class="text-xl md:text-2xl font-extrabold text-white tracking-tight italic">
-                    ROC <span class="text-yellow-300 font-black">GGT</span> <span class="hidden sm:inline">HUB</span>
-                </h1>
-            </div>
-            
-            <div class="flex space-x-1.5 md:space-x-2">
-                <div class="w-6 h-6 md:w-8 md:h-8 rounded bg-blue-800/50 border border-blue-400/30"></div>
-                <div class="w-6 h-6 md:w-8 md:h-8 rounded bg-red-500 flex items-center justify-center border-b-2 border-red-700">
-                    <i class="fa-solid fa-xmark text-white text-xs"></i>
-                </div>
-            </div>
+        <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-5xl font-black text-slate-800 uppercase tracking-tight mb-2">
+                Game Tools Collection
+            </h2>
+            <p class="text-slate-500 text-sm md:text-base font-light">รวมเครื่องมือช่วยเล่น Ragnarok Online Classic (GGT)</p>
         </div>
 
-        <!-- Content Area -->
-        <div class="flex-grow p-4 md:p-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat relative">
-            
-            <!-- Header Text -->
-            <div class="text-center mb-6 md:mb-10">
-                <h2 class="text-2xl md:text-3xl font-black text-slate-800 uppercase leading-none">
-                    เลือกเครื่องมือช่วยเล่น
-                </h2>
-                <div class="flex items-center justify-center space-x-2 mt-2">
-                    <div class="h-[2px] w-8 bg-blue-300"></div>
-                    <span class="text-[10px] md:text-xs font-bold text-blue-500 tracking-[0.2em] uppercase">Ragnarok Classic</span>
-                    <div class="h-[2px] w-8 bg-blue-300"></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- 1. Chrono Pass Calculator -->
+            <a href="/calcbp.html" class="hub-card theme-blue p-6 group">
+                <div>
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <h3 class="font-gaming text-2xl font-bold text-slate-800">Chrono Calc</h3>
+                    <p class="text-sm text-slate-500 mt-2">คำนวณ XP และงบประมาณ Silvervine เพื่อพิชิตเลเวลเป้าหมาย</p>
                 </div>
-            </div>
+                <div class="btn-link">Open Calculator</div>
+            </a>
 
-            <!-- Apps List/Grid -->
-            <div class="flex flex-col md:grid md:grid-cols-3 gap-4 md:gap-6">
-
-                <!-- 1. Chrono Pass Calculator -->
-                <a href="calcbp.html" class="btn-game group shine rounded-xl bg-blue-600 shadow-btn-3d-blue border border-blue-400 overflow-hidden">
-                    <div class="p-4 md:p-6 flex flex-row md:flex-col items-center md:text-center space-x-4 md:space-x-0">
-                        <div class="w-12 h-12 md:w-16 md:h-16 flex-shrink-0 bg-white/20 rounded-lg flex items-center justify-center border border-white/30 md:mb-4">
-                            <i class="fa-solid fa-calculator text-2xl md:text-3xl text-white"></i>
-                        </div>
-                        <div class="flex-grow">
-                            <h3 class="text-lg md:text-xl font-bold text-white leading-tight uppercase">Chrono Calc</h3>
-                            <p class="text-[10px] md:text-xs text-blue-100 opacity-80 mt-0.5">เครื่องมือวางแผนแต้ม Chrono Pass</p>
-                        </div>
-                        <i class="fa-solid fa-chevron-right text-white/40 md:hidden"></i>
+            <!-- 2. Chrono Pass Diary -->
+            <a href="/dcbp.html" class="hub-card theme-indigo p-6 group">
+                <div>
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-book-bookmark"></i>
                     </div>
-                </a>
+                    <h3 class="font-gaming text-2xl font-bold text-slate-800">Chrono Diary</h3>
+                    <p class="text-sm text-slate-500 mt-2">บันทึกภารกิจประจำวัน เช็คความคืบหน้า และดูไอเทมที่ได้รับ</p>
+                </div>
+                <div class="btn-link">Open Diary</div>
+            </a>
 
-                <!-- 2. Chrono Pass Dairy -->
-                <a href="dcbp.html" class="btn-game group shine rounded-xl bg-emerald-600 shadow-btn-3d-emerald border border-emerald-400 overflow-hidden">
-                    <div class="p-4 md:p-6 flex flex-row md:flex-col items-center md:text-center space-x-4 md:space-x-0">
-                        <div class="w-12 h-12 md:w-16 md:h-16 flex-shrink-0 bg-white/20 rounded-lg flex items-center justify-center border border-white/30 md:mb-4">
-                            <i class="fa-solid fa-calendar-check text-2xl md:text-3xl text-white"></i>
-                        </div>
-                        <div class="flex-grow">
-                            <h3 class="text-lg md:text-xl font-bold text-white leading-tight uppercase">CHRONO PASS DAIRY</h3>
-                            <p class="text-[10px] md:text-xs text-emerald-100 opacity-80 mt-0.5">บันทึกภารกิจรายวันส่วนตัว</p>
-                        </div>
-                        <i class="fa-solid fa-chevron-right text-white/40 md:hidden"></i>
+            <!-- 3. VIP Checker -->
+            <a href="/vip.html" class="hub-card theme-amber p-6 group">
+                <div>
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-user-shield"></i>
                     </div>
-                </a>
+                    <h3 class="font-gaming text-2xl font-bold text-slate-800">VIP Checker</h3>
+                    <p class="text-sm text-slate-500 mt-2">ตรวจสอบรหัสพ่อค้า VIP/MVP ป้องกันมิจฉาชีพก่อนโอนเงิน</p>
+                </div>
+                <div class="btn-link">Verify Merchant</div>
+            </a>
 
-                <!-- 3. OGHza Guide -->
-                <a href="ogh.html" class="btn-game group shine rounded-xl bg-amber-600 shadow-btn-3d-amber border border-amber-400 overflow-hidden">
-                    <div class="p-4 md:p-6 flex flex-row md:flex-col items-center md:text-center space-x-4 md:space-x-0">
-                        <div class="w-12 h-12 md:w-16 md:h-16 flex-shrink-0 bg-white/20 rounded-lg flex items-center justify-center border border-white/30 md:mb-4">
-                            <i class="fa-solid fa-skull-crossbones text-2xl md:text-3xl text-white"></i>
-                        </div>
-                        <div class="flex-grow">
-                            <h3 class="text-lg md:text-xl font-bold text-white leading-tight uppercase">OGH Guide</h3>
-                            <p class="text-[10px] md:text-xs text-amber-100 opacity-80 mt-0.5">เจาะลึกดันเจี้ยน Old Glast Heim</p>
-                        </div>
-                        <i class="fa-solid fa-chevron-right text-white/40 md:hidden"></i>
+            <!-- 4. OGHza Tracker -->
+            <a href="/ogh.html" class="hub-card theme-emerald p-6 group">
+                <div>
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-skull-crossbones"></i>
                     </div>
-                </a>
+                    <h3 class="font-gaming text-2xl font-bold text-slate-800">OGHza Tracker</h3>
+                    <p class="text-sm text-slate-500 mt-2">ข้อมูลดันเจี้ยน Old Glast Heim บอส และเวลาเกิด (Coming Soon)</p>
+                </div>
+                <div class="btn-link">View Guide</div>
+            </a>
 
-            </div>
+            <!-- 5. Official News -->
+            <a href="https://roc.gnjoy.in.th/all-news/" target="_blank" class="hub-card theme-rose p-6 group">
+                <div>
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-newspaper"></i>
+                    </div>
+                    <h3 class="font-gaming text-2xl font-bold text-slate-800">Official News</h3>
+                    <p class="text-sm text-slate-500 mt-2">ติดตามข่าวสาร อัปเดตแพทช์ และโปรโมชั่นจากเว็บหลัก</p>
+                </div>
+                <div class="btn-link">Visit Website <i class="fa-solid fa-external-link-alt ml-1"></i></div>
+            </a>
+
+            <!-- 6. Community Group -->
+            <a href="https://www.facebook.com/groups/rogttclassic" target="_blank" class="hub-card theme-blue p-6 group">
+                <div>
+                    <div class="icon-wrapper" style="background: #e7f5ff; color: #1877f2;">
+                        <i class="fa-brands fa-facebook"></i>
+                    </div>
+                    <h3 class="font-gaming text-2xl font-bold text-slate-800">Community</h3>
+                    <p class="text-sm text-slate-500 mt-2">กลุ่มพูดคุย ซื้อขายแลกเปลี่ยน และดราม่าประจำเซิร์ฟเวอร์</p>
+                </div>
+                <div class="btn-link">Join Group <i class="fa-solid fa-external-link-alt ml-1"></i></div>
+            </a>
+
         </div>
+    </main>
 
-        <!-- Sticky Bottom Nav / Footer -->
-        <div class="bg-slate-900 border-t-2 border-roc-gold p-3 px-4 flex items-center justify-between">
-            <div class="flex flex-col">
-                <div class="flex items-center space-x-1.5">
-                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">ROC GGT ONLINE</span>
-                </div>
-                <span class="text-[8px] text-gray-600 font-mono">ID: SD-2024-CLASSIC</span>
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-8 text-center">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-left">
+                <p class="text-xs font-bold text-slate-800 uppercase tracking-widest">Ragnarok Online Classic</p>
+                <p class="text-[10px] text-slate-500 mt-1">© 2026 Community Tools. Not affiliated with Gravity.</p>
             </div>
-
-            <!-- YouTube Button -->
-            <a href="https://www.youtube.com/@SDekza-RO" target="_blank" 
-               class="btn-game shine px-4 py-1.5 bg-red-600 rounded-lg shadow-btn-3d-red border border-red-500 flex items-center space-x-2">
-                <i class="fa-brands fa-youtube text-white"></i>
-                <span class="text-xs font-bold text-white">SDekza RO</span>
+            <a href="https://www.youtube.com/@SDekza-RO" target="_blank" class="text-xs font-bold text-slate-500 hover:text-red-600 transition flex items-center gap-2">
+                <i class="fa-brands fa-youtube text-lg"></i> Created by SDekza RO
             </a>
         </div>
-        
-    </div>
+    </footer>
 
 </body>
 </html>
