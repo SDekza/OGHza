@@ -3,454 +3,455 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chrono Battle Pass Calculator</title>
+    <title>Chrono Battle Pass Calculator V2 (Detailed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" xintegrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         body { font-family: 'Kanit', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .glass { background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px); }
         .gradient-bg { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
-        .card-hover { transition: all 0.3s ease; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
+        .item-card { transition: all 0.2s; }
+        .item-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
-<body class="gradient-bg min-h-screen text-slate-800 p-4 md:p-8">
+<body class="gradient-bg min-h-screen text-gray-800 p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
         <!-- Header -->
-        <header class="text-center mb-10">
-            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2 drop-shadow-lg">
-                <i class="fa-solid fa-hourglass-half text-yellow-400 mr-2"></i>Chrono Calculator
-            </h1>
-            <p class="text-slate-400 text-lg">วางแผนเก็บเลเวล Battle Pass และคำนวณความคุ้มค่า Silvervine</p>
-            
-            <div class="flex justify-center gap-3 mt-4 flex-wrap">
-                <div class="bg-slate-800/50 text-yellow-400 px-4 py-1.5 rounded-full text-sm border border-yellow-500/30 shadow-lg backdrop-blur-sm">
-                    <i class="fa-regular fa-calendar-check mr-1"></i> กิจกรรม: 18 ก.พ. - 25 มี.ค. 69
-                </div>
-                <div class="bg-purple-900/50 text-purple-300 px-4 py-1.5 rounded-full text-sm border border-purple-500/30 shadow-lg backdrop-blur-sm animate-pulse">
-                    <i class="fa-solid fa-medal mr-1"></i> โปรฯ Medal: 18-25 ก.พ. นี้เท่านั้น!
-                </div>
+        <header class="text-center mb-8 text-white">
+            <h1 class="text-3xl md:text-5xl font-bold mb-2 tracking-tight">⏳ Chrono Battle Pass V2</h1>
+            <p class="text-gray-400 text-lg">คำนวณวันจบ • วางแผนงบประมาณ • สรุปไอเทมเข้ากระเป๋า</p>
+            <div class="mt-4 flex flex-wrap justify-center gap-3">
+                <span class="text-xs bg-yellow-500/20 text-yellow-300 border border-yellow-500/50 px-3 py-1 rounded-full">
+                    📅 กิจกรรม: 18 ก.พ. - 25 มี.ค. 69
+                </span>
+                <span class="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/50 px-3 py-1 rounded-full">
+                    💎 โปรโมชั่น Medal: ถึง 25 ก.พ. นี้
+                </span>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <!-- LEFT PANEL: Configuration -->
-            <div class="lg:col-span-5 space-y-6">
-                
-                <!-- 1. Target Settings -->
-                <div class="glass rounded-2xl p-6 shadow-xl card-hover">
-                    <div class="flex items-center mb-4 border-b border-slate-200 pb-3">
-                        <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-3 shadow-md">1</div>
-                        <h2 class="text-xl font-bold text-slate-800">ตั้งค่าเป้าหมาย</h2>
-                    </div>
+            <!-- LEFT COLUMN: SETTINGS (4 Cols) -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="glass rounded-2xl p-6 shadow-xl border border-white/20">
+                    <h2 class="text-xl font-bold mb-4 text-blue-900 flex items-center">
+                        <span class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mr-2 text-sm font-bold">1</span> 
+                        ตั้งค่าเป้าหมาย
+                    </h2>
                     
-                    <div class="space-y-5">
+                    <!-- Date & Target -->
+                    <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-semibold text-slate-600 mb-1.5">วันที่เริ่มคำนวณ</label>
-                            <input type="date" id="currentDate" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none transition text-slate-700 font-medium">
+                            <label class="block text-sm font-bold mb-1 text-gray-600">วันที่เริ่มคำนวณ</label>
+                            <input type="date" id="currentDate" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-semibold text-slate-600 mb-1.5">เลเวลเป้าหมาย (Target)</label>
+                            <label class="block text-sm font-bold mb-1 text-gray-600">เลเวลเป้าหมาย (Target)</label>
                             <div class="relative">
-                                <input type="number" id="targetLevel" value="2500" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 pr-16 text-2xl font-bold text-blue-700 focus:ring-2 focus:ring-blue-500 outline-none transition shadow-inner">
-                                <span class="absolute right-4 top-4 text-slate-400 font-medium">Lv.</span>
+                                <input type="number" id="targetLevel" value="2500" class="w-full bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-xl font-bold text-blue-700 focus:ring-2 focus:ring-blue-500 outline-none pr-16">
+                                <span class="absolute right-3 top-3.5 text-gray-400 text-sm font-bold">LVL</span>
                             </div>
-                            
-                            <!-- Quick Select Buttons -->
-                            <div class="grid grid-cols-3 gap-2 mt-3">
-                                <button onclick="setTarget(300)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 rounded-lg transition border border-slate-200">
-                                    Lv.300 (ตั๋ว)
-                                </button>
-                                <button onclick="setTarget(600)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 rounded-lg transition border border-slate-200">
-                                    Lv.600 (ใบ+9)
-                                </button>
-                                <button onclick="setTarget(2500)" class="text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700 py-2 rounded-lg transition border border-yellow-300 font-bold">
-                                    Lv.2500 (ปีกทอง)
-                                </button>
+                            <!-- Preset Buttons -->
+                            <div class="grid grid-cols-3 gap-2 mt-2">
+                                <button onclick="setTarget(300)" class="text-xs bg-gray-100 hover:bg-gray-200 py-1.5 rounded text-gray-600 font-medium transition">Lv.300 (ตั๋วx2)</button>
+                                <button onclick="setTarget(600)" class="text-xs bg-gray-100 hover:bg-gray-200 py-1.5 rounded text-gray-600 font-medium transition">Lv.600 (+9)</button>
+                                <button onclick="setTarget(2500)" class="text-xs bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 py-1.5 rounded text-yellow-700 font-medium transition">Lv.2500 (ปีก)</button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- 2. Grinding Config -->
-                <div class="glass rounded-2xl p-6 shadow-xl card-hover">
-                    <div class="flex items-center mb-4 border-b border-slate-200 pb-3">
-                        <div class="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-3 shadow-md">2</div>
-                        <h2 class="text-xl font-bold text-slate-800">กิจวัตรรายวัน (Quest)</h2>
-                    </div>
-
-                    <div class="space-y-3">
-                        <!-- Daily -->
-                        <div class="flex items-start space-x-3 p-3 rounded-xl bg-blue-50/50 hover:bg-blue-50 transition cursor-pointer border border-transparent hover:border-blue-200" onclick="document.getElementById('questDaily').click()">
-                            <input type="checkbox" id="questDaily" checked class="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
-                            <div>
-                                <div class="font-bold text-slate-700">Premium Daily Quest</div>
-                                <div class="text-xs text-slate-500">ได้ 30 EXP ต่อวัน</div>
-                            </div>
-                        </div>
-
-                        <!-- Daily Zeny -->
-                        <div class="flex items-start space-x-3 p-3 rounded-xl bg-green-50/50 hover:bg-green-50 transition cursor-pointer border border-transparent hover:border-green-200" onclick="document.getElementById('questZenyDaily').click()">
-                            <input type="checkbox" id="questZenyDaily" checked class="mt-1 w-5 h-5 text-green-600 rounded focus:ring-green-500 cursor-pointer">
-                            <div>
-                                <div class="font-bold text-slate-700">Daily Zeny (ส่งเงินรายวัน)</div>
-                                <div class="text-xs text-green-700 font-medium">จ่าย 1,000,000 Zeny ได้ 30 EXP</div>
-                            </div>
-                        </div>
-
-                        <hr class="border-slate-200 my-2">
-
-                        <!-- Weekly -->
-                        <div class="flex items-start space-x-3 p-3 rounded-xl bg-purple-50/50 hover:bg-purple-50 transition cursor-pointer border border-transparent hover:border-purple-200" onclick="document.getElementById('questWeekly').click()">
-                            <input type="checkbox" id="questWeekly" checked class="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-purple-500 cursor-pointer">
-                            <div>
-                                <div class="font-bold text-slate-700">Weekly Quest</div>
-                                <div class="text-xs text-slate-500">ได้ 300 EXP ต่อสัปดาห์</div>
-                            </div>
-                        </div>
-
-                        <!-- Weekly Zeny (Trap) -->
-                        <div class="flex items-start space-x-3 p-3 rounded-xl bg-red-50/50 hover:bg-red-50 transition cursor-pointer border border-transparent hover:border-red-200 opacity-80" onclick="document.getElementById('questZenyWeekly').click()">
-                            <input type="checkbox" id="questZenyWeekly" class="mt-1 w-5 h-5 text-red-600 rounded focus:ring-red-500 cursor-pointer">
-                            <div>
-                                <div class="font-bold text-slate-700">Weekly Zeny (ไม่แนะนำ)</div>
-                                <div class="text-xs text-red-600 font-bold">จ่าย 10,000,000 Zeny ได้แค่ 40 EXP</div>
-                            </div>
+                    <!-- Quest Config -->
+                    <div class="mt-6 border-t border-gray-100 pt-4">
+                        <h3 class="font-bold text-sm mb-3 text-gray-700">กิจวัตร (Grinding)</h3>
+                        <div class="space-y-3">
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <span class="text-sm text-gray-600 group-hover:text-blue-600">Daily Quest (30 EXP)</span>
+                                <input type="checkbox" id="questDaily" checked class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <span class="text-sm text-gray-600 group-hover:text-green-600">Daily Zeny 1M (30 EXP)</span>
+                                <input type="checkbox" id="questZenyDaily" checked class="w-5 h-5 text-green-600 rounded focus:ring-green-500">
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <span class="text-sm text-gray-600 group-hover:text-blue-600">Weekly Quest (300 EXP)</span>
+                                <input type="checkbox" id="questWeekly" checked class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <div class="flex flex-col">
+                                    <span class="text-sm text-gray-600 group-hover:text-red-500">Weekly Zeny 10M</span>
+                                    <span class="text-[10px] text-red-400">ได้แค่ 40 EXP (ไม่คุ้ม)</span>
+                                </div>
+                                <input type="checkbox" id="questZenyWeekly" class="w-5 h-5 text-red-500 rounded focus:ring-red-500">
+                            </label>
                         </div>
                     </div>
-                </div>
 
-                <!-- 3. Promo Toggle -->
-                <div class="glass rounded-2xl p-4 shadow-md border-l-4 border-yellow-400">
-                    <label class="flex items-center justify-between cursor-pointer group">
-                        <div class="flex items-center space-x-3">
-                            <div class="bg-yellow-100 p-2 rounded-lg text-yellow-600 group-hover:bg-yellow-200 transition">
-                                <i class="fa-solid fa-gift text-xl"></i>
-                            </div>
+                    <!-- Promo Config -->
+                    <div class="mt-4 bg-yellow-50 p-3 rounded-xl border border-yellow-200">
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="checkbox" id="usePromo" checked class="w-5 h-5 text-yellow-600 rounded focus:ring-yellow-500">
                             <div>
-                                <span class="font-bold text-slate-700 block">โปรโมชั่น Medal (18-25 ก.พ.)</span>
-                                <span class="text-xs text-slate-500">แถม Mysterious Medal เมื่อซื้อเลเวล</span>
+                                <span class="font-bold text-yellow-800 text-sm">ใช้โปรโมชั่น Medal</span>
+                                <p class="text-[10px] text-yellow-600">หมดเขต 25 ก.พ. นี้</p>
                             </div>
-                        </div>
-                        <div class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="usePromo" checked class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
-                        </div>
-                    </label>
-                </div>
+                        </label>
+                    </div>
 
-                <button onclick="calculate()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-1 active:scale-95 text-lg">
-                    <i class="fa-solid fa-calculator mr-2"></i> คำนวณผลลัพธ์
-                </button>
+                    <button onclick="calculate()" class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition transform active:scale-95">
+                        🚀 คำนวณผลลัพธ์
+                    </button>
+                </div>
             </div>
 
-            <!-- RIGHT PANEL: Results -->
-            <div class="lg:col-span-7 space-y-6">
+            <!-- RIGHT COLUMN: RESULTS (8 Cols) -->
+            <div class="lg:col-span-8 space-y-6">
                 
-                <!-- Summary Dashboard -->
-                <div id="resultCard" class="glass rounded-2xl p-6 shadow-xl border-t-4 border-slate-300 relative overflow-hidden">
-                    <div class="flex justify-between items-start mb-6">
-                        <div>
-                            <h2 class="text-2xl font-bold text-slate-800">สรุปแผนการเล่น</h2>
-                            <p class="text-sm text-slate-500" id="dateRangeDisplay">ระยะเวลาที่เหลือ: 0 วัน</p>
-                        </div>
-                        <div id="statusBadge" class="px-3 py-1 bg-slate-200 text-slate-600 rounded-lg text-xs font-bold uppercase tracking-wide">
-                            Waiting
-                        </div>
+                <!-- 1. Status Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Date Card -->
+                    <div class="glass p-5 rounded-2xl shadow-sm border-l-4 border-blue-500 relative overflow-hidden">
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">📅 วันที่สำเร็จ (Estimated Date)</p>
+                        <h3 class="text-xl font-bold text-gray-800" id="completionDate">-</h3>
+                        <p class="text-xs text-blue-600 mt-1" id="completionNote">จากการคำนวณ Grinding</p>
+                    </div>
+                    
+                    <!-- Money Card -->
+                    <div class="glass p-5 rounded-2xl shadow-sm border-l-4 border-purple-500">
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">💰 งบประมาณ (Silvervine)</p>
+                        <h3 class="text-2xl font-bold text-purple-700" id="totalSV">0 SV</h3>
+                        <p class="text-xs text-gray-400 mt-1">+ <span id="totalZeny" class="font-bold text-gray-600">0</span> Zeny</p>
                     </div>
 
-                    <!-- Level Stats -->
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center relative overflow-hidden group">
-                            <div class="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition">
-                                <i class="fa-solid fa-person-digging text-4xl text-slate-800"></i>
-                            </div>
-                            <p class="text-xs text-slate-500 font-bold uppercase mb-1">เลเวลจากการเล่นเอง</p>
-                            <div class="text-4xl font-black text-slate-700" id="grindLevel">0</div>
-                            <p class="text-xs text-green-600 mt-1 font-medium bg-green-100 inline-block px-2 py-0.5 rounded-full">สายฟรี</p>
-                        </div>
-                        
-                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 text-center relative overflow-hidden group">
-                            <div class="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition">
-                                <i class="fa-solid fa-cart-shopping text-4xl text-blue-800"></i>
-                            </div>
-                            <p class="text-xs text-blue-600 font-bold uppercase mb-1">ต้องซื้อเพิ่ม</p>
-                            <div class="text-4xl font-black text-blue-700" id="buyLevel">0</div>
-                            <p class="text-xs text-blue-600 mt-1 font-medium bg-blue-100 inline-block px-2 py-0.5 rounded-full">สายเปย์</p>
-                        </div>
-                    </div>
-
-                    <!-- Costs -->
-                    <div class="bg-white rounded-xl border border-slate-200 p-5 space-y-4 shadow-sm">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                                    <i class="fa-solid fa-gem text-lg"></i>
-                                </div>
-                                <div>
-                                    <div class="text-sm text-slate-500 font-medium">ใช้ Silvervine รวม</div>
-                                    <div class="text-xs text-slate-400">ต้นทุนเงินจริง</div>
-                                </div>
-                            </div>
-                            <div class="text-2xl font-bold text-purple-600" id="totalSV">0 SV</div>
-                        </div>
-                        
-                        <div class="border-t border-slate-100"></div>
-
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                                    <i class="fa-solid fa-coins text-lg"></i>
-                                </div>
-                                <div>
-                                    <div class="text-sm text-slate-500 font-medium">ใช้ Zeny รวม</div>
-                                    <div class="text-xs text-slate-400">ต้นทุนเงินในเกม</div>
-                                </div>
-                            </div>
-                            <div class="text-xl font-bold text-green-600" id="totalZeny">0 M</div>
-                        </div>
-
-                        <div class="border-t border-slate-100"></div>
-
-                        <div class="flex justify-between items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                            <div class="flex items-center space-x-2 text-yellow-700">
-                                <i class="fa-solid fa-medal"></i>
-                                <span class="text-sm font-bold">ของแถม Medal</span>
-                            </div>
-                            <div class="text-xl font-bold text-yellow-600" id="totalMedal">0 ea</div>
-                        </div>
-                    </div>
-
-                    <!-- Buying Plan -->
-                    <div class="mt-4">
-                        <h3 class="text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-basket-shopping mr-1"></i> แผนการซื้อที่แนะนำ:</h3>
-                        <div class="bg-slate-50 rounded-xl border border-slate-200 p-3">
-                            <ul id="buyingPlan" class="space-y-2 text-sm text-slate-600">
-                                <li class="text-center text-slate-400 italic py-2">กดคำนวณเพื่อดูข้อมูล</li>
-                            </ul>
-                        </div>
+                    <!-- Medal Card -->
+                    <div class="glass p-5 rounded-2xl shadow-sm border-l-4 border-yellow-400">
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">🎁 Mysterious Medal</p>
+                        <h3 class="text-2xl font-bold text-yellow-600" id="totalMedal">0</h3>
+                        <p class="text-xs text-yellow-700 mt-1">ได้รับเฉพาะช่วงโปรโมชั่น</p>
                     </div>
                 </div>
 
-                <!-- Reward List -->
-                <div class="glass rounded-2xl p-6 shadow-xl border border-slate-200">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-slate-800">
-                            <i class="fa-solid fa-trophy text-yellow-500 mr-2"></i>ของรางวัล
-                        </h2>
-                        <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded border border-slate-200" id="finalLevelDisplay">Lv. 0</span>
+                <!-- 2. Buying Plan & Progress -->
+                <div class="glass rounded-2xl p-6 shadow-xl border border-white/20">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                        <h2 class="text-lg font-bold text-gray-800">📊 แผนการเก็บเลเวล (Progress Plan)</h2>
+                        <span class="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded mt-2 md:mt-0">
+                            Grind: <span id="grindLevel" class="font-bold text-gray-800">0</span> + Buy: <span id="buyLevel" class="font-bold text-blue-600">0</span>
+                        </span>
                     </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden flex">
+                        <div id="barGrind" class="bg-gray-500 h-4 flex items-center justify-center text-[8px] text-white font-bold transition-all duration-500" style="width: 0%">GRIND</div>
+                        <div id="barBuy" class="bg-blue-500 h-4 flex items-center justify-center text-[8px] text-white font-bold transition-all duration-500" style="width: 0%">BUY</div>
+                    </div>
+
+                    <div class="bg-blue-50/50 rounded-xl p-4 border border-blue-100">
+                        <p class="text-sm font-bold text-blue-900 mb-2">🛒 สิ่งที่ต้องซื้อ (Shopping List):</p>
+                        <ul id="buyingPlan" class="text-sm space-y-1 text-blue-800 list-disc list-inside">
+                            <li>-</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 3. Inventory Summary (Detailed Items) -->
+                <div class="glass rounded-2xl p-6 shadow-xl border border-white/20">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between">
+                        <span class="flex items-center"><span class="text-xl mr-2">🎒</span> สรุปไอเทมเข้าตัว (Total Inventory)</span>
+                        <span class="text-xs text-gray-400 font-normal">รวมสะสมตั้งแต่ Lv.1</span>
+                    </h2>
                     
-                    <div class="space-y-2 max-h-[400px] overflow-y-auto pr-2" id="rewardList">
-                        <!-- JS Generated -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left: Rare & Tickets -->
+                        <div>
+                            <h3 class="text-xs font-bold text-purple-600 uppercase tracking-wide mb-3 border-b pb-1">💎 Rare Items & Equipment</h3>
+                            <div class="space-y-2" id="rareList">
+                                <!-- JS Injection -->
+                            </div>
+                        </div>
+
+                        <!-- Right: Consumables -->
+                        <div>
+                            <h3 class="text-xs font-bold text-green-600 uppercase tracking-wide mb-3 border-b pb-1">📦 Consumables & Boxes</h3>
+                            <div class="space-y-2" id="consuList">
+                                <!-- JS Injection -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
             </div>
         </div>
+        
+        <footer class="text-center text-gray-500 text-xs mt-8 pb-8">
+            Created for ROC Players | Data Estimation based on Chrono Pass Feb 2026
+        </footer>
     </div>
 
     <script>
-        // --- Constants & Config ---
-        const CONFIG = {
-            startDate: new Date('2026-02-18'),
-            endDate: new Date('2026-03-25'),
-            promoEndDate: new Date('2026-02-25'),
-            expPerLevel: 10
-        };
+        // --- Constants ---
+        const EVENT_START = new Date('2026-02-18');
+        const EVENT_END = new Date('2026-03-25');
+        const PROMO_END = new Date('2026-02-25');
+        const EXP_PER_LEVEL = 10;
 
-        const MILESTONES = [
-            { lv: 100, name: "[Not For Sale] Chrono Pass Ticket (1st)", type: "ticket" },
-            { lv: 200, name: "Costume Cosmic Connection", type: "costume" },
-            { lv: 300, name: "[Not For Sale] Chrono Pass Ticket (2nd)", type: "ticket" },
-            { lv: 350, name: "Guarantee Weapon +7 Pack", type: "refine" },
-            { lv: 350, name: "Special Enchant Temporal Boots", type: "item" },
-            { lv: 400, name: "Guarantee Armor +7 Pack", type: "refine" },
-            { lv: 600, name: "Guarantee Weapon +9 Pack", type: "refine" },
-            { lv: 700, name: "Guarantee Armor +9 Pack", type: "refine" },
-            { lv: 1500, name: "Guarantee Weapon +11 Pack", type: "refine" },
-            { lv: 2000, name: "Guarantee Armor +11 Pack", type: "refine" },
-            { lv: 2500, name: "Costume Golden Valkyrie Wings", type: "grand" },
-        ];
+        // Init
+        document.getElementById('currentDate').valueAsDate = new Date();
 
-        // --- Helper Functions ---
-        const formatNum = (num) => num.toLocaleString('en-US');
-        const getElem = (id) => document.getElementById(id);
-
-        // --- Core Logic ---
         function setTarget(val) {
-            getElem('targetLevel').value = val;
+            document.getElementById('targetLevel').value = val;
             calculate();
         }
 
         function calculate() {
-            // 1. Get Inputs
-            let inputDate = new Date(getElem('currentDate').value);
-            const targetLv = parseInt(getElem('targetLevel').value) || 0;
-            let usePromo = getElem('usePromo').checked;
+            // 1. Gather Inputs
+            const inputDateVal = document.getElementById('currentDate').value;
+            const inputDate = new Date(inputDateVal);
+            const targetLv = parseInt(document.getElementById('targetLevel').value) || 0;
+            const usePromo = document.getElementById('usePromo').checked;
+            
+            // Quests
+            const doDaily = document.getElementById('questDaily').checked;
+            const doZenyDaily = document.getElementById('questZenyDaily').checked;
+            const doWeekly = document.getElementById('questWeekly').checked;
+            const doZenyWeekly = document.getElementById('questZenyWeekly').checked;
 
-            // 2. Date Validation
-            if (isNaN(inputDate.getTime())) {
-                inputDate = new Date(); // Fallback to today
-            }
-
-            if (inputDate > CONFIG.endDate) {
-                alert("วันที่เลือกเกินระยะเวลากิจกรรม (25 มี.ค. 69)");
-                return;
-            }
-
-            // Check Promo Validity
+            // 2. Validate
+            if (inputDate > EVENT_END) { alert("วันที่เลือกเกินเวลากิจกรรม"); return; }
             let promoActive = usePromo;
-            if (usePromo && inputDate > CONFIG.promoEndDate) {
+            if (usePromo && inputDate > PROMO_END) {
                 promoActive = false;
-                // Visual feedback only, don't uncheck to annoy user, just warn in logic or UI
-                getElem('usePromo').checked = false; // Actually uncheck to be clear
-                alert("วันที่เลือกเกินระยะเวลาโปรโมชั่น Medal (25 ก.พ.)");
+                // Soft warn or UI update
+                document.getElementById('totalMedal').parentElement.classList.add('opacity-50');
+            } else {
+                document.getElementById('totalMedal').parentElement.classList.remove('opacity-50');
             }
 
-            // 3. Time Calculations
-            // Clamp start date to event start
-            const effectiveStartDate = inputDate < CONFIG.startDate ? CONFIG.startDate : inputDate;
-            const diffTime = Math.abs(CONFIG.endDate - effectiveStartDate);
-            const remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include current day
-            const remainingWeeks = Math.ceil(remainingDays / 7);
+            // 3. Time & Grind Calculation
+            const oneDay = 24 * 60 * 60 * 1000;
+            const startDate = inputDate < EVENT_START ? EVENT_START : inputDate;
+            const diffTime = Math.abs(EVENT_END - startDate);
+            const remainingDays = Math.max(0, Math.ceil(diffTime / oneDay)) + 1; // Inclusive today
 
-            getElem('dateRangeDisplay').innerText = `เหลือเวลาเก็บเลเวล: ${remainingDays} วัน (${remainingWeeks} สัปดาห์)`;
-
-            // 4. Grind EXP Calculation
-            let dailyExp = 0;
-            let dailyCost = 0;
-            if (getElem('questDaily').checked) dailyExp += 30;
-            if (getElem('questZenyDaily').checked) { dailyExp += 30; dailyCost += 1000000; }
-
-            let weeklyExp = 0;
-            let weeklyCost = 0;
-            if (getElem('questWeekly').checked) weeklyExp += 300;
-            if (getElem('questZenyWeekly').checked) { weeklyExp += 40; weeklyCost += 10000000; }
-
-            const totalGrindExp = (dailyExp * remainingDays) + (weeklyExp * remainingWeeks);
-            const totalZeny = (dailyCost * remainingDays) + (weeklyCost * remainingWeeks);
+            // Calc Daily/Weekly Gain
+            let dailyGain = 0;
+            if (doDaily) dailyGain += 30;
+            if (doZenyDaily) dailyGain += 30;
             
-            const grindLv = Math.floor(totalGrindExp / CONFIG.expPerLevel);
+            let weeklyGain = 0;
+            if (doWeekly) weeklyGain += 300;
+            if (doZenyWeekly) weeklyGain += 40;
 
-            // 5. Buying Logic
-            let neededLv = Math.max(0, targetLv - grindLv);
+            // Zeny Cost
+            let totalZeny = 0;
+            totalZeny += (doZenyDaily ? 1000000 : 0) * remainingDays;
+            const weeks = Math.ceil(remainingDays / 7);
+            totalZeny += (doZenyWeekly ? 10000000 : 0) * weeks;
+
+            // Total Grind EXP (Max Possible)
+            const totalGrindExp = (dailyGain * remainingDays) + (weeklyGain * weeks);
+            const maxGrindLv = Math.floor(totalGrindExp / EXP_PER_LEVEL);
+
+            // 4. Determine Completion Date (Estimation)
+            // If target <= maxGrindLv, find WHEN we reach it.
+            // If target > maxGrindLv, date is EndDate (because we grind till end then buy).
+            let finishDateStr = "-";
+            let finishNote = "";
+            let neededExp = targetLv * EXP_PER_LEVEL;
+
+            if (maxGrindLv >= targetLv) {
+                // Simulation Loop to find day
+                let currentExp = 0;
+                let daysPassed = 0;
+                // Simple simulation: Distribute weekly exp daily for smoother estimation? 
+                // No, let's just use Average Daily Rate for estimation to keep it fast
+                const avgDaily = dailyGain + (weeklyGain / 7);
+                const daysNeeded = Math.ceil(neededExp / avgDaily);
+                
+                const finishDate = new Date(startDate.getTime() + (daysNeeded * oneDay));
+                const options = { year: 'numeric', month: 'short', day: 'numeric', locale: 'th-TH' };
+                finishDateStr = finishDate.toLocaleDateString('th-TH', options);
+                finishNote = "ทำภารกิจสำเร็จได้โดยไม่ต้องเติมเงิน!";
+            } else {
+                // Must Buy
+                const options = { year: 'numeric', month: 'short', day: 'numeric', locale: 'th-TH' };
+                finishDateStr = EVENT_END.toLocaleDateString('th-TH', options);
+                finishNote = "ต้องทำเควสจนวันสุดท้าย + เติมเงินเพิ่ม";
+            }
+
+            // 5. Calculate Buying Plan
+            let grindLv = Math.min(maxGrindLv, targetLv); // If target is 300 but we can grind 400, strictly speaking we only need 300, but logic usually assumes max grind to save money. Let's assume user STOPS grinding when target reached if target < max.
             
+            // Correction: If user WANTS Lv 300, and can grind to 400. They stop at 300.
+            // Grind Level displayed should be "Level achieved by playing".
+            // Buy Level = Target - Grind Level.
+            // But wait, "Grind Level" depends on "Time". 
+            // Strategy: "Maximize Grind to minimize Cost".
+            // So Grind Level = Max Possible Grind (capped at target).
+            
+            let actualGrindLv = maxGrindLv;
+            if (actualGrindLv > targetLv) actualGrindLv = targetLv;
+            
+            let buyLv = targetLv - actualGrindLv;
+            if (buyLv < 0) buyLv = 0;
+
+            // Silvervine Calc
             let costSV = 0;
             let medals = 0;
+            let remainingToBuy = buyLv;
             let planHTML = "";
-            
-            if (neededLv > 0) {
-                let remaining = neededLv;
-                let pack3000 = Math.floor(remaining / 1000);
-                remaining %= 1000;
-                let pack300 = Math.floor(remaining / 100);
-                remaining %= 100;
-                let pack30 = Math.floor(remaining / 10);
-                remaining %= 10;
-                let pack3 = remaining;
 
-                // Calculate Costs & Medals
-                if (pack3000 > 0) {
-                    let c = pack3000 * 3000;
-                    costSV += c;
-                    if(promoActive) medals += pack3000 * 6000;
-                    planHTML += `<li class="flex justify-between items-center bg-purple-50 p-2 rounded border border-purple-100"><span class="font-bold text-purple-700">แพ็ก 3,000 SV</span> <span class="bg-white px-2 rounded text-slate-500 text-xs border">x${pack3000}</span></li>`;
+            if (remainingToBuy > 0) {
+                const p3000 = Math.floor(remainingToBuy / 1000);
+                if (p3000 > 0) {
+                    costSV += p3000 * 3000;
+                    if (promoActive) medals += p3000 * 6000;
+                    remainingToBuy %= 1000;
+                    planHTML += `<li><b>แพ็ก 3,000 SV</b> x ${p3000}</li>`;
                 }
-                if (pack300 > 0) {
-                    let c = pack300 * 300;
-                    costSV += c;
-                    if(promoActive) medals += pack300 * 500;
-                    planHTML += `<li class="flex justify-between items-center bg-blue-50 p-2 rounded border border-blue-100"><span class="font-bold text-blue-700">แพ็ก 300 SV</span> <span class="bg-white px-2 rounded text-slate-500 text-xs border">x${pack300}</span></li>`;
+                const p300 = Math.floor(remainingToBuy / 100);
+                if (p300 > 0) {
+                    costSV += p300 * 300;
+                    if (promoActive) medals += p300 * 500;
+                    remainingToBuy %= 100;
+                    planHTML += `<li><b>แพ็ก 300 SV</b> x ${p300}</li>`;
                 }
-                if (pack30 > 0) {
-                    costSV += pack30 * 30;
-                    planHTML += `<li class="flex justify-between items-center bg-slate-100 p-2 rounded border border-slate-200"><span class="text-slate-700">แพ็ก 30 SV</span> <span class="bg-white px-2 rounded text-slate-500 text-xs border">x${pack30}</span></li>`;
+                const p30 = Math.floor(remainingToBuy / 10);
+                if (p30 > 0) {
+                    costSV += p30 * 30;
+                    remainingToBuy %= 10;
+                    planHTML += `<li>แพ็ก 30 SV x ${p30}</li>`;
                 }
-                if (pack3 > 0) {
-                    costSV += pack3 * 3;
-                    planHTML += `<li class="flex justify-between items-center bg-slate-100 p-2 rounded border border-slate-200"><span class="text-slate-700">แพ็ก 3 SV</span> <span class="bg-white px-2 rounded text-slate-500 text-xs border">x${pack3}</span></li>`;
+                if (remainingToBuy > 0) {
+                    costSV += remainingToBuy * 3;
+                    planHTML += `<li>แพ็ก 3 SV x ${remainingToBuy}</li>`;
                 }
             } else {
-                planHTML = `<li class="text-center text-green-600 font-bold py-2 bg-green-50 rounded"><i class="fa-solid fa-check-circle mr-1"></i> ไม่ต้องเติมเงินเพิ่ม!</li>`;
+                planHTML = "<li class='text-green-600'>ไม่ต้องซื้อเพิ่ม! ความขยันพาคุณไปถึงเป้าหมาย</li>";
             }
 
-            // 6. UI Updates
-            getElem('grindLevel').innerText = formatNum(grindLv);
-            getElem('buyLevel').innerText = formatNum(neededLv);
-            getElem('totalSV').innerText = formatNum(costSV) + " SV";
-            getElem('totalZeny').innerText = (totalZeny / 1000000).toFixed(1) + " M";
-            getElem('totalMedal').innerText = formatNum(medals) + " ea";
-            getElem('buyingPlan').innerHTML = planHTML;
-
-            // Status Badge & Card Color
-            const resultCard = getElem('resultCard');
-            const statusBadge = getElem('statusBadge');
+            // 6. Update UI (Basic Stats)
+            document.getElementById('completionDate').innerText = finishDateStr;
+            document.getElementById('completionNote').innerText = finishNote;
+            document.getElementById('totalSV').innerText = costSV.toLocaleString() + " SV";
+            document.getElementById('totalZeny').innerText = (totalZeny / 1000000).toFixed(1) + " M";
+            document.getElementById('totalMedal').innerText = medals.toLocaleString();
             
-            resultCard.classList.remove('border-slate-300', 'border-green-500', 'border-purple-500');
-            statusBadge.classList.remove('bg-slate-200', 'text-slate-600', 'bg-green-100', 'text-green-700', 'bg-purple-100', 'text-purple-700');
+            document.getElementById('grindLevel').innerText = actualGrindLv.toLocaleString();
+            document.getElementById('buyLevel').innerText = buyLv.toLocaleString();
+            document.getElementById('buyingPlan').innerHTML = planHTML;
 
-            if (neededLv <= 0) {
-                resultCard.classList.add('border-green-500');
-                statusBadge.classList.add('bg-green-100', 'text-green-700');
-                statusBadge.innerText = "SUCCESS (สายฟรี)";
-            } else {
-                resultCard.classList.add('border-purple-500');
-                statusBadge.classList.add('bg-purple-100', 'text-purple-700');
-                statusBadge.innerText = "REQUIRE TOPUP";
-            }
+            // Update Progress Bar
+            const total = Math.max(targetLv, 1);
+            const grindPct = (actualGrindLv / total) * 100;
+            const buyPct = (buyLv / total) * 100;
+            document.getElementById('barGrind').style.width = `${grindPct}%`;
+            document.getElementById('barBuy').style.width = `${buyPct}%`;
+            document.getElementById('barGrind').innerText = grindPct > 5 ? `GRIND ${actualGrindLv}` : '';
+            document.getElementById('barBuy').innerText = buyPct > 5 ? `BUY ${buyLv}` : '';
 
-            // 7. Rewards List
-            const list = getElem('rewardList');
-            list.innerHTML = "";
-            const finalLevel = Math.max(targetLv, grindLv);
-            getElem('finalLevelDisplay').innerText = `Total Lv. ${formatNum(finalLevel)}`;
-
-            MILESTONES.forEach(m => {
-                const reached = finalLevel >= m.lv;
-                const div = document.createElement('div');
-                
-                // Style Logic
-                let bgClass = reached ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-100 opacity-60 grayscale';
-                let icon = reached ? '<i class="fa-solid fa-check text-green-500"></i>' : '<i class="fa-solid fa-lock text-slate-300"></i>';
-                
-                if (m.type === 'grand' && reached) {
-                    bgClass = 'bg-yellow-50 border-yellow-300 ring-1 ring-yellow-200 shadow-sm';
-                    icon = '<i class="fa-solid fa-star text-yellow-500 animate-spin-slow"></i>';
-                }
-
-                div.className = `flex justify-between items-center p-3 rounded-xl border transition ${bgClass}`;
-                div.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <span class="text-xs font-bold w-14 text-center py-1 rounded-md ${reached ? 'bg-white text-slate-700 shadow-sm' : 'bg-slate-200 text-slate-500'}">Lv.${m.lv}</span>
-                        <div class="flex flex-col">
-                            <span class="text-sm font-semibold text-slate-700">${m.name}</span>
-                            ${m.type === 'grand' ? '<span class="text-[10px] text-yellow-600 font-bold uppercase">Grand Prize</span>' : ''}
-                        </div>
-                    </div>
-                    <div class="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm border border-slate-100">
-                        ${icon}
-                    </div>
-                `;
-                list.appendChild(div);
-            });
+            // 7. Generate Detailed Inventory (The New Feature)
+            generateInventory(targetLv);
         }
 
-        // --- Init ---
-        window.onload = () => {
-            getElem('currentDate').valueAsDate = new Date();
-            calculate();
-        };
+        function generateInventory(level) {
+            // Aggregate Items
+            let inv = {
+                tickets: 0,
+                costumes: [],
+                refine7: 0, refine9: 0, refine11: 0,
+                boxes1: 0, boxes2: 0, boxes3: 0,
+                potions: 0, scrolls: 0, manuals: 0,
+                specials: []
+            };
+
+            // Loop through levels (Simulation)
+            // Rules extracted from ROC data
+            for (let i = 1; i <= level; i++) {
+                // Milestones
+                if (i === 100) inv.tickets++;
+                if (i === 200) inv.costumes.push("Costume Cosmic Connection");
+                if (i === 300) inv.tickets++;
+                if (i === 2500) inv.costumes.push("Costume Golden Valkyrie Wings");
+
+                // Refines
+                if (i === 350) inv.refine7++; // Weapon
+                if (i === 400) inv.refine7++; // Armor
+                if (i === 600) inv.refine9++;
+                if (i === 700) inv.refine9++;
+                if (i === 1500) inv.refine11++;
+                if (i === 2000) inv.refine11++;
+
+                // Treasure Boxes (Cumulative Logic)
+                if (i > 100) {
+                    // Box I: Every 10 lv + Bonus at 300
+                    if (i % 10 === 0) inv.boxes1++;
+                    if (i === 300) inv.boxes1 += 30;
+
+                    // Box II: Every 20 lv + Bonus at 500
+                    if (i % 20 === 0) inv.boxes2++;
+                    if (i === 500) inv.boxes2 += 30;
+
+                    // Box III: Every 50 lv + Bonus at 200, 300, 900
+                    if (i % 50 === 0) inv.boxes3++;
+                    if (i === 200) inv.boxes3 += 2;
+                    if (i === 300) inv.boxes3 += 3;
+                    if (i === 900) inv.boxes3 += 30;
+                }
+
+                // Consumables (Lv 1-100 Approx)
+                if (i <= 100) {
+                    if (i % 4 === 0) inv.potions += 1; // Approx 25 total
+                    if (i % 2 === 0) inv.scrolls += 1; // Approx 50 total
+                    if (i % 10 === 0) inv.manuals += 1;
+                }
+            }
+
+            // Render Rares
+            let rareHTML = "";
+            if (inv.costumes.length > 0) {
+                inv.costumes.forEach(c => rareHTML += itemRow('🎭', c, '1', 'text-yellow-600 bg-yellow-50'));
+            }
+            if (inv.tickets > 0) rareHTML += itemRow('🎫', '[Not For Sale] Chrono Pass Ticket', inv.tickets, 'text-blue-600 bg-blue-50');
+            if (inv.refine11 > 0) rareHTML += itemRow('🔨', 'Guarantee Weapon/Armor +11', inv.refine11, 'text-purple-600 bg-purple-50');
+            if (inv.refine9 > 0) rareHTML += itemRow('🔨', 'Guarantee Weapon/Armor +9', inv.refine9, 'text-purple-500 bg-purple-50');
+            if (inv.refine7 > 0) rareHTML += itemRow('🔨', 'Guarantee Weapon/Armor +7', inv.refine7, 'text-purple-400 bg-purple-50');
+            if (level >= 350) rareHTML += itemRow('👢', 'Special Enchant Temporal Boots', 1, 'text-indigo-600 bg-indigo-50');
+            
+            document.getElementById('rareList').innerHTML = rareHTML || "<div class='text-gray-400 text-sm'>ยังไม่มีไอเทมแรร์ในระดับนี้</div>";
+
+            // Render Consumables
+            let consuHTML = "";
+            if (inv.boxes3 > 0) consuHTML += itemRow('📦', 'Treasure Box III', inv.boxes3, 'text-gray-800 font-bold');
+            if (inv.boxes2 > 0) consuHTML += itemRow('📦', 'Treasure Box II', inv.boxes2, 'text-gray-700');
+            if (inv.boxes1 > 0) consuHTML += itemRow('📦', 'Treasure Box I', inv.boxes1, 'text-gray-600');
+            if (inv.potions > 0) consuHTML += itemRow('🍷', 'Small Life/Mana Potion Set', `~${inv.potions}`, 'text-red-500');
+            if (inv.scrolls > 0) consuHTML += itemRow('📜', 'Buff Scroll Set (Agi/Bless)', `~${inv.scrolls}`, 'text-green-500');
+            
+            document.getElementById('consuList').innerHTML = consuHTML || "<div class='text-gray-400 text-sm'>เริ่มต้นสะสม...</div>";
+        }
+
+        function itemRow(icon, name, qty, styleClass) {
+            return `
+                <div class="flex justify-between items-center p-2 rounded-lg item-card ${styleClass}">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-lg">${icon}</span>
+                        <span class="text-sm font-medium">${name}</span>
+                    </div>
+                    <span class="font-bold text-sm bg-white/50 px-2 py-0.5 rounded shadow-sm">x${qty}</span>
+                </div>
+            `;
+        }
+
+        // Run
+        window.onload = calculate;
     </script>
 </body>
 </html>
