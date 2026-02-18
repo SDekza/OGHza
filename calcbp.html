@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --roc-blue: #3b82f6; --roc-red: #ef4444; }
+        :root { --roc-blue: #3b82f6; --roc-red: #ef4444; --roc-gold: #fbbf24; }
         body { font-family: 'Kanit', sans-serif; background-color: #e6ecf3; background-image: radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%); background-attachment: fixed; color: #334155; }
         .font-gaming { font-family: 'Rajdhani', sans-serif; }
         .rox-panel { background: rgba(255, 255, 255, 0.95); border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; }
@@ -18,6 +18,7 @@
         .rox-input:focus { background: white; border-color: #ef4444; outline: none; }
         .package-select { border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
         .package-select.active { border-color: #ef4444; background-color: #fef2f2; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
@@ -66,93 +67,130 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- SETTINGS -->
+            <!-- SETTINGS & SHOP -->
             <div class="lg:col-span-5 space-y-6">
                 <div class="rox-panel">
                     <div class="rox-header"><h2 class="font-bold text-slate-700">⚙️ 2. แผนการเล่น (Quest Plan)</h2></div>
                     <div class="p-5 space-y-5">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">เริ่มเล่นวันที่</label>
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-tighter">เริ่มเล่นวันที่</label>
                                 <input type="date" id="currentDate" onchange="calculate()" class="rox-input w-full p-2.5 text-sm font-medium">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">เลเวลเป้าหมาย</label>
-                                <input type="number" id="targetLevel" value="2500" onchange="calculate()" class="rox-input w-full p-2.5 font-bold text-center text-lg text-red-700">
+                                <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-tighter">เป้าหมายเลเวล</label>
+                                <input type="number" id="targetLevel" value="2500" onchange="calculate()" class="rox-input w-full p-2.5 font-bold text-center text-lg text-blue-700">
                             </div>
                         </div>
 
-                        <!-- Quests -->
                         <div class="space-y-2 pt-2 border-t border-slate-100">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">ภารกิจที่ทำได้จริง (Daily/Weekly)</p>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">ภารกิจที่ทำ (Quests)</p>
                             <div class="grid grid-cols-2 gap-2">
-                                <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-red-50 transition border border-slate-100">
-                                    <input type="checkbox" id="qDaily" checked onchange="calculate()" class="w-4 h-4 text-red-600 rounded">
-                                    <div class="text-xs font-bold text-slate-700">Daily Quest</div>
-                                </label>
-                                <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-emerald-50 transition border border-slate-100">
-                                    <input type="checkbox" id="qZenyD" checked onchange="calculate()" class="w-4 h-4 text-emerald-600 rounded">
-                                    <div class="text-xs font-bold text-slate-700">Daily Zeny</div>
-                                </label>
+                                <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-blue-50 border border-slate-100"><input type="checkbox" id="qDaily" checked onchange="calculate()" class="w-4 h-4 text-red-600 rounded"><div class="text-xs font-bold text-slate-700">Daily Quest</div></label>
+                                <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-emerald-50 border border-slate-100"><input type="checkbox" id="qZenyD" checked onchange="calculate()" class="w-4 h-4 text-emerald-600 rounded"><div class="text-xs font-bold text-slate-700">Daily Zeny</div></label>
                             </div>
-                            <div class="grid grid-cols-1 gap-2">
-                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qW1" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"><span class="text-xs font-medium">Weekly 1: Amdarais (80 XP)</span></label>
-                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qW2" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"><span class="text-xs font-medium">Weekly 2: Evil Believer (100 XP)</span></label>
-                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qW3" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"><span class="text-xs font-medium">Weekly 3: Infinite Tao (120 XP)</span></label>
-                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qWZ" onchange="calculate()" class="w-4 h-4 text-slate-400 rounded"><span class="text-xs font-medium">Weekly Zeny: 10M (40 XP)</span></label>
+                            <div class="grid grid-cols-1 gap-1 pt-1">
+                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qW1" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"><span class="text-xs">Weekly 1: Amdarais (80 XP)</span></label>
+                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qW2" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"><span class="text-xs">Weekly 2: Evil Believer (100 XP)</span></label>
+                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qW3" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded"><span class="text-xs">Weekly 3: Infinite Tao (120 XP)</span></label>
+                                <label class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded cursor-pointer"><input type="checkbox" id="qWZ" onchange="calculate()" class="w-4 h-4 text-slate-400 rounded"><span class="text-xs text-slate-400 font-medium">Weekly Zeny: 10M (40 XP)</span></label>
                             </div>
-                            <p class="text-[9px] text-slate-400 italic font-medium">*ระบบคำนวณแบบ 4 วันจบ Chain (Amdarais -> Evil -> Tao)</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- TOTAL CALC -->
+                <!-- SHOP SECTION -->
+                <div class="rox-panel border-l-4 border-l-yellow-500 shadow-md">
+                    <div class="rox-header bg-yellow-50/30 flex justify-between items-center">
+                        <h2 class="font-bold text-slate-700">🛒 3. ซื้อเลเวลเพิ่ม (Shop)</h2>
+                        <div class="flex items-center gap-1">
+                             <input type="checkbox" id="usePromo" checked onchange="calculate()" class="w-3 h-3 text-yellow-500 rounded">
+                             <span class="text-[9px] font-bold text-yellow-700 uppercase">Promo active</span>
+                        </div>
+                    </div>
+                    <div class="p-4 space-y-3 bg-slate-50/50">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200">
+                                <div class="text-[10px] font-bold text-slate-500 px-1">1 LV (3 SV)</div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="updateShop(1, -1)" class="w-6 h-6 bg-slate-100 rounded hover:bg-slate-200">-</button>
+                                    <input type="number" id="s1" value="0" class="w-8 text-center font-bold text-xs bg-transparent outline-none" onchange="calculate()">
+                                    <button onclick="updateShop(1, 1)" class="w-6 h-6 bg-slate-100 rounded hover:bg-slate-200">+</button>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between bg-white p-2 rounded-xl border border-slate-200">
+                                <div class="text-[10px] font-bold text-slate-500 px-1">10 LV (30 SV)</div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="updateShop(10, -1)" class="w-6 h-6 bg-slate-100 rounded hover:bg-slate-200">-</button>
+                                    <input type="number" id="s10" value="0" class="w-8 text-center font-bold text-xs bg-transparent outline-none" onchange="calculate()">
+                                    <button onclick="updateShop(10, 1)" class="w-6 h-6 bg-slate-100 rounded hover:bg-slate-200">+</button>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between bg-yellow-50 p-2 rounded-xl border border-yellow-200 relative overflow-hidden group">
+                                <div class="text-[10px] font-bold text-yellow-700 px-1">100 LV (300 SV)</div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="updateShop(100, -1)" class="w-6 h-6 bg-white rounded shadow-sm hover:bg-yellow-100">-</button>
+                                    <input type="number" id="s100" value="0" class="w-8 text-center font-bold text-xs bg-transparent outline-none" onchange="calculate()">
+                                    <button onclick="updateShop(100, 1)" class="w-6 h-6 bg-white rounded shadow-sm hover:bg-yellow-100">+</button>
+                                </div>
+                                <div class="promo-hint text-[8px] absolute bottom-0 left-2 text-yellow-600 font-bold hidden">+500 Medal</div>
+                            </div>
+                            <div class="flex items-center justify-between bg-orange-50 p-2 rounded-xl border border-orange-200 relative overflow-hidden group">
+                                <div class="text-[10px] font-bold text-orange-700 px-1">1000 LV (3000 SV)</div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="updateShop(1000, -1)" class="w-6 h-6 bg-white rounded shadow-sm hover:bg-orange-100">-</button>
+                                    <input type="number" id="s1000" value="0" class="w-8 text-center font-bold text-xs bg-transparent outline-none" onchange="calculate()">
+                                    <button onclick="updateShop(1000, 1)" class="w-6 h-6 bg-white rounded shadow-sm hover:bg-orange-100">+</button>
+                                </div>
+                                <div class="promo-hint text-[8px] absolute bottom-0 left-2 text-orange-600 font-bold hidden">+6000 Medal</div>
+                            </div>
+                        </div>
+                        <button onclick="magicFill()" class="w-full py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-[10px] font-bold rounded-lg transition uppercase tracking-wider">✨ Magic Fill (เติมให้ถึงเป้าหมาย)</button>
+                    </div>
+                </div>
+
+                <!-- TOTAL SUMMARY -->
                 <div class="rox-panel bg-slate-800 text-white border-none shadow-xl">
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-4">
                             <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">Estimated Total Cost</span>
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-red-400" id="resTypeDisp">PREMIUM</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-red-600 font-gaming uppercase tracking-widest" id="resTypeDisp">PREMIUM</span>
                         </div>
                         <div class="flex justify-between items-end">
                             <div>
-                                <div class="text-4xl font-gaming font-bold text-yellow-400" id="resSV">0</div>
-                                <div class="text-[10px] font-bold text-slate-400 tracking-widest">SILVERVINE</div>
+                                <div class="text-4xl font-gaming font-bold text-yellow-400 leading-none" id="resSV">0</div>
+                                <div class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Silvervine Spent</div>
                             </div>
                             <div class="text-right">
-                                <div class="text-xl font-gaming font-bold" id="resBuyLv">0</div>
-                                <div class="text-[10px] font-bold text-slate-400 tracking-widest">LV TO BUY</div>
+                                <div class="text-3xl font-gaming font-bold leading-none" id="resFinalLevel">0</div>
+                                <div class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Final Level</div>
                             </div>
                         </div>
-                        <div class="mt-6 pt-4 border-t border-white/10 space-y-2">
-                             <div class="flex justify-between text-xs font-medium">
-                                <span>เลเวลจากเควสสะสม:</span>
-                                <span class="text-blue-400 font-bold">+<span id="resGrindLv">0</span> LV</span>
-                             </div>
-                             <div class="flex justify-between text-xs font-medium">
-                                <span>เลเวลเริ่มต้น (Package):</span>
-                                <span class="text-orange-400 font-bold">LV <span id="resPkgLv">0</span></span>
-                             </div>
+                        <div class="mt-6 pt-4 border-t border-white/10 grid grid-cols-2 gap-y-2 text-[10px] font-medium">
+                             <div class="flex flex-col"><span class="opacity-50 uppercase">จากเควสสะสม</span><span class="text-blue-400 font-bold">+<span id="resGrindLv">0</span> LV</span></div>
+                             <div class="flex flex-col text-right"><span class="opacity-50 uppercase">จากการซื้อใน Shop</span><span class="text-yellow-400 font-bold">+<span id="resShopLv">0</span> LV</span></div>
+                             <div class="flex flex-col pt-2"><span class="opacity-50 uppercase">เลเวลเริ่มต้น</span><span class="text-orange-400 font-bold">LV <span id="resPkgLv">0</span></span></div>
+                             <div class="flex flex-col text-right pt-2"><span class="opacity-50 uppercase">Medal แถม (Promo)</span><span class="text-yellow-500 font-bold"><span id="resPromoMedal">0</span> ea</span></div>
+                             <div class="flex flex-col col-span-2 pt-2 border-t border-white/5"><span class="opacity-50 uppercase">Zeny ใช้ทำเควส</span><span class="text-emerald-400 font-bold"><span id="resZeny">0</span> M</span></div>
                         </div>
                     </div>
                 </div>
-
-                <button onclick="calculate()" class="w-full btn-roc-primary py-4 rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition">คำนวณใหม่ (Recalculate)</button>
             </div>
 
             <!-- INVENTORY PREVIEW -->
             <div class="lg:col-span-7">
                 <div class="rox-panel h-full flex flex-col max-h-[85vh]">
                     <div class="rox-header flex justify-between items-center border-t-4 border-t-red-600">
-                        <h2 class="font-bold text-slate-800 flex items-center gap-2">🎒 ของรางวัลสะสม (Inventory)</h2>
-                        <div class="text-[10px] font-bold text-slate-400">LV 0 - <span id="resFinalLv">0</span></div>
+                        <h2 class="font-bold text-slate-800 flex items-center gap-2">🎒 ของรางวัลที่จะได้รับ</h2>
+                        <div class="text-[10px] font-bold text-slate-400">Target: <span id="invTargetDisp">0</span></div>
                     </div>
                     <div class="flex-1 overflow-y-auto p-5 custom-scrollbar bg-slate-50/50 space-y-6">
                          <div>
-                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Rare Items & Milestones</h3>
+                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">แรร์ไอเทม & Milestones</h3>
                             <div id="rareList" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
                          </div>
                          <div>
-                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">All Items Summary</h3>
+                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">สรุปไอเทมสะสมรวม</h3>
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                 <table class="w-full text-sm">
                                     <tbody id="totalList" class="divide-y divide-slate-50"></tbody>
@@ -166,8 +204,11 @@
     </div>
 
     <script>
+        // --- DATA & CONFIG ---
         const XP_VAL = { daily: 30, dailyzeny: 30, w1: 80, w2: 100, w3: 120, wzeny: 40 };
         const EVENT_END = new Date('2026-03-25T05:59:00');
+        const PROMO_START = new Date('2026-02-18T00:00:00');
+        const PROMO_END = new Date('2026-02-25T05:59:00');
         
         const PKGS = {
             'normal': { start: 0, cost: 0, type: 'normal', item: '[Normal] Chrono Battle Pass' },
@@ -181,9 +222,18 @@
             10: [{n: "Treasure Box I", q: 1}],
             100: [{n: "Chrono Pass Ticket", q: 1, rare: true}],
             200: [{n: "Costume Cosmic Connection", q: 1, rare: true}],
+            300: [{n: "Chrono Pass Ticket", q: 1, rare: true}],
+            350: [{n: "[Event] Special Enchant Temporal Boots Ticket", q: 1, rare: true}, {n: "Guarantee Weapon 7 Up Pack", q: 1, rare: true}],
             600: [{n: "Guarantee Weapon 9 Up Pack", q: 1, rare: true}],
             1000: [{n: "Treasure Box III", q: 10, rare: true}],
+            1500: [{n: "Guarantee Weapon 11 Up Pack", q: 1, rare: true}],
             2500: [{n: "Costume Golden Valkyrie Wings", q: 1, rare: true}]
+        };
+
+        // --- HELPER: Safe DOM Access ---
+        const setUI = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
         };
 
         let currentPkg = 'normal';
@@ -192,39 +242,119 @@
         function setPkg(id) {
             currentPkg = id;
             document.querySelectorAll('.package-select').forEach(el => el.classList.remove('active'));
-            document.getElementById(`p-${id}`).classList.add('active');
+            const targetEl = document.getElementById(`p-${id}`);
+            if (targetEl) targetEl.classList.add('active');
             calculate();
         }
 
-        function calculate() {
-            const pkg = PKGS[currentPkg];
-            const target = parseInt(document.getElementById('targetLevel').value) || 2500;
-            const now = new Date(document.getElementById('currentDate').value);
+        function updateShop(val, delta) {
+            const el = document.getElementById('s' + val);
+            if (el) {
+                el.value = Math.max(0, parseInt(el.value || 0) + delta);
+                calculate();
+            }
+        }
 
+        function magicFill() {
+            ['s1', 's10', 's100', 's1000'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = 0;
+            });
+            
+            calculate(true); // Get grind calculation only
+            const grind = window._grindLv || 0;
+            const pkgStart = PKGS[currentPkg].start;
+            const targetInput = document.getElementById('targetLevel');
+            const target = targetInput ? parseInt(targetInput.value) : 0;
+            
+            let needed = Math.max(0, target - pkgStart - grind);
+            
+            if(needed > 0) {
+                let p1000 = Math.floor(needed / 1000); needed %= 1000;
+                let p100 = Math.floor(needed / 100); needed %= 100;
+                let p10 = Math.floor(needed / 10); needed %= 10;
+                let p1 = needed;
+                
+                const s1000 = document.getElementById('s1000'); if(s1000) s1000.value = p1000;
+                const s100 = document.getElementById('s100'); if(s100) s100.value = p100;
+                const s10 = document.getElementById('s10'); if(s10) s10.value = p10;
+                const s1 = document.getElementById('s1'); if(s1) s1.value = p1;
+            }
+            calculate();
+        }
+
+        function calculate(dryRun = false) {
+            const pkg = PKGS[currentPkg];
+            const targetInput = document.getElementById('targetLevel');
+            const target = targetInput ? (parseInt(targetInput.value) || 2500) : 2500;
+            const dateInput = document.getElementById('currentDate');
+            const now = dateInput ? new Date(dateInput.value) : new Date();
+            const promoCheck = document.getElementById('usePromo');
+            const usePromo = promoCheck ? promoCheck.checked : true;
+
+            // 1. GRIND CALC
             const days = Math.max(0, Math.ceil((EVENT_END - now) / 86400000)) + 1;
             const weeks = Math.ceil(days / 7);
             
             let dailyXP = 0;
-            if(document.getElementById('qDaily').checked) dailyXP += (pkg.type === 'premium' ? 30 : 20);
-            if(document.getElementById('qZenyD').checked) dailyXP += 30;
+            const qDaily = document.getElementById('qDaily');
+            const qZenyD = document.getElementById('qZenyD');
+            if(qDaily && qDaily.checked) dailyXP += (pkg.type === 'premium' ? 30 : 20);
+            if(qZenyD && qZenyD.checked) dailyXP += 30;
             
             let weeklyXP = 0;
-            if(document.getElementById('qW1').checked) weeklyXP += 80;
-            if(document.getElementById('qW2').checked) weeklyXP += 100;
-            if(document.getElementById('qW3').checked) weeklyXP += 120;
-            if(document.getElementById('qWZ').checked) weeklyXP += 40;
+            ['qW1', 'qW2', 'qW3', 'qWZ'].forEach((id, i) => {
+                const el = document.getElementById(id);
+                if (el && el.checked) {
+                    const keys = ['w1', 'w2', 'w3', 'wzeny'];
+                    weeklyXP += XP_VAL[keys[i]];
+                }
+            });
 
             const grindLv = Math.floor(((dailyXP * days) + (weeklyXP * weeks)) / 10);
-            const neededLv = Math.max(0, target - pkg.start - grindLv);
-            const costSV = pkg.cost + (neededLv * 3);
+            window._grindLv = grindLv;
+            
+            if(dryRun) return;
 
-            document.getElementById('resSV').innerText = costSV.toLocaleString();
-            document.getElementById('resBuyLv').innerText = `+${neededLv}`;
-            document.getElementById('resGrindLv').innerText = grindLv;
-            document.getElementById('resPkgLv').innerText = pkg.start;
-            document.getElementById('resTypeDisp').innerText = pkg.type.toUpperCase();
-            document.getElementById('resFinalLv').innerText = target;
+            // 2. SHOP CALC
+            const getVal = (id) => { const el = document.getElementById(id); return el ? parseInt(el.value || 0) : 0; };
+            let s1 = getVal('s1');
+            let s10 = getVal('s10');
+            let s100 = getVal('s100');
+            let s1000 = getVal('s1000');
+            
+            let shopLv = (s1 * 1) + (s10 * 10) + (s100 * 100) + (s1000 * 1000);
+            let shopCost = (s1 * 3) + (s10 * 30) + (s100 * 300) + (s1000 * 3000);
+            let totalCostSV = pkg.cost + shopCost;
 
+            // Promo logic
+            let promoMedal = 0;
+            const isPromoTime = (now >= PROMO_START && now <= PROMO_END);
+            const promoHints = document.querySelectorAll('.promo-hint');
+            if(usePromo && isPromoTime) {
+                promoMedal += (s100 * 500);
+                promoMedal += (s1000 * 6000);
+                promoHints.forEach(el => el.classList.remove('hidden'));
+            } else {
+                promoHints.forEach(el => el.classList.add('hidden'));
+            }
+
+            let finalLv = pkg.start + grindLv + shopLv;
+            let costZeny = (qZenyD && qZenyD.checked ? 1 * days : 0) + (document.getElementById('qWZ') && document.getElementById('qWZ').checked ? 10 * weeks : 0);
+
+            // Display Updates
+            setUI('resSV', totalCostSV.toLocaleString());
+            setUI('resBuyLv', `+${shopLv}`);
+            setUI('resGrindLv', grindLv);
+            setUI('resShopLv', shopLv);
+            setUI('resPkgLv', pkg.start);
+            setUI('resPromoMedal', promoMedal.toLocaleString());
+            setUI('resZeny', costZeny.toLocaleString());
+            setUI('resFinalLevel', finalLv.toLocaleString());
+            setUI('invTargetDisp', finalLv.toLocaleString());
+            setUI('resTypeDisp', pkg.type.toUpperCase());
+
+            // 3. INVENTORY
             let inventory = {}; let rares = [];
             const add = (n, q, r) => {
                 if(r) rares.push({n, q});
@@ -232,7 +362,9 @@
             };
 
             add(pkg.item, 1, true); 
-            for(let lv = 1; lv <= target; lv++) {
+            if(promoMedal > 0) add("Mysterious Medal (Promo)", promoMedal, true);
+
+            for(let lv = 1; lv <= finalLv; lv++) {
                 if(REWARDS[lv]) REWARDS[lv].forEach(i => add(i.n, i.q, i.rare));
                 if(lv > 100 && pkg.type === 'premium') {
                     if(lv%10===0) add("Treasure Box I", 1, false);
@@ -241,25 +373,29 @@
                 }
             }
 
+            // Render Inventory
             let rareHTML = "";
             let aggRares = {};
             rares.forEach(r => aggRares[r.n] = (aggRares[r.n]||0) + r.q);
             Object.entries(aggRares).forEach(([n, q]) => {
                 rareHTML += `<div class="bg-white border border-red-100 p-2.5 rounded-xl flex justify-between items-center shadow-sm">
                     <span class="text-[10px] font-bold text-slate-700 truncate">${n}</span>
-                    <span class="text-[10px] font-gaming font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded-lg border border-red-100">x${q}</span>
+                    <span class="text-[10px] font-gaming font-bold bg-red-50 text-red-600 px-2 py-0.5 rounded-lg border border-red-100">x${q.toLocaleString()}</span>
                 </div>`;
             });
-            document.getElementById('rareList').innerHTML = rareHTML || `<div class="col-span-2 text-center text-xs text-slate-400 py-4">ไม่มีไอเทมแรร์</div>`;
+            const rareListEl = document.getElementById('rareList');
+            if (rareListEl) rareListEl.innerHTML = rareHTML || `<div class="col-span-2 text-center text-xs text-slate-400 py-4">ไม่มีไอเทมแรร์</div>`;
 
             let totalHTML = "";
             Object.entries(inventory).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n, q]) => {
                 totalHTML += `<tr><td class="p-3 text-xs text-slate-600">${n}</td><td class="p-3 text-right text-xs font-gaming font-bold text-slate-800">x${q.toLocaleString()}</td></tr>`;
             });
-            document.getElementById('totalList').innerHTML = totalHTML;
+            const totalListEl = document.getElementById('totalList');
+            if (totalListEl) totalListEl.innerHTML = totalHTML;
         }
 
-        calculate();
+        // Initialize when window loads to ensure DOM is ready
+        window.onload = calculate;
     </script>
 </body>
 </html>
