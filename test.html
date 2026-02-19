@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- ✅ เพิ่ม Library สำหรับสแกน QR/Barcode -->
+    <!-- ✅ เรียกใช้ Library สแกน QR -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <style>
@@ -149,7 +149,6 @@
 
             const [searchTerm, setSearchTerm] = useState('');
             const [showSuggestions, setShowSuggestions] = useState(false);
-            // ✅ Added isCustomProduct to form state management (UI only)
             const [isCustomProduct, setIsCustomProduct] = useState(false);
             const [form, setForm] = useState({ type: '', productName: '', imageUrl: '', quantity: '1', memo: '', isUrgent: false });
             const [isSaving, setIsSaving] = useState(false);
@@ -272,41 +271,77 @@
                 setIsGlobalRefreshing(false);
             };
 
-            // ✅ Start Scanner Logic
+            // ✅ Start Scanner Logic with useEffect to ensure DOM is ready
+            useEffect(() => {
+                let html5QrcodeScanner;
+                
+                if (isScanning) {
+                    // Check if library is loaded
+                    if (!window.Html5QrcodeScanner) {
+                        alert("Scanner Library ยังโหลดไม่เสร็จ กรุณาลองใหม่อีกครั้ง");
+                        setIsScanning(false);
+                        return;
+                    }
+
+                    // Delay slightly to ensure Modal DOM is rendered
+                    const timer = setTimeout(() => {
+                        try {
+                            html5QrcodeScanner = new Html5QrcodeScanner(
+                                "reader", 
+                                { 
+                                    fps: 10, 
+                                    qrbox: { width: 250, height: 250 },
+                                    aspectRatio: 1.0
+                                },
+                                /* verbose= */ false
+                            );
+                            
+                            html5QrcodeScanner.render((decodedText, decodedResult) => {
+                                // Success
+                                setForm(prev => ({ ...prev, memo: prev.memo ? prev.memo + ' ' + decodedText : decodedText }));
+                                // Stop scanning automatically after success
+                                html5QrcodeScanner.clear().then(() => {
+                                    setIsScanning(false);
+                                }).catch(err => {
+                                    console.error("Failed to clear scanner", err);
+                                    setIsScanning(false);
+                                });
+                            }, (errorMessage) => {
+                                // Parse error, ignore
+                            });
+                            
+                            scannerRef.current = html5QrcodeScanner;
+                        } catch (err) {
+                            console.error("Scanner Init Error:", err);
+                            alert("ไม่สามารถเปิดกล้องได้: " + err.message);
+                            setIsScanning(false);
+                        }
+                    }, 300); // 300ms delay to be safe
+
+                    return () => clearTimeout(timer);
+                }
+
+                // Cleanup function
+                return () => {
+                    if (scannerRef.current) {
+                        scannerRef.current.clear().catch(err => console.log("Scanner cleanup error", err));
+                        scannerRef.current = null;
+                    }
+                };
+            }, [isScanning]);
+
             const startScanner = () => {
                 setIsScanning(true);
-                setTimeout(() => {
-                    const html5QrcodeScanner = new Html5QrcodeScanner(
-                        "reader", 
-                        { fps: 10, qrbox: { width: 250, height: 250 } },
-                        /* verbose= */ false
-                    );
-                    scannerRef.current = html5QrcodeScanner;
-                    html5QrcodeScanner.render((decodedText, decodedResult) => {
-                        setForm(prev => ({ ...prev, memo: prev.memo ? prev.memo + ' ' + decodedText : decodedText }));
-                        html5QrcodeScanner.clear().then(() => {
-                            setIsScanning(false);
-                        });
-                    }, (errorMessage) => {
-                        // ignore errors
-                    });
-                }, 100);
             };
 
             const stopScanner = () => {
-                if (scannerRef.current) {
-                    scannerRef.current.clear().then(() => setIsScanning(false)).catch(err => setIsScanning(false));
-                } else {
-                    setIsScanning(false);
-                }
+                setIsScanning(false); // This triggers the useEffect cleanup
             };
 
-            // ✅ Copy Memo Logic
             const copyToClipboard = (text) => {
                 navigator.clipboard.writeText(text).then(() => {
                     alert('คัดลอก: ' + text + ' เรียบร้อยแล้ว');
                 }).catch(err => {
-                    // Fallback
                     const textArea = document.createElement("textarea");
                     textArea.value = text;
                     document.body.appendChild(textArea);
@@ -339,7 +374,6 @@
                 }
             }, []);
 
-            // Handlers...
             const handleUserSelect = (userObj) => {
                 if (userObj.rank === 'Guest' || userObj.pass === 'guest') {
                     setCurrentUser(userObj.name);
@@ -485,7 +519,6 @@
                 const ts = new Date().toLocaleString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 const uuid = generateUUID(); 
                 
-                // ✅ ถ้าเป็น Custom Product ให้บังคับ imageUrl เป็นค่าว่าง เพื่อให้ไปเข้าเงื่อนไขแสดง Memo แทนรูป
                 const payload = { 
                     action: 'add', 
                     ...form, 
@@ -504,7 +537,7 @@
                     });
                     setForm({ ...form, productName: '', imageUrl: '', quantity: '1', memo: '', isUrgent: false }); 
                     setSearchTerm('');
-                    setIsCustomProduct(false); // Reset mode
+                    setIsCustomProduct(false); 
                     setTimeout(() => { fetchSavedRecords(); setIsSaving(false); }, 1500);
                 } catch (e) { setIsSaving(false); }
             };
@@ -729,7 +762,7 @@
 
             return (
                 <div className="min-h-screen flex flex-col pb-24 md:pb-6 relative">
-                    {/* User Selection Modal (Code omitted for brevity, same as previous) */}
+                    {/* User Selection Modal */}
                     {showUserModal && (
                         <div className="fixed inset-0 z-[200] bg-[#141414] flex flex-col items-center justify-center p-6 animate-modal text-center">
                             <div className="max-w-6xl w-full">
@@ -823,7 +856,7 @@
                         </div>
                     )}
 
-                    {/* ✅ Navbar */}
+                    {/* ✅ Navbar: ใช้คลาส navbar-ios เพื่อเว้นระยะ Notch */}
                     <nav className="bg-white border-b sticky top-0 z-50 px-6 navbar-ios flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-100"><img src="sebo.png" className="w-full h-full object-cover" /></div>
