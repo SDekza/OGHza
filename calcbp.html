@@ -96,8 +96,7 @@
                         <!-- Primary Inputs Row -->
                         <div class="grid-compact">
                             <div class="min-w-0">
-                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 tracking-wider font-kanit">เลเวลปัจจุบัน</label>
-                                <!-- onfocus handles clearing 0 for easy typing -->
+                                <label class="block text-[10px] font-bold text-blue-400 uppercase mb-1.5 tracking-wider font-kanit">เลเวลปัจจุบัน</label>
                                 <input type="number" id="currentLevel" value="0" 
                                        inputmode="numeric" pattern="[0-9]*" 
                                        onfocus="if(this.value=='0')this.value=''" 
@@ -119,7 +118,10 @@
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="bg-white/5 rounded-xl p-3 border border-white/5">
                                     <p class="text-[10px] font-bold text-slate-500 uppercase mb-1 text-center">เลเวลที่ได้จากการเล่น</p>
-                                    <div class="text-center font-gaming font-bold text-2xl"><span id="projectedLv">0</span> <span class="text-xs font-kanit">Lv.</span></div>
+                                    <div class="text-center">
+                                        <div class="font-gaming font-bold text-2xl text-white leading-tight" id="projectedLv">0</div>
+                                        <div class="text-[10px] text-slate-400 mt-1" id="daysLeftLabel">--</div>
+                                    </div>
                                 </div>
                                 <div class="bg-white/5 rounded-xl p-3 border border-white/5">
                                     <p class="text-[10px] font-bold text-slate-500 uppercase mb-1 text-center font-bold">ต้องเพิ่มเลเวลอีก</p>
@@ -147,7 +149,7 @@
                                 <i class="fa-solid fa-bullseye text-white text-sm"></i>
                             </div>
                             <div class="font-kanit overflow-hidden">
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">สถานะเป้าหมาย ณ วันที่ 25 มี.ค.</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">สถานะเป้าหมาย ณ วันสุดท้าย</p>
                                 <div id="goalReachDate" class="text-[11px] font-medium text-slate-200 leading-tight">
                                     --
                                 </div>
@@ -177,7 +179,7 @@
                     </div>
                     <div class="space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <label class="flex items-center justify-between text-xs p-1.5 hover:bg-white rounded transition cursor-pointer font-bold">
-                            <span class="text-slate-700">Weekly Dungeon (300 XP/7 Days)</span>
+                            <span class="text-slate-700 font-bold">Weekly Dungeon (300 XP/7 Days)</span>
                             <input type="checkbox" id="qWeeklyAll" checked onchange="calculate()" class="w-4 h-4 text-blue-500 rounded shrink-0">
                         </label>
                         <label class="flex flex-col p-1.5 hover:bg-white rounded transition cursor-pointer font-bold">
@@ -200,7 +202,7 @@
                             <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                                 <i class="fa-solid fa-coins"></i>
                             </div>
-                            <div class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 uppercase">Zeny</div>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 uppercase font-gaming tracking-tight">ZENY</div>
                         </div>
                     </div>
                 </div>
@@ -214,20 +216,15 @@
                         <div class="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100 uppercase">อิงตามแผนการเป้าหมาย <span id="resFinalLv">0</span></div>
                     </div>
                     <div class="flex-1 overflow-y-auto p-5 custom-scroll space-y-6 bg-slate-50/30 font-kanit">
-                        <!-- Rare Items -->
                         <div class="space-y-3">
-                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">✨ Rare Milestones</h3>
+                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 font-kanit">✨ Rare Milestones</h3>
                             <div id="rareList" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
                         </div>
-                        
-                        <!-- Box Bonus Loop -->
                         <div id="boxBonusSection" class="space-y-3 bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-inner">
-                            <h3 class="text-[10px] font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2">📦 โบนัสกล่องสุ่ม (เลเวล 100+)</h3>
+                            <h3 class="text-[10px] font-bold text-blue-500 uppercase tracking-widest flex items-center gap-2 font-kanit">📦 โบนัสกล่องสุ่ม (เลเวล 100+)</h3>
                             <div id="boxBonusList" class="grid grid-cols-3 gap-2 font-gaming text-center"></div>
                             <p class="text-[8px] text-blue-400 italic mt-1 font-bold">* เฉพาะแพ็กเกจ Premium เท่านั้น</p>
                         </div>
-
-                        <!-- All Inventory -->
                         <div class="space-y-4">
                             <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 font-kanit">📊 Inventory Summary</h3>
                             <div class="space-y-4">
@@ -361,8 +358,11 @@
             const currentLv = parseInt(document.getElementById('currentLevel').value) || 0;
             const targetLv = parseInt(document.getElementById('targetLevel').value) || 0;
             
+            // "วันนี้" (Thursday, Feb 19, 2026 ตาม context ของระบบ)
             const today = new Date();
             today.setHours(0,0,0,0);
+            
+            // คำนวณวันจบกิจกรรม (25 มี.ค. 2569)
             const daysRemaining = Math.max(0, Math.ceil((EVENT_END - today) / 86400000));
             const weeksRemaining = Math.floor(daysRemaining / 7);
             
@@ -395,7 +395,10 @@
             const lvFromPlaying = currentLv + grindLvGain;
             const gapLv = Math.max(0, targetLv - lvFromPlaying);
             
-            document.getElementById('projectedLv').innerText = lvFromPlaying.toLocaleString();
+            // อัปเดตการแสดงผล Days Left ในวงเล็บ
+            document.getElementById('projectedLv').innerHTML = `${lvFromPlaying.toLocaleString()} <span class="text-xs font-kanit font-normal opacity-70">Lv.</span>`;
+            document.getElementById('daysLeftLabel').innerText = `(เหลืออีก ${daysRemaining} วัน)`;
+            
             document.getElementById('neededLv').innerText = gapLv.toLocaleString();
             const totalSVCost = (gapLv * 3);
             document.getElementById('resSV').innerText = totalSVCost.toLocaleString();
@@ -406,7 +409,7 @@
 
             let reachDateStr = "";
             if (lvFromPlaying >= targetLv) {
-                reachDateStr = `<span class='text-emerald-400 font-bold'>ยินดีด้วย! คุณจะถึงเป้าหมายจากการเก็บเควสเพียงอย่างเดียว (เหลืออีก ${daysRemaining} วัน)</span>`;
+                reachDateStr = `<span class='text-emerald-400 font-bold font-kanit'>ยินดีด้วย! เก็บเควสทันเป้าหมายแน่นอน (ภายใน ${daysRemaining} วัน)</span>`;
             } else {
                 reachDateStr = `แผนการ: เก็บเควสรายวันไปจนจบกิจกรรม + ซื้อเพิ่มอีก <span class='text-amber-400 font-bold font-gaming'>${gapLv} Lv.</span> (${gapLv * 3} SV) เพื่อให้ถึงเป้าหมาย`;
             }
@@ -440,7 +443,7 @@
                 <div class="bg-white border ${i.p ? 'border-blue-100' : 'border-slate-100'} p-2.5 rounded-xl flex justify-between items-center shadow-sm">
                     <span class="text-[10px] font-bold text-slate-700 truncate mr-2">${i.p ? '💎' : '🆓'} ${i.n}</span>
                     <span class="text-[10px] font-gaming font-bold ${i.p ? 'text-blue-600 bg-blue-50' : 'text-slate-500 bg-slate-50'} px-2 py-0.5 rounded-md">x${i.q}</span>
-                </div>`).join('') || '<div class="col-span-2 text-center text-xs text-slate-400 py-4 italic">ไม่มีไอเทมหายากในช่วงนี้</div>';
+                </div>`).join('') || '<div class="col-span-2 text-center text-xs text-slate-400 py-4 italic font-kanit">ไม่มีไอเทมหายากในช่วงนี้</div>';
 
             const bonusSection = document.getElementById('boxBonusSection');
             const preSect = document.getElementById('premiumInventorySection');
