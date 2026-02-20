@@ -215,36 +215,75 @@
             const [editingCatIndex, setEditingCatIndex] = useState(null);
             const [editCatText, setEditCatText] = useState("");
             
-            // ✅ เปลี่ยนค่าเริ่มต้นเป็น 'all' เพื่อแสดงงานทั้งหมด
             const [workTypeFilter, setWorkTypeFilter] = useState('all');
 
             const searchContainerRef = useRef(null);
 
+            // ✅ PULL TO REFRESH STATE
+            const [pullY, setPullY] = useState(0);
+            const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+            const PULL_THRESHOLD = 75; // ระยะที่ต้องดึงลงมา (px)
+
+            // ✅ Pull to Refresh Event Logic
             useEffect(() => {
                 let startY = 0;
-                
+                let currentY = 0;
+                let isAtTop = false;
+
                 const handleTouchStart = (e) => {
-                    if (window.scrollY === 0) {
+                    if (window.scrollY <= 0) {
                         startY = e.touches[0].clientY;
+                        isAtTop = true;
+                    } else {
+                        isAtTop = false;
                     }
                 };
 
                 const handleTouchMove = (e) => {
-                    if (startY > 0) {
-                        const y = e.touches[0].clientY;
-                        if (y - startY > 150) { 
-                            startY = 0; 
-                            window.location.reload();
+                    if (!isAtTop) return;
+                    currentY = e.touches[0].clientY;
+                    const deltaY = currentY - startY;
+
+                    // ถ้ารูดลง และอยู่บนสุดของจอ
+                    if (deltaY > 0 && window.scrollY <= 0) {
+                        // ใส่ความหนืด (Friction) ให้ดึงยากขึ้นนิดนึงเหมือนแอป
+                        let pullDist = deltaY * 0.45;
+                        // ล็อกระยะสูงสุดไม่ให้ลากทะลุจอ
+                        if (pullDist > PULL_THRESHOLD + 40) pullDist = PULL_THRESHOLD + 40;
+
+                        setPullY(pullDist);
+                        
+                        // หยุดการ scroll ปกติของบราวเซอร์เพื่อไม่ให้ตีกัน
+                        if (e.cancelable) {
+                            e.preventDefault();
                         }
                     }
                 };
 
                 const handleTouchEnd = () => {
+                    if (!isAtTop) return;
+                    
+                    setPullY(prev => {
+                        if (prev >= PULL_THRESHOLD) {
+                            // ถ้าดึงถึงระยะแล้วปล่อย -> โหลดหน้าใหม่
+                            setIsPullRefreshing(true);
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 500);
+                            return PULL_THRESHOLD; // ค้างวงล้อไว้
+                        } else {
+                            // ถ้าดึงไม่ถึง -> เด้งกลับ
+                            return 0;
+                        }
+                    });
+                    
                     startY = 0;
+                    isAtTop = false;
                 };
 
+                // ใช้ passive: false ใน move เพื่อให้สามารถ e.preventDefault() ได้
                 window.addEventListener('touchstart', handleTouchStart, { passive: true });
-                window.addEventListener('touchmove', handleTouchMove, { passive: true });
+                window.addEventListener('touchmove', handleTouchMove, { passive: false });
                 window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
                 return () => {
@@ -394,8 +433,7 @@
 
             const handleSaveCategories = async () => {
                 setCategories(tempCategories);
-                setManageSubTab('search');
-                showToast('บันทึกหมวดหมู่เรียบร้อยแล้ว');
+                setEditCategoriesMode(false);
                 try {
                      await fetch(GOOGLE_SCRIPT_URL, {
                          method: "POST", mode: "no-cors",
@@ -678,6 +716,29 @@
                 } catch (e) { }
             };
 
+            const confirmDelete = async () => {
+                if (currentUserRank === 'Guest') return;
+                if (!itemToDelete) return;
+                
+                const item = itemToDelete;
+                setItemToDelete(null); 
+                
+                setSavedItems(prev => prev.filter(i => !(i.timestamp === item.timestamp && i.productName === item.productName)));
+                setUndoItem(item);
+                
+                showToast(`ลบ "${item.productName}" แล้ว`, true);
+
+                const timer = setTimeout(async () => {
+                    setToastMessage(null);
+                    setShowUndo(false);
+                    setUndoItem(null);
+                    try {
+                        await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: 'delete', productName: item.productName, timestamp: item.timestamp, uuid: item.uuid, user: currentUser }) });
+                    } catch (e) {}
+                }, 4000); 
+                setUndoTimer(timer);
+            };
+
             const handleAddProductMaster = async () => {
                 if (currentUserRank === 'Guest' || currentUserRank === 'User') return;
                 if (!newProduct.name || !newProduct.imageBase64) return;
@@ -738,25 +799,6 @@
                 }
             };
 
-            const parseThaiDate = (dateStr) => {
-                if (!dateStr) return new Date(0); 
-                try {
-                    const parts = dateStr.match(/(\d+)\/(\d+)\/(\d+)/);
-                    if (parts) {
-                        const d = parseInt(parts[1], 10);
-                        const m = parseInt(parts[2], 10) - 1;
-                        let y = parseInt(parts[3], 10);
-                        if (y > 2400) y -= 543; 
-                        return new Date(y, m, d);
-                    }
-                    return new Date(dateStr); 
-                } catch (e) { return new Date(0); }
-            };
-
-            // ✅ Logic ใหม่สำหรับคำนวณสถิติแยกแท็บ รองรับ 'all'
-            const today = new Date();
-            today.setHours(0,0,0,0);
-
             const filteredByType = useMemo(() => {
                 return savedItems.filter(i => {
                     if (workTypeFilter === 'all') return true;
@@ -766,6 +808,8 @@
             }, [savedItems, workTypeFilter]);
 
             const viewCounts = useMemo(() => {
+                const today = new Date();
+                today.setHours(0,0,0,0);
                 return {
                     pending: filteredByType.filter(i => !i.isDoing && !i.isDone).length,
                     doing: filteredByType.filter(i => i.isDoing && !i.isDone).length,
@@ -774,6 +818,8 @@
             }, [filteredByType]);
 
             const filteredItemsRender = useMemo(() => {
+                const today = new Date();
+                today.setHours(0,0,0,0);
                 return filteredByType.filter(i => {
                     if (viewSubTab === 'pending') return !i.isDoing && !i.isDone;
                     if (viewSubTab === 'doing') return i.isDoing && !i.isDone;
@@ -784,7 +830,6 @@
                 });
             }, [filteredByType, viewSubTab]);
 
-            // นับงานค้างทั้งหมด (เพื่อโชว์ในปุ่มเมนูด้านล่างสุด)
             const totalPendingCount = useMemo(() => savedItems.filter(i => !i.isDoing && !i.isDone).length, [savedItems]);
 
             const analysisData = useMemo(() => {
@@ -850,6 +895,30 @@
             return (
                 <div className="min-h-screen flex flex-col pb-24 md:pb-6 relative">
                     
+                    {/* ✅ Pull to Refresh Indicator */}
+                    <div 
+                        className="fixed left-0 right-0 flex justify-center z-[9999] pointer-events-none"
+                        style={{ 
+                            top: 'env(safe-area-inset-top)',
+                            transform: `translateY(${pullY > 0 ? pullY : -50}px)`,
+                            opacity: pullY > 10 ? 1 : 0,
+                            transition: pullY === 0 || isPullRefreshing ? 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s' : 'none'
+                        }}
+                    >
+                        <div className="bg-white rounded-full p-2 shadow-lg border border-slate-100 flex items-center justify-center h-10 w-10 mt-4">
+                            {isPullRefreshing ? (
+                                <LucideIcon name="loader-2" className="animate-spin text-indigo-600" size={20} />
+                            ) : (
+                                <LucideIcon 
+                                    name="arrow-down" 
+                                    className={`text-slate-500 transition-transform duration-300 ${pullY >= PULL_THRESHOLD ? 'rotate-180 text-indigo-600' : ''}`} 
+                                    size={20} 
+                                />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ✅ Toast Notification */}
                     {toastMessage && (
                         <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center p-4 pt-safe top-safe-toast pointer-events-none">
                             <div className="bg-slate-900/90 text-white backdrop-blur-md px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 animate-slide-down border border-slate-700/50 pointer-events-auto">
@@ -866,6 +935,7 @@
                         </div>
                     )}
 
+                    {/* User Selection Modal */}
                     {showUserModal && (
                         <div className="fixed inset-0 z-[200] bg-[#141414] flex flex-col items-center justify-center p-6 animate-modal text-center">
                             <div className="max-w-6xl w-full">
@@ -959,6 +1029,7 @@
                         </div>
                     )}
 
+                    {/* ✅ Navbar: ใช้คลาส navbar-ios เพื่อเว้นระยะ Notch */}
                     <nav className="bg-white border-b sticky top-0 z-50 px-6 navbar-ios flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-100"><img src="sebo.png" className="w-full h-full object-cover" /></div>
@@ -979,6 +1050,7 @@
                         </div>
                     </nav>
 
+                    {/* ✅ Announcement Bar */}
                     {(announcement || currentUserRank === 'Admin' || currentUserRank === 'Dev') && (
                         <div className={`bg-indigo-600 text-white text-xs font-bold py-2 overflow-hidden relative shadow-sm ${!announcement ? 'cursor-pointer hover:bg-indigo-700' : ''}`} onClick={() => { if(!announcement && (currentUserRank === 'Admin' || currentUserRank === 'Dev')) { setAnnouncementInput(""); setShowAnnouncementModal(true); } }}>
                              {announcement ? (
@@ -998,6 +1070,7 @@
                             {renderMenuTabs()}
                         </div>
 
+                        {/* Record Tab */}
                         {activeTab === 'record' && currentUserRank !== 'Guest' && (
                             <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border custom-shadow animate-modal relative overflow-hidden">
                                 {isSaving && <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center flex-col gap-3 backdrop-blur-sm"><div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div><span className="font-bold text-indigo-600 animate-pulse font-bold">กำลังบันทึก...</span></div>}
@@ -1093,10 +1166,8 @@
                         {activeTab === 'view' && (
                             <div className="space-y-6 pb-10 animate-modal">
                                 
-                                {/* ✅ Panel ตัวกรองแบบใหม่: ปรับให้กะทัดรัด (ปุ่มสถานะ + วนลูปโหมด + รีเฟรช) */}
                                 <div className="bg-white rounded-[2rem] p-2 sm:p-3 shadow-sm border border-slate-100 flex items-center justify-between gap-1 sm:gap-2 custom-shadow">
                                     
-                                    {/* แท็บสถานะงาน */}
                                     <div className="flex flex-1 gap-1 overflow-x-auto no-scrollbar">
                                         {[
                                             { id: 'pending', label: 'ค้าง', count: viewCounts.pending, activeBg: 'bg-indigo-100', activeText: 'text-indigo-700', badgeBg: 'bg-indigo-600', inactiveBadge: 'bg-slate-100 text-slate-500' },
@@ -1116,7 +1187,6 @@
                                         ))}
                                     </div>
 
-                                    {/* ปุ่มเปลี่ยนโหมด (Cycle Filter) & รีเฟรช */}
                                     <div className="flex gap-1.5 sm:gap-2 shrink-0 border-l border-slate-100 pl-1.5 sm:pl-2">
                                         <button 
                                             onClick={() => {
@@ -1209,6 +1279,7 @@
                                 </div>
                             </div>
                         )}
+
                         {/* Analysis Tab */}
                         {activeTab === 'analysis' && (
                             <div className="space-y-6 pb-10 animate-modal text-center md:text-left">
@@ -1265,7 +1336,6 @@
 
                         {activeTab === 'manage' && (
                             <div className="space-y-6 animate-modal pb-10">
-                                {/* ✅ Panel เมนูหน้าสินค้า แบบใหม่ (เหมือนหน้างาน) */}
                                 <div className="bg-white rounded-[2rem] p-2 sm:p-3 shadow-sm border border-slate-100 flex items-center justify-between gap-1 sm:gap-2 custom-shadow">
                                     <div className="flex flex-1 gap-1 overflow-x-auto no-scrollbar">
                                         <button
@@ -1284,8 +1354,8 @@
                                         )}
                                         {(currentUserRank === 'Admin' || currentUserRank === 'Dev') && (
                                             <button
-                                                onClick={() => { setManageSubTab('categories'); setTempCategories(categories); }}
-                                                className={`flex-1 flex items-center justify-center gap-1.5 py-3 px-1 sm:px-2 rounded-xl font-bold text-[11px] sm:text-xs transition-all whitespace-nowrap ${manageSubTab === 'categories' ? 'bg-amber-100 text-amber-700 shadow-sm' : 'text-slate-400 hover:bg-amber-50 hover:text-amber-600'}`}
+                                                onClick={() => { setEditCategoriesMode(true); setTempCategories(categories); }}
+                                                className={`flex-1 flex items-center justify-center gap-1.5 py-3 px-1 sm:px-2 rounded-xl font-bold text-[11px] sm:text-xs transition-all whitespace-nowrap text-slate-400 hover:bg-amber-50 hover:text-amber-600`}
                                             >
                                                 <LucideIcon name="tags" size={16} /> หมวดหมู่
                                             </button>
@@ -1333,42 +1403,6 @@
                                         </div>
                                         {newProduct.preview && <img src={newProduct.preview} className="max-w-xs h-40 object-contain rounded-xl shadow-lg border-2 border-white shadow-lg shadow-indigo-100 font-black" />}
                                         <button onClick={handleAddProductMaster} disabled={!newProduct.name || !newProduct.imageBase64 || isEditingMaster} className="w-full h-14 bg-indigo-600 disabled:bg-slate-200 text-white rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all font-bold uppercase font-black font-black font-black">ยืนยันการเพิ่ม</button>
-                                    </div>
-                                )}
-                                {manageSubTab === 'categories' && (
-                                    <div className="bg-white rounded-[2.5rem] p-6 sm:p-10 border custom-shadow flex flex-col max-w-2xl mx-auto w-full">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">จัดการหมวดหมู่</h2>
-                                        </div>
-                                        
-                                        <div className="flex gap-2 mb-6">
-                                            <input type="text" className="flex-1 h-14 px-5 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-amber-500 outline-none font-bold text-slate-700 transition-all shadow-sm" placeholder="ชื่อหมวดหมู่ใหม่..." value={newCategoryInput} onChange={(e) => setNewCategoryInput(e.target.value)} />
-                                            <button onClick={handleAddCategory} className="w-14 h-14 bg-amber-500 rounded-2xl text-white flex items-center justify-center active:scale-95 transition-all shadow-lg font-bold"><LucideIcon name="plus" /></button>
-                                        </div>
-
-                                        <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 pr-1 max-h-[400px]">
-                                            {tempCategories.map((cat, i) => (
-                                                <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
-                                                    {editingCatIndex === i ? (
-                                                        <div className="flex w-full gap-2">
-                                                            <input type="text" autoFocus className="flex-1 bg-white border border-indigo-300 rounded-xl px-4 py-2 font-bold text-indigo-700 outline-none" value={editCatText} onChange={(e) => setEditCatText(e.target.value)} />
-                                                            <button onClick={saveEditCategory} className="p-3 bg-emerald-500 text-white rounded-xl active:scale-90 transition-all shadow-sm"><LucideIcon name="check" size={18}/></button>
-                                                            <button onClick={() => setEditingCatIndex(null)} className="p-3 bg-slate-300 text-white rounded-xl active:scale-90 transition-all shadow-sm"><LucideIcon name="x" size={18}/></button>
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            <span className="font-bold text-slate-700">{cat}</span>
-                                                            <div className="flex gap-2">
-                                                                 <button onClick={() => startEditCategory(i, cat)} className="text-slate-400 hover:text-indigo-600 active:scale-90 transition-colors p-2 bg-white rounded-xl shadow-sm"><LucideIcon name="pencil" size={16} /></button>
-                                                                 <button onClick={() => handleDeleteCategory(cat)} className="text-red-400 hover:text-red-600 active:scale-90 transition-colors p-2 bg-white rounded-xl shadow-sm"><LucideIcon name="trash-2" size={16} /></button>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        
-                                        <button onClick={handleSaveCategories} className="w-full h-14 mt-6 rounded-2xl bg-amber-500 text-white font-black text-lg shadow-xl active:scale-95 transition-all uppercase tracking-widest">บันทึกการเปลี่ยนแปลง</button>
                                     </div>
                                 )}
                             </div>
@@ -1490,15 +1524,42 @@
                     {editMasterItem && ( <div className="fixed inset-0 z-[210] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal"> <div className="bg-white p-8 md:p-10 rounded-[3.5rem] shadow-2xl max-w-md w-full relative border-t-8 border-indigo-600 shadow-indigo-100/50"> <button onClick={() => setEditMasterItem(null)} className="absolute top-8 right-8 bg-slate-100 p-2.5 rounded-full hover:bg-red-50 transition-all active:scale-90"><LucideIcon name="x" size={20} /></button> <h3 className="font-black text-2xl text-slate-800 mb-10 text-center uppercase tracking-tighter font-black leading-none font-black">Modify Product</h3> <div className="space-y-7 font-bold"> <div className="space-y-2"> <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 leading-none font-black">ชื่อสินค้าหลัก</label> <input type="text" className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold outline-none transition-all shadow-inner leading-none" value={editMasterItem.name} onChange={(e) => setEditMasterItem({...editMasterItem, name: e.target.value})} /> </div> <div className="space-y-2"> <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 leading-none font-black">รูปภาพสินค้า</label> <div className="relative group h-44 w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all hover:bg-indigo-50/50 hover:border-indigo-200 shadow-inner"> <input type="file" accept="image/*" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => handleFileChangeInternal(e, setEditMasterItem)} /> {editMasterItem.preview || editMasterItem.imgUrl ? <img src={editMasterItem.preview || editMasterItem.imgUrl} className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105" /> : <div className="text-center opacity-30 font-bold uppercase leading-none"><LucideIcon name="image-plus" size={32} className="mx-auto mb-2" />New Image</div>} </div> </div> <button onClick={handleUpdateMaster} disabled={isEditingMaster} className="w-full h-16 bg-indigo-600 text-white rounded-[2rem] font-black text-lg shadow-xl shadow-indigo-100 active:scale-95 transition-all flex items-center justify-center gap-3 leading-none uppercase font-black">{isEditingMaster ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : <><LucideIcon name="check-circle" /> บันทึกการแก้ไข</>}</button> </div> </div> </div> )}
                     {previewImage && ( <div className="fixed inset-0 z-[400] bg-black/95 flex items-center justify-center p-4 shadow-2xl font-bold font-black" onClick={() => setPreviewImage(null)}> <div className="bg-white p-3 rounded-[3rem] max-w-2xl max-h-[90vh] overflow-hidden relative shadow-2xl border-4 border-white animate-modal font-bold font-black font-black"> <button className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full active:scale-90 shadow-lg font-bold font-black"><LucideIcon name="x" size={20}/></button> <img src={previewImage} className="w-full h-full object-contain rounded-[2.5rem] font-bold" /> </div> </div> )}
 
-                    {showAnnouncementModal && (
+                    {editCategoriesMode && (
                         <div className="fixed inset-0 z-[500] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
-                             <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full border-t-8 border-indigo-600">
-                                <h3 className="font-black text-2xl text-slate-800 mb-6 font-black">ประกาศข้อความ</h3>
-                                <textarea className="w-full h-32 p-4 bg-slate-50 rounded-2xl border border-slate-200 outline-none focus:border-indigo-500 font-bold text-slate-700 resize-none" placeholder="ใส่ข้อความประกาศที่นี่..." value={announcementInput} onChange={(e) => setAnnouncementInput(e.target.value)}></textarea>
-                                <div className="flex gap-4 mt-6 font-bold">
-                                    <button onClick={() => setShowAnnouncementModal(false)} className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 active:scale-95">ยกเลิก</button>
-                                    <button onClick={handleSaveAnnouncement} className="flex-1 py-3 rounded-xl bg-indigo-600 text-white active:scale-95">บันทึก</button>
+                             <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-md w-full border-t-8 border-amber-500 h-[80vh] flex flex-col">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-black text-2xl text-slate-800">จัดการหมวดหมู่</h3>
+                                    <button onClick={() => setEditCategoriesMode(false)} className="p-2 bg-slate-100 rounded-full active:scale-90"><LucideIcon name="x" size={20}/></button>
                                 </div>
+                                
+                                <div className="flex gap-2 mb-4">
+                                    <input type="text" className="flex-1 h-12 px-4 rounded-xl bg-slate-50 border outline-none font-bold" placeholder="ชื่อหมวดหมู่ใหม่..." value={newCategoryInput} onChange={(e) => setNewCategoryInput(e.target.value)} />
+                                    <button onClick={handleAddCategory} className="w-12 h-12 bg-amber-500 rounded-xl text-white flex items-center justify-center active:scale-90 font-bold"><LucideIcon name="plus" /></button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1">
+                                    {tempCategories.map((cat, i) => (
+                                        <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                            {editingCatIndex === i ? (
+                                                <div className="flex w-full gap-2">
+                                                    <input type="text" autoFocus className="flex-1 bg-white border border-indigo-300 rounded-lg px-3 py-1 font-bold text-indigo-700 outline-none" value={editCatText} onChange={(e) => setEditCatText(e.target.value)} />
+                                                    <button onClick={saveEditCategory} className="p-2 bg-emerald-500 text-white rounded-lg active:scale-90"><LucideIcon name="check" size={16}/></button>
+                                                    <button onClick={() => setEditingCatIndex(null)} className="p-2 bg-slate-300 text-white rounded-lg active:scale-90"><LucideIcon name="x" size={16}/></button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <span className="font-bold text-slate-700">{cat}</span>
+                                                    <div className="flex gap-2">
+                                                         <button onClick={() => startEditCategory(i, cat)} className="text-slate-400 hover:text-indigo-600 active:scale-90 transition-colors"><LucideIcon name="pencil" size={18} /></button>
+                                                         <button onClick={() => handleDeleteCategory(cat)} className="text-red-400 hover:text-red-600 active:scale-90 transition-colors"><LucideIcon name="trash-2" size={18} /></button>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <button onClick={handleSaveCategories} className="w-full py-4 mt-6 rounded-2xl bg-amber-500 text-white font-black text-lg shadow-lg active:scale-95 shadow-amber-200">บันทึกการเปลี่ยนแปลง</button>
                              </div>
                         </div>
                     )}
