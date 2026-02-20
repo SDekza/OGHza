@@ -48,6 +48,17 @@
         @keyframes marquee { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
         .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 20s linear infinite; }
 
+        /* ✅ Sparkle Animation for Top Performer */
+        @keyframes sparkle-star {
+            0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1.2) rotate(45deg); }
+        }
+        .animate-sparkle-star { animation: sparkle-star 2s ease-in-out infinite; }
+        .delay-150 { animation-delay: 0.15s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-500 { animation-delay: 0.5s; }
+        .delay-700 { animation-delay: 0.7s; }
+
         .top-safe-toast { top: env(safe-area-inset-top); }
 
         .pin-dot { transition: all 0.2s; }
@@ -134,7 +145,7 @@
         };
 
         const App = () => {
-            const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby04NUOV05Nzpbh7hJRkOihxEWFcCmYWWP_3pLdco3XxpTBqX8Hk2I4A1DZBtXINiVt/exec"; 
+            const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxnhILi2y19Uc6Q9zGq05Otowh9f_gRbJTqyLcIH09jHMx2G7jlsjWPk3nskMm4E94T/exec"; 
             
             const SHEET_ID = "108d2PHlbqt5h6p6_O-6qRfGHqs2MNK6GBRjVYdpxAZM";
             const MASTER_GID = "519893714"; 
@@ -186,8 +197,17 @@
             const [isEditingMaster, setIsEditingMaster] = useState(false);
             const [editMasterItem, setEditMasterItem] = useState(null);
             const [masterItemToDelete, setMasterItemToDelete] = useState(null);
-            const [editQuantityItem, setEditQuantityItem] = useState(null);
-            const [editQuantityValue, setEditQuantityValue] = useState('');
+            
+            // ✅ เปลี่ยนจากแก้แค่จำนวน เป็นแก้ไขงานแบบเต็มรูปแบบ
+            const [editTaskItem, setEditTaskItem] = useState(null);
+            const [editTaskForm, setEditTaskForm] = useState({ quantity: '1', memo: '', isUrgent: false });
+            
+            // ✅ State สำหรับเลือกวันที่ดูประวัติงาน (ค่าเริ่มต้นคือวันนี้)
+            const [completedDateFilter, setCompletedDateFilter] = useState(() => {
+                const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+                return (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+            });
+
             const [analysisRange, setAnalysisRange] = useState('7d');
             const [visiblePasswords, setVisiblePasswords] = useState(new Set());
             const [editUserRankModal, setEditUserRankModal] = useState(null);
@@ -716,6 +736,39 @@
                 } catch (e) { }
             };
 
+            // ✅ ฟังก์ชันบันทึกการแก้ไขงานทั้งหมด (จำนวน, หมายเหตุ, ความด่วน)
+            const confirmEditTask = async () => {
+                if (currentUserRank === 'Guest') return;
+                if (!editTaskItem) return;
+                
+                const target = editTaskItem;
+                const newDetails = editTaskForm;
+                
+                setSavedItems(prev => prev.map(i => (i.timestamp === target.timestamp && i.productName === target.productName) 
+                    ? { ...i, quantity: newDetails.quantity, memo: newDetails.memo, isUrgent: newDetails.isUrgent } 
+                    : i));
+                    
+                setEditTaskItem(null); 
+                showToast('อัปเดตข้อมูลงานแล้ว');
+                
+                try {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: "POST", mode: "no-cors",
+                        body: JSON.stringify({ 
+                            action: 'update_task_details', 
+                            productName: target.productName, 
+                            timestamp: target.timestamp, 
+                            uuid: target.uuid, 
+                            quantity: newDetails.quantity,
+                            memo: newDetails.memo,
+                            isUrgent: newDetails.isUrgent,
+                            user: currentUser
+                        }),
+                    });
+                    fetchSavedRecords();
+                } catch (e) { }
+            };
+
             const confirmDelete = async () => {
                 if (currentUserRank === 'Guest') return;
                 if (!itemToDelete) return;
@@ -807,28 +860,38 @@
                 });
             }, [savedItems, workTypeFilter]);
 
+            // ✅ อัปเดตการนับจำนวน ให้รองรับการเลือกวันที่ของแท็บ "เสร็จแล้ว"
             const viewCounts = useMemo(() => {
-                const today = new Date();
-                today.setHours(0,0,0,0);
+                const targetDate = new Date(completedDateFilter);
+                targetDate.setHours(0,0,0,0);
                 return {
                     pending: filteredByType.filter(i => !i.isDoing && !i.isDone).length,
                     doing: filteredByType.filter(i => i.isDoing && !i.isDone).length,
-                    completed: filteredByType.filter(i => i.isDone && parseThaiDate(i.timestamp) >= today).length
+                    completed: filteredByType.filter(i => {
+                        if (!i.isDone) return false;
+                        const td = parseThaiDate(i.timestamp);
+                        td.setHours(0,0,0,0);
+                        return td.getTime() === targetDate.getTime();
+                    }).length
                 };
-            }, [filteredByType]);
+            }, [filteredByType, completedDateFilter]);
 
+            // ✅ อัปเดตตัวกรองรายการที่แสดง ให้ตรงกับวันที่ที่เลือก
             const filteredItemsRender = useMemo(() => {
-                const today = new Date();
-                today.setHours(0,0,0,0);
+                const targetDate = new Date(completedDateFilter);
+                targetDate.setHours(0,0,0,0);
                 return filteredByType.filter(i => {
                     if (viewSubTab === 'pending') return !i.isDoing && !i.isDone;
                     if (viewSubTab === 'doing') return i.isDoing && !i.isDone;
                     if (viewSubTab === 'completed') {
-                        return i.isDone && parseThaiDate(i.timestamp) >= today;
+                        if (!i.isDone) return false;
+                        const td = parseThaiDate(i.timestamp);
+                        td.setHours(0,0,0,0);
+                        return td.getTime() === targetDate.getTime();
                     }
                     return false;
                 });
-            }, [filteredByType, viewSubTab]);
+            }, [filteredByType, viewSubTab, completedDateFilter]);
 
             const totalPendingCount = useMemo(() => savedItems.filter(i => !i.isDoing && !i.isDone).length, [savedItems]);
 
@@ -859,7 +922,7 @@
                     { id: 'record', label: 'บันทึก', icon: 'edit-3', show: currentUserRank !== 'Guest' },
                     { id: 'view', label: 'งาน', icon: 'list', show: true, badge: totalPendingCount > 0 ? totalPendingCount : null },
                     { id: 'manage', label: 'สินค้า', icon: 'package', show: true },
-                    { id: 'analysis', label: 'สถิติ', icon: 'bar-chart-2', show: true },
+                    { id: 'analysis', label: 'สถิติ', icon: 'bar-chart-2', show: currentUserRank !== 'Guest' },
                     { id: 'dev', label: 'ระบบ', icon: 'terminal', show: currentUserRank === 'Dev' }
                 ];
 
@@ -882,14 +945,9 @@
                 );
             };
 
-            const adjustQuantity = (delta, isForm = true) => {
-                if (isForm) {
-                    const cur = parseInt(form.quantity) || 1;
-                    setForm(prev => ({ ...prev, quantity: String(Math.max(1, cur + delta)) }));
-                } else {
-                    const cur = parseInt(editQuantityValue) || 1;
-                    setEditQuantityValue(String(Math.max(1, cur + delta)));
-                }
+            const adjustQuantity = (delta) => {
+                const cur = parseInt(form.quantity) || 1;
+                setForm(prev => ({ ...prev, quantity: String(Math.max(1, cur + delta)) }));
             };
 
             return (
@@ -1206,6 +1264,14 @@
                                     </div>
                                 </div>
 
+                                {/* ✅ Date Picker สำหรับดูประวัติงานย้อนหลัง */}
+                                {viewSubTab === 'completed' && (
+                                    <div className="flex justify-between items-center bg-white p-3 rounded-2xl border border-slate-100 shadow-sm custom-shadow">
+                                        <span className="text-xs font-black text-slate-500 flex items-center gap-2 uppercase tracking-widest"><LucideIcon name="calendar-days" size={16} className="text-emerald-500" /> ประวัติงาน</span>
+                                        <input type="date" className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-black text-emerald-700 outline-none shadow-inner focus:border-emerald-500 cursor-pointer" value={completedDateFilter} onChange={(e) => setCompletedDateFilter(e.target.value)} />
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     {filteredItemsRender.map((item) => {
                                         const key = item.timestamp + item.productName;
@@ -1262,15 +1328,20 @@
                                                         </div>
                                                     )}
                                                     
+                                                    {/* ✅ อัปเดตเวลากดตรงจำนวนให้แสดง Modal ใหม่ */}
                                                     <div className="flex items-baseline gap-2 mt-2 leading-none">
                                                         <span className="text-[10px] uppercase text-slate-400 font-bold font-bold leading-none">จำนวน:</span>
-                                                        <span onClick={() => { if(!isGuest && !isLocked) { setEditQuantityItem(item); setEditQuantityValue(item.quantity); } }} className={`text-3xl font-black text-slate-900 leading-none font-mono font-black ${!isGuest && !isLocked ? 'cursor-pointer hover:text-indigo-600 transition-colors' : ''}`}>{item.quantity}</span>
+                                                        <span onClick={() => { if(!isGuest && !isLocked) { setEditTaskItem(item); setEditTaskForm({ quantity: item.quantity, memo: item.memo || '', isUrgent: item.isUrgent || false }); } }} className={`text-3xl font-black text-slate-900 leading-none font-mono font-black ${!isGuest && !isLocked ? 'cursor-pointer hover:text-indigo-600 transition-colors' : ''}`}>{item.quantity}</span>
                                                     </div>
                                                     {item.memo && <p className={`text-[10px] italic mt-1 font-bold ${isCustomItem ? 'text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md' : 'text-slate-400 truncate'}`}>{isCustomItem ? '📝 ' : 'บันทึก: '}{item.memo}</p>}
                                                 </div>
                                                 
+                                                {/* ✅ เพิ่มปุ่มแก้ไข (ดินสอ) ข้างๆ ปุ่มลบ */}
                                                 {!isGuest && !isLocked && (
-                                                    <button onClick={() => setItemToDelete(item)} className="absolute top-2 right-2 p-2 text-slate-300 hover:text-red-600 transition-all active:scale-75 opacity-100 md:opacity-0 group-hover:opacity-100"><LucideIcon name="trash-2" size={20} /></button>
+                                                    <div className="absolute top-2 right-2 flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all">
+                                                        <button onClick={() => { setEditTaskItem(item); setEditTaskForm({ quantity: item.quantity, memo: item.memo || '', isUrgent: item.isUrgent || false }); }} className="p-2 text-slate-300 hover:text-amber-500 active:scale-75 transition-all"><LucideIcon name="pencil" size={18} /></button>
+                                                        <button onClick={() => setItemToDelete(item)} className="p-2 text-slate-300 hover:text-red-600 active:scale-75 transition-all"><LucideIcon name="trash-2" size={18} /></button>
+                                                    </div>
                                                 )}
                                             </div>
                                         );
@@ -1307,26 +1378,134 @@
                                         <div>
                                             <h3 className="font-black text-slate-700 mb-6 uppercase text-sm tracking-widest text-left font-bold font-bold font-bold">สินค้าสูงสุด (Top 5)</h3>
                                             <div className="space-y-4 text-left">
-                                                {analysisData.topProducts.map((p, i) => (
-                                                    <div key={i} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left font-bold shadow-sm font-bold">
-                                                        <div className="w-12 h-12 rounded-xl bg-white border overflow-hidden shrink-0 shadow-sm font-bold"><img src={p.image} className="w-full h-full object-cover" /></div>
-                                                        <div className="flex-1 font-bold truncate text-slate-700 font-bold font-bold font-bold">{p.name}</div>
-                                                        <div className="text-right font-black text-indigo-600 font-bold font-black font-black">{p.qty} ชิ้น</div>
-                                                    </div>
-                                                ))}
+                                                {analysisData.topProducts.map((p, i) => {
+                                                    const isTop = i === 0;
+                                                    const isSecond = i === 1;
+                                                    const isThird = i === 2;
+
+                                                    let bgClass = "bg-slate-50 border-slate-100";
+                                                    let rankBadge = <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-slate-500 font-black text-[10px] shadow-sm z-20">{i+1}</div>;
+                                                    let textClass = "text-slate-700";
+                                                    let qtyClass = "text-indigo-600";
+                                                    let imgBorder = "border-slate-200";
+
+                                                    if (isTop) {
+                                                        bgClass = "bg-gradient-to-r from-yellow-50 via-amber-100 to-yellow-50 border-yellow-300 shadow-md shadow-yellow-200/50 transform scale-[1.02] z-10 relative overflow-hidden";
+                                                        rankBadge = (
+                                                            <div className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 border-2 border-white flex items-center justify-center shadow-lg z-20">
+                                                                <LucideIcon name="crown" size={16} className="text-white drop-shadow-md" />
+                                                            </div>
+                                                        );
+                                                        textClass = "text-amber-800";
+                                                        qtyClass = "text-amber-600 text-2xl";
+                                                        imgBorder = "border-yellow-400";
+                                                    } else if (isSecond) {
+                                                        bgClass = "bg-gradient-to-r from-slate-50 to-slate-200 border-slate-300 shadow-sm relative";
+                                                        rankBadge = <div className="absolute -top-2 -left-2 w-7 h-7 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 border border-white flex items-center justify-center font-black text-xs shadow-sm text-white z-20">2</div>;
+                                                        textClass = "text-slate-800";
+                                                        qtyClass = "text-slate-600";
+                                                        imgBorder = "border-slate-400";
+                                                    } else if (isThird) {
+                                                        bgClass = "bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200 shadow-sm relative";
+                                                        rankBadge = <div className="absolute -top-2 -left-2 w-7 h-7 rounded-full bg-gradient-to-br from-orange-300 to-orange-400 border border-white flex items-center justify-center font-black text-xs shadow-sm text-white z-20">3</div>;
+                                                        textClass = "text-orange-900";
+                                                        qtyClass = "text-orange-700";
+                                                        imgBorder = "border-orange-400";
+                                                    }
+
+                                                    return (
+                                                        <div key={i} className={`flex items-center gap-4 p-4 rounded-2xl border text-left font-bold transition-all ${bgClass}`}>
+                                                            {/* ✨ เอฟเฟกต์ดาวระยิบระยับ (เฉพาะที่ 1) */}
+                                                            {isTop && (
+                                                                <>
+                                                                    <svg viewBox="0 0 24 24" className="absolute top-2 left-10 w-3 h-3 text-yellow-400 animate-sparkle-star delay-150 opacity-80 z-0" fill="currentColor"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>
+                                                                    <svg viewBox="0 0 24 24" className="absolute bottom-2 left-20 w-4 h-4 text-amber-500 animate-sparkle-star delay-500 opacity-60 z-0" fill="currentColor"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>
+                                                                    <svg viewBox="0 0 24 24" className="absolute top-3 right-20 w-4 h-4 text-yellow-300 animate-sparkle-star delay-700 opacity-90 z-0" fill="currentColor"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>
+                                                                    <svg viewBox="0 0 24 24" className="absolute bottom-3 right-4 w-3 h-3 text-yellow-500 animate-sparkle-star delay-300 opacity-70 z-0" fill="currentColor"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>
+                                                                </>
+                                                            )}
+                                                            
+                                                            <div className="relative shrink-0">
+                                                                {rankBadge}
+                                                                <div className={`w-12 h-12 rounded-xl bg-white overflow-hidden shadow-sm relative z-10 border-2 ${imgBorder}`}>
+                                                                    {p.image ? <img src={p.image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300"><LucideIcon name="package" size={20}/></div>}
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div className="flex-1 font-bold truncate z-10">
+                                                                <span className={textClass}>{p.name}</span>
+                                                                {isTop && <span className="block text-[10px] text-amber-600 font-black tracking-widest uppercase mt-0.5">Bestseller 🌟</span>}
+                                                            </div>
+                                                            <div className={`text-right font-black z-10 ${qtyClass}`}>
+                                                                {p.qty} <span className="text-sm font-normal">ชิ้น</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                         
                                         <div>
                                             <h3 className="font-black text-slate-700 mb-6 uppercase text-sm tracking-widest text-left font-bold font-bold font-bold">ผลงานพนักงาน (เสร็จแล้ว)</h3>
                                             <div className="space-y-4 text-left">
-                                                {analysisData.topUsers.length > 0 ? analysisData.topUsers.map(([user, qty], i) => (
-                                                    <div key={i} className="flex items-center gap-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-left font-bold shadow-sm font-bold">
-                                                        <div className="w-12 h-12 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-emerald-600 font-black text-xl shadow-sm">{i+1}</div>
-                                                        <div className="flex-1 font-bold truncate text-slate-700 font-bold font-bold font-bold">{user}</div>
-                                                        <div className="text-right font-black text-emerald-600 font-bold font-black font-black">{qty} ชิ้น</div>
-                                                    </div>
-                                                )) : <div className="text-slate-400 text-center py-4">ยังไม่มีข้อมูล</div>}
+                                                {analysisData.topUsers.length > 0 ? analysisData.topUsers.map(([user, qty], i) => {
+                                                    const isTop = i === 0;
+                                                    const isSecond = i === 1;
+                                                    const isThird = i === 2;
+
+                                                    let bgClass = "bg-slate-50 border-slate-100";
+                                                    let rankElement = <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 font-black text-xl shadow-sm">{i+1}</div>;
+                                                    let textClass = "text-slate-600";
+
+                                                    if (isTop) {
+                                                        // 🥇 ที่ 1: ธีมสีทอง มงกุฎ และเอฟเฟกต์
+                                                        bgClass = "bg-gradient-to-r from-yellow-50 via-amber-100 to-yellow-50 border-yellow-300 shadow-md shadow-yellow-200/50 transform scale-[1.02] z-10 relative overflow-hidden";
+                                                        rankElement = (
+                                                            <div className="w-14 h-14 shrink-0 rounded-full bg-gradient-to-br from-yellow-300 to-amber-500 border-2 border-white flex items-center justify-center shadow-lg relative z-10">
+                                                                <LucideIcon name="crown" size={28} className="text-white drop-shadow-md" />
+                                                                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-100 opacity-75"></span>
+                                                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-white border border-yellow-400"></span>
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                        textClass = "text-amber-700";
+                                                    } else if (isSecond) {
+                                                        // 🥈 ที่ 2: ธีมสีเงิน
+                                                        bgClass = "bg-gradient-to-r from-slate-50 to-slate-200 border-slate-300 shadow-sm";
+                                                        rankElement = <div className="w-12 h-12 shrink-0 rounded-xl bg-gradient-to-br from-slate-300 to-slate-400 border border-white flex items-center justify-center font-black text-xl shadow-sm text-white">2</div>;
+                                                        textClass = "text-slate-700";
+                                                    } else if (isThird) {
+                                                        // 🥉 ที่ 3: ธีมสีทองแดง
+                                                        bgClass = "bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200 shadow-sm";
+                                                        rankElement = <div className="w-12 h-12 shrink-0 rounded-xl bg-gradient-to-br from-orange-300 to-orange-400 border border-white flex items-center justify-center font-black text-xl shadow-sm text-white">3</div>;
+                                                        textClass = "text-orange-800";
+                                                    }
+
+                                                    return (
+                                                        <div key={i} className={`flex items-center gap-4 p-4 rounded-2xl border text-left font-bold transition-all ${bgClass}`}>
+                                                            {/* ✨ เอฟเฟกต์ดาวระยิบระยับ (เฉพาะที่ 1) */}
+                                                            {isTop && (
+                                                                <>
+                                                                    <svg viewBox="0 0 24 24" className="absolute top-2 left-2 w-4 h-4 text-yellow-400 animate-sparkle-star delay-150 opacity-80" fill="currentColor"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>
+                                                                    <svg viewBox="0 0 24 24" className="absolute bottom-2 left-16 w-3 h-3 text-amber-500 animate-sparkle-star delay-500 opacity-60" fill="currentColor"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>
+                                                                    <svg viewBox="0 0 24 24" className="absolute top-4 right-24 w-5 h-5 text-yellow-300 animate-sparkle-star delay-700 opacity-90" fill="currentColor"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>
+                                                                    <svg viewBox="0 0 24 24" className="absolute bottom-3 right-4 w-3 h-3 text-yellow-500 animate-sparkle-star delay-300 opacity-70" fill="currentColor"><path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z"/></svg>
+                                                                </>
+                                                            )}
+                                                            
+                                                            {rankElement}
+                                                            
+                                                            <div className="flex-1 font-bold truncate z-10">
+                                                                <span className={textClass}>{user}</span>
+                                                                {isTop && <span className="block text-[10px] text-amber-600 font-black tracking-widest uppercase mt-0.5">Top Performer 🏆</span>}
+                                                            </div>
+                                                            <div className={`text-right font-black z-10 ${isTop ? 'text-amber-600 text-2xl' : textClass}`}>
+                                                                {qty} <span className="text-sm font-normal">ชิ้น</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }) : <div className="text-slate-400 text-center py-8 border-2 border-dashed rounded-2xl bg-slate-50">ยังไม่มีข้อมูลผลงาน</div>}
                                             </div>
                                         </div>
                                     </div>
@@ -1519,7 +1698,41 @@
                     {editUserRankModal && ( <div className="fixed inset-0 z-[310] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-modal"> <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-indigo-600"> <LucideIcon name="shield-check" size={64} className="text-indigo-600 mx-auto mb-6" /> <h3 className="font-black text-2xl text-slate-800 mb-6 uppercase tracking-tighter leading-none font-black">Assign Position</h3> <div className="space-y-3"> {['Dev', 'Admin', 'User', 'Guest'].map(r => (<button key={r} onClick={() => handleUpdateUserSetting(editUserRankModal.name, r, editUserRankModal.pass)} className={`w-full py-5 rounded-2xl border-2 font-black transition-all active:scale-95 shadow-sm leading-none ${editUserRankModal.rank === r ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl' : 'bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100'}`}>{r}</button>))} <button onClick={() => setEditUserRankModal(null)} className="w-full py-3 mt-4 text-slate-400 font-bold hover:text-red-500 transition-colors uppercase text-[10px] tracking-[0.2em] leading-none font-black">Close Window</button> </div> </div> </div> )}
                     {editUserPassModal && ( <div className="fixed inset-0 z-[310] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-modal"> <div className="bg-white p-8 rounded-[3.5rem] shadow-2xl max-w-sm w-full text-center border-t-8 border-amber-500"> <LucideIcon name="key" size={64} className="text-amber-500 mx-auto mb-6" /> <h3 className="font-black text-2xl text-slate-800 mb-6 uppercase tracking-tighter font-black leading-none font-black text-2xl">Login Password</h3> <div className="space-y-6"> <input autoFocus type="number" inputMode="numeric" placeholder="0000" className="w-full py-6 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-amber-500 text-center font-black text-5xl text-amber-600 outline-none shadow-inner leading-none" value={newPassValue} onChange={(e) => setNewPassValue(e.target.value.slice(0, 4))} /> <div className="grid grid-cols-2 gap-4 font-bold"> <button onClick={() => setEditUserPassModal(null)} className="h-14 rounded-2xl text-slate-400 bg-slate-50 active:scale-95 shadow-sm border border-transparent font-black leading-none uppercase font-black">ยกเลิก</button> <button onClick={() => handleUpdateUserSetting(editUserPassModal.name, editUserPassModal.rank, newPassValue)} className="h-14 rounded-2xl bg-amber-500 text-white shadow-lg active:scale-95 shadow-amber-100 font-black leading-none uppercase font-black">บันทึกรหัส</button> </div> </div> </div> </div> )}
                     {itemToDelete && ( <div className="fixed inset-0 z-[250] bg-black/70 flex items-center justify-center p-4 backdrop-blur-md animate-modal text-center text-white font-bold"> <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-sm w-full border-t-8 border-red-600"> <LucideIcon name="trash-2" size={64} className="text-red-600 mx-auto mb-6 animate-bounce" /> <h3 className="font-black text-2xl text-slate-800 mb-2 font-bold font-bold font-bold">ลบรายการงาน?</h3> <p className="text-slate-400 text-sm mb-10 font-bold uppercase truncate font-bold font-bold">{itemToDelete.productName}</p> <div className="grid grid-cols-2 gap-4"> <button onClick={() => setItemToDelete(null)} className="h-14 rounded-2xl font-bold text-slate-400 bg-slate-50 border-2 border-transparent active:scale-95 transition-all uppercase leading-none font-bold font-bold">ยกเลิก</button> <button onClick={confirmDelete} className="h-14 rounded-2xl font-black bg-red-600 text-white shadow-lg active:scale-95 transition-all uppercase font-bold leading-none font-bold font-black text-white">ยืนยัน</button> </div> </div> </div> )}
-                    {editQuantityItem && ( <div className="fixed inset-0 z-[250] bg-black/70 flex items-center justify-center p-4 backdrop-blur-md animate-modal text-center text-white font-bold font-bold font-black"> <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-sm w-full border-t-8 border-indigo-600"> <h3 className="font-black text-2xl text-slate-800 mb-8 font-bold font-black font-bold font-black font-black">แก้ไขจำนวนสินค้า</h3> <div className="flex items-center justify-center gap-6 mb-10"> <button onClick={() => { setEditQuantityValue(prev => String(Math.max(1, parseInt(prev) - 1))); }} className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-500 font-black text-3xl active:scale-90 shadow-sm font-bold font-black">-</button> <input type="number" className="w-28 h-16 bg-slate-50 border-2 border-indigo-100 rounded-2xl font-black text-4xl text-center text-indigo-600 outline-none shadow-inner font-bold font-black font-black" value={editQuantityValue} onChange={(e) => setEditQuantityValue(e.target.value)} /> <button onClick={() => { setEditQuantityValue(prev => String(parseInt(prev) + 1)); }} className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 font-black text-3xl active:scale-90 shadow-sm font-bold font-black">+</button> </div> <button onClick={confirmEditQuantity} className="w-full h-16 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl active:scale-95 shadow-indigo-100 font-bold font-bold font-black font-black leading-none">บันทึก</button> <button onClick={() => setEditQuantityItem(null)} className="w-full mt-4 text-slate-400 font-bold text-sm uppercase font-bold font-bold">ปิดหน้าต่าง</button> </div> </div> )}
+                    
+                    {/* ✅ Modal หน้าต่างแก้ไขงานแบบเต็มรูปแบบ (แทนที่อันเดิม) */}
+                    {editTaskItem && ( 
+                        <div className="fixed inset-0 z-[250] bg-black/70 flex items-center justify-center p-4 backdrop-blur-md animate-modal text-center font-bold"> 
+                            <div className="bg-white p-8 sm:p-10 rounded-[2.5rem] shadow-2xl max-w-sm w-full border-t-8 border-amber-500"> 
+                                <h3 className="font-black text-2xl text-slate-800 mb-6 flex items-center justify-center gap-2"><LucideIcon name="edit" className="text-amber-500" /> แก้ไขรายละเอียด</h3> 
+                                
+                                <div className="space-y-5 mb-8 text-left">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">จำนวนสินค้า</label>
+                                        <div className="flex items-center justify-between bg-slate-50 rounded-2xl border-2 border-transparent focus-within:border-amber-500 p-1 shadow-inner h-14">
+                                            <button onClick={() => setEditTaskForm(p => ({...p, quantity: String(Math.max(1, parseInt(p.quantity) - 1))}))} className="w-12 h-full flex items-center justify-center rounded-xl bg-white text-slate-400 hover:text-amber-600 shadow-sm active:scale-90">-</button>
+                                            <input type="number" className="flex-1 w-full bg-transparent text-center font-black text-2xl text-amber-600 outline-none m-0 appearance-none" value={editTaskForm.quantity} onChange={(e) => setEditTaskForm(p => ({...p, quantity: e.target.value}))} />
+                                            <button onClick={() => setEditTaskForm(p => ({...p, quantity: String(parseInt(p.quantity || 0) + 1)}))} className="w-12 h-full flex items-center justify-center rounded-xl bg-white text-slate-400 hover:text-amber-600 shadow-sm active:scale-90">+</button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">หมายเหตุ</label>
+                                        <input type="text" className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-amber-500 rounded-xl px-4 font-bold text-slate-700 outline-none shadow-sm transition-all" value={editTaskForm.memo} onChange={(e) => setEditTaskForm(p => ({...p, memo: e.target.value}))} placeholder="เพิ่มหมายเหตุ..." />
+                                    </div>
+
+                                    <button onClick={() => setEditTaskForm(p => ({...p, isUrgent: !p.isUrgent}))} className={`w-full h-14 rounded-xl font-bold border-2 transition-all active:scale-95 flex items-center justify-center gap-2 ${editTaskForm.isUrgent ? 'bg-red-50 border-red-500 text-red-600 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                                        <LucideIcon name="flame" size={18} /> {editTaskForm.isUrgent ? 'สถานะ: ด่วนพิเศษ 🔥' : 'สถานะ: ระดับปกติ'}
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button onClick={() => setEditTaskItem(null)} className="h-14 rounded-xl text-slate-400 bg-slate-100 font-black uppercase text-sm active:scale-95 transition-all">ยกเลิก</button> 
+                                    <button onClick={confirmEditTask} className="h-14 bg-amber-500 text-white rounded-xl font-black text-sm shadow-xl active:scale-95 shadow-amber-200 uppercase flex items-center justify-center gap-2"><LucideIcon name="save" size={16} /> บันทึก</button> 
+                                </div>
+                            </div> 
+                        </div> 
+                    )}
+                    
                     {masterItemToDelete && ( <div className="fixed inset-0 z-[250] bg-black/60 flex items-center justify-center p-4 animate-modal text-center text-white font-bold font-black font-black"> <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl max-w-sm w-full border-t-8 border-red-600 text-center font-bold font-black font-black"> <LucideIcon name="alert-triangle" size={64} className="text-red-600 mx-auto mb-6 font-bold" /> <h3 className="font-black text-2xl mb-8 text-slate-800 font-bold font-black font-black font-black">ลบสินค้าออกจากคลัง?</h3> <div className="grid grid-cols-2 gap-4 text-white font-bold font-black font-black"> <button onClick={() => setMasterItemToDelete(null)} className="h-14 rounded-2xl bg-slate-100 font-bold text-slate-400 uppercase active:scale-95 transition-all leading-none font-bold font-bold font-black font-black">ยกเลิก</button> <button onClick={() => confirmDeleteMaster(masterItemToDelete)} className="h-14 rounded-2xl bg-red-600 text-white font-black shadow-lg uppercase font-bold active:scale-95 transition-all leading-none font-bold font-bold font-black font-black text-white">ลบทันที</button> </div> </div> </div> )}
                     {editMasterItem && ( <div className="fixed inset-0 z-[210] bg-black/60 flex items-center justify-center p-4 backdrop-blur-md animate-modal"> <div className="bg-white p-8 md:p-10 rounded-[3.5rem] shadow-2xl max-w-md w-full relative border-t-8 border-indigo-600 shadow-indigo-100/50"> <button onClick={() => setEditMasterItem(null)} className="absolute top-8 right-8 bg-slate-100 p-2.5 rounded-full hover:bg-red-50 transition-all active:scale-90"><LucideIcon name="x" size={20} /></button> <h3 className="font-black text-2xl text-slate-800 mb-10 text-center uppercase tracking-tighter font-black leading-none font-black">Modify Product</h3> <div className="space-y-7 font-bold"> <div className="space-y-2"> <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 leading-none font-black">ชื่อสินค้าหลัก</label> <input type="text" className="w-full h-14 bg-slate-50 border-2 border-transparent focus:border-indigo-500 rounded-2xl px-5 font-bold outline-none transition-all shadow-inner leading-none" value={editMasterItem.name} onChange={(e) => setEditMasterItem({...editMasterItem, name: e.target.value})} /> </div> <div className="space-y-2"> <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1 leading-none font-black">รูปภาพสินค้า</label> <div className="relative group h-44 w-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all hover:bg-indigo-50/50 hover:border-indigo-200 shadow-inner"> <input type="file" accept="image/*" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => handleFileChangeInternal(e, setEditMasterItem)} /> {editMasterItem.preview || editMasterItem.imgUrl ? <img src={editMasterItem.preview || editMasterItem.imgUrl} className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105" /> : <div className="text-center opacity-30 font-bold uppercase leading-none"><LucideIcon name="image-plus" size={32} className="mx-auto mb-2" />New Image</div>} </div> </div> <button onClick={handleUpdateMaster} disabled={isEditingMaster} className="w-full h-16 bg-indigo-600 text-white rounded-[2rem] font-black text-lg shadow-xl shadow-indigo-100 active:scale-95 transition-all flex items-center justify-center gap-3 leading-none uppercase font-black">{isEditingMaster ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : <><LucideIcon name="check-circle" /> บันทึกการแก้ไข</>}</button> </div> </div> </div> )}
                     {previewImage && ( <div className="fixed inset-0 z-[400] bg-black/95 flex items-center justify-center p-4 shadow-2xl font-bold font-black" onClick={() => setPreviewImage(null)}> <div className="bg-white p-3 rounded-[3rem] max-w-2xl max-h-[90vh] overflow-hidden relative shadow-2xl border-4 border-white animate-modal font-bold font-black font-black"> <button className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full active:scale-90 shadow-lg font-bold font-black"><LucideIcon name="x" size={20}/></button> <img src={previewImage} className="w-full h-full object-contain rounded-[2.5rem] font-bold" /> </div> </div> )}
