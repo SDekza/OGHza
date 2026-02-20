@@ -215,7 +215,8 @@
             const [editingCatIndex, setEditingCatIndex] = useState(null);
             const [editCatText, setEditCatText] = useState("");
             
-            const [workTypeFilter, setWorkTypeFilter] = useState('daily');
+            // ✅ เปลี่ยนค่าเริ่มต้นเป็น 'all' เพื่อแสดงงานทั้งหมด
+            const [workTypeFilter, setWorkTypeFilter] = useState('all');
 
             const searchContainerRef = useRef(null);
 
@@ -751,12 +752,16 @@
                 } catch (e) { return new Date(0); }
             };
 
-            // ✅ Logic ใหม่สำหรับคำนวณสถิติแยกแท็บ
+            // ✅ Logic ใหม่สำหรับคำนวณสถิติแยกแท็บ รองรับ 'all'
             const today = new Date();
             today.setHours(0,0,0,0);
 
             const filteredByType = useMemo(() => {
-                return savedItems.filter(i => workTypeFilter === 'stock' ? i.isStock === true : !i.isStock);
+                return savedItems.filter(i => {
+                    if (workTypeFilter === 'all') return true;
+                    if (workTypeFilter === 'stock') return i.isStock === true;
+                    return !i.isStock; // daily
+                });
             }, [savedItems, workTypeFilter]);
 
             const viewCounts = useMemo(() => {
@@ -1087,46 +1092,45 @@
                         {activeTab === 'view' && (
                             <div className="space-y-6 pb-10 animate-modal">
                                 
-                                {/* ✅ Panel ตัวกรองแบบใหม่ ดูเป็นมิตรและเป็นหมวดหมู่เดียวกัน */}
-                                <div className="bg-white rounded-[2rem] p-3 shadow-sm border border-slate-100 flex flex-col gap-3 custom-shadow">
-                                    {/* 1. โหมดงาน: รายวัน vs สต๊อก */}
-                                    <div className="flex bg-slate-50 p-1.5 rounded-[1.5rem] border border-slate-100">
-                                        <button
-                                            onClick={() => setWorkTypeFilter('daily')}
-                                            className={`flex-1 py-3 px-4 rounded-xl font-black text-[13px] flex items-center justify-center gap-2 transition-all ${workTypeFilter === 'daily' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-                                        >
-                                            <LucideIcon name="users" size={16} /> งานลูกค้า
-                                        </button>
-                                        <button
-                                            onClick={() => setWorkTypeFilter('stock')}
-                                            className={`flex-1 py-3 px-4 rounded-xl font-black text-[13px] flex items-center justify-center gap-2 transition-all ${workTypeFilter === 'stock' ? 'bg-blue-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-                                        >
-                                            <LucideIcon name="package" size={16} /> งานสต๊อก
-                                        </button>
+                                {/* ✅ Panel ตัวกรองแบบใหม่: ปรับให้กะทัดรัด (ปุ่มสถานะ + วนลูปโหมด + รีเฟรช) */}
+                                <div className="bg-white rounded-[2rem] p-2 sm:p-3 shadow-sm border border-slate-100 flex items-center justify-between gap-1 sm:gap-2 custom-shadow">
+                                    
+                                    {/* แท็บสถานะงาน */}
+                                    <div className="flex flex-1 gap-1 overflow-x-auto no-scrollbar">
+                                        {[
+                                            { id: 'pending', label: 'ค้าง', count: viewCounts.pending, activeBg: 'bg-indigo-100', activeText: 'text-indigo-700', badgeBg: 'bg-indigo-600', inactiveBadge: 'bg-slate-100 text-slate-500' },
+                                            { id: 'doing', label: 'ทำอยู่', count: viewCounts.doing, activeBg: 'bg-amber-100', activeText: 'text-amber-700', badgeBg: 'bg-amber-500', inactiveBadge: 'bg-slate-100 text-slate-500' },
+                                            { id: 'completed', label: 'เสร็จ', count: viewCounts.completed, activeBg: 'bg-emerald-100', activeText: 'text-emerald-700', badgeBg: 'bg-emerald-600', inactiveBadge: 'bg-slate-100 text-slate-500' }
+                                        ].map(tab => (
+                                            <button
+                                                key={tab.id}
+                                                onClick={() => setViewSubTab(tab.id)}
+                                                className={`flex-1 flex items-center justify-center gap-1.5 py-3 px-1 sm:px-2 rounded-xl font-bold text-[11px] sm:text-xs transition-all whitespace-nowrap ${viewSubTab === tab.id ? `${tab.activeBg} ${tab.activeText} shadow-sm` : 'text-slate-400 hover:bg-slate-50'}`}
+                                            >
+                                                {tab.label}
+                                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black transition-colors ${viewSubTab === tab.id ? `${tab.badgeBg} text-white` : tab.inactiveBadge}`}>
+                                                    {tab.count}
+                                                </span>
+                                            </button>
+                                        ))}
                                     </div>
 
-                                    {/* 2. สถานะงาน */}
-                                    <div className="flex items-center justify-between gap-2 px-1">
-                                        <div className="flex flex-1 gap-1 overflow-x-auto no-scrollbar">
-                                            {[
-                                                { id: 'pending', label: 'งานค้าง', count: viewCounts.pending, activeBg: 'bg-indigo-100', activeText: 'text-indigo-700', badgeBg: 'bg-indigo-600', inactiveBadge: 'bg-slate-100 text-slate-500' },
-                                                { id: 'doing', label: 'กำลังทำ', count: viewCounts.doing, activeBg: 'bg-amber-100', activeText: 'text-amber-700', badgeBg: 'bg-amber-500', inactiveBadge: 'bg-slate-100 text-slate-500' },
-                                                { id: 'completed', label: 'เสร็จแล้ว', count: viewCounts.completed, activeBg: 'bg-emerald-100', activeText: 'text-emerald-700', badgeBg: 'bg-emerald-600', inactiveBadge: 'bg-slate-100 text-slate-500' }
-                                            ].map(tab => (
-                                                <button
-                                                    key={tab.id}
-                                                    onClick={() => setViewSubTab(tab.id)}
-                                                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 rounded-xl font-bold text-xs transition-all whitespace-nowrap ${viewSubTab === tab.id ? `${tab.activeBg} ${tab.activeText} shadow-sm` : 'text-slate-400 hover:bg-slate-50'}`}
-                                                >
-                                                    {tab.label}
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black transition-colors ${viewSubTab === tab.id ? `${tab.badgeBg} text-white` : tab.inactiveBadge}`}>
-                                                        {tab.count}
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <button onClick={fetchSavedRecords} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-slate-400 active:scale-90 transition-all hover:text-indigo-600 shadow-sm shrink-0">
-                                            <LucideIcon name="refresh-cw" size={18} className={recordsLoading ? "animate-spin" : ""} />
+                                    {/* ปุ่มเปลี่ยนโหมด (Cycle Filter) & รีเฟรช */}
+                                    <div className="flex gap-1.5 sm:gap-2 shrink-0 border-l border-slate-100 pl-1.5 sm:pl-2">
+                                        <button 
+                                            onClick={() => {
+                                                if (workTypeFilter === 'all') setWorkTypeFilter('daily');
+                                                else if (workTypeFilter === 'daily') setWorkTypeFilter('stock');
+                                                else setWorkTypeFilter('all');
+                                            }} 
+                                            className={`h-[44px] min-w-[50px] px-1 rounded-xl border flex flex-col items-center justify-center transition-all shadow-sm active:scale-90 shrink-0 ${workTypeFilter === 'all' ? 'bg-slate-100 border-slate-200 text-slate-700' : workTypeFilter === 'daily' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-blue-50 border-blue-200 text-blue-600'}`}
+                                        >
+                                            <LucideIcon name={workTypeFilter === 'all' ? 'layout-grid' : workTypeFilter === 'daily' ? 'users' : 'package'} size={16} />
+                                            <span className="text-[8px] font-black mt-0.5 leading-none">{workTypeFilter === 'all' ? 'ทั้งหมด' : workTypeFilter === 'daily' ? 'ลูกค้า' : 'สต๊อก'}</span>
+                                        </button>
+
+                                        <button onClick={fetchSavedRecords} className="h-[44px] w-[44px] flex items-center justify-center bg-slate-50 rounded-xl border border-slate-100 text-slate-500 active:scale-90 transition-all hover:text-indigo-600 shadow-sm shrink-0">
+                                            <LucideIcon name="refresh-cw" size={16} className={recordsLoading ? "animate-spin" : ""} />
                                         </button>
                                     </div>
                                 </div>
