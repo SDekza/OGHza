@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ROC Chrono Diary Pro v4.0.0</title>
+    <title>ROC Chrono Diary Pro v4.2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -12,6 +12,7 @@
         html, body { overflow-x: hidden; touch-action: pan-x pan-y; -webkit-text-size-adjust: none; }
         body { font-family: 'Kanit', sans-serif; background-color: var(--roc-bg); color: #334155; -webkit-tap-highlight-color: transparent; }
         .font-gaming { font-family: 'Rajdhani', sans-serif; }
+        
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
         .day-card { aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; background: white; border: 1px solid #e2e8f0; position: relative; }
         .day-card.out-range { opacity: 0.2; cursor: not-allowed !important; background: #f8fafc; }
@@ -21,12 +22,14 @@
         .day-card.weekly-start { outline: 2px solid var(--roc-blue); outline-offset: -2px; border-radius: 12px; }
         .day-card.weekly-reset { outline: 2px solid #f59e0b; outline-offset: -2px; border-radius: 12px; }
         .day-card.active { background: #eff6ff; color: var(--roc-blue); border-color: #bfdbfe; }
+        
         .status-dot { width: 5px; height: 5px; border-radius: 50%; margin: 1px; }
         .bg-daily { background-color: #3b82f6; } 
         .bg-zeny { background-color: #10b981; }  
         .bg-weekly { background-color: #f59e0b; } 
         .bg-red { background-color: #ef4444; }    
         .bg-sv { background-color: #8b5cf6; }     
+        
         .modal-overlay { transition: opacity 0.3s ease; opacity: 0; }
         .modal-content { transition: transform 0.3s ease; transform: translateY(100%); }
         .custom-checkbox { width: 22px; height: 22px; border: 2px solid #cbd5e1; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
@@ -34,20 +37,20 @@
         input:checked + .custom-checkbox::after { content: '✓'; color: white; font-size: 14px; font-weight: bold; }
         .lock-overlay { opacity: 0.4; filter: grayscale(1); cursor: not-allowed !important; }
         .complete-tag { font-size: 9px; background: #dcfce7; color: #166534; padding: 1px 4px; border-radius: 4px; font-weight: 700; margin-left: 4px; }
+        
         input[type="number"] { font-size: 16px !important; border-radius: 8px; outline: none; text-align: center; }
         .target-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); width: 60px; color: white; font-weight: bold; height: 28px; }
-        .target-input:focus { border-color: var(--roc-blue); background: rgba(255,255,255,0.2); }
         .sv-input { background: #fff; border: 2px solid #e2e8f0; width: 70px; font-weight: 700; color: #8b5cf6; height: 36px; }
-        .sv-input:focus { border-color: #8b5cf6; }
 
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #94a3b8; transition: all 0.2s; }
+        .nav-item.active { color: var(--roc-blue); }
+        .item-row:nth-child(even) { background-color: #f8fafc; }
+        
         .confirm-modal-enter { animation: confirm-zoom 0.2s ease-out; }
-        @keyframes confirm-zoom {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
+        @keyframes confirm-zoom { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
-<body class="pb-10">
+<body class="pb-24">
 
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 p-4 shadow-sm">
         <div class="max-w-md mx-auto flex justify-between items-center gap-2">
@@ -57,17 +60,13 @@
                 </a>
                 <div class="flex flex-col leading-none">
                     <h1 class="font-gaming text-lg font-bold text-slate-800 tracking-tight uppercase">Chrono <span class="text-blue-600">Diary</span></h1>
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Version 4.0.0</span>
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Version 4.2.0</span>
                 </div>
             </div>
             <div class="flex items-center gap-1.5">
-                <button onclick="showSimulateConfirm()" title="จำลองข้อมูลเต็ม" class="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all">
-                    <i class="fa-solid fa-rocket text-xs"></i>
-                </button>
-                <button onclick="showClearConfirm()" title="ล้างข้อมูลทั้งหมด" class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center hover:text-red-500 active:scale-95 transition-all">
-                    <i class="fa-solid fa-trash-can text-xs"></i>
-                </button>
-                <select id="pkgSelect" onchange="updateUI()" class="bg-slate-100 border-none rounded-lg px-2 py-1.5 text-[9px] font-bold outline-none text-slate-600 w-auto max-w-[140px]">
+                <button onclick="showSimulateConfirm()" class="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-lg shadow-blue-100"><i class="fa-solid fa-rocket text-xs"></i></button>
+                <button onclick="showClearConfirm()" class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                <select id="pkgSelect" onchange="updateUI()" class="bg-slate-100 border-none rounded-lg px-2 py-1.5 text-[9px] font-bold outline-none text-slate-600 w-auto max-w-[120px]">
                     <option value="normal">NORMAL PASS</option>
                     <option value="pre0" selected>PREMIUM UNLOCK</option>
                     <option value="pre25">PREMIUM +25 LV</option>
@@ -113,8 +112,8 @@
             </div>
         </section>
 
-        <!-- CALENDAR -->
-        <section class="space-y-4">
+        <!-- VIEW 1: CALENDAR -->
+        <section id="view-calendar" class="space-y-4">
             <div class="flex justify-between items-center px-1">
                 <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Diary Calendar</h2>
                 <div class="flex gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
@@ -123,7 +122,6 @@
                     <button onclick="changeMonth(1)" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-blue-600 transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
                 </div>
             </div>
-
             <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
                 <div class="calendar-grid mb-4 text-center text-[10px] font-bold text-slate-300 uppercase">
                     <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
@@ -131,48 +129,51 @@
                 <div id="calendarDays" class="calendar-grid"></div>
             </div>
         </section>
-        
-        <div class="bg-white border border-slate-200 p-4 rounded-2xl space-y-4 shadow-sm">
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Legend & Markers</p>
-            <div class="grid grid-cols-2 gap-y-3 gap-x-4 text-[9px] font-bold uppercase">
-                <div class="flex items-center gap-2"><div class="w-4 h-4 rounded border-2 border-blue-600"></div> เริ่มรอบสัปดาห์</div>
-                <div class="flex items-center gap-2"><div class="w-4 h-4 rounded border-2 border-amber-500"></div> วันที่จะรีเซ็ตรอบ</div>
-                <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-daily"></div> Daily Quest</div>
-                <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-zeny"></div> Daily Zeny 1M</div>
-                <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-weekly"></div> Weekly Boss</div>
-                <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-red"></div> Weekly Zeny 10M</div>
-                <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-sv"></div> Buy Lv (SV)</div>
+
+        <!-- VIEW 2: INVENTORY REWARDS -->
+        <section id="view-inventory" class="hidden space-y-4">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Inventory & Rewards</h2>
+            <div class="space-y-4">
+                <div class="bg-slate-900 rounded-3xl p-5 shadow-lg border border-white/5">
+                    <h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-sparkles"></i> Rare Milestones</h3>
+                    <div id="rareList" class="grid grid-cols-1 gap-2"></div>
+                </div>
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Inventory Accumulated</span>
+                        <span id="invCountTag" class="text-[9px] font-bold bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">0 ITEMS</span>
+                    </div>
+                    <div id="inventoryList" class="divide-y divide-slate-100"></div>
+                </div>
             </div>
-        </div>
+        </section>
     </main>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 z-40 pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+        <div class="max-w-md mx-auto flex h-20 px-6">
+            <button onclick="switchView('calendar')" id="nav-calendar" class="nav-item active"><i class="fa-solid fa-calendar-days text-xl mb-1"></i><span>DIARY</span></button>
+            <button onclick="switchView('inventory')" id="nav-inventory" class="nav-item"><i class="fa-solid fa-briefcase text-xl mb-1"></i><span>INVENTORY</span></button>
+        </div>
+    </nav>
 
     <!-- CONFIRM CLEAR MODAL -->
     <div id="confirmClearModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm">
         <div class="bg-white rounded-[32px] p-8 w-full max-w-xs confirm-modal-enter shadow-2xl text-center">
-            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-trash-can text-2xl"></i>
-            </div>
-            <h3 class="text-lg font-bold text-slate-800 mb-2">ล้างข้อมูลทั้งหมด?</h3>
-            <p class="text-xs text-slate-400 font-medium mb-6 leading-relaxed">ประวัติการบันทึกทั้งหมดของคุณจะถูกลบและไม่สามารถกู้คืนได้ คุณแน่ใจหรือไม่?</p>
-            <div class="flex flex-col gap-2">
-                <button onclick="confirmClearData()" class="w-full bg-red-500 text-white font-bold py-3 rounded-2xl shadow-lg shadow-red-100 active:scale-95 transition-all font-kanit">ใช่, ลบข้อมูล</button>
-                <button onclick="hideClearConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl active:scale-95 transition-all font-kanit">ยกเลิก</button>
-            </div>
+            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-trash-can text-2xl"></i></div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2 font-kanit">ล้างข้อมูลทั้งหมด?</h3>
+            <p class="text-xs text-slate-400 font-medium mb-6 font-kanit">ข้อมูลที่คุณบันทึกไว้จะหายไปทั้งหมด</p>
+            <div class="flex flex-col gap-2"><button onclick="confirmClearData()" class="w-full bg-red-500 text-white font-bold py-3 rounded-2xl font-kanit">ยืนยันการลบ</button><button onclick="hideClearConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl font-kanit">ยกเลิก</button></div>
         </div>
     </div>
 
-    <!-- CONFIRM SIMULATION MODAL -->
+    <!-- CONFIRM SIMULATE MODAL -->
     <div id="confirmSimulateModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm">
         <div class="bg-white rounded-[32px] p-8 w-full max-w-xs confirm-modal-enter shadow-2xl text-center">
-            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-rocket text-2xl"></i>
-            </div>
-            <h3 class="text-lg font-bold text-slate-800 mb-2">จำลองเควสเต็ม?</h3>
-            <p class="text-xs text-slate-400 font-medium mb-6 leading-relaxed">ระบบจะเขียนทับข้อมูลที่คุณบันทึกไว้ด้วยสถานะ "ทำเควสสำเร็จ 100%" ทุกวันเพื่อดูค่า XP สูงสุด คุณแน่ใจหรือไม่?</p>
-            <div class="flex flex-col gap-2">
-                <button onclick="confirmSimulate()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-2xl shadow-lg shadow-blue-100 active:scale-95 transition-all font-kanit">ยืนยันการจำลอง</button>
-                <button onclick="hideSimulateConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl active:scale-95 transition-all font-kanit">ยกเลิก</button>
-            </div>
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-rocket text-2xl"></i></div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2 font-kanit">จำลองเควสเต็ม?</h3>
+            <p class="text-xs text-slate-400 font-medium mb-6 font-kanit">ระบบจะเขียนทับข้อมูลด้วยสถานะทำสำเร็จ 100% (จำลอง 1 วัน 1 บอส)</p>
+            <div class="flex flex-col gap-2"><button onclick="confirmSimulate()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-2xl font-kanit">ยืนยันการจำลอง</button><button onclick="hideSimulateConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl font-kanit">ยกเลิก</button></div>
         </div>
     </div>
 
@@ -180,13 +181,9 @@
     <div id="diaryModal" class="fixed inset-0 z-50 hidden modal-overlay bg-slate-900/70 backdrop-blur-sm">
         <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-[40px] p-8 modal-content max-w-md mx-auto shadow-2xl overflow-hidden max-h-[95vh] overflow-y-auto">
             <div class="flex justify-between items-start mb-6">
-                <div>
-                    <h3 class="text-xl font-bold text-slate-800" id="modalDateLabel">--</h3>
-                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Activity Progress</p>
-                </div>
+                <div><h3 class="text-xl font-bold text-slate-800" id="modalDateLabel">--</h3><p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Record Tasks</p></div>
                 <button onclick="closeModal()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-
             <div class="space-y-4">
                 <div class="p-4 bg-purple-50 rounded-2xl border border-purple-100">
                     <div class="flex justify-between items-center mb-2">
@@ -197,104 +194,94 @@
                         <div class="flex flex-col items-center"><input type="number" id="svLevelsInput" value="0" inputmode="numeric" pattern="[0-9]*" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'" oninput="updateSvLevels()" class="sv-input font-gaming"><span class="text-[8px] font-black text-purple-400 mt-1 uppercase">Lv. Purchased</span></div>
                     </div>
                 </div>
-
                 <div class="grid grid-cols-1 gap-2">
-                    <label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer hover:bg-blue-50 transition border border-transparent">
-                        <div class="flex items-center gap-4">
-                            <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
-                            <div><p class="text-sm font-bold text-slate-700">Daily Quest</p><p class="text-[10px] text-blue-500 font-bold uppercase tracking-tight" id="dailyXpText">30 XP</p></div>
-                        </div>
+                    <label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer">
+                        <div class="flex items-center gap-4"><div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm"><i class="fa-solid fa-calendar-check"></i></div><div><p class="text-sm font-bold text-slate-700 font-kanit">Daily Quest</p><p class="text-[10px] text-blue-500 font-bold uppercase tracking-tight" id="dailyXpText">30 XP</p></div></div>
                         <div class="flex items-center gap-3"><span class="text-[10px] font-bold text-blue-500" id="xp-display-daily"></span><input type="checkbox" id="check-daily" class="hidden" onchange="toggleTask('daily')"><div class="custom-checkbox"></div></div>
                     </label>
-                    <label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer hover:bg-emerald-50 transition border border-transparent">
-                        <div class="flex items-center gap-4">
-                            <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm"><i class="fa-solid fa-coins"></i></div>
-                            <div><p class="text-sm font-bold text-slate-700">Daily Zeny (1M)</p><p class="text-[10px] text-emerald-500 font-bold uppercase tracking-tight">30 XP</p></div>
-                        </div>
+                    <label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer">
+                        <div class="flex items-center gap-4"><div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm"><i class="fa-solid fa-coins"></i></div><div><p class="text-sm font-bold text-slate-700 font-kanit">Daily Zeny (1M)</p><p class="text-[10px] text-emerald-500 font-bold uppercase tracking-tight">30 XP</p></div></div>
                         <div class="flex items-center gap-3"><span class="text-[10px] font-bold text-emerald-500">+30 XP</span><input type="checkbox" id="check-zenyD" class="hidden" onchange="toggleTask('zenyD')"><div class="custom-checkbox"></div></div>
                     </label>
                 </div>
-
                 <div class="pt-4 border-t border-slate-100">
-                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Weekly Step Progression</h4>
+                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 font-kanit">Weekly Step Progression</h4>
                     <div class="space-y-2">
-                        <label id="label-bossA" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 flex items-center">1. Amdarais (1 ครั้ง) <span id="tag-bossA"></span></span><span class="text-[9px] text-orange-500 font-bold uppercase tracking-tighter" id="progress-bossA">0/1</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-orange-500">+80 XP</span><input type="checkbox" id="check-bossA" class="hidden" onchange="toggleTask('bossA')"><div class="custom-checkbox"></div></div></label>
-                        <label id="label-bossE" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 flex items-center">2. Evil Fanatic (2 ครั้ง) <span id="tag-bossE"></span></span><span class="text-[9px] text-orange-500 font-bold uppercase tracking-tighter" id="progress-bossE">0/2</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-orange-500">+100 XP</span><input type="checkbox" id="check-bossE" class="hidden" onchange="toggleTask('bossE')"><div class="custom-checkbox"></div></div></label>
-                        <label id="label-bossT" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 flex items-center">3. Infinite Tao Gunka (3 ครั้ง) <span id="tag-bossT"></span></span><span class="text-[9px] text-orange-500 font-bold uppercase tracking-tighter" id="progress-bossT">0/3</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-orange-500">+120 XP</span><input type="checkbox" id="check-bossT" class="hidden" onchange="toggleTask('bossT')"><div class="custom-checkbox"></div></div></label>
-                        <label id="label-zenyW" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-rose-50 transition mt-2 border-t pt-3"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 font-bold">ส่ง Weekly Zeny (10M) <span id="tag-zenyW"></span></span><span class="text-[9px] text-rose-500 font-bold uppercase tracking-tight" id="progress-zenyW">Limit: 1/Week</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-rose-500">+40 XP</span><input type="checkbox" id="check-zenyW" class="hidden" onchange="toggleTask('zenyW')"><div class="custom-checkbox"></div></div></label>
+                        <label id="label-bossA" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 font-kanit">1. Amdarais (1 ครั้ง) <span id="tag-bossA"></span></span><span class="text-[9px] text-orange-500 font-bold uppercase tracking-tighter" id="progress-bossA">0/1</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-orange-500">+80 XP</span><input type="checkbox" id="check-bossA" class="hidden" onchange="toggleTask('bossA')"><div class="custom-checkbox"></div></div></label>
+                        <label id="label-bossE" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 font-kanit">2. Evil Fanatic (2 ครั้ง) <span id="tag-bossE"></span></span><span class="text-[9px] text-orange-500 font-bold uppercase tracking-tighter" id="progress-bossE">0/2</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-orange-500">+100 XP</span><input type="checkbox" id="check-bossE" class="hidden" onchange="toggleTask('bossE')"><div class="custom-checkbox"></div></div></label>
+                        <label id="label-bossT" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 font-kanit">3. Tao Gunka (3 ครั้ง) <span id="tag-bossT"></span></span><span class="text-[9px] text-orange-500 font-bold uppercase tracking-tighter" id="progress-bossT">0/3</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-orange-500">+120 XP</span><input type="checkbox" id="check-bossT" class="hidden" onchange="toggleTask('bossT')"><div class="custom-checkbox"></div></div></label>
+                        <label id="label-zenyW" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition mt-2 border-t pt-3"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 font-kanit">ส่ง Weekly Zeny (10M) <span id="tag-zenyW"></span></span><span class="text-[9px] text-rose-500 font-bold uppercase tracking-tight" id="progress-zenyW">Limit: 1/Week</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-rose-500">+40 XP</span><input type="checkbox" id="check-zenyW" class="hidden" onchange="toggleTask('zenyW')"><div class="custom-checkbox"></div></div></label>
                     </div>
                 </div>
             </div>
-            <button onclick="closeModal()" class="w-full mt-6 bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all">Confirm History</button>
+            <button onclick="closeModal()" class="w-full mt-6 bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg font-kanit">บันทึกข้อมูลวันนี้</button>
         </div>
     </div>
 
     <script>
         const EVENT_START = new Date(2026, 1, 18, 0, 0, 0, 0);
         const EVENT_END = new Date(2026, 2, 25, 23, 59, 59, 999);
-        const PKG_CONFIG = { normal: { bonusLv: 0, dailyXp: 20 }, pre0: { bonusLv: 0, dailyXp: 30 }, pre25: { bonusLv: 25, dailyXp: 30 }, pre100: { bonusLv: 100, dailyXp: 30 } };
+        const PKG_CONFIG = { normal: { bonusLv: 0, dailyXp: 20, type: 'normal' }, pre0: { bonusLv: 0, dailyXp: 30, type: 'premium' }, pre25: { bonusLv: 25, dailyXp: 30, type: 'premium' }, pre100: { bonusLv: 100, dailyXp: 30, type: 'premium' } };
+        
+        const REWARDS_DATA = {
+            1: [{n: "Small Life Potion", q: 5, p: false}, {n: "Ultimate Cook", q: 5, p: false}, {n: "Mysterious Medal", q: 10, p: true}, {n: "Advanced Field Manual", q: 10, p: true}],
+            10: [{n: "Small Mana Potion", q: 2, p: false}, {n: "Treasure Box I", q: 1, p: true}],
+            31: [{n: "Bubble Archangeling Hairband", q: 1, rare: true, p: false}],
+            100: [{n: "Enchant Temporal Slot4 Ticket", q: 1, rare: true, p: false}, {n: "Chrono Pass Ticket", q: 1, rare: true, p: true}],
+            200: [{n: "Costume Cosmic Connection", q: 1, rare: true, p: true}],
+            300: [{n: "Chrono Pass Ticket (II)", q: 1, rare: true, p: true}, {n: "Treasure Box I", q: 30, p: true}],
+            350: [{n: "Temporal Boots Ticket", q: 1, rare: true, p: true}],
+            1000: [{n: "Treasure Box III", q: 5, p: true}],
+            1500: [{n: "Guarantee Weapon 11 Up Pack", q: 1, rare: true, p: true}],
+            2000: [{n: "Guarantee Armor 11 Up Pack", q: 1, rare: true, p: true}],
+            2500: [{n: "Costume Golden Valkyrie Wings", q: 1, rare: true, p: true}]
+        };
 
-        let currentMonth = 1;
-        let selectedDateStr = null;
-        let diaryData = JSON.parse(localStorage.getItem('rocChronoDiary_v390')) || {};
+        let currentMonth = 1; let selectedDateStr = null;
+        let diaryData = JSON.parse(localStorage.getItem('rocChronoDiary_v420')) || {};
 
-        function save() { localStorage.setItem('rocChronoDiary_v390', JSON.stringify(diaryData)); }
-
-        function formatDateLocal(date) {
-            const y = date.getFullYear(); const m = String(date.getMonth() + 1).padStart(2, '0'); const d = String(date.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
-        }
-
+        function save() { localStorage.setItem('rocChronoDiary_v420', JSON.stringify(diaryData)); }
+        function formatDateLocal(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
         function xpToLevel(xp) { return xp < 50 ? 0 : Math.floor((xp - 40) / 10); }
 
         function getGlobalWeeklyAnchor() {
             const keys = Object.keys(diaryData).filter(d => diaryData[d].bossA || diaryData[d].bossE || diaryData[d].bossT || diaryData[d].zenyW).sort();
-            if (keys.length === 0) return EVENT_START;
-            const p = keys[0].split('-'); return new Date(p[0], p[1]-1, p[2], 0, 0, 0, 0);
+            return keys.length === 0 ? EVENT_START : new Date(keys[0].split('-')[0], keys[0].split('-')[1]-1, keys[0].split('-')[2], 0, 0, 0, 0);
         }
 
         function getCycleId(dateStr) {
             const anchor = getGlobalWeeklyAnchor();
-            if (!anchor) return -1;
             const p = dateStr.split('-'); const t = new Date(p[0], p[1]-1, p[2], 0, 0, 0, 0);
             const diff = Math.floor((t.getTime() - anchor.getTime()) / 86400000);
-            if (diff < 0) return -1;
-            return Math.floor(diff / 7);
+            return diff < 0 ? -1 : Math.floor(diff / 7);
         }
 
         function calculateResults() {
             let xp = 0; let totalSV = 0;
-            const pkgKey = document.getElementById('pkgSelect').value;
-            const pkg = PKG_CONFIG[pkgKey];
+            const pkg = PKG_CONFIG[document.getElementById('pkgSelect').value];
             if (pkg.bonusLv > 0) xp += (pkg.bonusLv * 10) + 40;
-
             Object.keys(diaryData).forEach(d => {
-                const day = diaryData[d];
-                if (day.daily) xp += pkg.dailyXp;
-                if (day.zenyD) xp += 30;
-                if (day.svLevels) { xp += (day.svLevels * 10); totalSV += (day.svLevels * 3); }
+                if (diaryData[d].daily) xp += pkg.dailyXp;
+                if (diaryData[d].zenyD) xp += 30;
+                if (diaryData[d].svLevels) { xp += (diaryData[d].svLevels * 10); totalSV += (diaryData[d].svLevels * 3); }
             });
-
             const anchor = getGlobalWeeklyAnchor();
-            if (anchor) {
-                let cyc = {};
-                Object.keys(diaryData).forEach(d => {
-                    const infoId = getCycleId(d); if (infoId === -1) return;
-                    if (!cyc[infoId]) cyc[infoId] = { bossA: 0, bossE: 0, bossT: 0, zenyW: 0 };
-                    if (diaryData[d].bossA) cyc[infoId].bossA++; if (diaryData[d].bossE) cyc[infoId].bossE++;
-                    if (diaryData[d].bossT) cyc[infoId].bossT++; if (diaryData[d].zenyW) cyc[infoId].zenyW++;
-                });
-                Object.values(cyc).forEach(c => {
-                    if (c.bossA >= 1) { xp += 80; if (c.bossE >= 2) { xp += 100; if (c.bossT >= 3) xp += 120; } }
-                    if (c.zenyW >= 1) xp += 40;
-                });
-            }
+            let cyc = {};
+            Object.keys(diaryData).forEach(d => {
+                const infoId = getCycleId(d); if (infoId === -1) return;
+                if (!cyc[infoId]) cyc[infoId] = { bossA: 0, bossE: 0, bossT: 0, zenyW: 0 };
+                if (diaryData[d].bossA) cyc[infoId].bossA++; if (diaryData[d].bossE) cyc[infoId].bossE++;
+                if (diaryData[d].bossT) cyc[infoId].bossT++; if (diaryData[d].zenyW) cyc[infoId].zenyW++;
+            });
+            Object.values(cyc).forEach(c => {
+                if (c.bossA >= 1) { xp += 80; if (c.bossE >= 2) { xp += 100; if (c.bossT >= 3) xp += 120; } }
+                if (c.zenyW >= 1) xp += 40;
+            });
             return { xp, totalSV };
         }
 
         function updateUI() {
-            const res = calculateResults();
-            const lv = xpToLevel(res.xp);
+            const res = calculateResults(); const lv = xpToLevel(res.xp);
             const target = parseInt(document.getElementById('targetLevelInput').value) || 300;
             document.getElementById('displayLv').innerText = lv.toLocaleString();
             document.getElementById('displayXP').innerText = res.xp.toLocaleString() + ' XP';
@@ -302,43 +289,69 @@
             const prog = Math.min(100, (lv / target) * 100);
             document.getElementById('progressBar').style.width = prog + '%';
             document.getElementById('progressPercent').innerText = `${prog.toFixed(1)}% Completed`;
-            renderCalendar(); save();
+            renderCalendar(); renderInventory(lv); save();
         }
 
-        // --- Confirmation Modal Logic ---
+        function switchView(view) {
+            document.getElementById('view-calendar').classList.toggle('hidden', view !== 'calendar');
+            document.getElementById('view-inventory').classList.toggle('hidden', view !== 'inventory');
+            document.getElementById('nav-calendar').classList.toggle('active', view === 'calendar');
+            document.getElementById('nav-inventory').classList.toggle('active', view === 'inventory');
+        }
+
+        function renderInventory(currentLv) {
+            const pkgType = PKG_CONFIG[document.getElementById('pkgSelect').value].type;
+            let inv = {}; let rares = [];
+            for(let l = 1; l <= currentLv; l++) {
+                if(REWARDS_DATA[l]) REWARDS_DATA[l].forEach(item => {
+                    if(pkgType === 'normal' && item.p) return;
+                    inv[item.n] = (inv[item.n] || 0) + item.q;
+                    if(item.rare) rares.push({...item, lv: l});
+                });
+                if(l > 100 && pkgType === 'premium') {
+                    if(l % 10 === 0) inv["Treasure Box I"] = (inv["Treasure Box I"] || 0) + 1;
+                    if(l % 20 === 0) inv["Treasure Box II"] = (inv["Treasure Box II"] || 0) + 1;
+                    if(l % 50 === 0) inv["Treasure Box III"] = (inv["Treasure Box III"] || 0) + 1;
+                }
+            }
+            document.getElementById('rareList').innerHTML = rares.map(i => `<div class="bg-white/10 p-3 rounded-2xl flex items-center justify-between border border-white/10"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-xs font-bold font-gaming">${i.lv}</div><span class="text-xs font-bold text-slate-100">${i.n}</span></div><span class="text-[10px] font-bold text-blue-400">x${i.q}</span></div>`).join('') || '<p class="text-center text-[10px] text-slate-500 italic">No rare items collected</p>';
+            const entries = Object.entries(inv).sort((a,b) => b[1] - a[1]);
+            document.getElementById('invCountTag').innerText = `${entries.length} ITEMS`;
+            document.getElementById('inventoryList').innerHTML = entries.map(([n, q]) => `<div class="item-row px-5 py-3 flex justify-between items-center"><span class="text-xs font-bold text-slate-600">${n}</span><span class="text-xs font-gaming font-bold text-slate-400">x${q.toLocaleString()}</span></div>`).join('') || '<p class="p-10 text-center text-xs text-slate-300 italic">Empty</p>';
+        }
+
         function showSimulateConfirm() { document.getElementById('confirmSimulateModal').classList.remove('hidden'); }
         function hideSimulateConfirm() { document.getElementById('confirmSimulateModal').classList.add('hidden'); }
         
         function confirmSimulate() {
             diaryData = {};
             let temp = new Date(EVENT_START);
-            let dayIndex = 0;
+            let dayIndexTotal = 0;
             while (temp <= EVENT_END) {
                 const ds = formatDateLocal(temp);
-                const cycleDay = dayIndex % 7;
+                const cycleDay = dayIndexTotal % 7; // 0-6
+                
+                // Realistic sequential logic:
+                // Day 0: Amdarais(1/1), Evil(1/2), 10M
+                // Day 1: Evil(2/2) -> Finish Step 2, Tao(1/3)
+                // Day 2: Tao(2/3)
+                // Day 3: Tao(3/3) -> Finish Step 3
                 diaryData[ds] = {
                     daily: true, zenyD: true, svLevels: 0,
                     bossA: (cycleDay === 0),
                     bossE: (cycleDay === 0 || cycleDay === 1),
-                    bossT: (cycleDay === 0 || cycleDay === 1 || cycleDay === 2),
+                    bossT: (cycleDay === 1 || cycleDay === 2 || cycleDay === 3),
                     zenyW: (cycleDay === 0)
                 };
                 temp.setDate(temp.getDate() + 1);
-                dayIndex++;
+                dayIndexTotal++;
             }
-            updateUI();
-            hideSimulateConfirm();
+            updateUI(); hideSimulateConfirm();
         }
 
         function showClearConfirm() { document.getElementById('confirmClearModal').classList.remove('hidden'); }
         function hideClearConfirm() { document.getElementById('confirmClearModal').classList.add('hidden'); }
-        
-        function confirmClearData() {
-            diaryData = {};
-            updateUI();
-            hideClearConfirm();
-        }
-
+        function confirmClearData() { diaryData = {}; updateUI(); hideClearConfirm(); }
         function changeMonth(dir) { currentMonth = Math.max(1, Math.min(2, currentMonth + dir)); renderCalendar(); }
 
         function renderCalendar() {
@@ -347,20 +360,15 @@
             container.innerHTML = '';
             const first = new Date(2026, currentMonth, 1).getDay();
             const count = new Date(2026, currentMonth + 1, 0).getDate();
+            const today = formatDateLocal(new Date()); const anchor = getGlobalWeeklyAnchor();
             for (let i = 0; i < first; i++) container.innerHTML += '<div class="day-card out-range"></div>';
-            const today = formatDateLocal(new Date());
-            const anchor = getGlobalWeeklyAnchor();
             for (let d = 1; d <= count; d++) {
-                const dateObj = new Date(2026, currentMonth, d, 0, 0, 0, 0);
-                const ds = formatDateLocal(dateObj);
-                const cycId = getCycleId(ds);
+                const dateObj = new Date(2026, currentMonth, d, 0, 0, 0, 0); const ds = formatDateLocal(dateObj);
                 let cls = (dateObj >= EVENT_START && dateObj <= EVENT_END) ? 'day-card in-range' : 'day-card out-range';
                 if (ds === today) cls += ' today';
                 if (anchor) {
                     const diffDays = Math.floor((dateObj.getTime() - anchor.getTime()) / 86400000);
-                    if (diffDays >= 0 && diffDays % 7 === 0) {
-                        cls += (diffDays === 0) ? ' weekly-start' : ' weekly-reset';
-                    }
+                    if (diffDays >= 0 && diffDays % 7 === 0) cls += (diffDays === 0) ? ' weekly-start' : ' weekly-reset';
                 }
                 let dots = '';
                 if (diaryData[ds]) {
@@ -380,12 +388,10 @@
             const cycleId = getCycleId(dateStr); const p = dateStr.split('-');
             document.getElementById('modalDateLabel').innerText = new Date(p[0], p[1]-1, p[2]).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
             const stats = { bossA: 0, bossE: 0, bossT: 0, zenyW: 0 };
-            if (cycleId !== -1) {
-                Object.keys(diaryData).forEach(d => { if (getCycleId(d) === cycleId) {
-                    if (diaryData[d].bossA) stats.bossA++; if (diaryData[d].bossE) stats.bossE++; if (diaryData[d].bossT) stats.bossT++;
-                    if (diaryData[d].zenyW) stats.zenyW++;
-                }});
-            }
+            if (cycleId !== -1) Object.keys(diaryData).forEach(d => { if (getCycleId(d) === cycleId) {
+                if (diaryData[d].bossA) stats.bossA++; if (diaryData[d].bossE) stats.bossE++; if (diaryData[d].bossT) stats.bossT++;
+                if (diaryData[d].zenyW) stats.zenyW++;
+            }});
             const setupWeekly = (key, quota, prevKey, prevQuota, tagId, progressId, labelId) => {
                 const check = document.getElementById(`check-${key}`); const label = document.getElementById(labelId);
                 const progress = document.getElementById(progressId); const tag = document.getElementById(tagId);
@@ -403,8 +409,7 @@
             ['daily', 'zenyD'].forEach(id => { document.getElementById(`check-${id}`).checked = data[id] || false; });
             document.getElementById('svLevelsInput').value = data.svLevels || 0;
             updateSvLevels();
-            const pkgKey = document.getElementById('pkgSelect').value;
-            const val = PKG_CONFIG[pkgKey].dailyXp + ' XP';
+            const val = PKG_CONFIG[document.getElementById('pkgSelect').value].dailyXp + ' XP';
             document.getElementById('dailyXpText').innerText = val;
             document.getElementById('xp-display-daily').innerText = `+${val}`;
             document.getElementById('diaryModal').classList.remove('hidden');
