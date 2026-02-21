@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ROC Chrono Diary Pro v5.2.0</title>
+    <title>ROC Chrono Diary Pro v5.4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
@@ -21,6 +21,7 @@
         .day-card.today span.date-num { text-decoration: underline; text-underline-offset: 4px; }
         .day-card.weekly-start { outline: 2px solid var(--roc-blue); outline-offset: -2px; border-radius: 12px; }
         .day-card.weekly-reset { outline: 2px solid #f59e0b; outline-offset: -2px; border-radius: 12px; }
+        .day-card.active { background: #eff6ff; color: var(--roc-blue); border-color: #bfdbfe; }
         
         .status-dot { width: 5px; height: 5px; border-radius: 50%; margin: 1px; }
         .bg-daily { background-color: #3b82f6; } 
@@ -55,13 +56,13 @@
         <div class="max-w-md mx-auto flex justify-between items-center gap-2">
             <div class="flex items-center gap-3 shrink-0">
                 <button onclick="showCharManager()" class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm active:scale-95 transition-all">
-                    <i class="fa-solid fa-user-gear"></i>
+                    <i class="fa-solid fa-user-plus"></i>
                 </button>
                 <div class="flex flex-col leading-none">
-                    <h1 class="font-gaming text-lg font-bold text-slate-800 tracking-tight uppercase" id="displayActiveCharName">Loading...</h1>
+                    <h1 class="font-gaming text-lg font-bold text-slate-800 tracking-tight uppercase" id="displayActiveCharName">Diary</h1>
                     <div class="flex items-center gap-1">
-                        <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest" id="displayActivePkg">Please Wait</span>
-                        <i id="sync-icon" class="fa-solid fa-cloud text-[8px] text-slate-300"></i>
+                        <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest" id="displayActivePkg">Offline Mode</span>
+                        <i class="fa-solid fa-database text-[8px] text-blue-400"></i>
                     </div>
                 </div>
             </div>
@@ -90,7 +91,7 @@
                 <div class="text-right flex flex-col items-end">
                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Points</p>
                     <div class="font-gaming font-bold text-2xl text-blue-400" id="displayXP">0 XP</div>
-                    <div class="mt-1 flex items-center gap-1 opacity-80"><i class="fa-solid fa-gem text-[8px] text-purple-400"></i><span class="text-[10px] font-bold text-purple-400 uppercase">Used: <span id="displaySVTotal">0</span> SV</span></div>
+                    <div class="mt-1 flex items-center gap-1 opacity-80 font-kanit"><i class="fa-solid fa-gem text-[8px] text-purple-400"></i><span class="text-[10px] font-bold text-purple-400 uppercase">ใช้ไป: <span id="displaySVTotal">0</span> SV</span></div>
                 </div>
             </div>
             <div class="space-y-2 border-t border-white/5 pt-4">
@@ -127,40 +128,21 @@
             </div>
         </section>
 
-        <!-- VIEW 3: SYNC -->
-        <section id="view-settings" class="hidden space-y-4 font-kanit">
-            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Sync & Cloud Recovery</h2>
-            
-            <!-- My ID Card -->
+        <!-- VIEW 3: MANAGE -->
+        <section id="view-manage" class="hidden space-y-4 font-kanit">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">จัดการแอป</h2>
             <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
                 <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-id-card"></i></div>
-                    <div><p class="text-xs font-bold text-slate-700">Your Current UID</p><p class="text-[10px] text-slate-400 leading-tight">ใช้ ID นี้เพื่อซิงค์ข้อมูลไปยังเครื่องอื่น</p></div>
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-floppy-disk"></i></div>
+                    <div><p class="text-xs font-bold text-slate-700 font-kanit">การเก็บข้อมูล</p><p class="text-[10px] text-slate-400 leading-tight">ข้อมูลทั้งหมดถูกเก็บไว้ในเครื่องของคุณ</p></div>
                 </div>
-                <div class="flex gap-2">
-                    <input type="text" id="userIdInput" readonly class="flex-1 bg-slate-50 border border-slate-200 p-3 text-[11px] font-mono font-bold text-blue-600 rounded-xl">
-                    <button onclick="copyUID()" class="bg-blue-600 text-white px-5 rounded-xl font-bold text-xs active:scale-95 transition-all">คัดลอก</button>
+                <div class="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-[10px] text-blue-700 leading-relaxed font-medium">
+                    <p class="font-bold mb-1 uppercase tracking-wider">💡 ข้อแนะนำ:</p>
+                    <p>หากคุณล้าง Browser Cache หรือเปลี่ยนเครื่อง ข้อมูลจะหายไป ควรหมั่นเข้ามาตรวจสอบหรือจดเลเวลไว้เสมอครับ</p>
                 </div>
-                <div id="restoreContainer" class="hidden pt-4 border-t border-slate-50">
-                    <button onclick="restoreMachineId()" class="w-full bg-slate-100 text-slate-500 py-3 rounded-xl text-[10px] font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-rotate-left"></i> กลับไปใช้ ID เดิมของเครื่องนี้
-                    </button>
-                </div>
-            </div>
-
-            <!-- Import Data Card -->
-            <div class="bg-slate-900 rounded-[32px] p-6 shadow-xl space-y-5 text-white">
-                <div>
-                    <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-down text-blue-400"></i> ดึงข้อมูลจากเครื่องอื่น</h3>
-                    <p class="text-[10px] text-slate-500 mt-1">วาง Sync ID ของคุณที่นี่เพื่อโหลดข้อมูลตัวละครทั้งหมด</p>
-                </div>
-                <div class="space-y-3">
-                    <input type="text" id="importUidInput" placeholder="วาง Sync ID ที่นี่..." class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-xs font-mono outline-none focus:border-blue-500 transition-all text-left">
-                    <button onclick="importCloudData()" id="btnImport" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-900/50 active:scale-95 transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-link"></i> เชื่อมต่อข้อมูล
-                    </button>
-                </div>
-                <p id="importMsg" class="text-center text-[10px] font-bold h-4 transition-all"></p>
+                <button onclick="location.reload()" class="w-full bg-slate-800 text-white font-bold py-4 rounded-2xl text-sm active:scale-95 transition-all">
+                    <i class="fa-solid fa-arrows-rotate mr-2"></i> รีเฟรชแอป
+                </button>
             </div>
         </section>
     </main>
@@ -170,14 +152,14 @@
         <div class="max-w-md mx-auto flex h-20 px-6">
             <button onclick="switchView('calendar')" id="nav-calendar" class="nav-item active"><i class="fa-solid fa-calendar-days text-xl mb-1"></i><span>DIARY</span></button>
             <button onclick="switchView('inventory')" id="nav-inventory" class="nav-item"><i class="fa-solid fa-briefcase text-xl mb-1"></i><span>INVENTORY</span></button>
-            <button onclick="switchView('settings')" id="nav-settings" class="nav-item"><i class="fa-solid fa-cloud-arrow-up text-xl mb-1"></i><span>SYNC</span></button>
+            <button onclick="switchView('manage')" id="nav-manage" class="nav-item"><i class="fa-solid fa-gear text-xl mb-1"></i><span>MANAGE</span></button>
         </div>
     </nav>
 
-    <!-- MODALS -->
+    <!-- CHAR MANAGER MODAL -->
     <div id="charManagerModal" class="fixed inset-0 z-[70] hidden modal-overlay bg-slate-900/80 backdrop-blur-sm">
         <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-[40px] p-8 modal-content max-w-md mx-auto shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto font-kanit">
-            <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800">จัดการตัวละคร</h3><button onclick="closeCharManager()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button></div>
+            <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800">เลือกตัวละคร</h3><button onclick="closeCharManager()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button></div>
             <div id="charListContainer" class="space-y-3 mb-8"></div>
             <div class="pt-6 border-t border-slate-100 space-y-4">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">เพิ่มตัวละครใหม่</p>
@@ -188,46 +170,34 @@
                     <option value="pre25">Premium +25 Lv (115 SV)</option>
                     <option value="pre100">Premium +100 Lv (295 SV)</option>
                 </select>
-                <button onclick="addNewCharacter()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg">สร้างตัวละคร</button>
+                <button onclick="addNewCharacter()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg font-kanit">สร้างตัวละคร</button>
             </div>
         </div>
     </div>
 
-    <div id="initialSetupModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6 bg-slate-900 backdrop-blur-md">
-        <div class="bg-white rounded-[40px] p-10 w-full max-w-sm shadow-2xl text-center font-kanit">
+    <!-- INITIAL SETUP -->
+    <div id="initialSetupModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6 bg-slate-900 backdrop-blur-md font-kanit">
+        <div class="bg-white rounded-[40px] p-10 w-full max-w-sm shadow-2xl text-center">
             <div class="w-20 h-20 bg-blue-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 transform rotate-12 shadow-xl"><i class="fa-solid fa-chess-knight text-4xl"></i></div>
             <h2 class="text-2xl font-bold text-slate-800 mb-2">ยินดีต้อนรับ!</h2>
-            <p class="text-sm text-slate-400 mb-8">กรุณาตั้งชื่อตัวละครตัวแรกเพื่อเริ่มใช้งาน</p>
-            <input type="text" id="initialCharName" placeholder="ชื่อตัวละคร" class="w-full bg-slate-50 border border-slate-200 p-5 rounded-3xl text-center text-lg font-bold mb-4">
-            <button onclick="completeInitialSetup()" class="w-full bg-blue-600 text-white font-bold py-5 rounded-3xl shadow-lg">เริ่มบันทึกไดอารี่</button>
+            <p class="text-sm text-slate-400 mb-8">กรุณาตั้งชื่อตัวละครตัวแรก</p>
+            <input type="text" id="initialCharName" placeholder="ชื่อตัวละคร" class="w-full bg-slate-50 border border-slate-200 p-5 rounded-3xl text-center text-lg font-bold mb-4 focus:border-blue-500 transition-all outline-none">
+            <button onclick="completeInitialSetup()" class="w-full bg-blue-600 text-white font-bold py-5 rounded-3xl shadow-lg active:scale-95 transition-all">เริ่มบันทึกไดอารี่</button>
         </div>
     </div>
 
+    <!-- UTILITY MODALS -->
     <div id="confirmClearModal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm"><div class="bg-white rounded-[32px] p-8 w-full max-w-xs confirm-modal-enter shadow-2xl text-center font-kanit"><h3 class="text-lg font-bold text-slate-800 mb-6">ล้างข้อมูลตัวละครนี้?</h3><div class="flex flex-col gap-2"><button onclick="confirmClearData()" class="w-full bg-red-500 text-white font-bold py-3 rounded-2xl">ยืนยันการลบ</button><button onclick="hideClearConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl">ยกเลิก</button></div></div></div>
-    <div id="confirmSimulateModal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm"><div class="bg-white rounded-[32px] p-8 w-full max-w-xs confirm-modal-enter shadow-2xl text-center font-kanit"><h3 class="text-lg font-bold text-slate-800 mb-6">จำลองเควสเต็ม?</h3><div class="flex flex-col gap-2"><button onclick="confirmSimulate()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-2xl">ยืนยัน</button><button onclick="hideSimulateConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl">ยกเลิก</button></div></div></div>
+    <div id="confirmSimulateModal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm"><div class="bg-white rounded-[32px] p-8 w-full max-w-xs confirm-modal-enter shadow-2xl text-center font-kanit"><h3 class="text-lg font-bold text-slate-800 mb-6">จำลองเควสเต็ม?</h3><p class="text-xs text-slate-400 mb-4 font-kanit">ระบบจะจำลองการทำเควสและบอสให้สมจริง (1 วัน 1 ชนิด)</p><div class="flex flex-col gap-2"><button onclick="confirmSimulate()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-2xl">ยืนยัน</button><button onclick="hideSimulateConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl">ยกเลิก</button></div></div></div>
 
-    <div id="diaryModal" class="fixed inset-0 z-50 hidden modal-overlay bg-slate-900/70 backdrop-blur-sm font-kanit"><div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-[40px] p-8 modal-content max-w-md mx-auto shadow-2xl overflow-hidden max-h-[95vh] overflow-y-auto"><div class="flex justify-between items-start mb-6"><div><h3 class="text-xl font-bold text-slate-800" id="modalDateLabel">--</h3><p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Activity Log</p></div><button onclick="closeModal()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button></div><div class="space-y-4"><div id="diaryModalBody"></div></div><button onclick="closeModal()" class="w-full mt-6 bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg">ปิดหน้าต่าง</button></div></div>
+    <div id="diaryModal" class="fixed inset-0 z-50 hidden modal-overlay bg-slate-900/70 backdrop-blur-sm font-kanit"><div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-[40px] p-8 modal-content max-w-md mx-auto shadow-2xl overflow-hidden max-h-[95vh] overflow-y-auto"><div class="flex justify-between items-start mb-6"><div><h3 class="text-xl font-bold text-slate-800" id="modalDateLabel">--</h3><p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Activity Log</p></div><button onclick="closeModal()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button></div><div class="space-y-4"><div id="diaryModalBody"></div></div><button onclick="closeModal()" class="w-full mt-6 bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg font-kanit">บันทึกเรียบร้อย</button></div></div>
 
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'chrono-diary-pro-v52';
-
-        // --- CORE STATE ---
-        let characters = {}; 
-        let activeCharId = null;
-        let machineUid = localStorage.getItem('rocChronoDiary_machineUid');
-        let currentUserId = null; // Current Auth ID
-        let syncTargetUid = localStorage.getItem('rocChronoDiary_syncUid'); // Currently connected profile ID
-        let currentMonth = 1;
+    <script>
+        // --- DATA STATE ---
+        let characters = JSON.parse(localStorage.getItem('rocChronoDiary_chars')) || {};
+        let activeCharId = localStorage.getItem('rocChronoDiary_activeId');
+        let currentMonth = 1; 
         let selectedDateStr = null;
-        let unsubscribeSync = null;
 
         const PKG_CONFIG = { normal: { bonusLv: 0, dailyXp: 20, type: 'normal', name: 'Normal Pass' }, pre0: { bonusLv: 0, dailyXp: 30, type: 'premium', name: 'Premium Unlock' }, pre25: { bonusLv: 25, dailyXp: 30, type: 'premium', name: 'Premium +25 Lv' }, pre100: { bonusLv: 100, dailyXp: 30, type: 'premium', name: 'Premium +100 Lv' } };
         const REWARDS_DATA = { 1:[{n:"Small Life Potion",q:5,p:false},{n:"Ultimate Cook",q:5,p:false},{n:"Mysterious Medal",q:10,p:true},{n:"Advanced Field Manual",q:10,p:true}],10:[{n:"Small Mana Potion",q:2,p:false},{n:"Treasure Box I",q:1,p:true}],31:[{n:"Bubble Archangeling Hairband",q:1,rare:true,p:false}],100:[{n:"Enchant Temporal Slot4 Ticket",q:1,rare:true,p:false},{n:"Chrono Pass Ticket",q:1,rare:true,p:true}],200:[{n:"Costume Cosmic Connection",q:1,rare:true,p:true}],300:[{n:"Chrono Pass Ticket (II)",q:1,rare:true,p:true},{n:"Treasure Box I",q:30,p:true}],350:[{n:"Temporal Boots Ticket",q:1,rare:true,p:true}],1000:[{n:"Treasure Box III",q:5,p:true}],1500:[{n:"Guarantee Weapon 11 Up Pack",q:1,rare:true,p:true}],2000:[{n:"Guarantee Armor 11 Up Pack",q:1,rare:true,p:true}],2500:[{n:"Costume Golden Valkyrie Wings",q:1,rare:true,p:true}] };
@@ -252,123 +222,18 @@
             return diff < 0 ? -1 : Math.floor(diff / 7);
         };
 
-        // --- CLOUD SYNC CORE ---
-        const pushToCloud = async () => {
-            const targetId = syncTargetUid || currentUserId;
-            if (!targetId) return;
-            
-            document.getElementById('sync-icon').className = 'fa-solid fa-spinner fa-spin text-blue-400';
-            try {
-                await setDoc(doc(db, 'artifacts', appId, 'users', targetId, 'data', 'profile'), {
-                    characters, activeCharId, updatedAt: Date.now()
-                });
-                document.getElementById('sync-icon').className = 'fa-solid fa-cloud text-blue-500';
-            } catch (err) { 
-                console.error(err); 
-                document.getElementById('sync-icon').className = 'fa-solid fa-cloud text-red-400'; 
-            }
+        window.saveToLocal = () => {
+            localStorage.setItem('rocChronoDiary_chars', JSON.stringify(characters));
+            localStorage.setItem('rocChronoDiary_activeId', activeCharId);
         };
 
-        const startSyncListener = (uid) => {
-            if (unsubscribeSync) unsubscribeSync();
-            document.getElementById('userIdInput').value = uid;
-            
-            // Show restore button if we are NOT using the machine's original ID
-            document.getElementById('restoreContainer').classList.toggle('hidden', uid === machineUid);
-
-            unsubscribeSync = onSnapshot(doc(db, 'artifacts', appId, 'users', uid, 'data', 'profile'), (snap) => {
-                if (snap.exists()) {
-                    const data = snap.data();
-                    characters = data.characters || {};
-                    activeCharId = data.activeCharId || Object.keys(characters)[0];
-                    updateUI();
-                } else if (uid === currentUserId || uid === machineUid) {
-                    // If my own profile doesn't exist, create it if we have local data
-                    if (Object.keys(characters).length > 0) pushToCloud();
-                    else document.getElementById('initialSetupModal').classList.remove('hidden');
-                }
-            });
-        };
-
-        // --- SYNC ACTIONS ---
-        window.importCloudData = async () => {
-            const target = document.getElementById('importUidInput').value.trim();
-            const msg = document.getElementById('importMsg');
-            const btn = document.getElementById('btnImport');
-            
-            if (!target) return;
-            btn.disabled = true;
-            msg.innerText = "กำลังตรวจสอบ ID...";
-            msg.className = "text-center text-[10px] font-bold h-4 text-blue-400";
-
-            try {
-                const snap = await getDoc(doc(db, 'artifacts', appId, 'users', target, 'data', 'profile'));
-                if (snap.exists()) {
-                    syncTargetUid = target;
-                    localStorage.setItem('rocChronoDiary_syncUid', target);
-                    startSyncListener(target);
-                    msg.innerText = "เชื่อมต่อสำเร็จ!";
-                    msg.className = "text-center text-[10px] font-bold h-4 text-green-500";
-                    document.getElementById('importUidInput').value = "";
-                } else {
-                    msg.innerText = "ไม่พบข้อมูลสำหรับ ID นี้";
-                    msg.className = "text-center text-[10px] font-bold h-4 text-red-400";
-                }
-            } catch (e) {
-                msg.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อ";
-                msg.className = "text-center text-[10px] font-bold h-4 text-red-400";
-            } finally {
-                btn.disabled = false;
-                setTimeout(() => { msg.innerText = ""; }, 3000);
-            }
-        };
-
-        window.restoreMachineId = () => {
-            syncTargetUid = null;
-            localStorage.removeItem('rocChronoDiary_syncUid');
-            startSyncListener(machineUid);
-            updateUI();
-        };
-
-        // --- CHARACTER ACTIONS ---
-        window.addNewCharacter = () => {
-            const name = document.getElementById('newCharName').value.trim();
-            if (!name) return;
-            const id = 'char_' + Date.now();
-            characters[id] = { id, name, pkg: document.getElementById('newCharPkg').value, targetLevel: 300, diaryData: {} };
-            activeCharId = id;
-            document.getElementById('newCharName').value = '';
-            updateUI(); closeCharManager(); pushToCloud();
-        };
-
-        window.switchChar = (id) => { activeCharId = id; updateUI(); closeCharManager(); pushToCloud(); };
-        
-        window.completeInitialSetup = () => {
-            const name = document.getElementById('initialCharName').value.trim();
-            if (!name) return;
-            const id = 'char_init_' + Date.now();
-            characters = { [id]: { id, name, pkg: 'pre0', targetLevel: 300, diaryData: {} } };
-            activeCharId = id;
-            document.getElementById('initialSetupModal').classList.add('hidden');
-            updateUI(); pushToCloud();
-        };
-
-        window.updateCurrentCharConfig = () => {
-            if (!activeCharId) return;
-            characters[activeCharId].targetLevel = parseInt(document.getElementById('targetLevelInput').value) || 300;
-            updateUI(); pushToCloud();
-        };
-
-        window.updateCurrentCharPkg = (pkg) => {
-            if (!activeCharId) return;
-            characters[activeCharId].pkg = pkg;
-            updateUI(); pushToCloud();
-        };
-
-        // --- UI CORE ---
+        // --- CORE UI ---
         window.updateUI = () => {
             const char = characters[activeCharId];
-            if (!char) return;
+            if (!char) {
+                if (Object.keys(characters).length === 0) document.getElementById('initialSetupModal').classList.remove('hidden');
+                return;
+            }
 
             document.getElementById('displayActiveCharName').innerText = char.name;
             document.getElementById('displayActivePkg').innerText = PKG_CONFIG[char.pkg].name;
@@ -395,6 +260,7 @@
                 if (c.bossA >= 1) { xp += 80; if (c.bossE >= 2) { xp += 100; if (c.bossT >= 3) xp += 120; } }
                 if (c.zenyW >= 1) xp += 40;
             });
+
             const lv = xpToLevel(xp);
             document.getElementById('displayLv').innerText = lv.toLocaleString();
             document.getElementById('displayXP').innerText = xp.toLocaleString() + ' XP';
@@ -444,7 +310,6 @@
 
         window.renderInventory = (currentLv) => {
             const char = characters[activeCharId];
-            if (!char) return;
             const pkgType = PKG_CONFIG[char.pkg].type;
             let inv = {}; let rares = [];
             Object.keys(REWARDS_DATA).map(Number).sort((a,b)=>a-b).forEach(m => {
@@ -461,13 +326,48 @@
                     if (l % 50 === 0) inv["Treasure Box III"] = (inv["Treasure Box III"] || 0) + 1;
                 }
             }
-            document.getElementById('rareList').innerHTML = rares.map(i => `<div class="bg-white/10 p-3 rounded-2xl flex items-center justify-between border border-white/10"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-xs font-bold font-gaming">${i.lv}</div><span class="text-xs font-bold text-slate-100 font-kanit">${i.n}</span></div><span class="text-[10px] font-bold text-blue-400">x${i.q}</span></div>`).join('') || '<p class="text-center text-[10px] text-slate-500 italic font-kanit">ยังไม่ถึง Milestone</p>';
+            document.getElementById('rareList').innerHTML = rares.map(i => `<div class="bg-white/10 p-3 rounded-2xl flex items-center justify-between border border-white/10"><div class="flex items-center gap-3 font-kanit"><div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-xs font-bold font-gaming">${i.lv}</div><span class="text-xs font-bold text-slate-100">${i.n}</span></div><span class="text-[10px] font-bold text-blue-400">x${i.q}</span></div>`).join('') || '<p class="text-center text-[10px] text-slate-500 italic font-kanit">ยังไม่ถึง Milestone รางวัลแรร์</p>';
             const entries = Object.entries(inv).sort((a,b) => b[1] - a[1]);
             document.getElementById('invCountTag').innerText = `${entries.length} ITEMS`;
-            document.getElementById('inventoryList').innerHTML = entries.map(([n, q]) => `<div class="item-row px-5 py-3 flex justify-between items-center"><span class="text-xs font-bold text-slate-600 font-kanit">${n}</span><span class="text-xs font-gaming font-bold text-slate-400">x${q.toLocaleString()}</span></div>`).join('');
+            document.getElementById('inventoryList').innerHTML = entries.map(([n, q]) => `<div class="item-row px-5 py-3 flex justify-between items-center font-kanit"><span class="text-xs font-bold text-slate-600">${n}</span><span class="text-xs font-gaming font-bold text-slate-400">x${q.toLocaleString()}</span></div>`).join('');
         };
 
-        // --- DIARY MODAL ---
+        // --- CHARACTER MANAGEMENT ---
+        window.addNewCharacter = () => {
+            const name = document.getElementById('newCharName').value.trim();
+            if (!name) return;
+            const id = 'char_' + Date.now();
+            characters[id] = { id, name, pkg: document.getElementById('newCharPkg').value, targetLevel: 300, diaryData: {} };
+            activeCharId = id;
+            document.getElementById('newCharName').value = '';
+            window.saveToLocal(); window.updateUI(); closeCharManager();
+        };
+
+        window.switchChar = (id) => { activeCharId = id; window.saveToLocal(); window.updateUI(); closeCharManager(); };
+        window.deleteChar = (id) => { if(Object.keys(characters).length > 1 && confirm(`ลบตัวละคร?`)) { delete characters[id]; if(activeCharId === id) activeCharId = Object.keys(characters)[0]; window.saveToLocal(); window.updateUI(); renderCharList(); } };
+        window.completeInitialSetup = () => {
+            const name = document.getElementById('initialCharName').value.trim();
+            if (!name) return;
+            const id = 'char_init_' + Date.now();
+            characters = { [id]: { id, name, pkg: 'pre0', targetLevel: 300, diaryData: {} } };
+            activeCharId = id;
+            document.getElementById('initialSetupModal').classList.add('hidden');
+            window.saveToLocal(); window.updateUI();
+        };
+
+        window.updateCurrentCharConfig = () => {
+            if (!activeCharId) return;
+            characters[activeCharId].targetLevel = parseInt(document.getElementById('targetLevelInput').value) || 300;
+            window.saveToLocal(); window.updateUI();
+        };
+
+        window.updateCurrentCharPkg = (pkg) => {
+            if (!activeCharId) return;
+            characters[activeCharId].pkg = pkg;
+            window.saveToLocal(); window.updateUI();
+        };
+
+        // --- DIARY LOGIC ---
         window.openDiary = (dateStr) => {
             selectedDateStr = dateStr; const char = characters[activeCharId]; const data = char.diaryData[dateStr] || {};
             const cycleId = window.getCycleId(dateStr);
@@ -476,13 +376,28 @@
                 if (char.diaryData[d].bossA) stats.bossA++; if (char.diaryData[d].bossE) stats.bossE++; if (char.diaryData[d].bossT) stats.bossT++;
                 if (char.diaryData[d].zenyW) stats.zenyW++;
             }});
-            const xpVal = PKG_CONFIG[char.pkg].dailyXp;
+            const pkgKey = char.pkg; const xpVal = PKG_CONFIG[pkgKey].dailyXp;
             const p = dateStr.split('-'); document.getElementById('modalDateLabel').innerText = new Date(p[0], p[1]-1, p[2]).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
             document.getElementById('diaryModalBody').innerHTML = `
-                <div class="p-4 bg-purple-50 rounded-2xl border border-purple-100 mb-4 flex justify-between items-center"><div><p class="text-sm font-bold text-purple-900">Buy Level (SV)</p><p class="text-[10px] text-purple-500 font-bold uppercase">${(data.svLevels || 0) * 3} SV Used (+${(data.svLevels || 0) * 10} XP)</p></div><input type="number" id="svLevelsInput" value="${data.svLevels || 0}" oninput="window.updateSvLevels()" class="sv-input font-gaming"></div>
-                <div class="grid grid-cols-1 gap-2"><label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer"><div class="flex items-center gap-4"><div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-blue-600"><i class="fa-solid fa-calendar-check"></i></div><div><p class="text-sm font-bold text-slate-700">Daily Quest</p><p class="text-[10px] text-blue-500 font-bold uppercase">${xpVal} XP</p></div></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-blue-500">+${xpVal} XP</span><input type="checkbox" id="check-daily" ${data.daily ? 'checked' : ''} class="hidden" onchange="window.toggleTask('daily')"><div class="custom-checkbox"></div></div></label><label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer"><div class="flex items-center gap-4"><div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-emerald-600"><i class="fa-solid fa-coins"></i></div><div><p class="text-sm font-bold text-slate-700">Daily Zeny (1M)</p><p class="text-[10px] text-emerald-500 font-bold uppercase">30 XP</p></div></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-emerald-500">+30 XP</span><input type="checkbox" id="check-zenyD" ${data.zenyD ? 'checked' : ''} class="hidden" onchange="window.toggleTask('zenyD')"><div class="custom-checkbox"></div></div></label></div>
-                <div class="pt-4 border-t border-slate-100 mt-4"><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Weekly Progress</h4><div class="space-y-2">${renderWeeklyItem('bossA', 1, null, 0, stats, data, '1. Amdarais', 'orange')}${renderWeeklyItem('bossE', 2, 'bossA', 1, stats, data, '2. Evil Fanatic', 'orange')}${renderWeeklyItem('bossT', 3, 'bossE', 2, stats, data, '3. Tao Gunka', 'orange')}${renderWeeklyItem('zenyW', 1, null, 0, stats, data, 'ส่ง Weekly Zeny (10M)', 'rose')}</div></div>
-            `;
+                <div class="p-4 bg-purple-50 rounded-2xl border border-purple-100 mb-4 flex justify-between items-center">
+                    <div><p class="text-sm font-bold text-purple-900">ซื้อเลเวล (Silvervine)</p><p class="text-[10px] text-purple-500 font-bold uppercase">${(data.svLevels || 0) * 3} SV Used (+${(data.svLevels || 0) * 10} XP)</p></div>
+                    <input type="number" id="svLevelsInput" value="${data.svLevels || 0}" oninput="window.updateSvLevels()" class="sv-input font-gaming">
+                </div>
+                <div class="grid grid-cols-1 gap-2">
+                    <label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer">
+                        <div class="flex items-center gap-4"><div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-blue-600"><i class="fa-solid fa-calendar-check"></i></div><div><p class="text-sm font-bold text-slate-700">Daily Quest</p><p class="text-[10px] text-blue-500 font-bold uppercase">${xpVal} XP</p></div></div>
+                        <div class="flex items-center gap-3"><span class="text-[10px] font-bold text-blue-500">+${xpVal} XP</span><input type="checkbox" id="check-daily" ${data.daily ? 'checked' : ''} class="hidden" onchange="window.toggleTask('daily')"><div class="custom-checkbox"></div></div>
+                    </label>
+                    <label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer">
+                        <div class="flex items-center gap-4"><div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-emerald-600"><i class="fa-solid fa-coins"></i></div><div><p class="text-sm font-bold text-slate-700">Daily Zeny (1M)</p><p class="text-[10px] text-emerald-500 font-bold uppercase">30 XP</p></div></div>
+                        <div class="flex items-center gap-3"><span class="text-[10px] font-bold text-emerald-500">+30 XP</span><input type="checkbox" id="check-zenyD" ${data.zenyD ? 'checked' : ''} class="hidden" onchange="window.toggleTask('zenyD')"><div class="custom-checkbox"></div></div>
+                    </label>
+                </div>
+                <div class="pt-4 border-t border-slate-100 mt-4"><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Weekly Progress</h4><div class="space-y-2">
+                ${renderWeeklyItem('bossA', 1, null, 0, stats, data, '1. Amdarais', 'orange')}
+                ${renderWeeklyItem('bossE', 2, 'bossA', 1, stats, data, '2. Evil Fanatic', 'orange')}
+                ${renderWeeklyItem('bossT', 3, 'bossE', 2, stats, data, '3. Tao Gunka', 'orange')}
+                ${renderWeeklyItem('zenyW', 1, null, 0, stats, data, 'ส่ง Weekly Zeny (10M)', 'rose')}</div></div>`;
             document.getElementById('diaryModal').classList.remove('hidden');
             setTimeout(() => { document.getElementById('diaryModal').style.opacity = '1'; document.getElementById('diaryModal').querySelector('.modal-content').style.transform = 'translateY(0)'; }, 10);
         };
@@ -494,41 +409,25 @@
             return `<label class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition ${isLocked ? 'lock-overlay' : ''}"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600">${label} ${isDone ? '<span class="complete-tag">DONE</span>' : ''}</span><span class="text-[9px] text-${color}-500 font-bold uppercase">${stats[key]}/${q}</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-${color}-500">+${xp} XP</span><input type="checkbox" id="check-${key}" ${data[key] ? 'checked' : ''} ${isLocked ? 'disabled' : ''} class="hidden" onchange="window.toggleTask('${key}')"><div class="custom-checkbox"></div></div></label>`;
         }
 
-        window.toggleTask = (key) => { if (!characters[activeCharId].diaryData[selectedDateStr]) characters[activeCharId].diaryData[selectedDateStr] = {}; characters[activeCharId].diaryData[selectedDateStr][key] = document.getElementById(`check-${key}`).checked; updateUI(); openDiary(selectedDateStr); pushToCloud(); };
-        window.updateSvLevels = () => { if (!characters[activeCharId].diaryData[selectedDateStr]) characters[activeCharId].diaryData[selectedDateStr] = {}; characters[activeCharId].diaryData[selectedDateStr].svLevels = parseInt(document.getElementById('svLevelsInput').value) || 0; updateUI(); pushToCloud(); };
+        window.toggleTask = (key) => { if (!characters[activeCharId].diaryData[selectedDateStr]) characters[activeCharId].diaryData[selectedDateStr] = {}; characters[activeCharId].diaryData[selectedDateStr][key] = document.getElementById(`check-${key}`).checked; window.saveToLocal(); window.updateUI(); openDiary(selectedDateStr); };
+        window.updateSvLevels = () => { if (!characters[activeCharId].diaryData[selectedDateStr]) characters[activeCharId].diaryData[selectedDateStr] = {}; characters[activeCharId].diaryData[selectedDateStr].svLevels = parseInt(document.getElementById('svLevelsInput').value) || 0; window.saveToLocal(); window.updateUI(); };
 
-        // --- NAVIGATION ---
-        window.switchView = (v) => { ['calendar', 'inventory', 'settings'].forEach(id => { document.getElementById(`view-${id}`).classList.add('hidden'); document.getElementById(`nav-${id}`).classList.remove('active'); }); document.getElementById(`view-${v}`).classList.remove('hidden'); document.getElementById(`nav-${v}`).classList.add('active'); };
+        // --- UTILS & MODAL UI ---
+        window.switchView = (v) => { ['calendar', 'inventory', 'manage'].forEach(id => { document.getElementById(`view-${id}`).classList.add('hidden'); document.getElementById(`nav-${id}`).classList.remove('active'); }); document.getElementById(`view-${v}`).classList.remove('hidden'); document.getElementById(`nav-${v}`).classList.add('active'); };
         window.showCharManager = () => { renderCharList(); document.getElementById('charManagerModal').classList.remove('hidden'); setTimeout(() => { document.getElementById('charManagerModal').style.opacity = '1'; document.getElementById('charManagerModal').querySelector('.modal-content').style.transform = 'translateY(0)'; }, 10); };
         window.closeCharManager = () => { document.getElementById('charManagerModal').querySelector('.modal-content').style.transform = 'translateY(100%)'; document.getElementById('charManagerModal').style.opacity = '0'; setTimeout(() => document.getElementById('charManagerModal').classList.add('hidden'), 300); };
-        function renderCharList() { document.getElementById('charListContainer').innerHTML = Object.values(characters).map(c => `<div onclick="window.switchChar('${c.id}')" class="flex items-center justify-between p-4 rounded-2xl transition-all ${activeCharId === c.id ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-600'}"><div><p class="text-sm font-bold">${c.name}</p><p class="text-[8px] font-bold uppercase opacity-60">${PKG_CONFIG[c.pkg].name}</p></div><i class="fa-solid ${activeCharId === c.id ? 'fa-check-circle' : 'fa-circle-chevron-right'}"></i></div>`).join(''); }
+        function renderCharList() { document.getElementById('charListContainer').innerHTML = Object.values(characters).map(c => `<div class="flex gap-2"><div onclick="window.switchChar('${c.id}')" class="flex-1 flex items-center justify-between p-4 rounded-2xl transition-all ${activeCharId === c.id ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-600'}"><div><p class="text-sm font-bold font-kanit">${c.name}</p><p class="text-[8px] font-bold uppercase opacity-60">${PKG_CONFIG[c.pkg].name}</p></div><i class="fa-solid ${activeCharId === c.id ? 'fa-check-circle' : 'fa-circle-chevron-right'}"></i></div><button onclick="window.deleteChar('${c.id}')" class="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center active:scale-90 transition-all"><i class="fa-solid fa-trash-can"></i></button></div>`).join(''); }
         window.closeModal = () => { document.getElementById('diaryModal').querySelector('.modal-content').style.transform = 'translateY(100%)'; document.getElementById('diaryModal').style.opacity = '0'; setTimeout(() => document.getElementById('diaryModal').classList.add('hidden'), 300); };
         window.showSimulateConfirm = () => document.getElementById('confirmSimulateModal').classList.remove('hidden');
         window.hideSimulateConfirm = () => document.getElementById('confirmSimulateModal').classList.add('hidden');
-        window.confirmSimulate = () => { const char = characters[activeCharId]; char.diaryData = {}; let temp = new Date(EVENT_START); let i = 0; while (temp <= EVENT_END) { const ds = formatDateLocal(temp); const cyc = i % 7; char.diaryData[ds] = { daily:true, zenyD:true, svLevels:0, bossA:(cyc===0), bossE:(cyc===0||cyc===1), bossT:(cyc===1||cyc===2||cyc===3), zenyW:(cyc===0) }; temp.setDate(temp.getDate() + 1); i++; } updateUI(); pushToCloud(); hideSimulateConfirm(); };
+        window.confirmSimulate = () => { const char = characters[activeCharId]; char.diaryData = {}; let temp = new Date(EVENT_START); let i = 0; while (temp <= EVENT_END) { const ds = formatDateLocal(temp); const cyc = i % 7; char.diaryData[ds] = { daily:true, zenyD:true, svLevels:0, bossA:(cyc===0), bossE:(cyc===0||cyc===1), bossT:(cyc===1||cyc===2||cyc===3), zenyW:(cyc===0) }; temp.setDate(temp.getDate() + 1); i++; } window.saveToLocal(); window.updateUI(); hideSimulateConfirm(); };
         window.showClearConfirm = () => document.getElementById('confirmClearModal').classList.remove('hidden');
         window.hideClearConfirm = () => document.getElementById('confirmClearModal').classList.add('hidden');
-        window.confirmClearData = () => { characters[activeCharId].diaryData = {}; updateUI(); pushToCloud(); hideClearConfirm(); };
-        window.changeMonth = (dir) => { currentMonth = Math.max(1, Math.min(2, currentMonth + dir)); renderCalendar(); };
-        window.copyUID = () => { const el = document.getElementById('userIdInput'); el.select(); document.execCommand('copy'); };
+        window.confirmClearData = () => { characters[activeCharId].diaryData = {}; window.saveToLocal(); window.updateUI(); hideClearConfirm(); };
+        window.changeMonth = (dir) => { currentMonth = Math.max(1, Math.min(2, currentMonth + dir)); window.renderCalendar(); };
 
-        // --- INIT APP ---
-        const startApp = async () => {
-            updateUI(); 
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); 
-            else await signInAnonymously(auth);
-            
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                    if (!machineUid) { machineUid = user.uid; localStorage.setItem('rocChronoDiary_machineUid', user.uid); }
-                    
-                    const effectiveUid = syncTargetUid || user.uid;
-                    startSyncListener(effectiveUid);
-                }
-            });
-        };
-        startApp();
+        // --- STARTUP ---
+        document.addEventListener('DOMContentLoaded', () => { window.updateUI(); });
     </script>
 </body>
 </html>
