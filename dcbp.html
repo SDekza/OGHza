@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ROC Chrono Diary Pro v4.2.0</title>
+    <title>ROC Chrono Diary Pro v5.2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root { --roc-blue: #2563eb; --roc-bg: #f1f5f9; }
-        html, body { overflow-x: hidden; touch-action: pan-x pan-y; -webkit-text-size-adjust: none; }
+        html, body { overflow-x: hidden; touch-action: pan-x pan-y; -webkit-text-size-adjust: none; height: 100%; }
         body { font-family: 'Kanit', sans-serif; background-color: var(--roc-bg); color: #334155; -webkit-tap-highlight-color: transparent; }
         .font-gaming { font-family: 'Rajdhani', sans-serif; }
         
@@ -21,7 +21,6 @@
         .day-card.today span.date-num { text-decoration: underline; text-underline-offset: 4px; }
         .day-card.weekly-start { outline: 2px solid var(--roc-blue); outline-offset: -2px; border-radius: 12px; }
         .day-card.weekly-reset { outline: 2px solid #f59e0b; outline-offset: -2px; border-radius: 12px; }
-        .day-card.active { background: #eff6ff; color: var(--roc-blue); border-color: #bfdbfe; }
         
         .status-dot { width: 5px; height: 5px; border-radius: 50%; margin: 1px; }
         .bg-daily { background-color: #3b82f6; } 
@@ -38,37 +37,40 @@
         .lock-overlay { opacity: 0.4; filter: grayscale(1); cursor: not-allowed !important; }
         .complete-tag { font-size: 9px; background: #dcfce7; color: #166534; padding: 1px 4px; border-radius: 4px; font-weight: 700; margin-left: 4px; }
         
-        input[type="number"] { font-size: 16px !important; border-radius: 8px; outline: none; text-align: center; }
+        input[type="number"], input[type="text"] { font-size: 16px !important; border-radius: 8px; outline: none; text-align: center; }
         .target-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); width: 60px; color: white; font-weight: bold; height: 28px; }
         .sv-input { background: #fff; border: 2px solid #e2e8f0; width: 70px; font-weight: 700; color: #8b5cf6; height: 36px; }
 
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #94a3b8; transition: all 0.2s; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #94a3b8; transition: all 0.2s; border: none; background: transparent; }
         .nav-item.active { color: var(--roc-blue); }
         .item-row:nth-child(even) { background-color: #f8fafc; }
-        
         .confirm-modal-enter { animation: confirm-zoom 0.2s ease-out; }
         @keyframes confirm-zoom { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body class="pb-24">
 
+    <!-- HEADER -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 p-4 shadow-sm">
         <div class="max-w-md mx-auto flex justify-between items-center gap-2">
             <div class="flex items-center gap-3 shrink-0">
-                <a href="/OGHza/index.html" class="w-8 h-8 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500">
-                    <i class="fa-solid fa-arrow-left text-sm"></i>
-                </a>
+                <button onclick="showCharManager()" class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm active:scale-95 transition-all">
+                    <i class="fa-solid fa-user-gear"></i>
+                </button>
                 <div class="flex flex-col leading-none">
-                    <h1 class="font-gaming text-lg font-bold text-slate-800 tracking-tight uppercase">Chrono <span class="text-blue-600">Diary</span></h1>
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Version 4.2.0</span>
+                    <h1 class="font-gaming text-lg font-bold text-slate-800 tracking-tight uppercase" id="displayActiveCharName">Loading...</h1>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest" id="displayActivePkg">Please Wait</span>
+                        <i id="sync-icon" class="fa-solid fa-cloud text-[8px] text-slate-300"></i>
+                    </div>
                 </div>
             </div>
             <div class="flex items-center gap-1.5">
                 <button onclick="showSimulateConfirm()" class="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-lg shadow-blue-100"><i class="fa-solid fa-rocket text-xs"></i></button>
                 <button onclick="showClearConfirm()" class="w-8 h-8 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-trash-can text-xs"></i></button>
-                <select id="pkgSelect" onchange="updateUI()" class="bg-slate-100 border-none rounded-lg px-2 py-1.5 text-[9px] font-bold outline-none text-slate-600 w-auto max-w-[120px]">
+                <select id="pkgSelect" onchange="updateCurrentCharPkg(this.value)" class="bg-slate-100 border-none rounded-lg px-2 py-1.5 text-[9px] font-bold outline-none text-slate-600 w-auto max-w-[120px]">
                     <option value="normal">NORMAL PASS</option>
-                    <option value="pre0" selected>PREMIUM UNLOCK</option>
+                    <option value="pre0">PREMIUM UNLOCK</option>
                     <option value="pre25">PREMIUM +25 LV</option>
                     <option value="pre100">PREMIUM +100 LV</option>
                 </select>
@@ -77,366 +79,456 @@
     </header>
 
     <main class="max-w-md mx-auto p-4 space-y-6">
-
         <!-- STATUS CARD -->
         <section class="bg-slate-900 rounded-[32px] p-6 text-white shadow-xl shadow-blue-900/20 relative overflow-hidden">
             <div class="absolute -right-6 -top-6 w-32 h-32 bg-blue-600/20 rounded-full blur-3xl"></div>
             <div class="relative z-10 flex justify-between items-center mb-4">
                 <div>
-                    <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Status Summary</p>
-                    <div class="flex items-baseline gap-1">
-                        <span class="text-5xl font-gaming font-bold" id="displayLv">0</span>
-                        <span class="text-xs font-bold text-slate-500 uppercase">Lv.</span>
-                    </div>
+                    <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1 font-kanit">สรุปสถานะปัจจุบัน</p>
+                    <div class="flex items-baseline gap-1"><span class="text-5xl font-gaming font-bold" id="displayLv">0</span><span class="text-xs font-bold text-slate-500 uppercase">Lv.</span></div>
                 </div>
                 <div class="text-right flex flex-col items-end">
                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Points</p>
                     <div class="font-gaming font-bold text-2xl text-blue-400" id="displayXP">0 XP</div>
-                    <div class="mt-1 flex items-center gap-1 opacity-80">
-                        <i class="fa-solid fa-gem text-[8px] text-purple-400"></i>
-                        <span class="text-[10px] font-bold text-purple-400 uppercase">Used: <span id="displaySVTotal">0</span> SV</span>
-                    </div>
+                    <div class="mt-1 flex items-center gap-1 opacity-80"><i class="fa-solid fa-gem text-[8px] text-purple-400"></i><span class="text-[10px] font-bold text-purple-400 uppercase">Used: <span id="displaySVTotal">0</span> SV</span></div>
                 </div>
             </div>
             <div class="space-y-2 border-t border-white/5 pt-4">
                 <div class="flex justify-between text-[10px] font-bold uppercase tracking-tighter items-center">
-                    <div class="flex items-center gap-1.5">
-                        <span class="text-slate-500">Target Lv.</span>
-                        <input type="number" id="targetLevelInput" value="300" inputmode="numeric" pattern="[0-9]*" oninput="updateUI()" class="target-input font-gaming">
-                    </div>
+                    <div class="flex items-center gap-1.5"><span class="text-slate-500 font-kanit">เป้าหมาย</span><input type="number" id="targetLevelInput" value="300" inputmode="numeric" pattern="[0-9]*" oninput="updateCurrentCharConfig()" class="target-input font-gaming"></div>
                     <span class="text-blue-400" id="progressPercent">0% Completed</span>
                 </div>
-                <div class="h-2.5 bg-white/10 rounded-full overflow-hidden">
-                    <div id="progressBar" class="h-full bg-blue-500 rounded-full transition-all duration-700" style="width: 0%"></div>
-                </div>
+                <div class="h-2.5 bg-white/10 rounded-full overflow-hidden"><div id="progressBar" class="h-full bg-blue-500 rounded-full transition-all duration-700" style="width: 0%"></div></div>
             </div>
         </section>
 
         <!-- VIEW 1: CALENDAR -->
         <section id="view-calendar" class="space-y-4">
-            <div class="flex justify-between items-center px-1">
-                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Diary Calendar</h2>
-                <div class="flex gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
-                    <button onclick="changeMonth(-1)" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-blue-600 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+            <div class="flex justify-between items-center px-1 font-kanit">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">ปฏิทินบันทึกเควส</h2>
+                <div class="flex gap-2 bg-white rounded-lg p-1 border border-slate-200">
+                    <button onclick="changeMonth(-1)" class="w-7 h-7 flex items-center justify-center text-slate-400"><i class="fa-solid fa-chevron-left text-xs"></i></button>
                     <span id="currentMonthLabel" class="text-[11px] font-bold text-slate-600 min-w-[100px] text-center flex items-center justify-center uppercase">Feb 2026</span>
-                    <button onclick="changeMonth(1)" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-blue-600 transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                    <button onclick="changeMonth(1)" class="w-7 h-7 flex items-center justify-center text-slate-400"><i class="fa-solid fa-chevron-right text-xs"></i></button>
                 </div>
             </div>
             <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
-                <div class="calendar-grid mb-4 text-center text-[10px] font-bold text-slate-300 uppercase">
-                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-                </div>
-                <div id="calendarDays" class="calendar-grid"></div>
+                <div class="calendar-grid mb-4 text-center text-[10px] font-bold text-slate-300 uppercase"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+                <div id="calendarContent" class="calendar-grid"></div>
             </div>
         </section>
 
-        <!-- VIEW 2: INVENTORY REWARDS -->
-        <section id="view-inventory" class="hidden space-y-4">
-            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Inventory & Rewards</h2>
+        <!-- VIEW 2: INVENTORY -->
+        <section id="view-inventory" class="hidden space-y-4 font-kanit">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">คลังไอเทมที่ได้รับ</h2>
             <div class="space-y-4">
-                <div class="bg-slate-900 rounded-3xl p-5 shadow-lg border border-white/5">
-                    <h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-sparkles"></i> Rare Milestones</h3>
-                    <div id="rareList" class="grid grid-cols-1 gap-2"></div>
+                <div class="bg-slate-900 rounded-3xl p-5 shadow-lg border border-white/5"><h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-sparkles"></i> Rare Milestones</h3><div id="rareList" class="grid grid-cols-1 gap-2"></div></div>
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden"><div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center"><span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">ไอเทมสะสมทั้งหมด</span><span id="invCountTag" class="text-[9px] font-bold bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full uppercase">0 ITEMS</span></div><div id="inventoryList" class="divide-y divide-slate-100"></div></div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: SYNC -->
+        <section id="view-settings" class="hidden space-y-4 font-kanit">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Sync & Cloud Recovery</h2>
+            
+            <!-- My ID Card -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl shadow-inner"><i class="fa-solid fa-id-card"></i></div>
+                    <div><p class="text-xs font-bold text-slate-700">Your Current UID</p><p class="text-[10px] text-slate-400 leading-tight">ใช้ ID นี้เพื่อซิงค์ข้อมูลไปยังเครื่องอื่น</p></div>
                 </div>
-                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
-                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Inventory Accumulated</span>
-                        <span id="invCountTag" class="text-[9px] font-bold bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">0 ITEMS</span>
-                    </div>
-                    <div id="inventoryList" class="divide-y divide-slate-100"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="userIdInput" readonly class="flex-1 bg-slate-50 border border-slate-200 p-3 text-[11px] font-mono font-bold text-blue-600 rounded-xl">
+                    <button onclick="copyUID()" class="bg-blue-600 text-white px-5 rounded-xl font-bold text-xs active:scale-95 transition-all">คัดลอก</button>
                 </div>
+                <div id="restoreContainer" class="hidden pt-4 border-t border-slate-50">
+                    <button onclick="restoreMachineId()" class="w-full bg-slate-100 text-slate-500 py-3 rounded-xl text-[10px] font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> กลับไปใช้ ID เดิมของเครื่องนี้
+                    </button>
+                </div>
+            </div>
+
+            <!-- Import Data Card -->
+            <div class="bg-slate-900 rounded-[32px] p-6 shadow-xl space-y-5 text-white">
+                <div>
+                    <h3 class="text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-down text-blue-400"></i> ดึงข้อมูลจากเครื่องอื่น</h3>
+                    <p class="text-[10px] text-slate-500 mt-1">วาง Sync ID ของคุณที่นี่เพื่อโหลดข้อมูลตัวละครทั้งหมด</p>
+                </div>
+                <div class="space-y-3">
+                    <input type="text" id="importUidInput" placeholder="วาง Sync ID ที่นี่..." class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-xs font-mono outline-none focus:border-blue-500 transition-all text-left">
+                    <button onclick="importCloudData()" id="btnImport" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-900/50 active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-link"></i> เชื่อมต่อข้อมูล
+                    </button>
+                </div>
+                <p id="importMsg" class="text-center text-[10px] font-bold h-4 transition-all"></p>
             </div>
         </section>
     </main>
 
-    <!-- BOTTOM NAVIGATION -->
+    <!-- NAV BAR -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 z-40 pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
         <div class="max-w-md mx-auto flex h-20 px-6">
             <button onclick="switchView('calendar')" id="nav-calendar" class="nav-item active"><i class="fa-solid fa-calendar-days text-xl mb-1"></i><span>DIARY</span></button>
             <button onclick="switchView('inventory')" id="nav-inventory" class="nav-item"><i class="fa-solid fa-briefcase text-xl mb-1"></i><span>INVENTORY</span></button>
+            <button onclick="switchView('settings')" id="nav-settings" class="nav-item"><i class="fa-solid fa-cloud-arrow-up text-xl mb-1"></i><span>SYNC</span></button>
         </div>
     </nav>
 
-    <!-- CONFIRM CLEAR MODAL -->
-    <div id="confirmClearModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm">
-        <div class="bg-white rounded-[32px] p-8 w-full max-w-xs confirm-modal-enter shadow-2xl text-center">
-            <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-trash-can text-2xl"></i></div>
-            <h3 class="text-lg font-bold text-slate-800 mb-2 font-kanit">ล้างข้อมูลทั้งหมด?</h3>
-            <p class="text-xs text-slate-400 font-medium mb-6 font-kanit">ข้อมูลที่คุณบันทึกไว้จะหายไปทั้งหมด</p>
-            <div class="flex flex-col gap-2"><button onclick="confirmClearData()" class="w-full bg-red-500 text-white font-bold py-3 rounded-2xl font-kanit">ยืนยันการลบ</button><button onclick="hideClearConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl font-kanit">ยกเลิก</button></div>
-        </div>
-    </div>
-
-    <!-- CONFIRM SIMULATE MODAL -->
-    <div id="confirmSimulateModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm">
-        <div class="bg-white rounded-[32px] p-8 w-full max-w-xs confirm-modal-enter shadow-2xl text-center">
-            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-rocket text-2xl"></i></div>
-            <h3 class="text-lg font-bold text-slate-800 mb-2 font-kanit">จำลองเควสเต็ม?</h3>
-            <p class="text-xs text-slate-400 font-medium mb-6 font-kanit">ระบบจะเขียนทับข้อมูลด้วยสถานะทำสำเร็จ 100% (จำลอง 1 วัน 1 บอส)</p>
-            <div class="flex flex-col gap-2"><button onclick="confirmSimulate()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-2xl font-kanit">ยืนยันการจำลอง</button><button onclick="hideSimulateConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl font-kanit">ยกเลิก</button></div>
-        </div>
-    </div>
-
-    <!-- DIARY MODAL -->
-    <div id="diaryModal" class="fixed inset-0 z-50 hidden modal-overlay bg-slate-900/70 backdrop-blur-sm">
-        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-[40px] p-8 modal-content max-w-md mx-auto shadow-2xl overflow-hidden max-h-[95vh] overflow-y-auto">
-            <div class="flex justify-between items-start mb-6">
-                <div><h3 class="text-xl font-bold text-slate-800" id="modalDateLabel">--</h3><p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Record Tasks</p></div>
-                <button onclick="closeModal()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <!-- MODALS -->
+    <div id="charManagerModal" class="fixed inset-0 z-[70] hidden modal-overlay bg-slate-900/80 backdrop-blur-sm">
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-[40px] p-8 modal-content max-w-md mx-auto shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto font-kanit">
+            <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800">จัดการตัวละคร</h3><button onclick="closeCharManager()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button></div>
+            <div id="charListContainer" class="space-y-3 mb-8"></div>
+            <div class="pt-6 border-t border-slate-100 space-y-4">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">เพิ่มตัวละครใหม่</p>
+                <input type="text" id="newCharName" placeholder="ชื่อตัวละคร" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl text-sm font-bold">
+                <select id="newCharPkg" class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs font-bold text-slate-600">
+                    <option value="normal">Normal Pass (Free)</option>
+                    <option value="pre0" selected>Premium Unlock (49 SV)</option>
+                    <option value="pre25">Premium +25 Lv (115 SV)</option>
+                    <option value="pre100">Premium +100 Lv (295 SV)</option>
+                </select>
+                <button onclick="addNewCharacter()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg">สร้างตัวละคร</button>
             </div>
-            <div class="space-y-4">
-                <div class="p-4 bg-purple-50 rounded-2xl border border-purple-100">
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center text-white shadow-sm"><i class="fa-solid fa-gem text-sm"></i></div>
-                            <div><p class="text-sm font-bold text-purple-900">Buy Level (Silvervine)</p><p class="text-[10px] text-purple-500 font-bold uppercase tracking-tight" id="sv-cost-label">3 SV / 1 LEVEL</p></div>
-                        </div>
-                        <div class="flex flex-col items-center"><input type="number" id="svLevelsInput" value="0" inputmode="numeric" pattern="[0-9]*" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'" oninput="updateSvLevels()" class="sv-input font-gaming"><span class="text-[8px] font-black text-purple-400 mt-1 uppercase">Lv. Purchased</span></div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 gap-2">
-                    <label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer">
-                        <div class="flex items-center gap-4"><div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm"><i class="fa-solid fa-calendar-check"></i></div><div><p class="text-sm font-bold text-slate-700 font-kanit">Daily Quest</p><p class="text-[10px] text-blue-500 font-bold uppercase tracking-tight" id="dailyXpText">30 XP</p></div></div>
-                        <div class="flex items-center gap-3"><span class="text-[10px] font-bold text-blue-500" id="xp-display-daily"></span><input type="checkbox" id="check-daily" class="hidden" onchange="toggleTask('daily')"><div class="custom-checkbox"></div></div>
-                    </label>
-                    <label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer">
-                        <div class="flex items-center gap-4"><div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm"><i class="fa-solid fa-coins"></i></div><div><p class="text-sm font-bold text-slate-700 font-kanit">Daily Zeny (1M)</p><p class="text-[10px] text-emerald-500 font-bold uppercase tracking-tight">30 XP</p></div></div>
-                        <div class="flex items-center gap-3"><span class="text-[10px] font-bold text-emerald-500">+30 XP</span><input type="checkbox" id="check-zenyD" class="hidden" onchange="toggleTask('zenyD')"><div class="custom-checkbox"></div></div>
-                    </label>
-                </div>
-                <div class="pt-4 border-t border-slate-100">
-                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 font-kanit">Weekly Step Progression</h4>
-                    <div class="space-y-2">
-                        <label id="label-bossA" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 font-kanit">1. Amdarais (1 ครั้ง) <span id="tag-bossA"></span></span><span class="text-[9px] text-orange-500 font-bold uppercase tracking-tighter" id="progress-bossA">0/1</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-orange-500">+80 XP</span><input type="checkbox" id="check-bossA" class="hidden" onchange="toggleTask('bossA')"><div class="custom-checkbox"></div></div></label>
-                        <label id="label-bossE" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 font-kanit">2. Evil Fanatic (2 ครั้ง) <span id="tag-bossE"></span></span><span class="text-[9px] text-orange-500 font-bold uppercase tracking-tighter" id="progress-bossE">0/2</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-orange-500">+100 XP</span><input type="checkbox" id="check-bossE" class="hidden" onchange="toggleTask('bossE')"><div class="custom-checkbox"></div></div></label>
-                        <label id="label-bossT" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 font-kanit">3. Tao Gunka (3 ครั้ง) <span id="tag-bossT"></span></span><span class="text-[9px] text-orange-500 font-bold uppercase tracking-tighter" id="progress-bossT">0/3</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-orange-500">+120 XP</span><input type="checkbox" id="check-bossT" class="hidden" onchange="toggleTask('bossT')"><div class="custom-checkbox"></div></div></label>
-                        <label id="label-zenyW" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition mt-2 border-t pt-3"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600 font-kanit">ส่ง Weekly Zeny (10M) <span id="tag-zenyW"></span></span><span class="text-[9px] text-rose-500 font-bold uppercase tracking-tight" id="progress-zenyW">Limit: 1/Week</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-rose-500">+40 XP</span><input type="checkbox" id="check-zenyW" class="hidden" onchange="toggleTask('zenyW')"><div class="custom-checkbox"></div></div></label>
-                    </div>
-                </div>
-            </div>
-            <button onclick="closeModal()" class="w-full mt-6 bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg font-kanit">บันทึกข้อมูลวันนี้</button>
         </div>
     </div>
 
-    <script>
+    <div id="initialSetupModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6 bg-slate-900 backdrop-blur-md">
+        <div class="bg-white rounded-[40px] p-10 w-full max-w-sm shadow-2xl text-center font-kanit">
+            <div class="w-20 h-20 bg-blue-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 transform rotate-12 shadow-xl"><i class="fa-solid fa-chess-knight text-4xl"></i></div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">ยินดีต้อนรับ!</h2>
+            <p class="text-sm text-slate-400 mb-8">กรุณาตั้งชื่อตัวละครตัวแรกเพื่อเริ่มใช้งาน</p>
+            <input type="text" id="initialCharName" placeholder="ชื่อตัวละคร" class="w-full bg-slate-50 border border-slate-200 p-5 rounded-3xl text-center text-lg font-bold mb-4">
+            <button onclick="completeInitialSetup()" class="w-full bg-blue-600 text-white font-bold py-5 rounded-3xl shadow-lg">เริ่มบันทึกไดอารี่</button>
+        </div>
+    </div>
+
+    <div id="confirmClearModal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm"><div class="bg-white rounded-[32px] p-8 w-full max-w-xs confirm-modal-enter shadow-2xl text-center font-kanit"><h3 class="text-lg font-bold text-slate-800 mb-6">ล้างข้อมูลตัวละครนี้?</h3><div class="flex flex-col gap-2"><button onclick="confirmClearData()" class="w-full bg-red-500 text-white font-bold py-3 rounded-2xl">ยืนยันการลบ</button><button onclick="hideClearConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl">ยกเลิก</button></div></div></div>
+    <div id="confirmSimulateModal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-sm"><div class="bg-white rounded-[32px] p-8 w-full max-w-xs confirm-modal-enter shadow-2xl text-center font-kanit"><h3 class="text-lg font-bold text-slate-800 mb-6">จำลองเควสเต็ม?</h3><div class="flex flex-col gap-2"><button onclick="confirmSimulate()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-2xl">ยืนยัน</button><button onclick="hideSimulateConfirm()" class="w-full bg-slate-100 text-slate-500 font-bold py-3 rounded-2xl">ยกเลิก</button></div></div></div>
+
+    <div id="diaryModal" class="fixed inset-0 z-50 hidden modal-overlay bg-slate-900/70 backdrop-blur-sm font-kanit"><div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-[40px] p-8 modal-content max-w-md mx-auto shadow-2xl overflow-hidden max-h-[95vh] overflow-y-auto"><div class="flex justify-between items-start mb-6"><div><h3 class="text-xl font-bold text-slate-800" id="modalDateLabel">--</h3><p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Activity Log</p></div><button onclick="closeModal()" class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><i class="fa-solid fa-xmark text-lg"></i></button></div><div class="space-y-4"><div id="diaryModalBody"></div></div><button onclick="closeModal()" class="w-full mt-6 bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg">ปิดหน้าต่าง</button></div></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'chrono-diary-pro-v52';
+
+        // --- CORE STATE ---
+        let characters = {}; 
+        let activeCharId = null;
+        let machineUid = localStorage.getItem('rocChronoDiary_machineUid');
+        let currentUserId = null; // Current Auth ID
+        let syncTargetUid = localStorage.getItem('rocChronoDiary_syncUid'); // Currently connected profile ID
+        let currentMonth = 1;
+        let selectedDateStr = null;
+        let unsubscribeSync = null;
+
+        const PKG_CONFIG = { normal: { bonusLv: 0, dailyXp: 20, type: 'normal', name: 'Normal Pass' }, pre0: { bonusLv: 0, dailyXp: 30, type: 'premium', name: 'Premium Unlock' }, pre25: { bonusLv: 25, dailyXp: 30, type: 'premium', name: 'Premium +25 Lv' }, pre100: { bonusLv: 100, dailyXp: 30, type: 'premium', name: 'Premium +100 Lv' } };
+        const REWARDS_DATA = { 1:[{n:"Small Life Potion",q:5,p:false},{n:"Ultimate Cook",q:5,p:false},{n:"Mysterious Medal",q:10,p:true},{n:"Advanced Field Manual",q:10,p:true}],10:[{n:"Small Mana Potion",q:2,p:false},{n:"Treasure Box I",q:1,p:true}],31:[{n:"Bubble Archangeling Hairband",q:1,rare:true,p:false}],100:[{n:"Enchant Temporal Slot4 Ticket",q:1,rare:true,p:false},{n:"Chrono Pass Ticket",q:1,rare:true,p:true}],200:[{n:"Costume Cosmic Connection",q:1,rare:true,p:true}],300:[{n:"Chrono Pass Ticket (II)",q:1,rare:true,p:true},{n:"Treasure Box I",q:30,p:true}],350:[{n:"Temporal Boots Ticket",q:1,rare:true,p:true}],1000:[{n:"Treasure Box III",q:5,p:true}],1500:[{n:"Guarantee Weapon 11 Up Pack",q:1,rare:true,p:true}],2000:[{n:"Guarantee Armor 11 Up Pack",q:1,rare:true,p:true}],2500:[{n:"Costume Golden Valkyrie Wings",q:1,rare:true,p:true}] };
         const EVENT_START = new Date(2026, 1, 18, 0, 0, 0, 0);
         const EVENT_END = new Date(2026, 2, 25, 23, 59, 59, 999);
-        const PKG_CONFIG = { normal: { bonusLv: 0, dailyXp: 20, type: 'normal' }, pre0: { bonusLv: 0, dailyXp: 30, type: 'premium' }, pre25: { bonusLv: 25, dailyXp: 30, type: 'premium' }, pre100: { bonusLv: 100, dailyXp: 30, type: 'premium' } };
+
+        // --- HELPERS ---
+        const formatDateLocal = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const xpToLevel = (xp) => xp < 50 ? 0 : Math.floor((xp - 40) / 10);
         
-        const REWARDS_DATA = {
-            1: [{n: "Small Life Potion", q: 5, p: false}, {n: "Ultimate Cook", q: 5, p: false}, {n: "Mysterious Medal", q: 10, p: true}, {n: "Advanced Field Manual", q: 10, p: true}],
-            10: [{n: "Small Mana Potion", q: 2, p: false}, {n: "Treasure Box I", q: 1, p: true}],
-            31: [{n: "Bubble Archangeling Hairband", q: 1, rare: true, p: false}],
-            100: [{n: "Enchant Temporal Slot4 Ticket", q: 1, rare: true, p: false}, {n: "Chrono Pass Ticket", q: 1, rare: true, p: true}],
-            200: [{n: "Costume Cosmic Connection", q: 1, rare: true, p: true}],
-            300: [{n: "Chrono Pass Ticket (II)", q: 1, rare: true, p: true}, {n: "Treasure Box I", q: 30, p: true}],
-            350: [{n: "Temporal Boots Ticket", q: 1, rare: true, p: true}],
-            1000: [{n: "Treasure Box III", q: 5, p: true}],
-            1500: [{n: "Guarantee Weapon 11 Up Pack", q: 1, rare: true, p: true}],
-            2000: [{n: "Guarantee Armor 11 Up Pack", q: 1, rare: true, p: true}],
-            2500: [{n: "Costume Golden Valkyrie Wings", q: 1, rare: true, p: true}]
+        window.getGlobalWeeklyAnchor = () => {
+            const char = characters[activeCharId];
+            if (!char || !char.diaryData) return EVENT_START;
+            const keys = Object.keys(char.diaryData).filter(d => char.diaryData[d].bossA || char.diaryData[d].bossE || char.diaryData[d].bossT || char.diaryData[d].zenyW).sort();
+            return keys.length === 0 ? EVENT_START : new Date(keys[0].split('-')[0], keys[0].split('-')[1]-1, keys[0].split('-')[2], 0, 0, 0, 0);
         };
 
-        let currentMonth = 1; let selectedDateStr = null;
-        let diaryData = JSON.parse(localStorage.getItem('rocChronoDiary_v420')) || {};
-
-        function save() { localStorage.setItem('rocChronoDiary_v420', JSON.stringify(diaryData)); }
-        function formatDateLocal(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
-        function xpToLevel(xp) { return xp < 50 ? 0 : Math.floor((xp - 40) / 10); }
-
-        function getGlobalWeeklyAnchor() {
-            const keys = Object.keys(diaryData).filter(d => diaryData[d].bossA || diaryData[d].bossE || diaryData[d].bossT || diaryData[d].zenyW).sort();
-            return keys.length === 0 ? EVENT_START : new Date(keys[0].split('-')[0], keys[0].split('-')[1]-1, keys[0].split('-')[2], 0, 0, 0, 0);
-        }
-
-        function getCycleId(dateStr) {
-            const anchor = getGlobalWeeklyAnchor();
+        window.getCycleId = (dateStr) => {
+            const anchor = window.getGlobalWeeklyAnchor();
             const p = dateStr.split('-'); const t = new Date(p[0], p[1]-1, p[2], 0, 0, 0, 0);
             const diff = Math.floor((t.getTime() - anchor.getTime()) / 86400000);
             return diff < 0 ? -1 : Math.floor(diff / 7);
-        }
+        };
 
-        function calculateResults() {
-            let xp = 0; let totalSV = 0;
-            const pkg = PKG_CONFIG[document.getElementById('pkgSelect').value];
-            if (pkg.bonusLv > 0) xp += (pkg.bonusLv * 10) + 40;
-            Object.keys(diaryData).forEach(d => {
-                if (diaryData[d].daily) xp += pkg.dailyXp;
-                if (diaryData[d].zenyD) xp += 30;
-                if (diaryData[d].svLevels) { xp += (diaryData[d].svLevels * 10); totalSV += (diaryData[d].svLevels * 3); }
+        // --- CLOUD SYNC CORE ---
+        const pushToCloud = async () => {
+            const targetId = syncTargetUid || currentUserId;
+            if (!targetId) return;
+            
+            document.getElementById('sync-icon').className = 'fa-solid fa-spinner fa-spin text-blue-400';
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'users', targetId, 'data', 'profile'), {
+                    characters, activeCharId, updatedAt: Date.now()
+                });
+                document.getElementById('sync-icon').className = 'fa-solid fa-cloud text-blue-500';
+            } catch (err) { 
+                console.error(err); 
+                document.getElementById('sync-icon').className = 'fa-solid fa-cloud text-red-400'; 
+            }
+        };
+
+        const startSyncListener = (uid) => {
+            if (unsubscribeSync) unsubscribeSync();
+            document.getElementById('userIdInput').value = uid;
+            
+            // Show restore button if we are NOT using the machine's original ID
+            document.getElementById('restoreContainer').classList.toggle('hidden', uid === machineUid);
+
+            unsubscribeSync = onSnapshot(doc(db, 'artifacts', appId, 'users', uid, 'data', 'profile'), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    characters = data.characters || {};
+                    activeCharId = data.activeCharId || Object.keys(characters)[0];
+                    updateUI();
+                } else if (uid === currentUserId || uid === machineUid) {
+                    // If my own profile doesn't exist, create it if we have local data
+                    if (Object.keys(characters).length > 0) pushToCloud();
+                    else document.getElementById('initialSetupModal').classList.remove('hidden');
+                }
             });
-            const anchor = getGlobalWeeklyAnchor();
+        };
+
+        // --- SYNC ACTIONS ---
+        window.importCloudData = async () => {
+            const target = document.getElementById('importUidInput').value.trim();
+            const msg = document.getElementById('importMsg');
+            const btn = document.getElementById('btnImport');
+            
+            if (!target) return;
+            btn.disabled = true;
+            msg.innerText = "กำลังตรวจสอบ ID...";
+            msg.className = "text-center text-[10px] font-bold h-4 text-blue-400";
+
+            try {
+                const snap = await getDoc(doc(db, 'artifacts', appId, 'users', target, 'data', 'profile'));
+                if (snap.exists()) {
+                    syncTargetUid = target;
+                    localStorage.setItem('rocChronoDiary_syncUid', target);
+                    startSyncListener(target);
+                    msg.innerText = "เชื่อมต่อสำเร็จ!";
+                    msg.className = "text-center text-[10px] font-bold h-4 text-green-500";
+                    document.getElementById('importUidInput').value = "";
+                } else {
+                    msg.innerText = "ไม่พบข้อมูลสำหรับ ID นี้";
+                    msg.className = "text-center text-[10px] font-bold h-4 text-red-400";
+                }
+            } catch (e) {
+                msg.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อ";
+                msg.className = "text-center text-[10px] font-bold h-4 text-red-400";
+            } finally {
+                btn.disabled = false;
+                setTimeout(() => { msg.innerText = ""; }, 3000);
+            }
+        };
+
+        window.restoreMachineId = () => {
+            syncTargetUid = null;
+            localStorage.removeItem('rocChronoDiary_syncUid');
+            startSyncListener(machineUid);
+            updateUI();
+        };
+
+        // --- CHARACTER ACTIONS ---
+        window.addNewCharacter = () => {
+            const name = document.getElementById('newCharName').value.trim();
+            if (!name) return;
+            const id = 'char_' + Date.now();
+            characters[id] = { id, name, pkg: document.getElementById('newCharPkg').value, targetLevel: 300, diaryData: {} };
+            activeCharId = id;
+            document.getElementById('newCharName').value = '';
+            updateUI(); closeCharManager(); pushToCloud();
+        };
+
+        window.switchChar = (id) => { activeCharId = id; updateUI(); closeCharManager(); pushToCloud(); };
+        
+        window.completeInitialSetup = () => {
+            const name = document.getElementById('initialCharName').value.trim();
+            if (!name) return;
+            const id = 'char_init_' + Date.now();
+            characters = { [id]: { id, name, pkg: 'pre0', targetLevel: 300, diaryData: {} } };
+            activeCharId = id;
+            document.getElementById('initialSetupModal').classList.add('hidden');
+            updateUI(); pushToCloud();
+        };
+
+        window.updateCurrentCharConfig = () => {
+            if (!activeCharId) return;
+            characters[activeCharId].targetLevel = parseInt(document.getElementById('targetLevelInput').value) || 300;
+            updateUI(); pushToCloud();
+        };
+
+        window.updateCurrentCharPkg = (pkg) => {
+            if (!activeCharId) return;
+            characters[activeCharId].pkg = pkg;
+            updateUI(); pushToCloud();
+        };
+
+        // --- UI CORE ---
+        window.updateUI = () => {
+            const char = characters[activeCharId];
+            if (!char) return;
+
+            document.getElementById('displayActiveCharName').innerText = char.name;
+            document.getElementById('displayActivePkg').innerText = PKG_CONFIG[char.pkg].name;
+            document.getElementById('targetLevelInput').value = char.targetLevel;
+            document.getElementById('pkgSelect').value = char.pkg;
+
+            let xp = 0; let totalSV = 0;
+            const pkg = PKG_CONFIG[char.pkg];
+            if (pkg.bonusLv > 0) xp += (pkg.bonusLv * 10) + 40;
+            Object.keys(char.diaryData).forEach(d => {
+                const day = char.diaryData[d];
+                if (day.daily) xp += pkg.dailyXp; if (day.zenyD) xp += 30;
+                if (day.svLevels) { xp += (day.svLevels * 10); totalSV += (day.svLevels * 3); }
+            });
+            const anchor = window.getGlobalWeeklyAnchor();
             let cyc = {};
-            Object.keys(diaryData).forEach(d => {
-                const infoId = getCycleId(d); if (infoId === -1) return;
-                if (!cyc[infoId]) cyc[infoId] = { bossA: 0, bossE: 0, bossT: 0, zenyW: 0 };
-                if (diaryData[d].bossA) cyc[infoId].bossA++; if (diaryData[d].bossE) cyc[infoId].bossE++;
-                if (diaryData[d].bossT) cyc[infoId].bossT++; if (diaryData[d].zenyW) cyc[infoId].zenyW++;
+            Object.keys(char.diaryData).forEach(d => {
+                const id = window.getCycleId(d); if (id === -1) return;
+                if (!cyc[id]) cyc[id] = { bossA: 0, bossE: 0, bossT: 0, zenyW: 0 };
+                if (char.diaryData[d].bossA) cyc[id].bossA++; if (char.diaryData[d].bossE) cyc[id].bossE++;
+                if (char.diaryData[d].bossT) cyc[id].bossT++; if (char.diaryData[d].zenyW) cyc[id].zenyW++;
             });
             Object.values(cyc).forEach(c => {
                 if (c.bossA >= 1) { xp += 80; if (c.bossE >= 2) { xp += 100; if (c.bossT >= 3) xp += 120; } }
                 if (c.zenyW >= 1) xp += 40;
             });
-            return { xp, totalSV };
-        }
-
-        function updateUI() {
-            const res = calculateResults(); const lv = xpToLevel(res.xp);
-            const target = parseInt(document.getElementById('targetLevelInput').value) || 300;
+            const lv = xpToLevel(xp);
             document.getElementById('displayLv').innerText = lv.toLocaleString();
-            document.getElementById('displayXP').innerText = res.xp.toLocaleString() + ' XP';
-            document.getElementById('displaySVTotal').innerText = res.totalSV.toLocaleString();
-            const prog = Math.min(100, (lv / target) * 100);
+            document.getElementById('displayXP').innerText = xp.toLocaleString() + ' XP';
+            document.getElementById('displaySVTotal').innerText = totalSV.toLocaleString();
+            const prog = Math.min(100, (lv / char.targetLevel) * 100);
             document.getElementById('progressBar').style.width = prog + '%';
             document.getElementById('progressPercent').innerText = `${prog.toFixed(1)}% Completed`;
-            renderCalendar(); renderInventory(lv); save();
-        }
 
-        function switchView(view) {
-            document.getElementById('view-calendar').classList.toggle('hidden', view !== 'calendar');
-            document.getElementById('view-inventory').classList.toggle('hidden', view !== 'inventory');
-            document.getElementById('nav-calendar').classList.toggle('active', view === 'calendar');
-            document.getElementById('nav-inventory').classList.toggle('active', view === 'inventory');
-        }
+            renderCalendar(); renderInventory(lv);
+        };
 
-        function renderInventory(currentLv) {
-            const pkgType = PKG_CONFIG[document.getElementById('pkgSelect').value].type;
-            let inv = {}; let rares = [];
-            for(let l = 1; l <= currentLv; l++) {
-                if(REWARDS_DATA[l]) REWARDS_DATA[l].forEach(item => {
-                    if(pkgType === 'normal' && item.p) return;
-                    inv[item.n] = (inv[item.n] || 0) + item.q;
-                    if(item.rare) rares.push({...item, lv: l});
-                });
-                if(l > 100 && pkgType === 'premium') {
-                    if(l % 10 === 0) inv["Treasure Box I"] = (inv["Treasure Box I"] || 0) + 1;
-                    if(l % 20 === 0) inv["Treasure Box II"] = (inv["Treasure Box II"] || 0) + 1;
-                    if(l % 50 === 0) inv["Treasure Box III"] = (inv["Treasure Box III"] || 0) + 1;
-                }
-            }
-            document.getElementById('rareList').innerHTML = rares.map(i => `<div class="bg-white/10 p-3 rounded-2xl flex items-center justify-between border border-white/10"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-xs font-bold font-gaming">${i.lv}</div><span class="text-xs font-bold text-slate-100">${i.n}</span></div><span class="text-[10px] font-bold text-blue-400">x${i.q}</span></div>`).join('') || '<p class="text-center text-[10px] text-slate-500 italic">No rare items collected</p>';
-            const entries = Object.entries(inv).sort((a,b) => b[1] - a[1]);
-            document.getElementById('invCountTag').innerText = `${entries.length} ITEMS`;
-            document.getElementById('inventoryList').innerHTML = entries.map(([n, q]) => `<div class="item-row px-5 py-3 flex justify-between items-center"><span class="text-xs font-bold text-slate-600">${n}</span><span class="text-xs font-gaming font-bold text-slate-400">x${q.toLocaleString()}</span></div>`).join('') || '<p class="p-10 text-center text-xs text-slate-300 italic">Empty</p>';
-        }
-
-        function showSimulateConfirm() { document.getElementById('confirmSimulateModal').classList.remove('hidden'); }
-        function hideSimulateConfirm() { document.getElementById('confirmSimulateModal').classList.add('hidden'); }
-        
-        function confirmSimulate() {
-            diaryData = {};
-            let temp = new Date(EVENT_START);
-            let dayIndexTotal = 0;
-            while (temp <= EVENT_END) {
-                const ds = formatDateLocal(temp);
-                const cycleDay = dayIndexTotal % 7; // 0-6
-                
-                // Realistic sequential logic:
-                // Day 0: Amdarais(1/1), Evil(1/2), 10M
-                // Day 1: Evil(2/2) -> Finish Step 2, Tao(1/3)
-                // Day 2: Tao(2/3)
-                // Day 3: Tao(3/3) -> Finish Step 3
-                diaryData[ds] = {
-                    daily: true, zenyD: true, svLevels: 0,
-                    bossA: (cycleDay === 0),
-                    bossE: (cycleDay === 0 || cycleDay === 1),
-                    bossT: (cycleDay === 1 || cycleDay === 2 || cycleDay === 3),
-                    zenyW: (cycleDay === 0)
-                };
-                temp.setDate(temp.getDate() + 1);
-                dayIndexTotal++;
-            }
-            updateUI(); hideSimulateConfirm();
-        }
-
-        function showClearConfirm() { document.getElementById('confirmClearModal').classList.remove('hidden'); }
-        function hideClearConfirm() { document.getElementById('confirmClearModal').classList.add('hidden'); }
-        function confirmClearData() { diaryData = {}; updateUI(); hideClearConfirm(); }
-        function changeMonth(dir) { currentMonth = Math.max(1, Math.min(2, currentMonth + dir)); renderCalendar(); }
-
-        function renderCalendar() {
-            const container = document.getElementById('calendarDays');
-            document.getElementById('currentMonthLabel').innerText = ["January", "February 2026", "March 2026"][currentMonth];
+        window.renderCalendar = () => {
+            const container = document.getElementById('calendarContent');
+            const char = characters[activeCharId];
+            if (!container || !char) return;
             container.innerHTML = '';
+            document.getElementById('currentMonthLabel').innerText = ["January", "February 2026", "March 2026"][currentMonth];
             const first = new Date(2026, currentMonth, 1).getDay();
             const count = new Date(2026, currentMonth + 1, 0).getDate();
-            const today = formatDateLocal(new Date()); const anchor = getGlobalWeeklyAnchor();
+            const today = formatDateLocal(new Date()); const anchor = window.getGlobalWeeklyAnchor();
             for (let i = 0; i < first; i++) container.innerHTML += '<div class="day-card out-range"></div>';
             for (let d = 1; d <= count; d++) {
                 const dateObj = new Date(2026, currentMonth, d, 0, 0, 0, 0); const ds = formatDateLocal(dateObj);
-                let cls = (dateObj >= EVENT_START && dateObj <= EVENT_END) ? 'day-card in-range' : 'day-card out-range';
+                const isInRange = dateObj >= EVENT_START && dateObj <= EVENT_END;
+                let cls = isInRange ? 'day-card in-range' : 'day-card out-range';
                 if (ds === today) cls += ' today';
                 if (anchor) {
-                    const diffDays = Math.floor((dateObj.getTime() - anchor.getTime()) / 86400000);
-                    if (diffDays >= 0 && diffDays % 7 === 0) cls += (diffDays === 0) ? ' weekly-start' : ' weekly-reset';
+                    const diff = Math.floor((dateObj.getTime() - anchor.getTime()) / 86400000);
+                    if (diff >= 0 && diff % 7 === 0) cls += (diff === 0) ? ' weekly-start' : ' weekly-reset';
                 }
                 let dots = '';
-                if (diaryData[ds]) {
-                    const day = diaryData[ds];
+                if (char.diaryData[ds]) {
+                    const day = char.diaryData[ds];
                     if (day.daily) dots += '<div class="status-dot bg-daily"></div>';
                     if (day.zenyD) dots += '<div class="status-dot bg-zeny"></div>';
                     if (day.bossA || day.bossE || day.bossT) dots += '<div class="status-dot bg-weekly"></div>';
                     if (day.zenyW) dots += '<div class="status-dot bg-red"></div>';
                     if (day.svLevels > 0) dots += '<div class="status-dot bg-sv"></div>';
                 }
-                container.innerHTML += `<div class="${cls}" onclick="${cls.includes('in-range') ? `openDiary('${ds}')` : ''}"><span class="date-num relative z-10">${d}</span><div class="flex flex-wrap justify-center mt-1 w-full px-1">${dots}</div></div>`;
+                const cell = document.createElement('div');
+                cell.className = cls;
+                cell.innerHTML = `<span class="date-num relative z-10">${d}</span><div class="flex flex-wrap justify-center mt-1 w-full px-1">${dots}</div>`;
+                if (isInRange) cell.onclick = () => window.openDiary(ds);
+                container.appendChild(cell);
             }
-        }
+        };
 
-        function openDiary(dateStr) {
-            selectedDateStr = dateStr; const data = diaryData[dateStr] || {};
-            const cycleId = getCycleId(dateStr); const p = dateStr.split('-');
-            document.getElementById('modalDateLabel').innerText = new Date(p[0], p[1]-1, p[2]).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+        window.renderInventory = (currentLv) => {
+            const char = characters[activeCharId];
+            if (!char) return;
+            const pkgType = PKG_CONFIG[char.pkg].type;
+            let inv = {}; let rares = [];
+            Object.keys(REWARDS_DATA).map(Number).sort((a,b)=>a-b).forEach(m => {
+                if (currentLv >= m) REWARDS_DATA[m].forEach(item => {
+                    if (pkgType === 'normal' && item.p) return;
+                    inv[item.n] = (inv[item.n] || 0) + item.q;
+                    if (item.rare) rares.push({...item, lv: m});
+                });
+            });
+            for(let l = 101; l <= currentLv; l++) {
+                if (pkgType === 'premium') {
+                    if (l % 10 === 0) inv["Treasure Box I"] = (inv["Treasure Box I"] || 0) + 1;
+                    if (l % 20 === 0) inv["Treasure Box II"] = (inv["Treasure Box II"] || 0) + 1;
+                    if (l % 50 === 0) inv["Treasure Box III"] = (inv["Treasure Box III"] || 0) + 1;
+                }
+            }
+            document.getElementById('rareList').innerHTML = rares.map(i => `<div class="bg-white/10 p-3 rounded-2xl flex items-center justify-between border border-white/10"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-xs font-bold font-gaming">${i.lv}</div><span class="text-xs font-bold text-slate-100 font-kanit">${i.n}</span></div><span class="text-[10px] font-bold text-blue-400">x${i.q}</span></div>`).join('') || '<p class="text-center text-[10px] text-slate-500 italic font-kanit">ยังไม่ถึง Milestone</p>';
+            const entries = Object.entries(inv).sort((a,b) => b[1] - a[1]);
+            document.getElementById('invCountTag').innerText = `${entries.length} ITEMS`;
+            document.getElementById('inventoryList').innerHTML = entries.map(([n, q]) => `<div class="item-row px-5 py-3 flex justify-between items-center"><span class="text-xs font-bold text-slate-600 font-kanit">${n}</span><span class="text-xs font-gaming font-bold text-slate-400">x${q.toLocaleString()}</span></div>`).join('');
+        };
+
+        // --- DIARY MODAL ---
+        window.openDiary = (dateStr) => {
+            selectedDateStr = dateStr; const char = characters[activeCharId]; const data = char.diaryData[dateStr] || {};
+            const cycleId = window.getCycleId(dateStr);
             const stats = { bossA: 0, bossE: 0, bossT: 0, zenyW: 0 };
-            if (cycleId !== -1) Object.keys(diaryData).forEach(d => { if (getCycleId(d) === cycleId) {
-                if (diaryData[d].bossA) stats.bossA++; if (diaryData[d].bossE) stats.bossE++; if (diaryData[d].bossT) stats.bossT++;
-                if (diaryData[d].zenyW) stats.zenyW++;
+            if (cycleId !== -1) Object.keys(char.diaryData).forEach(d => { if (window.getCycleId(d) === cycleId) {
+                if (char.diaryData[d].bossA) stats.bossA++; if (char.diaryData[d].bossE) stats.bossE++; if (char.diaryData[d].bossT) stats.bossT++;
+                if (char.diaryData[d].zenyW) stats.zenyW++;
             }});
-            const setupWeekly = (key, quota, prevKey, prevQuota, tagId, progressId, labelId) => {
-                const check = document.getElementById(`check-${key}`); const label = document.getElementById(labelId);
-                const progress = document.getElementById(progressId); const tag = document.getElementById(tagId);
-                check.checked = data[key] || false;
-                progress.innerText = (quota > 1) ? `${stats[key]}/${quota}` : (stats[key] >= 1 ? '1/1' : '0/1');
-                if (tag) tag.innerHTML = stats[key] >= quota ? '<span class="complete-tag">DONE</span>' : '';
-                check.disabled = false; label.classList.remove('lock-overlay');
-                if (prevKey && stats[prevKey] < prevQuota) { check.disabled = true; label.classList.add('lock-overlay'); }
-                if (stats[key] >= quota && !data[key]) { check.disabled = true; label.classList.add('lock-overlay'); }
-            };
-            setupWeekly('bossA', 1, null, 0, 'tag-bossA', 'progress-bossA', 'label-bossA');
-            setupWeekly('bossE', 2, 'bossA', 1, 'tag-bossE', 'progress-bossE', 'label-bossE');
-            setupWeekly('bossT', 3, 'bossE', 2, 'tag-bossT', 'progress-bossT', 'label-bossT');
-            setupWeekly('zenyW', 1, null, 0, 'tag-zenyW', 'progress-zenyW', 'label-zenyW');
-            ['daily', 'zenyD'].forEach(id => { document.getElementById(`check-${id}`).checked = data[id] || false; });
-            document.getElementById('svLevelsInput').value = data.svLevels || 0;
-            updateSvLevels();
-            const val = PKG_CONFIG[document.getElementById('pkgSelect').value].dailyXp + ' XP';
-            document.getElementById('dailyXpText').innerText = val;
-            document.getElementById('xp-display-daily').innerText = `+${val}`;
+            const xpVal = PKG_CONFIG[char.pkg].dailyXp;
+            const p = dateStr.split('-'); document.getElementById('modalDateLabel').innerText = new Date(p[0], p[1]-1, p[2]).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('diaryModalBody').innerHTML = `
+                <div class="p-4 bg-purple-50 rounded-2xl border border-purple-100 mb-4 flex justify-between items-center"><div><p class="text-sm font-bold text-purple-900">Buy Level (SV)</p><p class="text-[10px] text-purple-500 font-bold uppercase">${(data.svLevels || 0) * 3} SV Used (+${(data.svLevels || 0) * 10} XP)</p></div><input type="number" id="svLevelsInput" value="${data.svLevels || 0}" oninput="window.updateSvLevels()" class="sv-input font-gaming"></div>
+                <div class="grid grid-cols-1 gap-2"><label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer"><div class="flex items-center gap-4"><div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-blue-600"><i class="fa-solid fa-calendar-check"></i></div><div><p class="text-sm font-bold text-slate-700">Daily Quest</p><p class="text-[10px] text-blue-500 font-bold uppercase">${xpVal} XP</p></div></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-blue-500">+${xpVal} XP</span><input type="checkbox" id="check-daily" ${data.daily ? 'checked' : ''} class="hidden" onchange="window.toggleTask('daily')"><div class="custom-checkbox"></div></div></label><label class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl cursor-pointer"><div class="flex items-center gap-4"><div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-emerald-600"><i class="fa-solid fa-coins"></i></div><div><p class="text-sm font-bold text-slate-700">Daily Zeny (1M)</p><p class="text-[10px] text-emerald-500 font-bold uppercase">30 XP</p></div></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-emerald-500">+30 XP</span><input type="checkbox" id="check-zenyD" ${data.zenyD ? 'checked' : ''} class="hidden" onchange="window.toggleTask('zenyD')"><div class="custom-checkbox"></div></div></label></div>
+                <div class="pt-4 border-t border-slate-100 mt-4"><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Weekly Progress</h4><div class="space-y-2">${renderWeeklyItem('bossA', 1, null, 0, stats, data, '1. Amdarais', 'orange')}${renderWeeklyItem('bossE', 2, 'bossA', 1, stats, data, '2. Evil Fanatic', 'orange')}${renderWeeklyItem('bossT', 3, 'bossE', 2, stats, data, '3. Tao Gunka', 'orange')}${renderWeeklyItem('zenyW', 1, null, 0, stats, data, 'ส่ง Weekly Zeny (10M)', 'rose')}</div></div>
+            `;
             document.getElementById('diaryModal').classList.remove('hidden');
             setTimeout(() => { document.getElementById('diaryModal').style.opacity = '1'; document.getElementById('diaryModal').querySelector('.modal-content').style.transform = 'translateY(0)'; }, 10);
+        };
+
+        function renderWeeklyItem(key, q, pk, pq, stats, data, label, color) {
+            const isDone = stats[key] >= q;
+            const isLocked = (pk && stats[pk] < pq) || (isDone && !data[key]);
+            const xp = key === 'zenyW' ? 40 : (key === 'bossA' ? 80 : (key === 'bossE' ? 100 : 120));
+            return `<label class="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer transition ${isLocked ? 'lock-overlay' : ''}"><div class="flex flex-col"><span class="text-xs font-bold text-slate-600">${label} ${isDone ? '<span class="complete-tag">DONE</span>' : ''}</span><span class="text-[9px] text-${color}-500 font-bold uppercase">${stats[key]}/${q}</span></div><div class="flex items-center gap-3"><span class="text-[10px] font-bold text-${color}-500">+${xp} XP</span><input type="checkbox" id="check-${key}" ${data[key] ? 'checked' : ''} ${isLocked ? 'disabled' : ''} class="hidden" onchange="window.toggleTask('${key}')"><div class="custom-checkbox"></div></div></label>`;
         }
 
-        function updateSvLevels() {
-            const lv = parseInt(document.getElementById('svLevelsInput').value) || 0;
-            document.getElementById('sv-cost-label').innerText = `${lv * 3} SV Used (+${lv * 10} XP)`;
-            if (!diaryData[selectedDateStr]) diaryData[selectedDateStr] = {};
-            diaryData[selectedDateStr].svLevels = lv;
+        window.toggleTask = (key) => { if (!characters[activeCharId].diaryData[selectedDateStr]) characters[activeCharId].diaryData[selectedDateStr] = {}; characters[activeCharId].diaryData[selectedDateStr][key] = document.getElementById(`check-${key}`).checked; updateUI(); openDiary(selectedDateStr); pushToCloud(); };
+        window.updateSvLevels = () => { if (!characters[activeCharId].diaryData[selectedDateStr]) characters[activeCharId].diaryData[selectedDateStr] = {}; characters[activeCharId].diaryData[selectedDateStr].svLevels = parseInt(document.getElementById('svLevelsInput').value) || 0; updateUI(); pushToCloud(); };
+
+        // --- NAVIGATION ---
+        window.switchView = (v) => { ['calendar', 'inventory', 'settings'].forEach(id => { document.getElementById(`view-${id}`).classList.add('hidden'); document.getElementById(`nav-${id}`).classList.remove('active'); }); document.getElementById(`view-${v}`).classList.remove('hidden'); document.getElementById(`nav-${v}`).classList.add('active'); };
+        window.showCharManager = () => { renderCharList(); document.getElementById('charManagerModal').classList.remove('hidden'); setTimeout(() => { document.getElementById('charManagerModal').style.opacity = '1'; document.getElementById('charManagerModal').querySelector('.modal-content').style.transform = 'translateY(0)'; }, 10); };
+        window.closeCharManager = () => { document.getElementById('charManagerModal').querySelector('.modal-content').style.transform = 'translateY(100%)'; document.getElementById('charManagerModal').style.opacity = '0'; setTimeout(() => document.getElementById('charManagerModal').classList.add('hidden'), 300); };
+        function renderCharList() { document.getElementById('charListContainer').innerHTML = Object.values(characters).map(c => `<div onclick="window.switchChar('${c.id}')" class="flex items-center justify-between p-4 rounded-2xl transition-all ${activeCharId === c.id ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-600'}"><div><p class="text-sm font-bold">${c.name}</p><p class="text-[8px] font-bold uppercase opacity-60">${PKG_CONFIG[c.pkg].name}</p></div><i class="fa-solid ${activeCharId === c.id ? 'fa-check-circle' : 'fa-circle-chevron-right'}"></i></div>`).join(''); }
+        window.closeModal = () => { document.getElementById('diaryModal').querySelector('.modal-content').style.transform = 'translateY(100%)'; document.getElementById('diaryModal').style.opacity = '0'; setTimeout(() => document.getElementById('diaryModal').classList.add('hidden'), 300); };
+        window.showSimulateConfirm = () => document.getElementById('confirmSimulateModal').classList.remove('hidden');
+        window.hideSimulateConfirm = () => document.getElementById('confirmSimulateModal').classList.add('hidden');
+        window.confirmSimulate = () => { const char = characters[activeCharId]; char.diaryData = {}; let temp = new Date(EVENT_START); let i = 0; while (temp <= EVENT_END) { const ds = formatDateLocal(temp); const cyc = i % 7; char.diaryData[ds] = { daily:true, zenyD:true, svLevels:0, bossA:(cyc===0), bossE:(cyc===0||cyc===1), bossT:(cyc===1||cyc===2||cyc===3), zenyW:(cyc===0) }; temp.setDate(temp.getDate() + 1); i++; } updateUI(); pushToCloud(); hideSimulateConfirm(); };
+        window.showClearConfirm = () => document.getElementById('confirmClearModal').classList.remove('hidden');
+        window.hideClearConfirm = () => document.getElementById('confirmClearModal').classList.add('hidden');
+        window.confirmClearData = () => { characters[activeCharId].diaryData = {}; updateUI(); pushToCloud(); hideClearConfirm(); };
+        window.changeMonth = (dir) => { currentMonth = Math.max(1, Math.min(2, currentMonth + dir)); renderCalendar(); };
+        window.copyUID = () => { const el = document.getElementById('userIdInput'); el.select(); document.execCommand('copy'); };
+
+        // --- INIT APP ---
+        const startApp = async () => {
             updateUI(); 
-        }
-
-        function toggleTask(key) {
-            const cb = document.getElementById(`check-${key}`); if (cb.disabled) return;
-            if (!diaryData[selectedDateStr]) diaryData[selectedDateStr] = {};
-            diaryData[selectedDateStr][key] = cb.checked;
-            openDiary(selectedDateStr); updateUI();
-        }
-
-        function closeModal() {
-            document.getElementById('diaryModal').querySelector('.modal-content').style.transform = 'translateY(100%)';
-            document.getElementById('diaryModal').style.opacity = '0';
-            setTimeout(() => document.getElementById('diaryModal').classList.add('hidden'), 300);
-        }
-        window.onload = updateUI;
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); 
+            else await signInAnonymously(auth);
+            
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    if (!machineUid) { machineUid = user.uid; localStorage.setItem('rocChronoDiary_machineUid', user.uid); }
+                    
+                    const effectiveUid = syncTargetUid || user.uid;
+                    startSyncListener(effectiveUid);
+                }
+            });
+        };
+        startApp();
     </script>
 </body>
 </html>
