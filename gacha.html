@@ -108,14 +108,12 @@
 </head>
 <body class="relative min-h-screen overflow-x-hidden selection:bg-indigo-500/30">
 
-    <!-- BG อวกาศ -->
     <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-900/40 rounded-full mix-blend-screen filter blur-[120px]"></div>
         <div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-900/30 rounded-full mix-blend-screen filter blur-[150px]"></div>
         <svg class="absolute inset-0 w-full h-full opacity-40" id="stars-container"></svg>
     </div>
 
-    <!-- แสง SSR -->
     <div id="sparkle-overlay" class="fixed inset-0 pointer-events-none z-[999] hidden items-center justify-center">
         <div class="absolute inset-0 bg-yellow-500/10 animate-pulse"></div>
         <svg class="text-yellow-300 w-40 h-40 animate-ping absolute drop-shadow-[0_0_20px_rgba(253,224,71,0.8)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/></svg>
@@ -216,20 +214,20 @@
             
             <div class="relative z-10 w-full flex flex-col items-center">
                 
-                <!-- 🎯 Header: ปรับยกไข่ขึ้น (เลยบน Aquarius แต่ไม่ต่ำเท่า Diadem) และลดช่องว่างบรรทัดชื่อ -->
-                <div class="w-full flex items-center justify-center gap-6 mb-8 mt-4 z-10 relative">
-                    <div class="w-28 h-28 shrink-0 flex items-center justify-center transform -translate-y-8">
+                <!-- 🎯 Header: ปรับเยื้องรูปไข่ขึ้นตามเงื่อนไข (เลยบน Aquarius แต่ไม่ถึงล่าง Diadem) -->
+                <div class="w-full flex items-center justify-center gap-5 mb-8 mt-4 z-10 relative">
+                    <div class="w-28 h-28 shrink-0 flex items-center justify-center transform -translate-y-4">
                         <img src="images/egg.png" class="max-w-full max-h-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
                     </div>
-                    <h1 class="text-[52px] font-black leading-[0.9] drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font text-left tracking-wide">
-                        <span class="text-yellow-400 block">AQUARIUS</span>
+                    <h1 class="text-[52px] font-black leading-tight drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font text-left tracking-wide">
+                        <span class="text-yellow-400 block -mb-2">AQUARIUS</span>
                         <span class="text-cyan-400 block">DIADEM</span>
                     </h1>
                 </div>
 
-                <!-- 🎯 สรุปดวง: ลดขนาดฟอนต์ลงมาเหลือ 32px เพื่อไม่ให้ใหญ่แข่งกับชื่อตู้ -->
+                <!-- 🎯 สรุปดวง: ลดขนาดฟอนต์ลงตามต้องการ -->
                 <div class="w-full text-center relative mb-12">
-                    <div id="tpl-luck-name" class="text-[32px] leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-4 uppercase tracking-wider">👑 ลูกรัก GM</div>
+                    <div id="tpl-luck-name" class="text-[38px] leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-4">👑 ลูกรัก GM</div>
                     <div id="tpl-fun-quote" class="text-yellow-300 font-bold text-xl italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                         "ชาตินี้ใช้ดวงหมดแล้ว!"
                     </div>
@@ -263,7 +261,7 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="mt-12 pt-4 flex justify-between items-center text-slate-400/60 text-sm font-bold uppercase tracking-widest w-full px-4 border-t border-white/10">
+                <div class="mt-12 pt-4 flex justify-between items-center text-slate-400/80 text-sm font-bold uppercase tracking-widest w-full px-4 border-t border-white/10">
                     <span class="text-cyan-400/90">#gacha_simulator</span>
                     <div class="flex items-center justify-center text-slate-300">
                         <svg width="22" height="22" class="text-red-500 mr-2 transform translate-y-[2px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
@@ -472,12 +470,13 @@
 
             const totalCost = updateCost();
             document.getElementById('tpl-luck-name').innerText = currentLuckData.tN;
-            document.getElementById('tpl-luck-name').className = `text-[32px] leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-4 ${currentLuckData.tC} uppercase tracking-widest`;
+            document.getElementById('tpl-luck-name').className = `text-[38px] leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-4 ${currentLuckData.tC}`;
             document.getElementById('tpl-fun-quote').innerText = currentLuckData.funQuote;
             document.getElementById('tpl-cost').innerText = totalCost.toLocaleString() + ' ฿';
             document.getElementById('tpl-pulls').innerText = totalPulls.toLocaleString() + ' โรล';
             document.getElementById('tpl-ssr-count').innerText = `ได้ SSR: ${currentLuckData.ssrCount.toLocaleString()} ชิ้น`;
 
+            // 🎯 สุ่มตำแหน่ง ขนาด และองศาของวงเวทมนตร์ (Randomized Patterns)
             const magicCircle = document.getElementById('share-magic-circle');
             if (magicCircle) {
                 const randomTop = Math.floor(Math.random() * 50) + 25; 
@@ -502,7 +501,8 @@
                     const s = RANK_STYLES[item.rank];
                     const textHex = item.rank === 'SSR' ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-purple-300 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]';
                     const imgGlow = item.rank === 'SSR' ? 'drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]' : 'drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]';
-                    rareHtml += `<div class="${s.shareBg} p-3 rounded-xl flex flex-col items-center text-center relative z-10 shadow-sm min-h-[130px]"><div class="absolute top-1.5 right-2 text-[15px] font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,1)] z-20">x${item.totalCount}</div><div class="w-14 h-14 mb-2 flex items-center justify-center relative z-10"><img src="${item.imgSrc}" alt="${item.name}" class="w-full h-full object-contain ${imgGlow}" crossorigin="anonymous" /></div><div class="text-[11px] font-bold text-white leading-tight px-1 drop-shadow-md w-full break-words flex-1 flex items-start justify-center">${item.name}</div><div class="text-[12px] ${textHex} font-black mt-1 uppercase tracking-widest drop-shadow-[0_0_5px_currentColor]">${item.rank}</div></div>`;
+                    // 🎯 ถอดกรอบตัวเลขไอเทมออกตามต้องการ
+                    rareHtml += `<div class="${s.shareBg} p-3 rounded-xl flex flex-col items-center text-center relative z-10 shadow-sm min-h-[130px]"><div class="absolute top-1.5 right-2 text-[14px] font-black text-white drop-shadow-[0_2px_3px_rgba(0,0,0,1)] z-20">x${item.totalCount}</div><div class="w-14 h-14 mb-2 flex items-center justify-center relative z-10"><img src="${item.imgSrc}" alt="${item.name}" class="w-full h-full object-contain ${imgGlow}" crossorigin="anonymous" /></div><div class="text-[11px] font-bold text-white leading-tight px-1 drop-shadow-md w-full break-words flex-1 flex items-start justify-center">${item.name}</div><div class="text-[12px] ${textHex} font-black mt-1 uppercase tracking-widest drop-shadow-[0_0_5px_currentColor]">${item.rank}</div></div>`;
                 });
                 if (sortedRares.length > 9) rareHtml += `<div class="col-span-3 text-center pt-6 text-slate-300 text-sm font-bold drop-shadow-md">และของแรร์อื่นๆ อีก ${sortedRares.length - 9} รายการ...</div>`;
                 rareGrid.innerHTML = rareHtml;
@@ -606,8 +606,9 @@
             
             pullTimeout = setTimeout(() => {
                 if (!fO) { ['btn-pull-1', 'btn-pull-10', 'btn-pull-until-ssr'].forEach(id => document.getElementById(id).disabled = false); document.getElementById('egg-img').classList.remove('animate-bounce'); }
+                
                 currentAnimationInterval = setInterval(() => { 
-                    if (!isAutoPulling) return;
+                    if (!isAutoPulling) return; // Guard เพื่อความชัวร์
                     autoPullCount++; 
                     const nI = generateRandomItem(); 
                     const itemWithTs = { ...nI, timestamp: Date.now() }; 
@@ -617,6 +618,7 @@
                     cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(itemWithTs)); 
                     ct.innerHTML = `กำลังสุ่มครั้งที่ <span class="text-white text-xl ml-1 mr-1">${autoPullCount}</span>`; 
                     updateCost();
+                    // 🎯 หยุดทันทีเมื่อเจอ SSR
                     if (itemWithTs.rank === 'SSR' || autoPullCount >= 5000) finishAutoPull(itemWithTs.rank === 'SSR'); 
                 }, 150); 
             }, fO ? 50 : 600);
