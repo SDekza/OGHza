@@ -163,7 +163,7 @@
                 <div class="w-full flex items-center justify-center gap-6 mb-14 mt-6 z-10 relative h-[110px]">
                     <!-- รูปไข่ล็อคความสูง 110px และสั่งไม่ให้มีช่องว่าง -->
                     <div class="h-[110px] w-[110px] shrink-0 flex items-center justify-center">
-                        <img src="images/egg.png" class="h-full w-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
+                        <img src="images/egg.png" class="h-full w-auto max-w-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
                     </div>
                     <!-- ชุดตัวหนังสือล็อคความสูง 110px ชนขอบบน-ล่าง -->
                     <div class="h-[110px] flex flex-col justify-between items-start">
@@ -233,7 +233,7 @@
                     </svg>
                 </div>
                 <div class="absolute w-40 h-40 bg-blue-500 rounded-full blur-[60px] opacity-30"></div>
-                <img id="egg-img" src="images/egg.png" alt="Egg" class="relative z-10 w-[70%] object-contain drop-shadow-[0_0_30px_rgba(59,130,246,0.4)]" />
+                <img id="egg-img" src="images/egg.png" alt="Egg" class="relative z-10 h-[70%] w-auto max-w-full object-contain drop-shadow-[0_0_30px_rgba(59,130,246,0.4)]" />
             </div>
             <div class="flex flex-col gap-3 mt-10 w-full max-w-xs px-4">
                 <div class="flex gap-3">
@@ -307,7 +307,7 @@
             { id: 'e1', name: 'Ex Def Potion', rank: 'E', qty: 5, imgSrc: 'images/25.png' },
             { id: 'e2', name: 'Kafra Card', rank: 'E', qty: 5, imgSrc: 'images/26.png' },
         ];
-        const RATES = { SSR: 0.35, SR: 1.5, R: 10.0, A: 15.0, B: 31.0, C: 21.0, E: 21.15 };
+        const RATES = { SSR: 0.5, SR: 1.5, R: 10.0, A: 15.0, B: 31.0, C: 21.0, E: 21.0 };
         const RANK_STYLES = {
             'SSR': { bg: 'bg-gradient-to-br from-yellow-100 to-amber-200 ssr-glow', border: 'border-yellow-400', text: 'text-amber-900 font-extrabold', grad: 'from-amber-400 to-yellow-600', hex: 'text-yellow-400', shareBg: 'bg-yellow-500/10 border border-yellow-500/30' },
             'SR': { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-900 font-bold', grad: 'from-purple-400 to-purple-600', hex: 'text-purple-400', shareBg: 'bg-purple-500/10 border border-purple-500/30' },
@@ -318,7 +318,7 @@
             'E': { bg: 'bg-slate-200', border: 'border-slate-400', text: 'text-slate-700 font-bold', grad: 'from-slate-400 to-slate-500' }
         };
         const RANK_POINTS = { 'SSR': 500, 'SR': 100, 'R': 20, 'A': 15, 'B': 5, 'C': 2, 'E': 1 };
-        const EXPECTED_SCORE_PER_PULL = 9.6815;
+        const EXPECTED_SCORE_PER_PULL = 10.43;
 
         let history = [], totalPulls = 0, isSpinning = false, currentAnimationInterval = null, pullTimeout = null;
         let isOverlayAnimating = false, isAutoPulling = false, autoPullCount = 0, currentLuckData = {};
@@ -345,10 +345,10 @@
             else if (luckRatio >= 0.7) { tN = '🤏 แอบเกลือ'; tD = 'SLIGHTLY SALTY'; tC = 'text-yellow-500'; funQuote = '"ได้กลิ่นเกลือโชยมาแต่ไกล..."'; } 
             else if (luckRatio >= 0.5) { tN = '🧂 เกลือ'; tD = 'SALTY'; tC = 'text-orange-400'; funQuote = '"เค็มปี๋เลยลูกพี่ ไตจะพังแล้ว!"'; } 
             else if (luckRatio >= 0.3) { tN = '🏜️ โคตรเกลือ'; tD = 'VERY SALTY'; tC = 'text-orange-600'; funQuote = '"แห้งแล้งเหลือเกิน ถอนตัวตอนนี้ยังทัน"'; } 
-            else { tN = '💀 ทะเลเดดซี'; tD = 'EXTREME SALT'; tC = 'text-red-500'; funQuote = '"สวดอภิธรรมศพกระเป๋าตังค์ ลบเกมทิ้งเถอะ"'; }
-            document.getElementById('luck-tier-name').innerText = tN; document.getElementById('luck-tier-name').className = `text-xl font-black mb-1 ${tC}`;
-            document.getElementById('luck-tier-desc').innerText = tD; document.getElementById('luck-score-text').innerText = `${luckPercent}%`;
-            document.getElementById('luck-ssr-actual').innerText = ssrCount.toLocaleString(); document.getElementById('luck-ssr-expected').innerText = (totalPulls * 0.0035).toFixed(2);
+            document.getElementById('luck-tier-name').className = `text-xl font-black mb-1 ${tC}`;
+            document.getElementById('luck-tier-desc').innerText = tD;
+            document.getElementById('luck-score-text').innerText = `${luckPercent}%`;
+            document.getElementById('luck-ssr-actual').innerText = ssrCount.toLocaleString(); document.getElementById('luck-ssr-expected').innerText = (totalPulls * 0.005).toFixed(2);
             currentLuckData = { tN, tD, tC, luckPercent, ssrCount, funQuote };
         }
 
@@ -382,6 +382,31 @@
         function closeShareModal() { document.getElementById('share-modal').classList.add('hidden'); }
         function generateRandomItem() { const rand = Math.random() * 100; let cum = 0; for (const [rank, rate] of Object.entries(RATES)) { cum += rate; if (rand <= cum) { const pos = ITEMS.filter(i => i.rank === rank); return pos[Math.floor(Math.random() * pos.length)]; } } return ITEMS[ITEMS.length - 1]; }
         
+        function startPullAnimation(pulls) {
+            currentPullsToAnimate = pulls; isOverlayAnimating = true;
+            const overlay = document.getElementById('pull-overlay'), container = document.getElementById('overlay-items-container'), actions = document.getElementById('overlay-actions'), skip = document.getElementById('overlay-skip-text');
+            container.innerHTML = ''; actions.classList.add('hidden'); skip.classList.remove('hidden'); overlay.classList.remove('hidden'); overlay.classList.add('flex');
+            let idx = 0; if (currentAnimationInterval) clearInterval(currentAnimationInterval);
+            
+            container.insertAdjacentHTML('beforeend', createOverlayItemHTML(pulls[idx])); idx++;
+            if (idx >= pulls.length) setTimeout(endAnimation, 300);
+            else { 
+                currentAnimationInterval = setInterval(() => { 
+                    if (idx >= pulls.length) { endAnimation(); return; } 
+                    container.insertAdjacentHTML('beforeend', createOverlayItemHTML(pulls[idx])); idx++; 
+                }, 150); 
+            }
+        }
+
+        function endAnimation() {
+            isOverlayAnimating = false; clearInterval(currentAnimationInterval);
+            document.getElementById('overlay-actions').classList.remove('hidden'); document.getElementById('overlay-actions').classList.add('flex'); document.getElementById('overlay-skip-text').classList.add('hidden');
+            if (isAutoPulling || currentPullsToAnimate.some(p => p.rank === 'SSR')) {
+                const spk = document.getElementById('sparkle-overlay'); spk.classList.remove('hidden'); spk.classList.add('flex');
+                setTimeout(() => { spk.classList.add('hidden'); spk.classList.remove('flex'); }, 1500);
+            }
+        }
+
         function finishAutoPull(gS) {
             isAutoPulling = false; isSpinning = false; isOverlayAnimating = false; if (pullTimeout) clearTimeout(pullTimeout); if (currentAnimationInterval) clearInterval(currentAnimationInterval);
             document.getElementById('egg-img').classList.remove('animate-bounce');
@@ -403,7 +428,14 @@
                 }
                 const lp = history.slice(-15); const cn = document.getElementById('overlay-items-container'); cn.innerHTML = ''; lp.forEach(i => cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(i)));
                 finishAutoPull(gS);
-            } else if (isOverlayAnimating) { clearInterval(currentAnimationInterval); finishAutoPull(false); }
+            } else if (isOverlayAnimating) { 
+                clearInterval(currentAnimationInterval); 
+                const cn = document.getElementById('overlay-items-container');
+                for (let i = cn.children.length; i < currentPullsToAnimate.length; i++) {
+                    cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(currentPullsToAnimate[i]));
+                }
+                endAnimation(); 
+            }
             else { if (!isSpinning) document.getElementById('pull-overlay').classList.add('hidden'); }
         }
 
@@ -414,11 +446,8 @@
             pullTimeout = setTimeout(() => {
                 history = [...nP, ...history]; totalPulls += c; isSpinning = false;
                 if (!fO) { ['btn-pull-1', 'btn-pull-10', 'btn-pull-until-ssr'].forEach(id => document.getElementById(id).disabled = false); document.getElementById('egg-img').classList.remove('animate-bounce'); }
-                const ov = document.getElementById('pull-overlay'); ov.classList.remove('hidden'); ov.classList.add('flex');
-                const cn = document.getElementById('overlay-items-container'); cn.innerHTML = ''; nP.forEach(i => cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(i)));
-                document.getElementById('overlay-actions').classList.remove('hidden'); document.getElementById('overlay-skip-text').classList.add('hidden');
                 updateCost(); updateLuckMeter(); renderInventory();
-                if (nP.some(i => i.rank === 'SSR')) { const s = document.getElementById('sparkle-overlay'); s.classList.remove('hidden'); s.classList.add('flex'); setTimeout(() => s.classList.add('hidden'), 1500); }
+                startPullAnimation(nP);
             }, fO ? 50 : 600);
         }
 
