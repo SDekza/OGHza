@@ -74,7 +74,6 @@
         }
         input[type="number"].hide-arrows { -moz-appearance: textfield; }
         
-        /* สไตล์สำหรับเทมเพลตรูปแชร์ */
         #share-template {
             width: 640px;
             height: auto;
@@ -151,7 +150,6 @@
         <h3 class="text-white text-base md:text-lg font-bold mb-4 drop-shadow-md animate-pulse">📸 กดค้างที่รูปภาพเพื่อบันทึกหรือแชร์</h3>
         
         <div class="relative w-full max-w-[320px] md:max-w-sm max-h-[70vh] rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(79,70,229,0.4)] flex justify-center items-center bg-[#090314] border border-indigo-500/50">
-            <!-- Loading Spinner -->
             <div id="share-loading" class="absolute inset-0 flex flex-col items-center justify-center bg-[#090314]/90 z-10">
                <div class="animate-spin w-10 h-10 border-4 border-fuchsia-500 border-t-transparent rounded-full mb-3"></div>
                <p class="text-fuchsia-300 text-xs font-bold mt-2 tracking-widest uppercase">GENERATING MEME...</p>
@@ -170,7 +168,6 @@
             <div class="absolute bottom-[-20%] right-[-20%] w-[80%] h-[70%] z-0 pointer-events-none" style="background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);"></div>
             <div class="absolute top-[20%] left-[20%] w-[60%] h-[60%] z-0 pointer-events-none" style="background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 60%);"></div>
 
-            <!-- 🎯 วงเวทมนตร์อวกาศ ที่พร้อมจะถูกสุ่มตำแหน่งด้วย JS -->
             <div id="share-magic-circle" class="absolute top-[35%] left-[50%] w-[110%] opacity-20 pointer-events-none text-cyan-200 z-0 transition-transform duration-0" style="transform: translate(-50%, -50%);">
                 <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.3">
                     <circle cx="50" cy="50" r="45" stroke-dasharray="2 6"/>
@@ -192,19 +189,21 @@
             
             <div class="relative z-10 w-full flex flex-col items-center">
                 
-                <!-- 🎯 Header ใหม่: ไข่ด้านซ้าย ข้อความด้านขวา -->
-                <div class="w-full flex items-center justify-center gap-6 mb-8 mt-4 z-10 relative">
-                    <img src="images/egg.png" class="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)] shrink-0" crossorigin="anonymous" />
-                    <h1 class="text-[55px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font text-left tracking-wide">
+                <!-- 🎯 Header: บังคับกล่องไข่ไม่ให้เพี้ยนด้วย shrink-0 และ flex -->
+                <div class="w-full flex items-center justify-center gap-5 mb-6 mt-4 z-10 relative">
+                    <div class="w-24 h-24 shrink-0 flex items-center justify-center">
+                        <img src="images/egg.png" class="max-w-full max-h-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
+                    </div>
+                    <h1 class="text-[52px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font text-left tracking-wide">
                         <span class="text-yellow-400 block mb-1">AQUARIUS</span>
                         <span class="text-cyan-400 block">DIADEM</span>
                     </h1>
                 </div>
 
-                <!-- สรุปดวง -->
+                <!-- 🎯 สรุปดวง: ลดขนาดฟอนต์ลงให้สมดุลขึ้น -->
                 <div class="w-full text-center relative mb-12">
-                    <div id="tpl-luck-name" class="text-[55px] leading-none font-black text-white drop-shadow-[0_5px_10px_rgba(0,0,0,1)] mb-4">👑 ลูกรัก GM</div>
-                    <div id="tpl-fun-quote" class="text-yellow-300 font-bold text-2xl italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                    <div id="tpl-luck-name" class="text-[42px] leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-3">👑 ลูกรัก GM</div>
+                    <div id="tpl-fun-quote" class="text-yellow-300 font-bold text-xl italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                         "ชาตินี้ใช้ดวงหมดแล้ว!"
                     </div>
                 </div>
@@ -236,11 +235,10 @@
                     </div>
                 </div>
 
-                <!-- Footer แก้ไขปัญหารูป YouTube เบี้ยวด้วยการดันไอคอนลงมาให้ตรงกับตัวหนังสือ -->
+                <!-- Footer -->
                 <div class="mt-12 pt-4 flex justify-between items-center text-slate-400/80 text-sm font-bold uppercase tracking-widest w-full px-4 border-t border-white/10">
-                    <span class="text-cyan-400/90">#AQUARIUS_DIADEM</span>
+                    <span class="text-cyan-400/90">#gacha_simulator</span>
                     <div class="flex items-center justify-center text-slate-300">
-                        <!-- เพิ่ม transform translate-y-[2px] เพื่อดันไอคอนลงมา 2 พิกเซล ให้ศูนย์กลางทาบกับฟอนต์พอดี -->
                         <svg width="22" height="22" class="text-red-500 mr-2 transform translate-y-[2px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                         <span>YOUTUBE: @SDEKZA-RO</span>
                     </div>
@@ -354,7 +352,7 @@
             { id: 'e2', name: '[Scroll] Kafra Card', rank: 'E', qty: 5, imgSrc: 'images/26.png' },
         ];
 
-        const RATES = { SSR: 0.5, SR: 2.0, R: 10.0, A: 15.0, B: 31.0, C: 21.0, E: 20.5 };
+        const RATES = { SSR: 0.35, SR: 1.5, R: 10.0, A: 15.0, B: 31.0, C: 21.0, E: 21.15 };
 
         // ใช้เฉพาะสำหรับการแสดงผลหน้าเว็บปกติ
         const RANK_STYLES = {
@@ -368,9 +366,10 @@
         };
 
         const RANK_POINTS = { 'SSR': 500, 'SR': 100, 'R': 20, 'A': 15, 'B': 5, 'C': 2, 'E': 1 };
-        const EXPECTED_SCORE_PER_PULL = 10.925;
+        const EXPECTED_SCORE_PER_PULL = 9.6815;
 
-        let history = [], totalPulls = 0, isSpinning = false, currentAnimationInterval = null, currentPullsToAnimate = [], isOverlayAnimating = false, isAutoPulling = false, autoPullCount = 0;
+        // 🎯 เพิ่มตัวแปร pullTimeout เข้ามาจัดการเรื่อง Race Condition
+        let history = [], totalPulls = 0, isSpinning = false, currentAnimationInterval = null, pullTimeout = null, currentPullsToAnimate = [], isOverlayAnimating = false, isAutoPulling = false, autoPullCount = 0;
         let currentLuckData = { tN: '', tD: '', tC: '', luckPercent: 0, ssrCount: 0, funQuote: '' };
 
         function preloadImages() {
@@ -429,21 +428,41 @@
             const luckPercent = (luckRatio * 100).toFixed(0);
             
             let tN, tD, tC, funQuote;
-            if (luckRatio >= 2.0) { 
-                tN = '👑 ลูกรัก GM'; tD = 'GOD LUCK!'; tC = 'text-purple-400'; 
+            if (luckRatio >= 3.0) { 
+                tN = '👼 จุติมาเกิด'; tD = 'GOD TIER!'; tC = 'text-amber-400'; 
+                funQuote = '"หล่อเท่กว่านี้ก็เทพเจ้าแล้ว!"'; 
+            } 
+            else if (luckRatio >= 2.0) { 
+                tN = '👑 ลูกรัก GM'; tD = 'GM PICKET!'; tC = 'text-purple-400'; 
                 funQuote = '"ระวังสิบล้อตอนเดินข้ามถนนด้วยนะเพื่อน!"'; 
             } 
+            else if (luckRatio >= 1.5) { 
+                tN = '🌟 โคตรเฮง'; tD = 'SUPER LUCKY!'; tC = 'text-pink-400'; 
+                funQuote = '"ของมันแรง แข่งบุญวาสนามันไม่ได้จริงๆ"'; 
+            } 
             else if (luckRatio >= 1.2) { 
-                tN = '✨ ดวงดี'; tD = 'WINNING!'; tC = 'text-blue-400'; 
+                tN = '✨ ดวงดี'; tD = 'LUCKY!'; tC = 'text-blue-400'; 
                 funQuote = '"แหมมม ทำมาเป็นขิง!"'; 
             } 
-            else if (luckRatio >= 0.8) { 
-                tN = '😐 ปกติ'; tD = 'AVERAGE'; tC = 'text-green-400'; 
-                funQuote = '"ไม่เจ็บมาก แต่ก็ไม่รวย"'; 
+            else if (luckRatio >= 1.0) { 
+                tN = '😏 คุ้มทุน'; tD = 'PROFIT!'; tC = 'text-cyan-400'; 
+                funQuote = '"กำไรเน้นๆ ไม่ขาดทุนก็บุญแล้ว"'; 
+            } 
+            else if (luckRatio >= 0.85) { 
+                tN = '😐 ปกติชน'; tD = 'AVERAGE'; tC = 'text-green-400'; 
+                funQuote = '"เรื่อยๆ มาเรียงๆ ตามมาตรฐานสถิติ"'; 
+            } 
+            else if (luckRatio >= 0.7) { 
+                tN = '🤏 แอบเกลือ'; tD = 'SLIGHTLY SALTY'; tC = 'text-yellow-500'; 
+                funQuote = '"ได้กลิ่นเกลือโชยมาแต่ไกล..."'; 
             } 
             else if (luckRatio >= 0.5) { 
                 tN = '🧂 เกลือ'; tD = 'SALTY'; tC = 'text-orange-400'; 
                 funQuote = '"เค็มปี๋เลยลูกพี่ ไตจะพังแล้ว!"'; 
+            } 
+            else if (luckRatio >= 0.3) { 
+                tN = '🏜️ โคตรเกลือ'; tD = 'VERY SALTY'; tC = 'text-orange-600'; 
+                funQuote = '"แห้งแล้งเหลือเกิน ถอนตัวตอนนี้ยังทัน"'; 
             } 
             else { 
                 tN = '💀 ทะเลเดดซี'; tD = 'EXTREME SALT'; tC = 'text-red-500'; 
@@ -455,7 +474,7 @@
             document.getElementById('luck-tier-desc').innerText = tD;
             document.getElementById('luck-score-text').innerText = `${luckPercent}%`;
             document.getElementById('luck-ssr-actual').innerText = ssrCount.toLocaleString();
-            document.getElementById('luck-ssr-expected').innerText = (totalPulls * 0.005).toFixed(2);
+            document.getElementById('luck-ssr-expected').innerText = (totalPulls * 0.0035).toFixed(2);
 
             currentLuckData = { tN, tD, tC, luckPercent, ssrCount, funQuote };
         }
@@ -480,20 +499,19 @@
 
             const totalCost = updateCost();
             document.getElementById('tpl-luck-name').innerText = currentLuckData.tN;
-            document.getElementById('tpl-luck-name').className = `text-[55px] leading-none font-black text-white drop-shadow-[0_5px_10px_rgba(0,0,0,1)] mb-4 ${currentLuckData.tC}`;
+            document.getElementById('tpl-luck-name').className = `text-[42px] leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-3 ${currentLuckData.tC}`;
             document.getElementById('tpl-fun-quote').innerText = currentLuckData.funQuote;
             document.getElementById('tpl-cost').innerText = totalCost.toLocaleString() + ' ฿';
             document.getElementById('tpl-pulls').innerText = totalPulls.toLocaleString() + ' โรล';
             document.getElementById('tpl-ssr-count').innerText = `ได้ SSR: ${currentLuckData.ssrCount.toLocaleString()} ชิ้น`;
 
-            // 🎯 ลบการใช้งานวันที่ออกไปแล้วในส่วนนี้
             // 🎯 สุ่มตำแหน่ง ขนาด และองศาของวงเวทมนตร์ ในหน้าแชร์
             const magicCircle = document.getElementById('share-magic-circle');
             if (magicCircle) {
-                const randomTop = Math.floor(Math.random() * 60) + 20; // สุ่มจุดศูนย์กลางแกน Y 20% ถึง 80%
-                const randomLeft = Math.floor(Math.random() * 60) + 20; // สุ่มจุดศูนย์กลางแกน X 20% ถึง 80%
-                const randomScale = (Math.random() * 0.6) + 0.8; // ขนาดระหว่าง 0.8 ถึง 1.4
-                const randomRotate = Math.floor(Math.random() * 360); // หมุน 0 ถึง 360 องศา
+                const randomTop = Math.floor(Math.random() * 60) + 20; 
+                const randomLeft = Math.floor(Math.random() * 60) + 20; 
+                const randomScale = (Math.random() * 0.6) + 0.8; 
+                const randomRotate = Math.floor(Math.random() * 360); 
                 
                 magicCircle.style.top = `${randomTop}%`;
                 magicCircle.style.left = `${randomLeft}%`;
@@ -525,9 +543,10 @@
                     const textHex = item.rank === 'SSR' ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'text-purple-300 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]';
                     const imgGlow = item.rank === 'SSR' ? 'drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]' : 'drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]';
                     
+                    // 🎯 ถอดกรอบตัวเลขไอเทมออกให้เหลือแต่ตัวหนังสือลอยๆ
                     rareHtml += `
                     <div class="${s.shareBg} p-3 rounded-xl flex flex-col items-center text-center relative z-10 shadow-sm min-h-[130px]">
-                        <div class="absolute top-1.5 right-1.5 text-[10px] font-black px-1.5 py-0.5 rounded-sm text-white bg-black/60 border border-white/20 z-20">x${item.totalCount}</div>
+                        <div class="absolute top-1.5 right-2 text-[14px] font-black text-white drop-shadow-[0_2px_3px_rgba(0,0,0,1)] z-20">x${item.totalCount}</div>
                         
                         <div class="w-14 h-14 mb-2 flex items-center justify-center relative z-10">
                             <img src="${item.imgSrc}" alt="${item.name}" class="w-full h-full object-contain ${imgGlow}" crossorigin="anonymous" />
@@ -600,17 +619,15 @@
             else { currentAnimationInterval = setInterval(() => { if (idx >= pulls.length) { endAnimation(); return; } container.insertAdjacentHTML('beforeend', createOverlayItemHTML(pulls[idx])); idx++; }, 200); }
         }
 
-        function endAnimation() {
-            isOverlayAnimating = false; clearInterval(currentAnimationInterval);
-            document.getElementById('overlay-actions').classList.remove('hidden'); document.getElementById('overlay-actions').classList.add('flex'); document.getElementById('overlay-skip-text').classList.add('hidden');
-            if (isAutoPulling || currentPullsToAnimate.some(p => p.rank === 'SSR')) {
-                const spk = document.getElementById('sparkle-overlay'); spk.classList.remove('hidden'); spk.classList.add('flex');
-                setTimeout(() => { spk.classList.add('hidden'); spk.classList.remove('flex'); }, 1500);
-            }
-        }
-
+        // 🎯 เคลียร์ Animation และสถานะทุกอย่างให้จบเพื่อกันบักเบรกแตก
         function finishAutoPull(gS) {
-            clearInterval(currentAnimationInterval); isSpinning = false; isOverlayAnimating = false; isAutoPulling = false;
+            if (pullTimeout) clearTimeout(pullTimeout);
+            if (currentAnimationInterval) clearInterval(currentAnimationInterval); 
+            isSpinning = false; isOverlayAnimating = false; isAutoPulling = false;
+            
+            document.getElementById('egg-img').classList.remove('animate-bounce');
+            ['btn-pull-1', 'btn-pull-10', 'btn-pull-until-ssr'].forEach(id => document.getElementById(id).disabled = false);
+
             document.getElementById('total-pulls-text').innerText = totalPulls.toLocaleString();
             updateCost();
             renderInventory(); updateLuckMeter();
@@ -625,12 +642,14 @@
             if (gS) { const spk = document.getElementById('sparkle-overlay'); spk.classList.remove('hidden'); spk.classList.add('flex'); setTimeout(() => { spk.classList.add('hidden'); spk.classList.remove('flex'); }, 1500); }
         }
 
+        // 🎯 จัดการบักกดรัวๆ (Race Condition)
         function handleOverlayClick(e) {
             if (e.target.closest('button') || e.target.closest('input')) return;
             const ov = document.getElementById('pull-overlay'), cn = document.getElementById('overlay-items-container');
             
             if (isAutoPulling) {
-                clearInterval(currentAnimationInterval); 
+                if (pullTimeout) clearTimeout(pullTimeout);
+                if (currentAnimationInterval) clearInterval(currentAnimationInterval); 
                 let gS = false;
                 
                 while (!gS && autoPullCount < 5000) {
@@ -657,13 +676,15 @@
                 finishAutoPull(gS);
                 
             } else if (isOverlayAnimating) {
-                clearInterval(currentAnimationInterval); 
+                if (currentAnimationInterval) clearInterval(currentAnimationInterval); 
                 for (let i = cn.children.length; i < currentPullsToAnimate.length; i++) {
                     cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(currentPullsToAnimate[i]));
                 }
                 endAnimation();
             } else {
-                closeOverlay();
+                if (!isSpinning) {
+                    closeOverlay();
+                }
             }
         }
 
@@ -675,7 +696,8 @@
             if (!fO) { ['btn-pull-1', 'btn-pull-10', 'btn-pull-until-ssr'].forEach(id => document.getElementById(id).disabled = true); document.getElementById('egg-img').classList.add('animate-bounce'); }
             else { document.getElementById('overlay-actions').classList.add('hidden'); document.getElementById('overlay-skip-text').classList.remove('hidden'); document.getElementById('overlay-items-container').innerHTML = ''; }
             const nP = []; for (let i = 0; i < c; i++) nP.push({ ...generateRandomItem(), timestamp: Date.now() + i });
-            setTimeout(() => {
+            
+            pullTimeout = setTimeout(() => {
                 history = [...nP, ...history]; totalPulls += c; isSpinning = false;
                 if (!fO) { ['btn-pull-1', 'btn-pull-10', 'btn-pull-until-ssr'].forEach(id => document.getElementById(id).disabled = false); document.getElementById('egg-img').classList.remove('animate-bounce'); }
                 document.getElementById('total-pulls-text').innerText = totalPulls.toLocaleString();
@@ -692,7 +714,7 @@
             ct.innerHTML = `กำลังสุ่มครั้งที่ <span class="text-white text-xl ml-1 mr-1">0</span>`; 
             cn.innerHTML = ''; ov.classList.remove('hidden'); ov.classList.add('flex');
             
-            setTimeout(() => {
+            pullTimeout = setTimeout(() => {
                 if (!fO) { ['btn-pull-1', 'btn-pull-10', 'btn-pull-until-ssr'].forEach(id => document.getElementById(id).disabled = false); document.getElementById('egg-img').classList.remove('animate-bounce'); }
                 
                 currentAnimationInterval = setInterval(() => { 
