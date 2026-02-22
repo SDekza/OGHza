@@ -372,7 +372,6 @@
             container.innerHTML = ''; actions.classList.add('hidden'); skip.classList.remove('hidden'); overlay.classList.remove('hidden'); overlay.classList.add('flex');
             let idx = 0; if (currentAnimationInterval) clearInterval(currentAnimationInterval);
             
-            // ใช้ opacity 0 เพื่อดันให้การ์ดค่อยๆ โผล่
             container.insertAdjacentHTML('beforeend', createOverlayItemHTML(pulls[idx])); idx++;
             if (idx >= pulls.length) setTimeout(endAnimation, 300);
             else { currentAnimationInterval = setInterval(() => { if (idx >= pulls.length) { endAnimation(); return; } container.insertAdjacentHTML('beforeend', createOverlayItemHTML(pulls[idx])); idx++; }, 200); }
@@ -408,7 +407,6 @@
             const ov = document.getElementById('pull-overlay'), cn = document.getElementById('overlay-items-container');
             
             if (isAutoPulling) {
-                // กรณีกด Skip ตอนกำลัง Auto Pull
                 clearInterval(currentAnimationInterval); 
                 let gS = false;
                 
@@ -423,8 +421,9 @@
                     }
                 }
                 
-                // คำนวณหาจำนวนชิ้นที่ต้องแสดงในหน้าสุดท้าย (สมจริงตาม Grid 15 ช่อง)
-                const itemsOnLastPage = autoPullCount % 15 || 15;
+                // ตรวจสอบขนาดหน้าจอว่าใช้ 12 หรือ 15 ไอเท็มใน 1 หน้า
+                const maxItemsPerPage = window.innerWidth < 768 ? 12 : 15;
+                const itemsOnLastPage = autoPullCount % maxItemsPerPage || maxItemsPerPage;
                 const lastPageItems = history.slice(-itemsOnLastPage);
                 
                 cn.innerHTML = '';
@@ -436,7 +435,6 @@
                 finishAutoPull(gS);
                 
             } else if (isOverlayAnimating) {
-                // กรณีกด Skip ตอนกำลังสุ่มปกติ
                 clearInterval(currentAnimationInterval); 
                 for (let i = cn.children.length; i < currentPullsToAnimate.length; i++) {
                     cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(currentPullsToAnimate[i]));
@@ -480,8 +478,11 @@
                     const nI = { ...generateRandomItem(), timestamp: Date.now() }; 
                     history.push(nI); totalPulls++; 
                     
-                    // เคลียร์หน้าจอทุกๆ 15 ใบ เพื่อเริ่มวางที่สล็อตที่ 1 ใหม่
-                    if (cn.children.length >= 15) {
+                    // เช็คขนาดหน้าจอว่าใช้ 12 หรือ 15 ไอเท็มในการขึ้นหน้าใหม่
+                    const maxItemsPerPage = window.innerWidth < 768 ? 12 : 15;
+                    
+                    // เคลียร์หน้าจอเมื่อเต็ม เพื่อเริ่มวางที่สล็อตที่ 1 ใหม่
+                    if (cn.children.length >= maxItemsPerPage) {
                         cn.innerHTML = '';
                     }
                     cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(nI)); 
