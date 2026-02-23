@@ -56,6 +56,14 @@
       'TLP': ['Standard']
     };
 
+    // เพิ่ม CARRIER_COLORS กลับเข้ามาแก้ไขข้อผิดพลาด
+    const CARRIER_COLORS = {
+      'SPX': 'text-orange-500 bg-orange-50 border-orange-200',
+      'J&T': 'text-red-500 bg-red-50 border-red-200',
+      'FLASH': 'text-yellow-600 bg-yellow-50 border-yellow-200',
+      'TLP': 'text-blue-500 bg-blue-50 border-blue-200'
+    };
+
     function App() {
       const [activeTab, setActiveTab] = useState('print'); // 'print', 'ship', 'jtsum', 'history', 'dashboard'
       
@@ -73,6 +81,7 @@
       const [showSuccess, setShowSuccess] = useState(false);
       
       const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+      const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
       
       // Forms State
       const [printed, setPrinted] = useState({ SPX: '', JT: '', FLASH: '', TLP: '' });
@@ -146,9 +155,13 @@
         }
       };
 
-      const handleDeleteRecord = async (id) => {
-        if(!confirm('คุณต้องการลบรายการนี้ใช่หรือไม่? ข้อมูลจะถูกลบออกจาก Google Sheets ด้วย')) return;
-        
+      const handleDeleteRequest = (id) => {
+        setDeleteConfirm({ isOpen: true, id });
+      };
+
+      const confirmDelete = async () => {
+        const id = deleteConfirm.id;
+        setDeleteConfirm({ isOpen: false, id: null });
         setIsSubmitting(true);
         try {
           const response = await fetch(WEB_APP_URL, {
@@ -391,7 +404,7 @@
                 ) : (
                   records.map(record => (
                     <div key={record.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-start gap-3 relative">
-                      <button disabled={isSubmitting} onClick={() => handleDeleteRecord(record.id)} className="absolute top-3 right-3 text-slate-300 hover:text-rose-500 p-1"><Trash2 size={16}/></button>
+                      <button disabled={isSubmitting} onClick={() => handleDeleteRequest(record.id)} className="absolute top-3 right-3 text-slate-300 hover:text-rose-500 p-1"><Trash2 size={16}/></button>
                       
                       <div className="mt-1">
                         {record.type === 'print' && <div className="bg-indigo-100 text-indigo-600 p-2 rounded-lg"><Printer size={18}/></div>}
@@ -530,6 +543,24 @@
               </button>
             </div>
           </nav>
+
+          {/* Custom Confirm Modal */}
+          {deleteConfirm.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+              <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl animate-in zoom-in-95 duration-200">
+                <div className="mx-auto w-14 h-14 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4">
+                  <Trash2 size={28} />
+                </div>
+                <h3 className="text-lg font-bold text-center text-slate-800 mb-2">ยืนยันการลบข้อมูล?</h3>
+                <p className="text-sm text-center text-slate-500 mb-6 leading-relaxed">คุณต้องการลบรายการนี้ใช่หรือไม่?<br/>ข้อมูลจะถูกลบออกจากระบบอย่างถาวร</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setDeleteConfirm({ isOpen: false, id: null })} className="flex-1 py-3.5 rounded-2xl font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">ยกเลิก</button>
+                  <button onClick={confirmDelete} className="flex-1 py-3.5 rounded-2xl font-bold text-white bg-rose-500 hover:bg-rose-600 transition-colors shadow-md shadow-rose-200">ยืนยันลบ</button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       );
     }
