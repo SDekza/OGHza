@@ -4,12 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ระบบบันทึกออเดอร์รายวัน</title>
+
+  <!-- 👇 เพิ่มชุดคำสั่งสำหรับทำ Web App ให้แสดงผลเต็มจอแบบ Native App 👇 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Daily Log">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#F8FAFC">
+  <!-- ใส่รูปไอคอนจำลองเวลา Add to home screen -->
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2964/2964098.png">
+  <!-- 👆 จบชุดคำสั่ง PWA 👆 -->
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- นำเข้า html2canvas สำหรับทำฟีเจอร์เซฟรูปภาพ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
@@ -205,17 +214,12 @@
         const missingImages = entries.some(e => e.carrier === 'J&T' && e.type === 'งานคีย์' && Number(e.shipped) > 0 && !e.imageContent);
         if (missingImages) return alert("กรุณาแนบรูปภาพสลิปสำหรับ 'งานคีย์' ให้ครบถ้วน");
         
-        // --- ฟีเจอร์: ระบบเตือนกันพลาด (Validation) ---
         let warnings = [];
         CARRIERS.forEach(c => {
-           // ยอดที่กำลังจะบันทึกตอนนี้ (ส่ง + เลิก)
            const currentShipped = entries.filter(en => en.carrier === c).reduce((sum, en) => sum + Number(en.shipped) + Number(en.cancelled), 0);
            if (currentShipped > 0) {
-               // ยอดปริ้นในอดีตของวันเดียวกัน
                const printedKey = c === 'J&T' ? 'jt' : c.toLowerCase();
                const printedSoFar = records.filter(r => r.type === 'print' && r.date === date).reduce((sum, r) => sum + (r[printedKey] || 0), 0);
-               
-               // ยอดที่เคยจัดส่งไปแล้วของวันเดียวกัน
                const shippedSoFar = records.filter(r => r.type === 'ship' && r.carrier === c && r.date === date).reduce((sum, r) => sum + r.shipped + r.cancelled, 0);
                
                if ((shippedSoFar + currentShipped) > printedSoFar) {
@@ -226,7 +230,7 @@
 
         if (warnings.length > 0) {
            if (!window.confirm(`⚠️ พบข้อมูลที่อาจผิดพลาด:\n${warnings.join('\n')}\n\nคุณแน่ใจหรือไม่ที่จะดำเนินการบันทึกต่อ?`)) {
-              return; // ยกเลิกการบันทึก
+              return; 
            }
         }
 
@@ -245,10 +249,8 @@
         if(success) setJtSummary('');
       };
 
-      // --- ฟีเจอร์: บันทึกรูปภาพ Dashboard ---
       const exportDashboard = () => {
         const el = document.getElementById('dashboard-export-area');
-        // เพิ่มคลาสชั่วคราวเพื่อปรับพื้นหลังก่อนแคป
         el.classList.add('bg-[#F8FAFC]', 'p-4'); 
         html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#F8FAFC" }).then(canvas => {
           el.classList.remove('bg-[#F8FAFC]', 'p-4');
@@ -260,7 +262,6 @@
         });
       };
 
-      // --- Dashboard Calculations (มี Filter วันที่) ---
       const summary = useMemo(() => {
         const stats = {
           printed_total: 0, printed_spx: 0, printed_jt: 0, printed_flash: 0, printed_tlp: 0, jtSummary: 0,
@@ -269,7 +270,6 @@
           returned_spx: 0, returned_jt: 0, returned_flash: 0, returned_tlp: 0,
         };
 
-        // กรองข้อมูลตามวันที่เลือก
         const filteredRecords = records.filter(r => filterDate === 'all' || r.date === filterDate);
 
         filteredRecords.forEach(r => {
@@ -303,7 +303,6 @@
       const totalCancelled = summary.cancelled_spx + summary.cancelled_jt + summary.cancelled_flash + summary.cancelled_tlp;
       const totalReturned = summary.returned_spx + summary.returned_jt + summary.returned_flash + summary.returned_tlp;
 
-      // --- ฟีเจอร์: คำนวณค้างส่ง (Pending) = ปริ้น - ส่ง - เลิก ---
       const pendingSpx = summary.printed_spx - totalSpx - summary.cancelled_spx;
       const pendingJt = summary.printed_jt - totalJt - summary.cancelled_jt;
       const pendingFlash = summary.printed_flash - summary.flash - summary.cancelled_flash;
@@ -334,7 +333,6 @@
                 <h1 className="font-semibold text-lg tracking-wide text-slate-800">Daily <span className="text-blue-500">Log</span></h1>
               </div>
               
-              {/* Sync Button */}
               <button onClick={syncData} disabled={isSyncing} className="bg-slate-50 p-2 rounded-full text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50">
                 <RefreshCw size={20} className={isSyncing ? "animate-spin text-blue-500" : ""} />
               </button>
@@ -649,3 +647,5 @@
   </script>
 </body>
 </html>
+
+
