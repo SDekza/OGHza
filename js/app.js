@@ -11,7 +11,7 @@ const RANK_STYLES = {
 const RANK_POINTS = { 'SSR': 500, 'SR': 100, 'R': 20, 'A': 15, 'B': 5, 'C': 2, 'E': 1 };
 
 let bannersList = {};
-let currentBannerId = 'aquarius'; // ตู้เริ่มต้น
+let currentBannerId = ''; 
 let currentBanner = null;
 
 let history = [], totalPulls = 0, isSpinning = false, currentAnimationInterval = null, pullTimeout = null;
@@ -20,15 +20,27 @@ let isOverlayAnimating = false, isAutoPulling = false, autoPullCount = 0, curren
 let holdTimer = null, isHolding = false;
 const HOLD_DURATION = 600;
 
-// 🎯 ฟังก์ชันเริ่มต้นแอป
+// 🎯 ฟังก์ชันเริ่มต้นแอป (อัปเกรดความฉลาด)
 async function initApp() {
     try {
         const listRes = await fetch('data/banners_list.json');
         if (!listRes.ok) throw new Error("ไม่พบไฟล์ banners_list.json");
         bannersList = await listRes.json();
         
-        if (!bannersList[currentBannerId]) {
-            currentBannerId = Object.keys(bannersList)[0];
+        // 🎯 1. เช็คว่ามี Parameter ใน URL ไหม (เช่น ?banner=time_sacred)
+        const urlParams = new URLSearchParams(window.location.search);
+        const bannerFromUrl = urlParams.get('banner');
+        
+        // 🎯 2. เช็คว่าเคยเปิดตู้ไหนไว้ล่าสุดในเครื่องนี้
+        const savedBanner = localStorage.getItem('lastGachaBanner');
+
+        // 🎯 3. ตัดสินใจว่าจะโหลดตู้ไหน
+        if (bannerFromUrl && bannersList[bannerFromUrl]) {
+            currentBannerId = bannerFromUrl; // มาจากลิงก์ที่เพื่อนแชร์มา
+        } else if (savedBanner && bannersList[savedBanner]) {
+            currentBannerId = savedBanner; // โหลดจากที่จำไว้ล่าสุด
+        } else {
+            currentBannerId = Object.keys(bannersList)[0]; // ถ้าไม่มีอะไรเลย เอาตู้แรกสุดในรายการ
         }
         
         await loadBanner(currentBannerId);
@@ -39,7 +51,7 @@ async function initApp() {
     }
 }
 
-// 🎯 ฟังก์ชันดึงข้อมูลตู้และฉีด CSS Variables
+// 🎯 ฟังก์ชันดึงข้อมูลตู้
 async function loadBanner(targetId) {
     if (isSpinning || isOverlayAnimating || isAutoPulling) return;
     
@@ -50,7 +62,13 @@ async function loadBanner(targetId) {
         currentBanner = await res.json();
         currentBannerId = targetId;
         
-        // 🎯 ฉีดสี Theme เข้าไปในหน้าเว็บ
+        // 🎯 จำตู้ลงเครื่องผู้เล่น
+        localStorage.setItem('lastGachaBanner', targetId);
+        
+        // 🎯 เปลี่ยน URL ด้านบนแบบเงียบๆ (ไม่ต้องรีเฟรชหน้า)
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?banner=' + targetId;
+        window.history.replaceState({ path: newUrl }, '', newUrl);
+        
         if (currentBanner.themeColors) {
             Object.entries(currentBanner.themeColors).forEach(([key, value]) => {
                 document.documentElement.style.setProperty(key, value);
@@ -72,7 +90,6 @@ function switchBanner(targetId) {
     loadBanner(targetId);
 }
 
-// 🎯 ปิด Dropdown เมื่อคลิกที่อื่น
 window.addEventListener('click', function(e) {
     const container = document.getElementById('banner-dropdown-container');
     const menu = document.getElementById('banner-dropdown-menu');
@@ -94,13 +111,11 @@ function updateUI() {
     document.getElementById('dropdown-current-name').innerText = bannersList[currentBannerId].name;
     renderDropdownMenu();
 
-    // อัปเดต Title
     document.getElementById('main-title-1').innerText = currentBanner.title1;
     document.getElementById('main-title-2').innerText = currentBanner.title2;
     document.getElementById('share-title-1').innerText = currentBanner.title1;
     document.getElementById('share-title-2').innerText = currentBanner.title2;
     
-    // อัปเดตรูปไข่
     document.getElementById('egg-img').src = currentBanner.eggImage;
     document.getElementById('share-egg-img').src = currentBanner.eggImage;
 }
@@ -310,7 +325,6 @@ function finishAutoPull(gS) {
     document.getElementById('egg-img').classList.remove('animate-bounce');
     document.getElementById('btn-pull-until-ssr').disabled = false;
     
-    // 🎯 อัปเดตตัวเลขหน้าเว็บหลังจาก Auto จบ
     document.getElementById('total-pulls-text').innerText = totalPulls.toLocaleString(); 
     updateCost(); 
     updateLuckMeter(); 
@@ -358,10 +372,7 @@ function pull(c, fO = false) {
         const ov = document.getElementById('pull-overlay'); ov.classList.remove('hidden'); ov.classList.add('flex');
         const cn = document.getElementById('overlay-items-container'); cn.innerHTML = ''; nP.forEach(i => cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(i)));
         document.getElementById('overlay-actions').classList.remove('hidden'); document.getElementById('overlay-skip-text').classList.add('hidden');
-        
-        // 🎯 เติมส่วนที่หายไป: อัปเดตตัวเลขจำนวนครั้งบนหน้าจอเวลาสุ่มแบบ x1 หรือ x10
         document.getElementById('total-pulls-text').innerText = totalPulls.toLocaleString();
-        
         updateCost(); updateLuckMeter(); renderInventory();
         startPullAnimation(nP);
     }, fO ? 50 : 600);
