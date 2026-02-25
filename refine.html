@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RO Classic - Chrono Equipment Refine Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+        
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            background-color: #2d1b11;
+            display: flex;
+            justify-content: center;
+            align-items: center; /* จัดให้อยู่กลางจอเวลาเป็น PC */
+            min-height: 100vh;
+            padding: 1rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* พื้นหลังที่ถูกเบลอประมาณ 30% */
+        body::before {
+            content: "";
+            position: fixed;
+            top: -2%; left: -2%; right: -2%; bottom: -2%;
+            background-image: url('images/refine/bg.png'); 
+            background-size: cover;
+            background-position: center;
+            filter: blur(6px); /* เบลอภาพ */
+            z-index: -1;
+            transform: scale(1.02); /* ขยายเล็กน้อยเพื่อไม่ให้ขอบขาวโผล่เวลาเบลอ */
+        }
+
+        /* ธีมหน้าต่าง UI สไตล์ร้านค้าอนิเมะแฟนตาซี */
+        .gacha-app-container {
+            background: rgba(20, 10, 5, 0.4); /* โปร่งแสงเพื่อเน้นเบลอ */
+            /* เอาขอบแข็งๆ ออก */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(16px); /* เบลอหนักกว่าพื้นหลัง */
+            -webkit-backdrop-filter: blur(16px);
+            width: 100%;
+            max-width: 900px; 
+            border-radius: 24px; 
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .shop-banner {
+            background: linear-gradient(to bottom, rgba(185, 28, 28, 0.7), transparent);
+            padding-bottom: 2rem;
+            /* เอาเส้นใต้แข็งๆ ออก */
+        }
+
+        .berlin-btn {
+            cursor: pointer;
+            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6));
+            border-color: #f59e0b; 
+        }
+        .berlin-btn:hover {
+            transform: scale(1.05);
+            filter: drop-shadow(0 15px 25px rgba(245, 158, 11, 0.6)); 
+        }
+        .berlin-btn:active {
+            transform: scale(0.95);
+        }
+        .berlin-disabled {
+            filter: grayscale(100%) opacity(50%);
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .item-toggle {
+            background-size: cover;
+            background-position: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            background-color: #27140c;
+        }
+        .item-off {
+            filter: grayscale(100%) brightness(0.5);
+            border-color: #5c3a21; 
+            transform: scale(0.95);
+        }
+        .item-on {
+            filter: grayscale(0%) brightness(1.1);
+            border-color: #fbbf24; 
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5), inset 0 0 10px rgba(251, 191, 36, 0.3);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        .item-disabled {
+            filter: grayscale(100%) brightness(0.3);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .ro-text-shadow { text-shadow: 2px 2px 4px rgba(0,0,0,0.9); }
+        .text-glow { text-shadow: 0 0 15px rgba(253, 230, 138, 0.8); }
+
+        .log-container { 
+            flex: 1; 
+            min-height: 200px;
+            max-height: 350px;
+            overflow-y: auto; 
+            background: rgba(0, 0, 0, 0.2); /* เปลี่ยนให้กลืนกับฉากหลัง */
+            color: #fde68a; 
+            border-radius: 12px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .log-container::-webkit-scrollbar { width: 6px; }
+        .log-container::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        .log-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        .log-container::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05); /* ขอบบางๆ กลืนๆ */
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="gacha-app-container text-amber-100">
+        
+        <!-- Top Banner / Level Display (Shop Sign) -->
+        <div class="shop-banner p-6 text-center relative overflow-hidden">
+            <div class="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-400 via-transparent to-transparent pointer-events-none"></div>
+            
+            <!-- เพิ่มปุ่ม (i) สำหรับดูตารางข้อมูล -->
+            <button onclick="openInfoModal()" class="absolute top-4 right-4 md:top-6 md:right-6 text-yellow-300 hover:text-white text-2xl transition z-20 drop-shadow-md" title="ดูข้อมูลตารางตีบวก">
+                <i class="fas fa-info-circle"></i>
+            </button>
+
+            <h2 class="text-sm text-yellow-200 font-semibold tracking-widest mb-1 z-10 relative"><i class="fas fa-gavel mr-2"></i>ระดับอุปกรณ์ปัจจุบัน</h2>
+            <div class="text-6xl font-black text-white ro-text-shadow text-glow z-10 relative" id="currentLevelDisplay">+0</div>
+        </div>
+
+        <!-- แบ่ง 2 คอลัมน์สำหรับ PC -->
+        <div class="flex flex-col md:flex-row w-full flex-1">
+            
+            <!-- LEFT COLUMN: The "Gacha" Area (Berlin Forge) -->
+            <div class="flex-1 p-6 flex flex-col items-center justify-center relative">
+                
+                <!-- Requirement Banner -->
+                <div class="bg-black/70 border border-amber-600 rounded-full px-4 py-1.5 mb-6 text-sm flex items-center shadow-lg backdrop-blur-sm">
+                    <i class="fas fa-coins text-yellow-400 mr-2"></i>
+                    <span id="reqZeny" class="text-white font-bold mr-3">100,000 Z</span>
+                    <i class="fas fa-medal text-purple-400 mr-2"></i>
+                    <span id="reqMedal" class="text-white font-bold">10 ea</span>
+                </div>
+
+                <!-- Berlin Clickable Button -->
+                <div class="relative group" id="berlinContainer">
+                    <div class="absolute inset-0 bg-orange-500 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition duration-500 pointer-events-none"></div>
+                    
+                    <div class="w-40 h-40 md:w-56 md:h-56 rounded-full border-4 bg-orange-950 flex items-center justify-center overflow-hidden berlin-btn relative z-10" id="btnBerlinGacha" onclick="refine()">
+                        <img src="images/refine/Berlin.png" alt="Tap to Refine" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/250?text=Tap+to+Refine'">
+                        
+                        <!-- Text Overlay on hover -->
+                        <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fas fa-fire text-4xl text-orange-400 mb-2 ro-text-shadow"></i>
+                            <span class="text-yellow-400 font-bold text-lg ro-text-shadow">ตีบวกอุปกรณ์!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chance Display -->
+                <div class="mt-6 text-center">
+                    <div class="text-amber-300 text-sm md:text-base">โอกาสสำเร็จในการขึ้น <span id="nextLevelText" class="font-bold text-white">+1</span></div>
+                    <div class="text-4xl md:text-5xl font-black mt-1 ro-text-shadow transition-colors" id="chanceDisplay">96%</div>
+                </div>
+
+                <!-- Modifier Toggle Buttons (Hammer & Furnace) -->
+                <div class="flex space-x-8 mt-6 w-full justify-center">
+                    <!-- God Hammer Toggle -->
+                    <div class="flex flex-col items-center">
+                        <div id="btnGodHammer" class="w-16 h-16 md:w-20 md:h-20 rounded-xl border-2 item-toggle item-off shadow-lg relative flex items-center justify-center" 
+                             style="background-image: url('images/refine/God_Hammer.png');" 
+                             onclick="toggleItem('hammer')">
+                             <i class="fas fa-hammer text-orange-900/50 text-3xl absolute -z-10"></i>
+                             <div id="hammerIndicator" class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-500 border-2 border-slate-800 transition-colors"></div>
+                        </div>
+                        <div class="text-xs md:text-sm font-bold text-amber-200 mt-2 ro-text-shadow text-center">God Hammer<br><span class="text-green-400 font-normal">+10% Success</span></div>
+                    </div>
+
+                    <!-- God Furnace Toggle -->
+                    <div class="flex flex-col items-center">
+                        <div id="btnGodFurnace" class="w-16 h-16 md:w-20 md:h-20 rounded-xl border-2 item-toggle item-off shadow-lg relative flex items-center justify-center" 
+                             style="background-image: url('images/refine/God_Furnace.png');" 
+                             onclick="toggleItem('furnace')">
+                             <i class="fas fa-fire text-orange-900/50 text-3xl absolute -z-10"></i>
+                             <div id="furnaceIndicator" class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-500 border-2 border-slate-800 transition-colors"></div>
+                        </div>
+                        <div class="text-xs md:text-sm font-bold text-amber-200 mt-2 ro-text-shadow text-center" id="furnaceText">God Furnace<br><span class="text-blue-400 font-normal" id="furnaceCostTxt">ใช้ 1 ea</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Info Panels (Stats, Log, Settings) -->
+            <div class="w-full md:w-[45%] p-5 flex flex-col">
+                
+                <!-- Tabs (Stats Summary) -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <!-- ใบเสร็จวัตถุดิบ -->
+                    <div class="panel p-3">
+                        <h3 class="text-xs md:text-sm font-bold text-amber-400 mb-2 border-b border-white/10 pb-1"><i class="fas fa-clipboard-list mr-1"></i>ใบเสร็จวัตถุดิบ</h3>
+                        <div class="space-y-1.5 text-[11px] md:text-xs">
+                            <div class="flex justify-between"><span class="text-amber-200/70">Zeny:</span> <span class="text-yellow-400 font-bold" id="totalZeny">0</span></div>
+                            <div class="flex justify-between"><span class="text-amber-200/70">Medal:</span> <span class="text-purple-400 font-bold" id="totalMedal">0</span></div>
+                            <div class="flex justify-between"><span class="text-amber-200/70">Hammer:</span> <span class="text-orange-400 font-bold" id="totalHammer">0</span></div>
+                            <div class="flex justify-between"><span class="text-amber-200/70">Furnace:</span> <span class="text-red-400 font-bold" id="totalFurnace">0</span></div>
+                            <div class="flex justify-between pt-1 border-t border-white/10 mt-1"><span class="text-green-400">รวมค่าแคช:</span> <span class="text-green-400 font-bold text-sm" id="totalBaht">0 ฿</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Settings & Tries -->
+                    <div class="flex flex-col gap-3">
+                        <div class="panel p-3 flex-1 flex flex-col justify-center text-center">
+                            <span class="text-xs text-amber-200/70">จำนวนครั้งที่ตีเหล็ก</span>
+                            <span class="text-3xl md:text-4xl font-black text-white ro-text-shadow mt-1" id="totalTry">0</span>
+                            <span class="text-[10px] text-amber-500">ครั้ง</span>
+                        </div>
+                        
+                        <div class="panel p-2">
+                            <h3 class="text-[10px] md:text-xs font-bold text-amber-400 mb-1"><i class="fas fa-coins mr-1"></i>ตั้งราคา (฿)</h3>
+                            <div class="flex space-x-1">
+                                <input type="number" id="hammerPrice" value="75" min="0" class="w-1/2 bg-black/40 border border-white/10 text-amber-100 p-1 md:p-1.5 rounded text-[10px] md:text-xs text-center outline-none focus:border-amber-500 transition" oninput="updateUI()" title="ราคา God Hammer">
+                                <input type="number" id="furnacePrice" value="75" min="0" class="w-1/2 bg-black/40 border border-white/10 text-amber-100 p-1 md:p-1.5 rounded text-[10px] md:text-xs text-center outline-none focus:border-amber-500 transition" oninput="updateUI()" title="ราคา God Furnace">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Log -->
+                <div class="flex flex-col flex-1 overflow-hidden relative">
+                    <div class="p-2.5 bg-black/30 border-b border-white/10 rounded-t-xl text-xs md:text-sm font-bold text-amber-200 flex justify-between items-center z-10">
+                        <span><i class="fas fa-scroll mr-1"></i>บันทึกการตีเหล็ก</span>
+                        <div class="flex space-x-2">
+                            <!-- ปุ่มล้างข้อมูล (Reset) ที่ทำให้มองเห็นได้ชัดเจน -->
+                            <button onclick="resetApp()" class="text-xs bg-red-900/80 hover:bg-red-700 text-red-100 px-3 py-1.5 rounded transition shadow flex items-center border border-red-500/50 font-bold">
+                                <i class="fas fa-sync-alt mr-1.5"></i>ล้างข้อมูล (Reset)
+                            </button>
+                        </div>
+                    </div>
+                    <div id="logArea" class="log-container p-3 space-y-2 text-xs md:text-sm rounded-t-none">
+                        <div class="text-white/40 text-center italic mt-4 font-medium" id="emptyLogMsg">-- บันทึกยังว่างเปล่า --</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Overlay -->
+    <div id="notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-amber-900 text-amber-100 px-6 py-3 rounded-full border-2 border-amber-600 shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center scale-95 font-medium">
+        <i id="notifIcon" class="fas fa-info-circle mr-2 text-yellow-400 text-lg"></i>
+        <span id="notifText" class="font-bold">Message</span>
+    </div>
+
+    <!-- Info Modal (หน้าต่างตารางข้อมูล) -->
+    <div id="infoModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+        <div class="bg-amber-950 border-4 border-amber-700 rounded-xl max-w-2xl w-full shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="infoModalContent">
+            <div class="bg-amber-900 border-b border-amber-700 p-4 flex justify-between items-center shadow-md">
+                <h3 class="text-lg font-bold text-yellow-400 ro-text-shadow"><i class="fas fa-table mr-2"></i>อัตราและข้อมูลการอัพเกรด</h3>
+                <button onclick="closeInfoModal()" class="text-amber-200 hover:text-white text-xl transition"><i class="fas fa-times"></i></button>
+            </div>
+            <!-- พื้นที่แสดงตารางที่สร้างจาก JavaScript -->
+            <div class="p-4 max-h-[70vh] overflow-y-auto custom-scrollbar" id="infoTableContainer">
+                
+            </div>
+            <div class="p-3 bg-amber-900/50 border-t border-amber-800 text-center">
+                <button onclick="closeInfoModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded font-bold shadow transition border border-slate-500">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio -->
+    <audio id="sfxSuccess" src="sounds/refine-success.mp3" preload="auto"></audio>
+    <audio id="sfxFail" src="sounds/refine-failed.mp3" preload="auto"></audio>
+
+<script>
+    // ==========================================
+    const refineTable = {
+        1: { chance: 96, zeny: 100000, medal: 10, furnaceReq: 0, safeLevel: 0 },
+        2: { chance: 96, zeny: 100000, medal: 15, furnaceReq: 1, safeLevel: 0 },
+        3: { chance: 96, zeny: 100000, medal: 20, furnaceReq: 1, safeLevel: 0 },
+        4: { chance: 96, zeny: 100000, medal: 25, furnaceReq: 1, safeLevel: 0 },
+        5: { chance: 70, zeny: 100000, medal: 35, furnaceReq: 0, safeLevel: 4 },
+        6: { chance: 60, zeny: 200000, medal: 45, furnaceReq: 1, safeLevel: 4 },
+        7: { chance: 50, zeny: 200000, medal: 55, furnaceReq: 1, safeLevel: 4 },
+        8: { chance: 30, zeny: 200000, medal: 75, furnaceReq: 0, safeLevel: 7 },
+        9: { chance: 30, zeny: 200000, medal: 95, furnaceReq: 1, safeLevel: 7 },
+        10: { chance: 25, zeny: 200000, medal: 115, furnaceReq: 1, safeLevel: 7 },
+        11: { chance: 25, zeny: 300000, medal: 155, furnaceReq: 0, safeLevel: 10 },
+        12: { chance: 20, zeny: 300000, medal: 195, furnaceReq: 2, safeLevel: 10 },
+        13: { chance: 20, zeny: 300000, medal: 250, furnaceReq: 2, safeLevel: 10 },
+        14: { chance: 14, zeny: 300000, medal: 250, furnaceReq: 3, safeLevel: 10 },
+        15: { chance: 14, zeny: 300000, medal: 250, furnaceReq: 3, safeLevel: 10 }
+    };
+
+    const MAX_LEVEL = 15;
+    const sfxSuccess = document.getElementById('sfxSuccess');
+    const sfxFail = document.getElementById('sfxFail');
+
+    let state = { 
+        level: 0, 
+        zeny: 0, 
+        medal: 0, 
+        hammerUsed: 0, 
+        furnaceUsed: 0, 
+        tries: 0,
+        useHammer: false,
+        useFurnace: false,
+        logHistory: [] // เก็บประวัติสำหรับตอนกดเซฟไฟล์
+    };
+
+    function playFallbackSound(isSuccess) {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            
+            if (isSuccess) {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.5);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.3);
+            }
+        } catch (e) {
+            console.log("Fallback audio failed", e);
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        const notif = document.getElementById('notification');
+        const notifText = document.getElementById('notifText');
+        const notifIcon = document.getElementById('notifIcon');
+        
+        notifText.innerText = message;
+        
+        if (type === 'error') {
+            notif.classList.replace('bg-amber-900', 'bg-red-900');
+            notif.classList.replace('border-amber-600', 'border-red-600');
+            notifIcon.className = "fas fa-exclamation-triangle mr-2 text-red-300 text-lg";
+        } else if (type === 'success') {
+            notif.classList.replace('bg-amber-900', 'bg-green-800');
+            notif.classList.replace('border-amber-600', 'border-green-500');
+            notifIcon.className = "fas fa-check-circle mr-2 text-green-300 text-lg";
+        } else {
+            // Revert back to default
+            notif.className = "fixed top-5 left-1/2 transform -translate-x-1/2 bg-amber-900 text-amber-100 px-6 py-3 rounded-full border-2 border-amber-600 shadow-2xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center scale-95 font-medium";
+            notifIcon.className = "fas fa-info-circle mr-2 text-yellow-400 text-lg";
+        }
+
+        notif.style.opacity = '1';
+        notif.style.transform = 'translate(-50%, 0) scale(1)';
+        
+        setTimeout(() => {
+            notif.style.opacity = '0';
+            notif.style.transform = 'translate(-50%, 0) scale(0.95)';
+        }, 3000);
+    }
+
+    function addLog(message, isSuccess, currentLvl, detailText) {
+        const logArea = document.getElementById('logArea');
+        const emptyMsg = document.getElementById('emptyLogMsg');
+        if(emptyMsg) emptyMsg.remove();
+
+        // บันทึกเข้าตัวแปร array สำหรับฟังก์ชัน Save Log
+        const statusStr = isSuccess ? "สำเร็จ" : "ล้มเหลว";
+        state.logHistory.unshift(`ครั้งที่ ${state.tries} | ตีบวก +${currentLvl} | ${statusStr} | ${detailText}`);
+
+        // สร้าง DOM แสดงผลในหน้าจอ
+        const logItem = document.createElement('div');
+        logItem.className = `px-2.5 py-2 rounded border-b border-white/5 flex justify-between items-center bg-black/20 hover:bg-black/40 transition`;
+        
+        const icon = isSuccess ? '<i class="fas fa-arrow-up text-green-500 mr-2"></i>' : '<i class="fas fa-level-down-alt text-red-500 mr-2"></i>';
+        const textColor = isSuccess ? 'text-green-400' : 'text-red-400';
+        
+        logItem.innerHTML = `
+            <div class="flex items-center">
+                ${icon}
+                <span class="text-amber-100 font-bold text-sm">ตีบวก <strong class="${textColor} text-base">+${currentLvl}</strong></span>
+                <span class="text-amber-200/60 ml-3 text-xs font-medium">${message}</span>
+            </div>
+            <span class="text-[10px] text-amber-200/50 bg-black/40 px-2 py-0.5 rounded font-bold">#${state.tries}</span>
+        `;
+        logArea.insertBefore(logItem, logArea.firstChild);
+    }
+
+    function toggleItem(type) {
+        if (type === 'hammer') {
+            state.useHammer = !state.useHammer;
+        } else if (type === 'furnace') {
+            const nextLevel = state.level + 1;
+            if (nextLevel <= MAX_LEVEL && refineTable[nextLevel].furnaceReq > 0) {
+                state.useFurnace = !state.useFurnace;
+            } else {
+                state.useFurnace = false; 
+                if(nextLevel <= MAX_LEVEL) showNotification("ระดับนี้ปลอดภัย ไม่จำเป็นต้องใช้เตาไฟ", "error");
+            }
+        }
+        updateUI();
+    }
+
+    function applyToggleStyles() {
+        const btnHammer = document.getElementById('btnGodHammer');
+        const indHammer = document.getElementById('hammerIndicator');
+        if (state.useHammer) {
+            btnHammer.classList.remove('item-off');
+            btnHammer.classList.add('item-on');
+            indHammer.classList.replace('bg-slate-500', 'bg-green-400');
+        } else {
+            btnHammer.classList.add('item-off');
+            btnHammer.classList.remove('item-on');
+            indHammer.classList.replace('bg-green-400', 'bg-slate-500');
+        }
+
+        const btnFurnace = document.getElementById('btnGodFurnace');
+        const indFurnace = document.getElementById('furnaceIndicator');
+        const furnaceCostTxt = document.getElementById('furnaceCostTxt');
+        
+        const nextLevel = state.level + 1;
+        const req = (nextLevel <= MAX_LEVEL) ? refineTable[nextLevel] : null;
+
+        if (req && req.furnaceReq === 0) {
+            btnFurnace.classList.add('item-disabled');
+            btnFurnace.classList.remove('item-on', 'item-off');
+            indFurnace.classList.replace('bg-blue-400', 'bg-slate-700');
+            indFurnace.classList.replace('bg-slate-500', 'bg-slate-700');
+            furnaceCostTxt.innerText = "ระดับปลอดภัย";
+            furnaceCostTxt.className = "text-slate-400 font-normal text-[10px] md:text-xs";
+        } else {
+            btnFurnace.classList.remove('item-disabled');
+            if (req) {
+                furnaceCostTxt.innerText = `ใช้ ${req.furnaceReq} ea`;
+                furnaceCostTxt.className = "text-blue-400 font-bold";
+            }
+
+            if (state.useFurnace) {
+                btnFurnace.classList.remove('item-off');
+                btnFurnace.classList.add('item-on');
+                indFurnace.classList.replace('bg-slate-500', 'bg-blue-400');
+                indFurnace.classList.replace('bg-slate-700', 'bg-blue-400');
+            } else {
+                btnFurnace.classList.add('item-off');
+                btnFurnace.classList.remove('item-on');
+                indFurnace.classList.replace('bg-blue-400', 'bg-slate-500');
+                indFurnace.classList.replace('bg-slate-700', 'bg-slate-500');
+            }
+        }
+    }
+
+    function updateRequirementText() {
+        const reqZeny = document.getElementById('reqZeny');
+        const reqMedal = document.getElementById('reqMedal');
+        const chanceDisplay = document.getElementById('chanceDisplay');
+        const nextLevelText = document.getElementById('nextLevelText');
+        const btnBerlinGacha = document.getElementById('btnBerlinGacha');
+
+        if (state.level >= MAX_LEVEL) {
+            reqZeny.innerText = "MAX";
+            reqMedal.innerText = "MAX";
+            chanceDisplay.innerText = "MAX LEVEL";
+            chanceDisplay.className = "text-4xl md:text-5xl font-black mt-1 ro-text-shadow text-yellow-400";
+            nextLevelText.innerText = "MAX";
+            
+            btnBerlinGacha.classList.add('berlin-disabled');
+            state.useHammer = false;
+            state.useFurnace = false;
+            applyToggleStyles();
+            return;
+        }
+
+        btnBerlinGacha.classList.remove('berlin-disabled');
+
+        const nextLevel = state.level + 1;
+        const req = refineTable[nextLevel];
+
+        if(req.furnaceReq === 0) state.useFurnace = false;
+
+        applyToggleStyles();
+
+        let displayChance = req.chance;
+        if (state.useHammer) displayChance += 10;
+        if (displayChance > 100) displayChance = 100;
+
+        reqZeny.innerText = `${(req.zeny/1000).toFixed(0)}k Z`; 
+        reqMedal.innerText = `${req.medal} ea`;
+        nextLevelText.innerText = `+${nextLevel}`;
+        chanceDisplay.innerText = `${displayChance}%`;
+
+        if (displayChance >= 70) chanceDisplay.className = "text-4xl md:text-5xl font-black mt-1 ro-text-shadow text-green-400";
+        else if (displayChance >= 40) chanceDisplay.className = "text-4xl md:text-5xl font-black mt-1 ro-text-shadow text-yellow-400";
+        else chanceDisplay.className = "text-4xl md:text-5xl font-black mt-1 ro-text-shadow text-red-500";
+    }
+
+    function refine() {
+        if (state.level >= MAX_LEVEL) return;
+
+        const nextLevel = state.level + 1;
+        const req = refineTable[nextLevel];
+
+        state.zeny += req.zeny;
+        state.medal += req.medal;
+        state.tries += 1;
+        if (state.useHammer) state.hammerUsed += 1;
+        if (state.useFurnace && req.furnaceReq > 0) state.furnaceUsed += req.furnaceReq;
+
+        let currentChance = req.chance;
+        if (state.useHammer) currentChance += 10;
+        if (currentChance > 100) currentChance = 100;
+
+        const roll = (Math.random() * 100).toFixed(2);
+        let logHTML = "";
+        let logRawText = "";
+        let isSuccess = false;
+        let attemptLevel = nextLevel;
+
+        const berlinBtn = document.getElementById('btnBerlinGacha');
+
+        if (roll <= currentChance) {
+            sfxSuccess.currentTime = 0;
+            let playPromise = sfxSuccess.play();
+            if (playPromise !== undefined) playPromise.catch(e => playFallbackSound(true));
+
+            state.level += 1;
+            isSuccess = true;
+            logHTML = `${currentChance}% (Roll: ${roll})`;
+            logRawText = `โอกาส ${currentChance}% สุ่มได้ ${roll}`;
+            
+            berlinBtn.style.transform = "scale(1.15)";
+            berlinBtn.style.filter = "brightness(1.5) drop-shadow(0 0 20px #4ade80)";
+            setTimeout(() => {
+                berlinBtn.style.transform = "";
+                berlinBtn.style.filter = "";
+            }, 300);
+
+            const lvlDisplay = document.getElementById('currentLevelDisplay');
+            lvlDisplay.classList.add('scale-125', 'text-yellow-200');
+            setTimeout(() => lvlDisplay.classList.remove('scale-125', 'text-yellow-200'), 300);
+
+        } else {
+            sfxFail.currentTime = 0;
+            let playPromise = sfxFail.play();
+            if (playPromise !== undefined) playPromise.catch(e => playFallbackSound(false));
+
+            isSuccess = false;
+            
+            berlinBtn.style.transform = "translateX(-10px)";
+            berlinBtn.style.filter = "grayscale(50%)";
+            setTimeout(() => berlinBtn.style.transform = "translateX(10px)", 50);
+            setTimeout(() => berlinBtn.style.transform = "translateX(-10px)", 100);
+            setTimeout(() => berlinBtn.style.transform = "translateX(10px)", 150);
+            setTimeout(() => {
+                berlinBtn.style.transform = "";
+                berlinBtn.style.filter = "";
+            }, 200);
+
+            if (state.useFurnace && req.furnaceReq > 0) {
+                logHTML = `เตาไฟทำงาน (Roll: ${roll})`;
+                logRawText = `ป้องกันลดขั้นด้วยเตาไฟ (Roll: ${roll})`;
+            } else {
+                state.level = Math.max(req.safeLevel, state.level - 1);
+                logHTML = `ลดขั้นลง (Roll: ${roll})`;
+                logRawText = `อุปกรณ์ลดขั้น (Roll: ${roll})`;
+                
+                const lvlDisplay = document.getElementById('currentLevelDisplay');
+                lvlDisplay.classList.replace('text-white', 'text-red-500');
+                setTimeout(() => lvlDisplay.classList.replace('text-red-500', 'text-white'), 400);
+            }
+        }
+
+        addLog(logHTML, isSuccess, attemptLevel, logRawText);
+        updateUI();
+    }
+
+    function openInfoModal() {
+        const modal = document.getElementById('infoModal');
+        const modalContent = document.getElementById('infoModalContent');
+        const container = document.getElementById('infoTableContainer');
+        
+        let tableHTML = `<table class="w-full text-xs md:text-sm text-left text-amber-100 border-collapse">
+            <thead>
+                <tr class="bg-amber-900 border-b border-amber-600 text-amber-400">
+                    <th class="p-2">ระดับ</th>
+                    <th class="p-2 text-center">โอกาสสำเร็จ</th>
+                    <th class="p-2 text-right">Zeny</th>
+                    <th class="p-2 text-center">Medal</th>
+                    <th class="p-2 text-center" title="จำนวน God Furnace ที่ใช้ป้องกันแตก">เตาไฟ(กันแตก)</th>
+                    <th class="p-2 text-center">จุดปลอดภัย</th>
+                </tr>
+            </thead>
+            <tbody>`;
+            
+        for (let i = 1; i <= MAX_LEVEL; i++) {
+            let r = refineTable[i];
+            
+            let safeText = '<span class="text-slate-500">-</span>';
+            if (i === 5 || i === 8 || i === 11) {
+                safeText = '<span class="text-green-400 font-bold bg-green-900/40 px-2 py-0.5 rounded">จุดปลอดภัย</span>';
+            }
+
+            tableHTML += `<tr class="border-b border-amber-900/50 hover:bg-amber-800/40 transition-colors">
+                <td class="p-2 font-bold whitespace-nowrap">+${i-1} ➔ +${i}</td>
+                <td class="p-2 text-center text-green-400 font-bold">${r.chance}%</td>
+                <td class="p-2 text-right text-yellow-400 font-mono">${r.zeny.toLocaleString()}</td>
+                <td class="p-2 text-center text-purple-400 font-bold">${r.medal}</td>
+                <td class="p-2 text-center text-red-400">${r.furnaceReq > 0 ? r.furnaceReq + ' ea' : '<span class="text-slate-500">-</span>'}</td>
+                <td class="p-2 text-center">${safeText}</td>
+            </tr>`;
+        }
+        tableHTML += `</tbody></table>`;
+        container.innerHTML = tableHTML;
+
+        // เปิด Modal
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modalContent.classList.remove('scale-95');
+    }
+
+    function closeInfoModal() {
+        const modal = document.getElementById('infoModal');
+        const modalContent = document.getElementById('infoModalContent');
+        
+        // ปิด Modal
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        modalContent.classList.add('scale-95');
+    }
+
+    function resetApp() {
+        state = { level: 0, zeny: 0, medal: 0, hammerUsed: 0, furnaceUsed: 0, tries: 0, useHammer: false, useFurnace: false, logHistory: [] };
+        document.getElementById('logArea').innerHTML = '<div class="text-white/40 text-center italic mt-4 font-medium" id="emptyLogMsg">-- บันทึกยังว่างเปล่า --</div>';
+        updateUI();
+        showNotification("รีเซ็ตอุปกรณ์และใบเสร็จแล้ว");
+    }
+
+    function updateUI() {
+        document.getElementById('currentLevelDisplay').innerText = `+${state.level}`;
+        document.getElementById('totalZeny').innerText = state.zeny.toLocaleString();
+        document.getElementById('totalMedal').innerText = state.medal.toLocaleString();
+        document.getElementById('totalHammer').innerText = state.hammerUsed.toLocaleString();
+        document.getElementById('totalFurnace').innerText = state.furnaceUsed.toLocaleString();
+        document.getElementById('totalTry').innerText = state.tries.toLocaleString();
+        
+        const hammerPrice = parseFloat(document.getElementById('hammerPrice').value) || 0;
+        const furnacePrice = parseFloat(document.getElementById('furnacePrice').value) || 0;
+        const totalBaht = (state.hammerUsed * hammerPrice) + (state.furnaceUsed * furnacePrice);
+        document.getElementById('totalBaht').innerText = `${totalBaht.toLocaleString()} ฿`;
+        
+        updateRequirementText();
+    }
+
+    // Initialize UI on load
+    updateRequirementText();
+
+</script>
+</body>
+</html>
