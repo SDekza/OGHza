@@ -58,6 +58,17 @@
         }
         .magic-glow-effect { animation: magic-glow 4s ease-in-out infinite; }
 
+        /* 🎯 แอนิเมชันใหม่สำหรับเวลากดไข่ค้าง (ชาร์จพลัง) */
+        @keyframes charge-shake {
+            0%, 100% { transform: scale(0.95) rotate(0deg); }
+            25% { transform: scale(0.95) rotate(-3deg); }
+            75% { transform: scale(0.95) rotate(3deg); }
+        }
+        .egg-charging {
+            animation: charge-shake 0.1s linear infinite;
+            filter: drop-shadow(0 0 40px rgba(250, 204, 21, 0.8)) brightness(1.2) !important;
+        }
+
         @keyframes popUp {
             0% { transform: scale(0.5); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
@@ -159,22 +170,22 @@
             
             <div class="relative z-10 w-full flex flex-col items-center">
                 
-                <!-- 🎯 Header: จัดตำแหน่งเป๊ะ ขอบไข่บน=ขอบหนังสือบน / ขอบไข่ล่าง=ขอบหนังสือล่าง -->
-                <div class="w-full flex items-center justify-center gap-7 mb-14 mt-6 z-10 relative h-[120px]">
-                    <!-- รูปไข่ล็อคความสูง 120px -->
-                    <div class="h-full shrink-0 flex items-center justify-center">
-                        <img src="images/egg.png" class="h-full w-auto object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
+                <!-- 🎯 Header: บังคับพิกเซล ขอบไข่บน=ขอบหนังสือบน / ขอบไข่ล่าง=ขอบหนังสือล่าง -->
+                <div class="w-full flex items-center justify-center gap-6 mb-14 mt-6 z-10 relative h-[110px]">
+                    <!-- รูปไข่ล็อคความสูง 110px และสั่งไม่ให้มีช่องว่าง -->
+                    <div class="h-[110px] w-[110px] shrink-0 flex items-center justify-center">
+                        <img src="images/egg.png" class="h-full w-auto max-w-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
                     </div>
-                    <!-- ชุดตัวหนังสือล็อคความสูง 120px และกระจายขอบบน-ล่าง -->
-                    <div class="h-full flex flex-col justify-between items-start py-1">
-                        <h1 class="text-[64px] font-black leading-[0.8] drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font tracking-tighter text-yellow-400">AQUARIUS</h1>
-                        <h1 class="text-[64px] font-black leading-[0.8] drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font tracking-tighter text-cyan-400">DIADEM</h1>
+                    <!-- ชุดตัวหนังสือล็อคความสูง 110px ชนขอบบน-ล่าง -->
+                    <div class="h-[110px] flex flex-col justify-between items-start">
+                        <h1 class="text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font text-yellow-400 m-0 p-0" style="margin-top: -8px;">AQUARIUS</h1>
+                        <h1 class="text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font text-cyan-400 m-0 p-0" style="margin-bottom: -10px;">DIADEM</h1>
                     </div>
                 </div>
 
                 <!-- สรุปดวง: ลดขนาดฟอนต์ฉายาลงเพื่อให้ชื่อตู้เด่นที่สุด -->
                 <div class="w-full text-center relative mb-12">
-                    <div id="tpl-luck-name" class="text-2xl font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-4 uppercase tracking-[0.3em]">👑 ลูกรัก GM</div>
+                    <div id="tpl-luck-name" class="text-[26px] leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-4 uppercase tracking-[0.3em]">👑 ลูกรัก GM</div>
                     <div id="tpl-fun-quote" class="text-yellow-300 font-bold text-xl italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"ชาตินี้ใช้ดวงหมดแล้ว!"</div>
                 </div>
 
@@ -204,7 +215,7 @@
                 <div class="mt-12 pt-6 flex justify-between items-center text-slate-400/60 text-[11px] font-bold uppercase tracking-[0.3em] w-full px-4 border-t border-white/10">
                     <span class="text-cyan-400/90">#gacha_simulator</span>
                     <div class="flex items-center justify-center text-slate-300">
-                        <svg width="18" height="18" class="text-red-500 mr-2 transform translate-y-[2px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        <svg width="18" height="18" class="text-red-500 mr-2 transform translate-y-[2.5px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                         <span>YOUTUBE: @SDEKZA-RO</span>
                     </div>
                 </div>
@@ -222,8 +233,16 @@
                 </h1>
                 <p class="text-indigo-200/80 font-bold tracking-[0.3em] uppercase text-[10px] md:text-xs text-center">Scroll Simulator</p>
             </div>
-            <div id="egg-container" class="relative flex items-center justify-center w-full max-w-[280px] aspect-square">
-                <div class="absolute inset-0 flex items-center justify-center text-blue-400 scale-[1.4] magic-glow-effect">
+            
+            <!-- 🎯 ทำให้ไข่กดได้ด้วย Pointer Events -->
+            <div id="egg-container" 
+                 class="relative flex items-center justify-center w-full max-w-[280px] aspect-square cursor-pointer transition-transform active:scale-95"
+                 style="touch-action: none; -webkit-tap-highlight-color: transparent;"
+                 onpointerdown="startHold(event)" 
+                 onpointerup="endHold(event)" 
+                 onpointerleave="cancelHold(event)" 
+                 onpointercancel="cancelHold(event)">
+                <div class="absolute inset-0 flex items-center justify-center text-blue-400 scale-[1.4] magic-glow-effect pointer-events-none">
                     <svg class="w-full h-full" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.5">
                         <g class="magic-circle" style="transform-origin: 50px 50px;"><circle cx="50" cy="50" r="48" stroke-dasharray="4 4"/></g>
                         <g class="magic-inner-dynamic" style="transform-origin: 50px 50px;">
@@ -232,18 +251,20 @@
                         </g>
                     </svg>
                 </div>
-                <div class="absolute w-40 h-40 bg-blue-500 rounded-full blur-[60px] opacity-30"></div>
-                <img id="egg-img" src="images/egg.png" alt="Egg" class="relative z-10 w-[70%] object-contain drop-shadow-[0_0_30px_rgba(59,130,246,0.4)]" />
+                <div class="absolute w-40 h-40 bg-blue-500 rounded-full blur-[60px] opacity-30 pointer-events-none"></div>
+                <!-- ถอด id-egg-img แอนิเมชันเก่าออกชั่วคราวเวลาชาร์จ -->
+                <img id="egg-img" src="images/egg.png" alt="Egg" class="relative z-10 h-[70%] w-auto max-w-full object-contain drop-shadow-[0_0_30px_rgba(59,130,246,0.4)] pointer-events-none transition-all duration-300" />
             </div>
-            <div class="flex flex-col gap-3 mt-10 w-full max-w-xs px-4">
-                <div class="flex gap-3">
-                    <button id="btn-pull-1" onclick="pull(1)" class="flex-1 rounded-xl bg-slate-800/80 border border-slate-600/50 text-white py-4 font-bold hover:bg-slate-700 transition-colors shadow-lg">
-                        <span class="text-[10px] text-slate-400 uppercase tracking-widest block mb-0.5">สุ่ม</span><span class="text-base">x 1</span>
-                    </button>
-                    <button id="btn-pull-10" onclick="pull(10)" class="flex-1 rounded-xl bg-gradient-to-b from-yellow-500 to-amber-600 border border-yellow-500/80 text-amber-950 py-4 font-black hover:scale-105 transition-transform shadow-lg">
-                        <span class="text-[10px] text-amber-900/70 uppercase tracking-widest block mb-0.5">สุ่ม</span><span class="text-base">x 10</span>
-                    </button>
-                </div>
+            
+            <!-- 🎯 ป้ายคำแนะนำการกด -->
+            <div class="mt-4 text-center select-none pointer-events-none">
+                 <p class="text-[11px] md:text-xs font-bold text-slate-300 tracking-widest uppercase bg-slate-800/50 px-4 py-2 rounded-full border border-slate-600/50 shadow-lg backdrop-blur-sm animate-pulse">
+                    👆 แตะเพื่อสุ่ม x1 <span class="mx-2 text-slate-500">|</span> กดค้างเพื่อสุ่ม x10
+                </p>
+            </div>
+
+            <!-- 🎯 เอาปุ่ม x1, x10 ออก เหลือแต่กดจนกว่าจะออก SSR -->
+            <div class="flex flex-col gap-3 mt-6 w-full max-w-xs px-4">
                 <button id="btn-pull-until-ssr" onclick="pullUntilSSR()" class="w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-700 text-white py-4 font-black text-sm uppercase hover:scale-105 transition-transform shadow-lg shadow-fuchsia-900/30">สุ่มจนกว่าจะออก SSR</button>
             </div>
         </div>
@@ -307,7 +328,7 @@
             { id: 'e1', name: 'Ex Def Potion', rank: 'E', qty: 5, imgSrc: 'images/25.png' },
             { id: 'e2', name: 'Kafra Card', rank: 'E', qty: 5, imgSrc: 'images/26.png' },
         ];
-        const RATES = { SSR: 0.35, SR: 1.5, R: 10.0, A: 15.0, B: 31.0, C: 21.0, E: 21.15 };
+        const RATES = { SSR: 0.5, SR: 1.5, R: 10.0, A: 15.0, B: 31.0, C: 21.0, E: 21.0 };
         const RANK_STYLES = {
             'SSR': { bg: 'bg-gradient-to-br from-yellow-100 to-amber-200 ssr-glow', border: 'border-yellow-400', text: 'text-amber-900 font-extrabold', grad: 'from-amber-400 to-yellow-600', hex: 'text-yellow-400', shareBg: 'bg-yellow-500/10 border border-yellow-500/30' },
             'SR': { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-900 font-bold', grad: 'from-purple-400 to-purple-600', hex: 'text-purple-400', shareBg: 'bg-purple-500/10 border border-purple-500/30' },
@@ -318,10 +339,47 @@
             'E': { bg: 'bg-slate-200', border: 'border-slate-400', text: 'text-slate-700 font-bold', grad: 'from-slate-400 to-slate-500' }
         };
         const RANK_POINTS = { 'SSR': 500, 'SR': 100, 'R': 20, 'A': 15, 'B': 5, 'C': 2, 'E': 1 };
-        const EXPECTED_SCORE_PER_PULL = 9.6815;
+        const EXPECTED_SCORE_PER_PULL = 10.43;
 
         let history = [], totalPulls = 0, isSpinning = false, currentAnimationInterval = null, pullTimeout = null;
         let isOverlayAnimating = false, isAutoPulling = false, autoPullCount = 0, currentLuckData = {};
+        
+        // 🎯 ตัวแปรสำหรับระบบกดค้าง (Press & Hold)
+        let holdTimer = null;
+        let isHolding = false;
+        const HOLD_DURATION = 600; // เวลาที่ต้องกดค้าง (มิลลิวินาที) - 0.6 วินาที
+
+        function startHold(e) {
+            if (isSpinning) return;
+            isHolding = false;
+            const egg = document.getElementById('egg-img');
+            egg.classList.add('egg-charging'); // ใส่คลาสสั่นและเรืองแสง
+            
+            holdTimer = setTimeout(() => {
+                isHolding = true;
+                egg.classList.remove('egg-charging');
+                if (navigator.vibrate) navigator.vibrate([50, 50, 100]); // สั่นมือถือเตือนว่าชาร์จเต็มแล้ว
+                pull(10); // เรียกฟังก์ชันสุ่ม 10 ครั้ง
+            }, HOLD_DURATION);
+        }
+
+        function endHold(e) {
+            if (isSpinning && !isHolding) return;
+            clearTimeout(holdTimer);
+            const egg = document.getElementById('egg-img');
+            egg.classList.remove('egg-charging');
+
+            if (!isHolding && !isSpinning) {
+                pull(1); // ถ้าปล่อยมือก่อนเวลา (Tap) ให้สุ่ม 1 ครั้ง
+            }
+            isHolding = false;
+        }
+
+        function cancelHold(e) {
+            clearTimeout(holdTimer);
+            isHolding = false;
+            document.getElementById('egg-img').classList.remove('egg-charging');
+        }
 
         function preloadImages() { ['images/egg.png', ...ITEMS.map(i => i.imgSrc)].forEach(src => { const img = new Image(); img.src = src; }); }
         function updateCost() { const price = parseFloat(document.getElementById('price-per-pull').value) || 0; const totalCost = totalPulls * price; document.getElementById('total-cost-text').innerText = totalCost.toLocaleString(); return totalCost; }
@@ -345,10 +403,10 @@
             else if (luckRatio >= 0.7) { tN = '🤏 แอบเกลือ'; tD = 'SLIGHTLY SALTY'; tC = 'text-yellow-500'; funQuote = '"ได้กลิ่นเกลือโชยมาแต่ไกล..."'; } 
             else if (luckRatio >= 0.5) { tN = '🧂 เกลือ'; tD = 'SALTY'; tC = 'text-orange-400'; funQuote = '"เค็มปี๋เลยลูกพี่ ไตจะพังแล้ว!"'; } 
             else if (luckRatio >= 0.3) { tN = '🏜️ โคตรเกลือ'; tD = 'VERY SALTY'; tC = 'text-orange-600'; funQuote = '"แห้งแล้งเหลือเกิน ถอนตัวตอนนี้ยังทัน"'; } 
-            else { tN = '💀 ทะเลเดดซี'; tD = 'EXTREME SALT'; tC = 'text-red-500'; funQuote = '"สวดอภิธรรมศพกระเป๋าตังค์ ลบเกมทิ้งเถอะ"'; }
-            document.getElementById('luck-tier-name').innerText = tN; document.getElementById('luck-tier-name').className = `text-xl font-black mb-1 ${tC}`;
-            document.getElementById('luck-tier-desc').innerText = tD; document.getElementById('luck-score-text').innerText = `${luckPercent}%`;
-            document.getElementById('luck-ssr-actual').innerText = ssrCount.toLocaleString(); document.getElementById('luck-ssr-expected').innerText = (totalPulls * 0.0035).toFixed(2);
+            document.getElementById('luck-tier-name').className = `text-xl font-black mb-1 ${tC}`;
+            document.getElementById('luck-tier-desc').innerText = tD;
+            document.getElementById('luck-score-text').innerText = `${luckPercent}%`;
+            document.getElementById('luck-ssr-actual').innerText = ssrCount.toLocaleString(); document.getElementById('luck-ssr-expected').innerText = (totalPulls * 0.005).toFixed(2);
             currentLuckData = { tN, tD, tC, luckPercent, ssrCount, funQuote };
         }
 
@@ -363,7 +421,7 @@
             modal.classList.remove('hidden'); modal.classList.add('flex'); loading.classList.remove('hidden'); resultImg.classList.add('hidden');
             const totalCost = updateCost();
             document.getElementById('tpl-luck-name').innerText = currentLuckData.tN;
-            document.getElementById('tpl-luck-name').className = `text-2xl leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-4 ${currentLuckData.tC} uppercase tracking-[0.3em]`;
+            document.getElementById('tpl-luck-name').className = `text-[26px] leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-4 ${currentLuckData.tC} uppercase tracking-[0.3em]`;
             document.getElementById('tpl-fun-quote').innerText = currentLuckData.funQuote;
             document.getElementById('tpl-cost').innerText = totalCost.toLocaleString() + ' ฿';
             document.getElementById('tpl-pulls').innerText = totalPulls.toLocaleString() + ' โรล';
@@ -382,11 +440,41 @@
         function closeShareModal() { document.getElementById('share-modal').classList.add('hidden'); }
         function generateRandomItem() { const rand = Math.random() * 100; let cum = 0; for (const [rank, rate] of Object.entries(RATES)) { cum += rate; if (rand <= cum) { const pos = ITEMS.filter(i => i.rank === rank); return pos[Math.floor(Math.random() * pos.length)]; } } return ITEMS[ITEMS.length - 1]; }
         
+        function startPullAnimation(pulls) {
+            currentPullsToAnimate = pulls; isOverlayAnimating = true;
+            const overlay = document.getElementById('pull-overlay'), container = document.getElementById('overlay-items-container'), actions = document.getElementById('overlay-actions'), skip = document.getElementById('overlay-skip-text');
+            container.innerHTML = ''; actions.classList.add('hidden'); skip.classList.remove('hidden'); overlay.classList.remove('hidden'); overlay.classList.add('flex');
+            let idx = 0; if (currentAnimationInterval) clearInterval(currentAnimationInterval);
+            
+            container.insertAdjacentHTML('beforeend', createOverlayItemHTML(pulls[idx])); idx++;
+            if (idx >= pulls.length) setTimeout(endAnimation, 300);
+            else { 
+                currentAnimationInterval = setInterval(() => { 
+                    if (idx >= pulls.length) { endAnimation(); return; } 
+                    container.insertAdjacentHTML('beforeend', createOverlayItemHTML(pulls[idx])); idx++; 
+                }, 150); 
+            }
+        }
+
+        function endAnimation() {
+            isOverlayAnimating = false; clearInterval(currentAnimationInterval);
+            document.getElementById('overlay-actions').classList.remove('hidden'); document.getElementById('overlay-actions').classList.add('flex'); document.getElementById('overlay-skip-text').classList.add('hidden');
+            if (isAutoPulling || currentPullsToAnimate.some(p => p.rank === 'SSR')) {
+                const spk = document.getElementById('sparkle-overlay'); spk.classList.remove('hidden'); spk.classList.add('flex');
+                setTimeout(() => { spk.classList.add('hidden'); spk.classList.remove('flex'); }, 1500);
+            }
+        }
+
         function finishAutoPull(gS) {
             isAutoPulling = false; isSpinning = false; isOverlayAnimating = false; if (pullTimeout) clearTimeout(pullTimeout); if (currentAnimationInterval) clearInterval(currentAnimationInterval);
             document.getElementById('egg-img').classList.remove('animate-bounce');
-            ['btn-pull-1', 'btn-pull-10', 'btn-pull-until-ssr'].forEach(id => document.getElementById(id).disabled = false);
-            document.getElementById('total-pulls-text').innerText = totalPulls.toLocaleString(); updateCost(); updateLuckMeter();
+            document.getElementById('btn-pull-until-ssr').disabled = false;
+            
+            document.getElementById('total-pulls-text').innerText = totalPulls.toLocaleString(); 
+            updateCost(); 
+            updateLuckMeter(); 
+            renderInventory(); 
+            
             const ct = document.getElementById('overlay-pull-count-text'); const pr = (autoPullCount * (parseFloat(document.getElementById('price-per-pull').value) || 0)).toLocaleString();
             ct.innerHTML = `🎉 ออก SSR ในครั้งที่ <span class="text-white text-2xl mx-1">${autoPullCount}</span><br><span class="text-xs font-normal text-slate-400">ใช้เงินไป ${pr} ฿</span>`;
             document.getElementById('overlay-actions').classList.remove('hidden'); document.getElementById('overlay-skip-text').classList.add('hidden');
@@ -396,32 +484,43 @@
         function handleOverlayClick(e) {
             if (e.target.closest('button')) return;
             if (isAutoPulling) { 
-                let gS = false; while (!gS && autoPullCount < 5000) { autoPullCount++; const nI = generateRandomItem(); history.push(nI); totalPulls++; if (nI.rank === 'SSR') gS = true; }
+                let gS = false; 
+                if (currentAnimationInterval) clearInterval(currentAnimationInterval);
+                while (!gS && autoPullCount < 5000) { 
+                    autoPullCount++; const nI = generateRandomItem(); history.push(nI); totalPulls++; if (nI.rank === 'SSR') gS = true; 
+                }
                 const lp = history.slice(-15); const cn = document.getElementById('overlay-items-container'); cn.innerHTML = ''; lp.forEach(i => cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(i)));
                 finishAutoPull(gS);
-            } else if (isOverlayAnimating) { clearInterval(currentAnimationInterval); finishAutoPull(false); }
+            } else if (isOverlayAnimating) { 
+                clearInterval(currentAnimationInterval); 
+                const cn = document.getElementById('overlay-items-container');
+                for (let i = cn.children.length; i < currentPullsToAnimate.length; i++) {
+                    cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(currentPullsToAnimate[i]));
+                }
+                endAnimation(); 
+            }
             else { if (!isSpinning) document.getElementById('pull-overlay').classList.add('hidden'); }
         }
 
         function pull(c, fO = false) {
             if (isSpinning) return; isSpinning = true; document.getElementById('overlay-pull-count-text').classList.add('hidden');
-            if (!fO) { ['btn-pull-1', 'btn-pull-10', 'btn-pull-until-ssr'].forEach(id => document.getElementById(id).disabled = true); document.getElementById('egg-img').classList.add('animate-bounce'); }
+            if (!fO) { document.getElementById('btn-pull-until-ssr').disabled = true; document.getElementById('egg-img').classList.add('animate-bounce'); }
             const nP = []; for (let i = 0; i < c; i++) nP.push(generateRandomItem());
             pullTimeout = setTimeout(() => {
                 history = [...nP, ...history]; totalPulls += c; isSpinning = false;
-                if (!fO) { ['btn-pull-1', 'btn-pull-10', 'btn-pull-until-ssr'].forEach(id => document.getElementById(id).disabled = false); document.getElementById('egg-img').classList.remove('animate-bounce'); }
+                if (!fO) { document.getElementById('btn-pull-until-ssr').disabled = false; document.getElementById('egg-img').classList.remove('animate-bounce'); }
                 const ov = document.getElementById('pull-overlay'); ov.classList.remove('hidden'); ov.classList.add('flex');
                 const cn = document.getElementById('overlay-items-container'); cn.innerHTML = ''; nP.forEach(i => cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(i)));
                 document.getElementById('overlay-actions').classList.remove('hidden'); document.getElementById('overlay-skip-text').classList.add('hidden');
-                updateCost(); updateLuckMeter();
-                if (nP.some(i => i.rank === 'SSR')) { const s = document.getElementById('sparkle-overlay'); s.classList.remove('hidden'); s.classList.add('flex'); setTimeout(() => s.classList.add('hidden'), 1500); }
+                updateCost(); updateLuckMeter(); renderInventory();
+                startPullAnimation(nP);
             }, fO ? 50 : 600);
         }
 
         function pullUntilSSR() {
             if (isSpinning) return; isSpinning = true; isAutoPulling = true; autoPullCount = 0;
             const ov = document.getElementById('pull-overlay'), cn = document.getElementById('overlay-items-container'), ct = document.getElementById('overlay-pull-count-text');
-            ['btn-pull-1', 'btn-pull-10', 'btn-pull-until-ssr'].forEach(id => document.getElementById(id).disabled = true); document.getElementById('egg-img').classList.add('animate-bounce');
+            document.getElementById('btn-pull-until-ssr').disabled = true; document.getElementById('egg-img').classList.add('animate-bounce');
             document.getElementById('overlay-actions').classList.add('hidden'); document.getElementById('overlay-skip-text').classList.remove('hidden'); 
             ct.classList.remove('hidden'); cn.innerHTML = ''; ov.classList.remove('hidden'); ov.classList.add('flex');
             currentAnimationInterval = setInterval(() => {
