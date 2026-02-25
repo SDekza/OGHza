@@ -7,144 +7,196 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
-        body { font-family: 'Kanit', sans-serif; background-color: #f3f4f6; }
-        .log-container { max-height: 200px; overflow-y: auto; }
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
         
-        /* Custom scrollbar for logs */
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            /* ใส่รูปพื้นหลังเมืองที่เจนมาไว้ที่นี่ได้เลย */
+            background-color: #1a202c;
+            background-image: url('/images/refine/prontera_bg.jpg'); 
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* ธีมหน้าต่าง UI สไตล์ RO */
+        .ro-window {
+            background: rgba(15, 23, 42, 0.85); /* สีน้ำเงินเข้มโปร่งแสง */
+            border: 2px solid #475569;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.7), inset 0 0 10px rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .ro-panel {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid #334155;
+        }
+
+        .ro-button {
+            background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
+            border: 1px solid #60a5fa;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .ro-button:hover {
+            background: linear-gradient(to bottom, #60a5fa, #2563eb);
+        }
+
+        .ro-text-shadow {
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .log-container { max-height: 250px; overflow-y: auto; }
         .log-container::-webkit-scrollbar { width: 6px; }
-        .log-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        .log-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .log-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        .log-container::-webkit-scrollbar-thumb { background: #64748b; border-radius: 4px; }
         .log-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="p-4 md:p-8 flex items-center justify-center min-h-screen">
 
-    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
-        <!-- Header -->
-        <div class="bg-blue-600 text-white p-6 text-center">
-            <h1 class="text-2xl font-bold"><i class="fas fa-hammer mr-2"></i>Chrono Pass Refine Simulator</h1>
-            <p class="text-blue-200 text-sm mt-1">จำลองการอัพเกรด Shadow Weapon / Shield & Infinity Boots</p>
+    <div class="max-w-4xl w-full ro-window rounded-xl overflow-hidden text-slate-200">
+        
+        <!-- Header & NPC Dialog -->
+        <div class="border-b border-slate-600 p-6 flex items-center space-x-5 bg-black/30">
+            <!-- ใส่รูป Berlin.gif ที่นี่ -->
+            <div class="relative w-20 h-20 rounded border-2 border-slate-500 bg-slate-800 flex-shrink-0 overflow-hidden shadow-lg">
+                <img src="/images/refine/Berlin.gif" alt="Berlin Blacksmith" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/80?text=NPC'">
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-yellow-400 ro-text-shadow tracking-wide">Berlin Blacksmith</h1>
+                <p class="text-slate-300 text-sm md:text-base mt-1 italic">"ข้าคือช่างตีเหล็กที่เก่งที่สุดในโลกนี้! เอาอุปกรณ์ของเจ้ามาสิ ข้าจะทำให้มันทรงพลังยิ่งกว่าเดิม! แต่เตรียม Zeny กับของมาให้พอด้วยล่ะ!"</p>
+            </div>
         </div>
 
         <div class="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- Left Column: Controls -->
-            <div class="space-y-6">
+            <div class="space-y-5">
                 <!-- Equipment Info -->
-                <div class="text-center p-6 bg-gray-50 rounded-xl border border-gray-200">
-                    <p class="text-gray-500 text-sm font-medium mb-1">ระดับการอัพเกรดปัจจุบัน</p>
-                    <div class="text-5xl font-bold text-blue-600" id="currentLevelDisplay">+0</div>
-                    <div class="mt-2 text-sm text-gray-600" id="nextRequirement">
+                <div class="text-center p-6 ro-panel rounded-xl shadow-inner">
+                    <p class="text-slate-400 text-sm font-medium mb-1">ระดับการอัพเกรดปัจจุบัน</p>
+                    <div class="text-5xl font-bold text-yellow-400 ro-text-shadow" id="currentLevelDisplay">+0</div>
+                    <div class="mt-3 text-sm text-slate-300 bg-black/40 py-2 px-4 rounded" id="nextRequirement">
                         (ขั้นถัดไป: โอกาส 100%, ใช้ 100,000 Zeny, 5 Medal)
                     </div>
                 </div>
 
-                <!-- Modifiers -->
+                <!-- Modifiers (Items) -->
                 <div class="space-y-3">
-                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 transition">
-                        <input type="checkbox" id="useGodHammer" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" onchange="updateRequirementText()">
-                        <span class="ml-3 flex-1">
-                            <span class="block text-sm font-semibold text-gray-900">ใช้ God Hammer</span>
-                            <span class="block text-xs text-green-600">+10% โอกาสสำเร็จ</span>
+                    <!-- God Hammer Checkbox -->
+                    <label class="flex items-center p-3 ro-panel rounded-lg cursor-pointer hover:bg-slate-700 transition border border-transparent hover:border-slate-500">
+                        <input type="checkbox" id="useGodHammer" class="w-5 h-5 text-blue-500 rounded border-slate-600 focus:ring-blue-500 focus:ring-offset-slate-800 bg-slate-800" onchange="updateRequirementText()">
+                        <!-- รูป God Hammer -->
+                        <img src="/images/refine/God_Hammer.png" alt="God Hammer" class="w-10 h-10 object-contain mx-3" onerror="this.src='https://via.placeholder.com/40?text=Hammer'">
+                        <span class="flex-1">
+                            <span class="block text-sm font-bold text-white ro-text-shadow">ใช้ God Hammer</span>
+                            <span class="block text-xs text-green-400">+10% โอกาสสำเร็จ</span>
                         </span>
                     </label>
 
-                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 transition">
-                        <input type="checkbox" id="useGodFurnace" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                        <span class="ml-3 flex-1">
-                            <span class="block text-sm font-semibold text-gray-900" id="furnaceTitle">ใช้ God Furnace</span>
-                            <span class="block text-xs text-blue-600" id="furnaceLabelText">ป้องกันการลดขั้นเมื่อล้มเหลว</span>
+                    <!-- God Furnace Checkbox -->
+                    <label class="flex items-center p-3 ro-panel rounded-lg cursor-pointer hover:bg-slate-700 transition border border-transparent hover:border-slate-500" id="furnaceContainer">
+                        <input type="checkbox" id="useGodFurnace" class="w-5 h-5 text-blue-500 rounded border-slate-600 focus:ring-blue-500 focus:ring-offset-slate-800 bg-slate-800">
+                        <!-- รูป God Furnace -->
+                        <img src="/images/refine/God_Furnace.png" alt="God Furnace" class="w-10 h-10 object-contain mx-3" onerror="this.src='https://via.placeholder.com/40?text=Furnace'">
+                        <span class="flex-1">
+                            <span class="block text-sm font-bold text-white ro-text-shadow" id="furnaceTitle">ใช้ God Furnace</span>
+                            <span class="block text-xs text-blue-300" id="furnaceLabelText">ป้องกันการลดขั้นเมื่อล้มเหลว</span>
                         </span>
                     </label>
                 </div>
 
                 <!-- Settings -->
-                <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                    <h3 class="text-sm font-bold text-gray-700 mb-3"><i class="fas fa-cog mr-2 text-gray-400"></i>ตั้งค่าราคาไอเทม (บาท)</h3>
+                <div class="ro-panel rounded-xl p-4">
+                    <h3 class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider"><i class="fas fa-store mr-2"></i>ราคา Cash Shop (บาท)</h3>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs text-gray-500 mb-1">God Hammer (บาท/ชิ้น)</label>
-                            <input type="number" id="hammerPrice" value="75" min="0" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500 outline-none transition" oninput="updateUI()">
+                            <label class="block text-xs text-slate-400 mb-1">God Hammer</label>
+                            <div class="relative">
+                                <input type="number" id="hammerPrice" value="75" min="0" class="w-full bg-slate-800 border border-slate-600 text-white p-2 rounded text-sm outline-none focus:border-blue-400 pl-8 transition" oninput="updateUI()">
+                                <span class="absolute left-2 top-2 text-slate-500 text-sm">฿</span>
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-xs text-gray-500 mb-1">God Furnace (บาท/ชิ้น)</label>
-                            <input type="number" id="furnacePrice" value="75" min="0" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500 outline-none transition" oninput="updateUI()">
+                            <label class="block text-xs text-slate-400 mb-1">God Furnace</label>
+                            <div class="relative">
+                                <input type="number" id="furnacePrice" value="75" min="0" class="w-full bg-slate-800 border border-slate-600 text-white p-2 rounded text-sm outline-none focus:border-blue-400 pl-8 transition" oninput="updateUI()">
+                                <span class="absolute left-2 top-2 text-slate-500 text-sm">฿</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Actions -->
-                <div class="space-y-3">
-                    <button id="btnRefine" onclick="refine()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform active:scale-95 flex justify-center items-center">
-                        <i class="fas fa-arrow-up mr-2"></i> ทำการอัพเกรด (Refine)
+                <div class="space-y-3 pt-2">
+                    <button id="btnRefine" onclick="refine()" class="w-full ro-button text-white font-bold py-3 px-4 rounded shadow-lg transition transform active:scale-95 flex justify-center items-center">
+                        <i class="fas fa-gavel mr-2"></i> อัพเกรดอุปกรณ์ (Refine)
                     </button>
-                    <button onclick="resetApp()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
-                        <i class="fas fa-undo mr-2"></i> รีเซ็ตข้อมูลใหม่
+                    <button onclick="resetApp()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-500 font-semibold py-2 px-4 rounded shadow-lg transition">
+                        <i class="fas fa-sync-alt mr-2"></i> รีเซ็ตข้อมูลทั้งหมด
                     </button>
                 </div>
             </div>
 
             <!-- Right Column: Stats & Logs -->
-            <div class="space-y-6 flex flex-col">
+            <div class="space-y-5 flex flex-col">
                 <!-- Summary Stats -->
-                <div class="bg-blue-50 rounded-xl p-5 border border-blue-100">
-                    <h3 class="text-sm font-bold text-blue-800 mb-3 border-b border-blue-200 pb-2"><i class="fas fa-chart-pie mr-2"></i>สรุปทรัพยากรที่ใช้ไป</h3>
-                    <div class="grid grid-cols-2 gap-3 text-sm">
-                        <div class="flex justify-between flex-col bg-white p-2 rounded shadow-sm">
-                            <span class="text-gray-500 text-xs">Zeny</span>
-                            <span class="font-bold text-gray-800" id="totalZeny">0</span>
+                <div class="ro-panel rounded-xl p-5 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-10 text-6xl"><i class="fas fa-coins"></i></div>
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 border-b border-slate-600 pb-2"><i class="fas fa-chart-pie mr-2"></i>สรุปทรัพยากรที่ใช้ไป</h3>
+                    <div class="grid grid-cols-2 gap-3 text-sm relative z-10">
+                        <div class="flex justify-between flex-col bg-slate-800/80 p-2 border border-slate-700 rounded shadow-sm">
+                            <span class="text-slate-400 text-xs">Zeny</span>
+                            <span class="font-bold text-yellow-400" id="totalZeny">0</span>
                         </div>
-                        <div class="flex justify-between flex-col bg-white p-2 rounded shadow-sm">
-                            <span class="text-gray-500 text-xs">Mysterious Medal</span>
-                            <span class="font-bold text-purple-600" id="totalMedal">0</span>
+                        <div class="flex justify-between flex-col bg-slate-800/80 p-2 border border-slate-700 rounded shadow-sm">
+                            <span class="text-slate-400 text-xs">Mysterious Medal</span>
+                            <span class="font-bold text-purple-400" id="totalMedal">0</span>
                         </div>
-                        <div class="flex justify-between flex-col bg-white p-2 rounded shadow-sm">
-                            <span class="text-gray-500 text-xs">God Hammer</span>
-                            <span class="font-bold text-orange-500" id="totalHammer">0</span>
+                        <div class="flex justify-between flex-col bg-slate-800/80 p-2 border border-slate-700 rounded shadow-sm">
+                            <span class="text-slate-400 text-xs flex items-center"><img src="/images/refine/God_Hammer.png" class="w-4 h-4 mr-1 hidden md:block" onerror="this.style.display='none'">God Hammer</span>
+                            <span class="font-bold text-orange-400" id="totalHammer">0</span>
                         </div>
-                        <div class="flex justify-between flex-col bg-white p-2 rounded shadow-sm">
-                            <span class="text-gray-500 text-xs">God Furnace</span>
-                            <span class="font-bold text-red-500" id="totalFurnace">0</span>
+                        <div class="flex justify-between flex-col bg-slate-800/80 p-2 border border-slate-700 rounded shadow-sm">
+                            <span class="text-slate-400 text-xs flex items-center"><img src="/images/refine/God_Furnace.png" class="w-4 h-4 mr-1 hidden md:block" onerror="this.style.display='none'">God Furnace</span>
+                            <span class="font-bold text-red-400" id="totalFurnace">0</span>
                         </div>
-                        <div class="flex justify-between flex-col bg-green-50 p-3 rounded shadow-sm border border-green-200 col-span-2">
-                            <span class="text-green-700 text-xs font-bold">รวมค่าใช้จ่ายไอเทมแคช (บาท)</span>
-                            <span class="font-bold text-green-600 text-xl" id="totalBaht">0 ฿</span>
+                        <div class="flex justify-between flex-col bg-green-900/40 p-3 rounded shadow-sm border border-green-700/50 col-span-2">
+                            <span class="text-green-400 text-xs font-bold">รวมค่าใช้จ่าย Cash Shop (บาท)</span>
+                            <span class="font-bold text-green-400 text-xl" id="totalBaht">0 ฿</span>
                         </div>
-                        <div class="flex justify-between flex-col bg-white p-2 rounded shadow-sm col-span-2">
-                            <span class="text-gray-500 text-xs">จำนวนครั้งที่พยายามทั้งหมด</span>
-                            <span class="font-bold text-blue-600 text-lg" id="totalTry">0 ครั้ง</span>
+                        <div class="flex justify-between flex-col bg-blue-900/30 p-2 rounded shadow-sm border border-blue-800/50 col-span-2">
+                            <span class="text-blue-300 text-xs">จำนวนครั้งที่ตีบวกทั้งหมด</span>
+                            <span class="font-bold text-white text-lg" id="totalTry">0 ครั้ง</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Activity Log -->
-                <div class="bg-gray-50 rounded-xl p-0 border border-gray-200 flex-1 flex flex-col overflow-hidden">
-                    <div class="p-3 bg-gray-100 border-b border-gray-200 text-sm font-bold text-gray-700">
-                        <i class="fas fa-list-ul mr-2"></i>ประวัติการตีบวก
+                <div class="ro-panel rounded-xl flex-1 flex flex-col overflow-hidden">
+                    <div class="p-3 bg-black/40 border-b border-slate-600 text-sm font-bold text-slate-300">
+                        <i class="fas fa-scroll mr-2"></i>ประวัติการตีบวก (System Log)
                     </div>
-                    <div id="logArea" class="log-container p-3 space-y-2 text-sm flex-1 bg-white">
-                        <div class="text-gray-400 text-center italic mt-4">ยังไม่มีประวัติการตีบวก</div>
+                    <div id="logArea" class="log-container p-3 space-y-2 text-sm flex-1 bg-slate-900/50">
+                        <div class="text-slate-500 text-center italic mt-4">-- ยังไม่มีประวัติ --</div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- User Note -->
-        <div class="bg-blue-50 p-4 border-t border-blue-200 text-xs text-blue-800 text-center">
-            <strong>หมายเหตุ:</strong> อัตราความสำเร็จ ข้อมูลทรัพยากร และระบบ Safe Point อัปเดตตามตารางกิจกรรมของเซิร์ฟเวอร์เรียบร้อยแล้ว!
-        </div>
     </div>
 
-    <!-- Notification Overlay (Instead of alert) -->
-    <div id="notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50 flex items-center">
-        <i id="notifIcon" class="fas fa-info-circle mr-2"></i>
+    <!-- Notification Overlay -->
+    <div id="notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded border border-slate-600 shadow-2xl transition-opacity duration-300 opacity-0 pointer-events-none z-50 flex items-center">
+        <i id="notifIcon" class="fas fa-info-circle mr-2 text-yellow-400"></i>
         <span id="notifText">Message</span>
     </div>
 
+    <!-- Audio -->
+    <audio id="sfxSuccess" src="https://www.myinstants.com/media/sounds/ro-refine-11484.mp3" preload="auto"></audio>
+    <audio id="sfxFail" src="https://www.myinstants.com/media/sounds/ro-refine-failed-38779.mp3" preload="auto"></audio>
+
 <script>
-    // ==========================================
-    // ตารางข้อมูลการตีบวก (แก้ไขตัวเลขจริงที่นี่)
-    // chance = โอกาสสำเร็จ (%), zeny = จำนวน Zeny, medal = จำนวน Mysterious Medal
     // ==========================================
     const refineTable = {
         1: { chance: 96, zeny: 100000, medal: 10, furnaceReq: 0, safeLevel: 0 },
@@ -165,78 +217,78 @@
     };
 
     const MAX_LEVEL = 15;
-    
-    // โหลดเสียง Effect
-    const sfxSuccess = new Audio('https://www.myinstants.com/media/sounds/ro-refine-11484.mp3');
-    const sfxFail = new Audio('https://www.myinstants.com/media/sounds/ro-refine-failed-38779.mp3');
+    const sfxSuccess = document.getElementById('sfxSuccess');
+    const sfxFail = document.getElementById('sfxFail');
 
-    let state = {
-        level: 0,
-        zeny: 0,
-        medal: 0,
-        hammer: 0,
-        furnace: 0,
-        tries: 0
-    };
+    function playFallbackSound(isSuccess) {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            
+            if (isSuccess) {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.5);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.3);
+            }
+        } catch (e) {
+            console.log("Fallback audio failed", e);
+        }
+    }
 
-    // แสดงข้อความแจ้งเตือน (แทน alert)
+    let state = { level: 0, zeny: 0, medal: 0, hammer: 0, furnace: 0, tries: 0 };
+
     function showNotification(message, type = 'info') {
         const notif = document.getElementById('notification');
         const notifText = document.getElementById('notifText');
         const notifIcon = document.getElementById('notifIcon');
         
         notifText.innerText = message;
-        
-        if(type === 'error') {
-            notif.className = "fixed top-5 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-full shadow-lg transition-opacity duration-300 z-50 flex items-center";
-            notifIcon.className = "fas fa-exclamation-triangle mr-2";
-        } else {
-            notif.className = "fixed top-5 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg transition-opacity duration-300 z-50 flex items-center";
-            notifIcon.className = "fas fa-info-circle mr-2";
-        }
-
+        notifIcon.className = type === 'error' ? "fas fa-exclamation-triangle mr-2 text-red-500" : "fas fa-info-circle mr-2 text-yellow-400";
         notif.style.opacity = '1';
-        
-        setTimeout(() => {
-            notif.style.opacity = '0';
-        }, 3000);
+        setTimeout(() => notif.style.opacity = '0', 3000);
     }
 
-    // เพิ่ม Log
     function addLog(message, isSuccess, currentLvl) {
         const logArea = document.getElementById('logArea');
-        
-        // เอาข้อความ "ยังไม่มีประวัติ" ออกถ้ามี
-        if(state.tries === 1) {
-            logArea.innerHTML = '';
-        }
+        if(state.tries === 1) logArea.innerHTML = '';
 
         const logItem = document.createElement('div');
-        logItem.className = `p-2 rounded border-l-4 ${isSuccess ? 'bg-green-50 border-green-500 text-green-700' : 'bg-red-50 border-red-500 text-red-700'}`;
+        logItem.className = `p-2 rounded border-l-4 bg-slate-800 ${isSuccess ? 'border-green-500' : 'border-red-500'}`;
         
-        const icon = isSuccess ? '<i class="fas fa-check-circle mr-1"></i>' : '<i class="fas fa-times-circle mr-1"></i>';
+        const icon = isSuccess ? '<i class="fas fa-arrow-up text-green-400 mr-1"></i>' : '<i class="fas fa-level-down-alt text-red-400 mr-1"></i>';
         
         logItem.innerHTML = `
-            <div class="flex justify-between items-center">
-                <span>${icon} ตีบวก <strong>+${currentLvl}</strong></span>
-                <span class="text-xs text-gray-500">ครั้งที่ ${state.tries}</span>
+            <div class="flex justify-between items-center text-slate-200">
+                <span>${icon} อัพเกรดเป็น <strong>+${currentLvl}</strong></span>
+                <span class="text-xs text-slate-500">ครั้งที่ ${state.tries}</span>
             </div>
-            <div class="text-xs mt-1 text-gray-600">${message}</div>
+            <div class="text-xs mt-1 text-slate-400">${message}</div>
         `;
-        
-        // แทรกไว้บนสุด
         logArea.insertBefore(logItem, logArea.firstChild);
     }
 
-    // อัพเดทข้อความบอกความต้องการในขั้นถัดไป
     function updateRequirementText() {
         const reqText = document.getElementById('nextRequirement');
         const btnRefine = document.getElementById('btnRefine');
 
         if (state.level >= MAX_LEVEL) {
-            reqText.innerHTML = `<span class="text-green-600 font-bold"><i class="fas fa-star mr-1"></i>ระดับสูงสุดแล้ว</span>`;
+            reqText.innerHTML = `<span class="text-green-400 font-bold"><i class="fas fa-star mr-1"></i>ระดับสูงสุดแล้ว</span>`;
             btnRefine.disabled = true;
-            btnRefine.className = "w-full bg-gray-400 text-white font-bold py-3 px-4 rounded-lg shadow-md flex justify-center items-center cursor-not-allowed";
+            btnRefine.className = "w-full bg-slate-600 text-slate-400 border border-slate-500 font-bold py-3 px-4 rounded shadow-lg flex justify-center items-center cursor-not-allowed";
             return;
         }
 
@@ -244,69 +296,60 @@
         const req = refineTable[nextLevel];
         const useHammer = document.getElementById('useGodHammer').checked;
         
-        // จัดการหน้าตาของตัวเลือก God Furnace
         const furnaceCheckbox = document.getElementById('useGodFurnace');
         const furnaceTitle = document.getElementById('furnaceTitle');
         const furnaceLabelText = document.getElementById('furnaceLabelText');
+        const furnaceContainer = document.getElementById('furnaceContainer');
         
         if (req.furnaceReq === 0) {
             furnaceCheckbox.checked = false;
             furnaceCheckbox.disabled = true;
-            furnaceTitle.classList.add('text-gray-400');
+            furnaceTitle.classList.add('text-slate-500');
+            furnaceTitle.classList.remove('text-white');
             furnaceLabelText.innerText = `ระดับปลอดภัย (เมื่อล้มเหลวจะไม่ลดต่ำกว่า +${req.safeLevel})`;
-            furnaceLabelText.classList.remove('text-blue-600');
-            furnaceLabelText.classList.add('text-gray-400');
+            furnaceLabelText.classList.remove('text-blue-300');
+            furnaceLabelText.classList.add('text-slate-500');
+            furnaceContainer.classList.add('opacity-50');
         } else {
             furnaceCheckbox.disabled = false;
-            furnaceTitle.classList.remove('text-gray-400');
+            furnaceTitle.classList.remove('text-slate-500');
+            furnaceTitle.classList.add('text-white');
             furnaceLabelText.innerText = `ใช้ ${req.furnaceReq} ea เพื่อป้องกันการลดขั้น`;
-            furnaceLabelText.classList.remove('text-gray-400');
-            furnaceLabelText.classList.add('text-blue-600');
+            furnaceLabelText.classList.remove('text-slate-500');
+            furnaceLabelText.classList.add('text-blue-300');
+            furnaceContainer.classList.remove('opacity-50');
         }
 
         let displayChance = req.chance;
         if (useHammer) displayChance += 10;
         if (displayChance > 100) displayChance = 100;
 
-        reqText.innerHTML = `(ขั้นถัดไป +${nextLevel}: โอกาส <span class="${displayChance >= 50 ? 'text-green-600' : 'text-orange-500'} font-bold">${displayChance}%</span>, ใช้ ${req.zeny.toLocaleString()} Z, ${req.medal} Medal)`;
+        reqText.innerHTML = `ขั้นถัดไป +${nextLevel}: โอกาส <span class="${displayChance >= 50 ? 'text-green-400' : 'text-orange-400'} font-bold">${displayChance}%</span><br>ใช้ ${req.zeny.toLocaleString()} Z, ${req.medal} Medal`;
         
         btnRefine.disabled = false;
-        btnRefine.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform active:scale-95 flex justify-center items-center";
+        btnRefine.className = "w-full ro-button text-white font-bold py-3 px-4 rounded shadow-lg transition transform active:scale-95 flex justify-center items-center";
     }
 
     function refine() {
-        if (state.level >= MAX_LEVEL) {
-            showNotification("อุปกรณ์ของคุณถึงระดับสูงสุดแล้ว!", "error");
-            return;
-        }
+        if (state.level >= MAX_LEVEL) return;
 
         const nextLevel = state.level + 1;
         const req = refineTable[nextLevel];
 
-        if (!req) {
-            showNotification("เกิดข้อผิดพลาด: ไม่พบข้อมูลตารางการตีบวก", "error");
-            return;
-        }
-
-        // อ่านค่าไอเทมป้องกัน
         const useHammer = document.getElementById('useGodHammer').checked;
         const useFurnace = document.getElementById('useGodFurnace').checked;
 
-        // หักค่าใช้จ่าย
         state.zeny += req.zeny;
         state.medal += req.medal;
         state.tries += 1;
-        if (useHammer) state.hammer += 1; // Hammer ใช้ 1 เสมอ
+        if (useHammer) state.hammer += 1;
         if (useFurnace && req.furnaceReq > 0) state.furnace += req.furnaceReq;
 
-        // คำนวณโอกาส
         let currentChance = req.chance;
         if (useHammer) currentChance += 10;
         if (currentChance > 100) currentChance = 100;
 
-        // สุ่มตัวเลข (0.01 - 100.00)
         const roll = (Math.random() * 100).toFixed(2);
-        
         let logMsg = "";
         let isSuccess = false;
         let attemptLevel = nextLevel;
@@ -314,32 +357,33 @@
         if (roll <= currentChance) {
             // สำเร็จ
             sfxSuccess.currentTime = 0;
-            sfxSuccess.play().catch(e => console.log("Audio blocked:", e));
+            let playPromise = sfxSuccess.play();
+            if (playPromise !== undefined) playPromise.catch(e => playFallbackSound(true));
 
             state.level += 1;
             isSuccess = true;
             logMsg = `สำเร็จ! โอกาส ${currentChance}% (สุ่มได้ ${roll})`;
             
-            // Effect เล็กน้อย
             const lvlDisplay = document.getElementById('currentLevelDisplay');
-            lvlDisplay.classList.add('text-green-500', 'scale-110');
-            setTimeout(() => lvlDisplay.classList.remove('text-green-500', 'scale-110'), 300);
+            lvlDisplay.classList.add('text-white', 'scale-125');
+            setTimeout(() => lvlDisplay.classList.remove('text-white', 'scale-125'), 300);
 
         } else {
             // ล้มเหลว
             sfxFail.currentTime = 0;
-            sfxFail.play().catch(e => console.log("Audio blocked:", e));
+            let playPromise = sfxFail.play();
+            if (playPromise !== undefined) playPromise.catch(e => playFallbackSound(false));
 
             isSuccess = false;
             if (useFurnace && req.furnaceReq > 0) {
-                logMsg = `ล้มเหลว! (โอกาส ${currentChance}% สุ่มได้ ${roll}) <br><span class="text-blue-600">God Furnace ทำงาน ป้องกันการลดขั้น</span>`;
+                logMsg = `ล้มเหลว (สุ่มได้ ${roll}) <br><span class="text-blue-400">God Furnace ป้องกันการลดขั้น</span>`;
             } else {
                 state.level = Math.max(req.safeLevel, state.level - 1);
-                logMsg = `ล้มเหลว! (โอกาส ${currentChance}% สุ่มได้ ${roll}) <br><span class="text-red-600">อุปกรณ์ลดขั้นเหลือ +${state.level}</span>`;
+                logMsg = `ล้มเหลว (สุ่มได้ ${roll}) <br><span class="text-red-400">อุปกรณ์ลดขั้นเหลือ +${state.level}</span>`;
                 
                 const lvlDisplay = document.getElementById('currentLevelDisplay');
-                lvlDisplay.classList.add('text-red-500');
-                setTimeout(() => lvlDisplay.classList.remove('text-red-500'), 300);
+                lvlDisplay.classList.replace('text-yellow-400', 'text-red-500');
+                setTimeout(() => lvlDisplay.classList.replace('text-red-500', 'text-yellow-400'), 300);
             }
         }
 
@@ -349,12 +393,9 @@
 
     function resetApp() {
         state = { level: 0, zeny: 0, medal: 0, hammer: 0, furnace: 0, tries: 0 };
-        document.getElementById('logArea').innerHTML = '<div class="text-gray-400 text-center italic mt-4">ยังไม่มีประวัติการตีบวก</div>';
-        
-        // Reset checkboxes
+        document.getElementById('logArea').innerHTML = '<div class="text-slate-500 text-center italic mt-4">-- ยังไม่มีประวัติ --</div>';
         document.getElementById('useGodHammer').checked = false;
         document.getElementById('useGodFurnace').checked = false;
-        
         updateUI();
         showNotification("รีเซ็ตข้อมูลทั้งหมดเรียบร้อยแล้ว");
     }
@@ -367,7 +408,6 @@
         document.getElementById('totalFurnace').innerText = state.furnace.toLocaleString();
         document.getElementById('totalTry').innerText = `${state.tries.toLocaleString()} ครั้ง`;
         
-        // คำนวณค่าใช้จ่ายเงินบาท
         const hammerPrice = parseFloat(document.getElementById('hammerPrice').value) || 0;
         const furnacePrice = parseFloat(document.getElementById('furnacePrice').value) || 0;
         const totalBaht = (state.hammer * hammerPrice) + (state.furnace * furnacePrice);
@@ -376,7 +416,6 @@
         updateRequirementText();
     }
 
-    // Initialize UI
     updateRequirementText();
 
 </script>
