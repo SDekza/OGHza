@@ -2,353 +2,383 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Gacha Simulator</title>
-    
-    <meta name="theme-color" content="#05020a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-touch-fullscreen" content="yes">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RO Classic - Chrono Equipment Refine Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+        body { font-family: 'Kanit', sans-serif; background-color: #f3f4f6; }
+        .log-container { max-height: 200px; overflow-y: auto; }
         
-        :root {
-            --safe-top: env(safe-area-inset-top);
-            --safe-bottom: env(safe-area-inset-bottom);
-            /* ค่าสีเริ่มต้น (รอ JSON โหลดมาทับ) */
-            --bg-color: #05020a;
-            --bg-main: none;
-            --ambient1: rgba(88, 28, 135, 0.4);
-            --ambient2: rgba(30, 58, 138, 0.3);
-            --egg-glow: #3b82f6;
-            --magic-circle: #60a5fa;
-            --title1-grad: linear-gradient(to bottom, #fef08a, #facc15, #d97706);
-            --title2-grad: linear-gradient(to bottom, #bfdbfe, #60a5fa, #4f46e5);
-            --share-t1: #facc15;
-            --share-t2: #22d3ee;
-            --share-bg: #090314;
-            --share-overlay: radial-gradient(circle at 50% 30%, rgba(93, 21, 135, 0.4) 0%, transparent 100%);
-        }
-
-        html { background-color: var(--bg-color); transition: background-color 0.5s ease; }
-
-        body {
-            font-family: 'Sarabun', sans-serif;
-            background-color: var(--bg-color);
-            color: #e2e8f0;
-            margin: 0;
-            padding: 0;
-            overscroll-behavior-y: none;
-            transition: background-color 0.5s ease;
-        }
-
-        .georgia-font { font-family: 'Georgia', serif; }
-        
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Title Gradients CSS */
-        .theme-title-1 { background-image: var(--title1-grad); -webkit-background-clip: text; color: transparent; }
-        .theme-title-2 { background-image: var(--title2-grad); -webkit-background-clip: text; color: transparent; }
-
-        @keyframes spin-slow { 100% { transform: rotate(360deg); } }
-        .magic-circle { animation: spin-slow 20s linear infinite; }
-
-        @keyframes inner-breathe-spin {
-            0% { transform: rotate(0deg) scale(0.85); }
-            50% { transform: rotate(-180deg) scale(1.05); }
-            100% { transform: rotate(-360deg) scale(0.85); }
-        }
-        .magic-inner-dynamic { animation: inner-breathe-spin 12s ease-in-out infinite; }
-
-        @keyframes magic-glow {
-            0%, 100% { filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.3)); opacity: 0.4; }
-            50% { filter: drop-shadow(0 0 15px rgba(96, 165, 250, 0.9)); opacity: 0.9; }
-        }
-        .magic-glow-effect { animation: magic-glow 4s ease-in-out infinite; }
-
-        @keyframes charge-shake {
-            0%, 100% { transform: scale(0.95) rotate(0deg); }
-            25% { transform: scale(0.95) rotate(-3deg); }
-            75% { transform: scale(0.95) rotate(3deg); }
-        }
-        .egg-charging {
-            animation: charge-shake 0.1s linear infinite;
-            filter: drop-shadow(0 0 40px var(--egg-glow)) brightness(1.2) !important;
-        }
-
-        @keyframes popUp {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .animate-pop-up { animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
-        .app-header { padding-top: calc(0.5rem + var(--safe-top)); padding-bottom: 0.5rem; }
-        .main-content { padding-top: calc(5.5rem + var(--safe-top)); padding-bottom: calc(2rem + var(--safe-bottom)); }
-        .overlay-top { padding-top: calc(4.5rem + var(--safe-top)); }
-
-        input[type="number"].hide-arrows::-webkit-outer-spin-button,
-        input[type="number"].hide-arrows::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        
-        #share-template { width: 640px; height: auto; min-height: 850px; background-color: var(--share-bg); }
-        
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(71, 85, 105, 1); }
+        /* Custom scrollbar for logs */
+        .log-container::-webkit-scrollbar { width: 6px; }
+        .log-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .log-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .log-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="relative min-h-screen overflow-x-hidden selection:bg-indigo-500/30">
+<body class="p-4 md:p-8 flex items-center justify-center min-h-screen">
 
-    <!-- 🎯 ภาพพื้นหลัง (ถ้าตู้ไหนมีรูปพื้นหลัง จะมาโผล่ตรงนี้) -->
-    <div class="fixed inset-0 pointer-events-none z-0 opacity-20 mix-blend-overlay transition-all duration-700" style="background-image: var(--bg-main); background-size: cover; background-position: center;"></div>
+    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- Header -->
+        <div class="bg-blue-600 text-white p-6 text-center">
+            <h1 class="text-2xl font-bold"><i class="fas fa-hammer mr-2"></i>Chrono Pass Refine Simulator</h1>
+            <p class="text-blue-200 text-sm mt-1">จำลองการอัพเกรด Shadow Weapon / Shield & Infinity Boots</p>
+        </div>
 
-    <div id="sparkle-overlay" class="fixed inset-0 pointer-events-none z-[999] hidden items-center justify-center">
-        <div class="absolute inset-0 bg-yellow-500/10 animate-pulse"></div>
-        <svg class="text-yellow-300 w-40 h-40 animate-ping absolute drop-shadow-[0_0_20px_rgba(253,224,71,0.8)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-    </div>
-
-    <!-- 🎯 แสง Ambient พื้นหลังหมอกๆ สีเปลี่ยนตามตู้ -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full mix-blend-screen filter blur-[120px] transition-colors duration-700" style="background-color: var(--ambient1);"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full mix-blend-screen filter blur-[150px] transition-colors duration-700" style="background-color: var(--ambient2);"></div>
-        <svg class="absolute inset-0 w-full h-full opacity-40" id="stars-container"></svg>
-    </div>
-
-    <!-- Header หน้าหลัก -->
-    <div class="fixed top-0 left-0 w-full app-header px-4 md:px-6 z-50 bg-[#05020a]/85 backdrop-blur-md border-b border-white/10 shadow-lg flex justify-between items-center">
-        <div class="relative" id="banner-dropdown-container">
-            <button onclick="toggleDropdown()" class="flex items-center gap-2 md:gap-3 bg-slate-800/60 hover:bg-slate-700/80 border border-slate-600/60 rounded-full px-2 py-1 md:px-3 md:py-1.5 transition-colors shadow-lg group">
-                <div class="w-8 h-8 rounded-full bg-black/40 border border-slate-500 flex items-center justify-center overflow-hidden shrink-0">
-                    <img id="dropdown-current-egg" src="images/AQUARIUS_DIADEM/egg.png" class="w-6 h-6 object-contain drop-shadow-md transition-transform group-hover:scale-110" />
+        <div class="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Left Column: Controls -->
+            <div class="space-y-6">
+                <!-- Equipment Info -->
+                <div class="text-center p-6 bg-gray-50 rounded-xl border border-gray-200">
+                    <p class="text-gray-500 text-sm font-medium mb-1">ระดับการอัพเกรดปัจจุบัน</p>
+                    <div class="text-5xl font-bold text-blue-600" id="currentLevelDisplay">+0</div>
+                    <div class="mt-2 text-sm text-gray-600" id="nextRequirement">
+                        (ขั้นถัดไป: โอกาส 100%, ใช้ 100,000 Zeny, 5 Medal)
+                    </div>
                 </div>
-                <div class="flex flex-col items-start hidden sm:flex">
-                    <span class="text-[8px] text-cyan-400 font-bold uppercase tracking-widest leading-none mb-0.5">Select Banner</span>
-                    <span id="dropdown-current-name" class="text-xs font-black text-white leading-tight">Loading...</span>
+
+                <!-- Modifiers -->
+                <div class="space-y-3">
+                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 transition">
+                        <input type="checkbox" id="useGodHammer" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" onchange="updateRequirementText()">
+                        <span class="ml-3 flex-1">
+                            <span class="block text-sm font-semibold text-gray-900">ใช้ God Hammer</span>
+                            <span class="block text-xs text-green-600">+10% โอกาสสำเร็จ</span>
+                        </span>
+                    </label>
+
+                    <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 transition">
+                        <input type="checkbox" id="useGodFurnace" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="ml-3 flex-1">
+                            <span class="block text-sm font-semibold text-gray-900" id="furnaceTitle">ใช้ God Furnace</span>
+                            <span class="block text-xs text-blue-600" id="furnaceLabelText">ป้องกันการลดขั้นเมื่อล้มเหลว</span>
+                        </span>
+                    </label>
                 </div>
-                <svg class="w-4 h-4 text-slate-400 ml-1 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </button>
-            <div id="banner-dropdown-menu" class="absolute top-full left-0 mt-3 w-64 bg-[#0f172a]/95 backdrop-blur-xl border border-slate-600/80 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden hidden z-[200] transform origin-top-left transition-all">
-                <div class="p-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-700/50 bg-slate-900/50">Available Banners</div>
-                <div id="banner-list-container" class="max-h-[60vh] overflow-y-auto custom-scrollbar"></div>
+
+                <!-- Settings -->
+                <div class="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-gray-700 mb-3"><i class="fas fa-cog mr-2 text-gray-400"></i>ตั้งค่าราคาไอเทม (บาท)</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">God Hammer (บาท/ชิ้น)</label>
+                            <input type="number" id="hammerPrice" value="75" min="0" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500 outline-none transition" oninput="updateUI()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">God Furnace (บาท/ชิ้น)</label>
+                            <input type="number" id="furnacePrice" value="75" min="0" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500 outline-none transition" oninput="updateUI()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="space-y-3">
+                    <button id="btnRefine" onclick="refine()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform active:scale-95 flex justify-center items-center">
+                        <i class="fas fa-arrow-up mr-2"></i> ทำการอัพเกรด (Refine)
+                    </button>
+                    <button onclick="resetApp()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
+                        <i class="fas fa-undo mr-2"></i> รีเซ็ตข้อมูลใหม่
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Stats & Logs -->
+            <div class="space-y-6 flex flex-col">
+                <!-- Summary Stats -->
+                <div class="bg-blue-50 rounded-xl p-5 border border-blue-100">
+                    <h3 class="text-sm font-bold text-blue-800 mb-3 border-b border-blue-200 pb-2"><i class="fas fa-chart-pie mr-2"></i>สรุปทรัพยากรที่ใช้ไป</h3>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="flex justify-between flex-col bg-white p-2 rounded shadow-sm">
+                            <span class="text-gray-500 text-xs">Zeny</span>
+                            <span class="font-bold text-gray-800" id="totalZeny">0</span>
+                        </div>
+                        <div class="flex justify-between flex-col bg-white p-2 rounded shadow-sm">
+                            <span class="text-gray-500 text-xs">Mysterious Medal</span>
+                            <span class="font-bold text-purple-600" id="totalMedal">0</span>
+                        </div>
+                        <div class="flex justify-between flex-col bg-white p-2 rounded shadow-sm">
+                            <span class="text-gray-500 text-xs">God Hammer</span>
+                            <span class="font-bold text-orange-500" id="totalHammer">0</span>
+                        </div>
+                        <div class="flex justify-between flex-col bg-white p-2 rounded shadow-sm">
+                            <span class="text-gray-500 text-xs">God Furnace</span>
+                            <span class="font-bold text-red-500" id="totalFurnace">0</span>
+                        </div>
+                        <div class="flex justify-between flex-col bg-green-50 p-3 rounded shadow-sm border border-green-200 col-span-2">
+                            <span class="text-green-700 text-xs font-bold">รวมค่าใช้จ่ายไอเทมแคช (บาท)</span>
+                            <span class="font-bold text-green-600 text-xl" id="totalBaht">0 ฿</span>
+                        </div>
+                        <div class="flex justify-between flex-col bg-white p-2 rounded shadow-sm col-span-2">
+                            <span class="text-gray-500 text-xs">จำนวนครั้งที่พยายามทั้งหมด</span>
+                            <span class="font-bold text-blue-600 text-lg" id="totalTry">0 ครั้ง</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Log -->
+                <div class="bg-gray-50 rounded-xl p-0 border border-gray-200 flex-1 flex flex-col overflow-hidden">
+                    <div class="p-3 bg-gray-100 border-b border-gray-200 text-sm font-bold text-gray-700">
+                        <i class="fas fa-list-ul mr-2"></i>ประวัติการตีบวก
+                    </div>
+                    <div id="logArea" class="log-container p-3 space-y-2 text-sm flex-1 bg-white">
+                        <div class="text-gray-400 text-center italic mt-4">ยังไม่มีประวัติการตีบวก</div>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <div class="flex items-center gap-4 md:gap-6 bg-slate-900/60 border border-slate-700/50 rounded-xl px-3 md:px-4 py-1.5 md:py-2">
-            <div class="flex flex-col items-end">
-                <span class="text-[8px] md:text-[9px] text-slate-400 font-medium uppercase tracking-wider mb-0.5">สุ่มไปแล้ว</span>
-                <div class="flex items-baseline gap-1">
-                    <span id="total-pulls-text" class="text-sm md:text-base leading-none font-black text-blue-400">0</span>
-                    <span class="text-[8px] text-slate-500">ครั้ง</span>
-                </div>
-            </div>
-            <div class="w-[1px] h-6 bg-slate-700/50"></div>
-            <div class="flex flex-col items-end">
-                <div class="flex items-center gap-1 mb-0.5">
-                    <span class="text-[8px] md:text-[9px] text-slate-400 font-medium uppercase tracking-wider">ยอดเงิน </span>
-                    <input type="number" id="price-per-pull" value="50" class="w-7 md:w-8 bg-transparent border-b border-slate-600 text-slate-300 text-[8px] md:text-[9px] text-center outline-none p-0 hide-arrows" oninput="updateCost()">
-                    <span class="text-[8px] md:text-[9px] text-slate-500">฿/ครั้ง</span>
-                </div>
-                <div class="flex items-baseline gap-1">
-                    <span id="total-cost-text" class="text-sm md:text-base leading-none font-black text-red-400">0</span>
-                    <span class="text-[8px] text-slate-500">฿</span>
-                </div>
-            </div>
+        <!-- User Note -->
+        <div class="bg-blue-50 p-4 border-t border-blue-200 text-xs text-blue-800 text-center">
+            <strong>หมายเหตุ:</strong> อัตราความสำเร็จ ข้อมูลทรัพยากร และระบบ Safe Point อัปเดตตามตารางกิจกรรมของเซิร์ฟเวอร์เรียบร้อยแล้ว!
         </div>
     </div>
 
-    <!-- Overlay Pull -->
-    <div id="pull-overlay" class="fixed inset-0 bg-black/95 z-[100] hidden flex-col items-center justify-start overlay-top px-4 md:p-12 backdrop-blur-xl transition-opacity duration-300 overflow-y-auto" onclick="handleOverlayClick(event)">
-        <div id="overlay-header-info" class="sticky top-2 z-[110] flex flex-col items-center w-full max-w-sm mb-6 gap-2">
-            <h2 id="overlay-skip-text" class="text-slate-300 font-medium text-xs animate-pulse tracking-widest uppercase text-center bg-black/60 px-4 py-1 rounded-full backdrop-blur-md border border-white/10 shadow-lg cursor-pointer">แตะที่ใดก็ได้เพื่อข้าม</h2>
-            <h3 id="overlay-pull-count-text" class="text-fuchsia-400 font-black text-lg md:text-xl text-center drop-shadow-[0_0_10px_rgba(192,38,211,0.6)] bg-black/70 px-6 py-2 rounded-full backdrop-blur-md border border-fuchsia-500/30 w-full hidden"></h3>
-        </div>
-        <div id="overlay-items-container" class="grid grid-cols-3 sm:grid-cols-5 gap-3 md:gap-5 max-w-5xl w-full justify-center pb-20"></div>
-        <div id="overlay-actions" class="hidden fixed bottom-0 left-0 w-full flex-col items-center gap-4 pb-6 pt-12 bg-gradient-to-t from-[#020108] via-[#05020a]/90 to-transparent z-[120]" style="padding-bottom: calc(1.5rem + var(--safe-bottom));">
-            <div class="flex flex-wrap justify-center gap-3">
-                <button onclick="pull(1, true)" class="rounded-full bg-slate-800/90 border border-slate-500 text-white px-6 py-3 font-bold shadow-lg text-sm backdrop-blur-md hover:bg-slate-700">สุ่ม x 1</button>
-                <button onclick="pull(10, true)" class="rounded-full bg-gradient-to-b from-yellow-500 to-amber-700 border border-yellow-300 text-amber-950 px-6 py-3 font-black shadow-lg text-sm hover:scale-105 transition-transform">สุ่ม x 10</button>
-                <button onclick="pullUntilSSR(true)" class="rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-700 border border-fuchsia-400 text-white px-6 py-3 font-black shadow-lg text-sm hover:scale-105 transition-transform">สุ่มจนกว่าจะออก SSR</button>
-            </div>
-        </div>
+    <!-- Notification Overlay (Instead of alert) -->
+    <div id="notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50 flex items-center">
+        <i id="notifIcon" class="fas fa-info-circle mr-2"></i>
+        <span id="notifText">Message</span>
     </div>
 
-    <!-- Modal แชร์ -->
-    <div id="share-modal" class="fixed inset-0 bg-black/90 z-[300] hidden flex-col items-center justify-center p-4 backdrop-blur-md transition-opacity duration-300">
-        <h3 class="text-white text-base font-bold mb-4 drop-shadow-md animate-pulse text-center">📸 กดค้างที่รูปภาพเพื่อบันทึกหรือแชร์</h3>
-        <div class="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(79,70,229,0.4)] bg-[#090314] border border-indigo-500/50">
-            <div id="share-loading" class="absolute inset-0 flex flex-col items-center justify-center bg-[#090314]/90 z-10">
-               <div class="animate-spin w-10 h-10 border-4 border-fuchsia-500 border-t-transparent rounded-full mb-3"></div>
-               <p class="text-fuchsia-300 text-xs font-bold mt-2">GENERATING MEME...</p>
-            </div>
-            <img id="share-result-img" src="" alt="Share Result" class="w-full h-auto object-contain hidden" />
-        </div>
-        <button onclick="closeShareModal()" class="mt-6 rounded-full bg-slate-800/80 border border-slate-500 text-white px-8 py-3 font-bold hover:bg-slate-700 transition-colors">ปิดหน้าต่าง</button>
-    </div>
+<script>
+    // ==========================================
+    // ตารางข้อมูลการตีบวก (แก้ไขตัวเลขจริงที่นี่)
+    // chance = โอกาสสำเร็จ (%), zeny = จำนวน Zeny, medal = จำนวน Mysterious Medal
+    // ==========================================
+    const refineTable = {
+        1: { chance: 96, zeny: 100000, medal: 10, furnaceReq: 0, safeLevel: 0 },
+        2: { chance: 96, zeny: 100000, medal: 15, furnaceReq: 1, safeLevel: 0 },
+        3: { chance: 96, zeny: 100000, medal: 20, furnaceReq: 1, safeLevel: 0 },
+        4: { chance: 96, zeny: 100000, medal: 25, furnaceReq: 1, safeLevel: 0 },
+        5: { chance: 70, zeny: 100000, medal: 35, furnaceReq: 0, safeLevel: 4 },
+        6: { chance: 60, zeny: 200000, medal: 45, furnaceReq: 1, safeLevel: 4 },
+        7: { chance: 50, zeny: 200000, medal: 55, furnaceReq: 1, safeLevel: 4 },
+        8: { chance: 30, zeny: 200000, medal: 75, furnaceReq: 0, safeLevel: 7 },
+        9: { chance: 30, zeny: 200000, medal: 95, furnaceReq: 1, safeLevel: 7 },
+        10: { chance: 25, zeny: 200000, medal: 115, furnaceReq: 1, safeLevel: 7 },
+        11: { chance: 25, zeny: 300000, medal: 155, furnaceReq: 0, safeLevel: 10 },
+        12: { chance: 20, zeny: 300000, medal: 195, furnaceReq: 2, safeLevel: 10 },
+        13: { chance: 20, zeny: 300000, medal: 250, furnaceReq: 2, safeLevel: 10 },
+        14: { chance: 14, zeny: 300000, medal: 250, furnaceReq: 3, safeLevel: 10 },
+        15: { chance: 14, zeny: 300000, medal: 250, furnaceReq: 3, safeLevel: 10 }
+    };
 
-    <!-- 🎯 Hidden Template สำหรับสร้างรูปภาพ Share -->
-    <div class="fixed top-0" style="left: -9999px;">
-        <div id="share-template" class="p-10 relative overflow-hidden flex flex-col items-center">
-            <div class="absolute inset-0 z-0 pointer-events-none" style="background: var(--share-overlay);"></div>
-            <div id="share-magic-circle" class="absolute top-[35%] left-[50%] w-[110%] opacity-20 pointer-events-none z-0" style="transform: translate(-50%, -50%); color: var(--magic-circle);">
-                <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.3">
-                    <circle cx="50" cy="50" r="45" stroke-dasharray="2 6"/><circle cx="50" cy="50" r="35"/><circle cx="50" cy="50" r="20" stroke-dasharray="10 5"/>
-                    <polygon points="50,5 95,75 5,75" stroke-width="0.2" opacity="0.4"/><polygon points="50,95 5,25 95,25" stroke-width="0.2" opacity="0.4"/>
-                </svg>
+    const MAX_LEVEL = 15;
+    
+    // โหลดเสียง Effect
+    const sfxSuccess = new Audio('https://www.myinstants.com/media/sounds/ro-refine-11484.mp3');
+    const sfxFail = new Audio('https://www.myinstants.com/media/sounds/ro-refine-failed-38779.mp3');
+
+    let state = {
+        level: 0,
+        zeny: 0,
+        medal: 0,
+        hammer: 0,
+        furnace: 0,
+        tries: 0
+    };
+
+    // แสดงข้อความแจ้งเตือน (แทน alert)
+    function showNotification(message, type = 'info') {
+        const notif = document.getElementById('notification');
+        const notifText = document.getElementById('notifText');
+        const notifIcon = document.getElementById('notifIcon');
+        
+        notifText.innerText = message;
+        
+        if(type === 'error') {
+            notif.className = "fixed top-5 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-full shadow-lg transition-opacity duration-300 z-50 flex items-center";
+            notifIcon.className = "fas fa-exclamation-triangle mr-2";
+        } else {
+            notif.className = "fixed top-5 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg transition-opacity duration-300 z-50 flex items-center";
+            notifIcon.className = "fas fa-info-circle mr-2";
+        }
+
+        notif.style.opacity = '1';
+        
+        setTimeout(() => {
+            notif.style.opacity = '0';
+        }, 3000);
+    }
+
+    // เพิ่ม Log
+    function addLog(message, isSuccess, currentLvl) {
+        const logArea = document.getElementById('logArea');
+        
+        // เอาข้อความ "ยังไม่มีประวัติ" ออกถ้ามี
+        if(state.tries === 1) {
+            logArea.innerHTML = '';
+        }
+
+        const logItem = document.createElement('div');
+        logItem.className = `p-2 rounded border-l-4 ${isSuccess ? 'bg-green-50 border-green-500 text-green-700' : 'bg-red-50 border-red-500 text-red-700'}`;
+        
+        const icon = isSuccess ? '<i class="fas fa-check-circle mr-1"></i>' : '<i class="fas fa-times-circle mr-1"></i>';
+        
+        logItem.innerHTML = `
+            <div class="flex justify-between items-center">
+                <span>${icon} ตีบวก <strong>+${currentLvl}</strong></span>
+                <span class="text-xs text-gray-500">ครั้งที่ ${state.tries}</span>
             </div>
+            <div class="text-xs mt-1 text-gray-600">${message}</div>
+        `;
+        
+        // แทรกไว้บนสุด
+        logArea.insertBefore(logItem, logArea.firstChild);
+    }
+
+    // อัพเดทข้อความบอกความต้องการในขั้นถัดไป
+    function updateRequirementText() {
+        const reqText = document.getElementById('nextRequirement');
+        const btnRefine = document.getElementById('btnRefine');
+
+        if (state.level >= MAX_LEVEL) {
+            reqText.innerHTML = `<span class="text-green-600 font-bold"><i class="fas fa-star mr-1"></i>ระดับสูงสุดแล้ว</span>`;
+            btnRefine.disabled = true;
+            btnRefine.className = "w-full bg-gray-400 text-white font-bold py-3 px-4 rounded-lg shadow-md flex justify-center items-center cursor-not-allowed";
+            return;
+        }
+
+        const nextLevel = state.level + 1;
+        const req = refineTable[nextLevel];
+        const useHammer = document.getElementById('useGodHammer').checked;
+        
+        // จัดการหน้าตาของตัวเลือก God Furnace
+        const furnaceCheckbox = document.getElementById('useGodFurnace');
+        const furnaceTitle = document.getElementById('furnaceTitle');
+        const furnaceLabelText = document.getElementById('furnaceLabelText');
+        
+        if (req.furnaceReq === 0) {
+            furnaceCheckbox.checked = false;
+            furnaceCheckbox.disabled = true;
+            furnaceTitle.classList.add('text-gray-400');
+            furnaceLabelText.innerText = `ระดับปลอดภัย (เมื่อล้มเหลวจะไม่ลดต่ำกว่า +${req.safeLevel})`;
+            furnaceLabelText.classList.remove('text-blue-600');
+            furnaceLabelText.classList.add('text-gray-400');
+        } else {
+            furnaceCheckbox.disabled = false;
+            furnaceTitle.classList.remove('text-gray-400');
+            furnaceLabelText.innerText = `ใช้ ${req.furnaceReq} ea เพื่อป้องกันการลดขั้น`;
+            furnaceLabelText.classList.remove('text-gray-400');
+            furnaceLabelText.classList.add('text-blue-600');
+        }
+
+        let displayChance = req.chance;
+        if (useHammer) displayChance += 10;
+        if (displayChance > 100) displayChance = 100;
+
+        reqText.innerHTML = `(ขั้นถัดไป +${nextLevel}: โอกาส <span class="${displayChance >= 50 ? 'text-green-600' : 'text-orange-500'} font-bold">${displayChance}%</span>, ใช้ ${req.zeny.toLocaleString()} Z, ${req.medal} Medal)`;
+        
+        btnRefine.disabled = false;
+        btnRefine.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition transform active:scale-95 flex justify-center items-center";
+    }
+
+    function refine() {
+        if (state.level >= MAX_LEVEL) {
+            showNotification("อุปกรณ์ของคุณถึงระดับสูงสุดแล้ว!", "error");
+            return;
+        }
+
+        const nextLevel = state.level + 1;
+        const req = refineTable[nextLevel];
+
+        if (!req) {
+            showNotification("เกิดข้อผิดพลาด: ไม่พบข้อมูลตารางการตีบวก", "error");
+            return;
+        }
+
+        // อ่านค่าไอเทมป้องกัน
+        const useHammer = document.getElementById('useGodHammer').checked;
+        const useFurnace = document.getElementById('useGodFurnace').checked;
+
+        // หักค่าใช้จ่าย
+        state.zeny += req.zeny;
+        state.medal += req.medal;
+        state.tries += 1;
+        if (useHammer) state.hammer += 1; // Hammer ใช้ 1 เสมอ
+        if (useFurnace && req.furnaceReq > 0) state.furnace += req.furnaceReq;
+
+        // คำนวณโอกาส
+        let currentChance = req.chance;
+        if (useHammer) currentChance += 10;
+        if (currentChance > 100) currentChance = 100;
+
+        // สุ่มตัวเลข (0.01 - 100.00)
+        const roll = (Math.random() * 100).toFixed(2);
+        
+        let logMsg = "";
+        let isSuccess = false;
+        let attemptLevel = nextLevel;
+
+        if (roll <= currentChance) {
+            // สำเร็จ
+            sfxSuccess.currentTime = 0;
+            sfxSuccess.play().catch(e => console.log("Audio blocked:", e));
+
+            state.level += 1;
+            isSuccess = true;
+            logMsg = `สำเร็จ! โอกาส ${currentChance}% (สุ่มได้ ${roll})`;
             
-            <div class="relative z-10 w-full flex flex-col items-center">
-                <!-- Header (Share) -->
-                <div class="w-full flex items-center justify-center gap-6 mb-14 mt-6 z-10 relative h-[110px]">
-                    <div class="h-[110px] w-[110px] shrink-0 flex items-center justify-center">
-                        <img id="share-egg-img" src="images/AQUARIUS_DIADEM/egg.png" class="h-full w-auto max-w-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
-                    </div>
-                    <div class="h-[110px] flex flex-col justify-between items-start">
-                        <h1 id="share-title-1" class="text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font m-0 p-0" style="margin-top: -8px; color: var(--share-t1);">LOADING</h1>
-                        <h1 id="share-title-2" class="text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font m-0 p-0" style="margin-bottom: -10px; color: var(--share-t2);">BANNER...</h1>
-                    </div>
-                </div>
+            // Effect เล็กน้อย
+            const lvlDisplay = document.getElementById('currentLevelDisplay');
+            lvlDisplay.classList.add('text-green-500', 'scale-110');
+            setTimeout(() => lvlDisplay.classList.remove('text-green-500', 'scale-110'), 300);
 
-                <div class="w-full text-center relative mb-12">
-                    <div id="tpl-luck-name" class="text-[26px] leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-4 uppercase tracking-[0.3em]">👑 ลูกรัก GM</div>
-                    <div id="tpl-fun-quote" class="text-yellow-300 font-bold text-xl italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"ชาตินี้ใช้ดวงหมดแล้ว!"</div>
-                </div>
+        } else {
+            // ล้มเหลว
+            sfxFail.currentTime = 0;
+            sfxFail.play().catch(e => console.log("Audio blocked:", e));
 
-                <div class="w-full flex justify-center gap-16 mb-12">
-                    <div class="flex flex-col items-center">
-                        <span class="text-rose-400 text-[10px] font-black uppercase tracking-widest mb-2 opacity-80">💸 โดนสูบไปแล้ว</span>
-                        <span id="tpl-cost" class="text-5xl font-black text-white drop-shadow-[0_0_20px_rgba(225,29,72,0.8)]">0 ฿</span>
-                    </div>
-                    <div class="w-[1px] h-16 bg-white/20 self-center"></div>
-                    <div class="flex flex-col items-center">
-                        <span class="text-cyan-400 text-[10px] font-black uppercase tracking-widest mb-2 opacity-80">🎰 กดไปทั้งหมด</span>
-                        <span id="tpl-pulls" class="text-5xl font-black text-white drop-shadow-[0_0_20px_rgba(34,211,238,0.8)]">0 โรล</span>
-                    </div>
-                </div>
-
-                <div class="w-full flex flex-col mt-4">
-                    <div class="flex justify-between items-end mb-6 border-b border-white/20 pb-3 px-4">
-                        <h3 class="text-xl font-black text-white flex items-center gap-2">✨ สิ่งที่ตกถึงท้อง</h3>
-                        <span id="tpl-ssr-count" class="text-sm font-bold text-yellow-400">SSR: 0</span>
-                    </div>
-                    <div id="tpl-rare-grid" class="grid grid-cols-3 gap-y-6 gap-x-4 px-2"></div>
-                </div>
-
-                <div class="mt-12 pt-6 flex justify-between items-center text-slate-400/60 text-[11px] font-bold uppercase tracking-[0.3em] w-full px-4 border-t border-white/10">
-                    <span style="color: var(--share-t2);">#gacha_simulator</span>
-                    <div class="flex items-center justify-center text-slate-300">
-                        <svg width="18" height="18" class="text-red-500 mr-2 transform translate-y-[2.5px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                        <span>YOUTUBE: @SDEKZA-RO</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- UI หน้าหลัก -->
-    <div class="relative z-10 max-w-[1400px] mx-auto min-h-screen flex flex-col lg:flex-row main-content">
-        <div class="w-full lg:w-5/12 flex flex-col items-center justify-center p-6 mt-4 lg:mt-0">
-            
-            <div class="text-center mb-8">
-                <h1 class="text-5xl md:text-7xl font-black mb-2 georgia-font leading-tight text-white drop-shadow-xl">
-                    <span id="main-title-1" class="theme-title-1 block uppercase">LOADING</span>
-                    <span id="main-title-2" class="theme-title-2 block uppercase">BANNER...</span>
-                </h1>
-                <p class="text-indigo-200/80 font-bold tracking-[0.3em] uppercase text-[10px] md:text-xs text-center drop-shadow-md">Scroll Simulator</p>
-            </div>
-            
-            <!-- ไข่กาชา (ใช้สี SVG จากตัวแปร) -->
-            <div id="egg-container" 
-                 class="relative flex items-center justify-center w-full max-w-[280px] aspect-square cursor-pointer transition-transform active:scale-95"
-                 style="touch-action: none; -webkit-tap-highlight-color: transparent;"
-                 onpointerdown="startHold(event)" 
-                 onpointerup="endHold(event)" 
-                 onpointerleave="cancelHold(event)" 
-                 onpointercancel="cancelHold(event)">
-                <div class="absolute inset-0 flex items-center justify-center scale-[1.4] magic-glow-effect pointer-events-none transition-colors duration-700" style="color: var(--magic-circle);">
-                    <svg class="w-full h-full" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.5">
-                        <g class="magic-circle" style="transform-origin: 50px 50px;"><circle cx="50" cy="50" r="48" stroke-dasharray="4 4"/></g>
-                        <g class="magic-inner-dynamic" style="transform-origin: 50px 50px;">
-                            <circle cx="50" cy="50" r="40"/><circle cx="50" cy="50" r="30" stroke-dasharray="8 4" opacity="0.8"/>
-                            <polygon points="50,15 80,67 20,67" stroke-width="0.3"/><polygon points="50,85 20,33 80,33" stroke-width="0.3"/>
-                        </g>
-                    </svg>
-                </div>
-                <!-- ออร่าหลังไข่ -->
-                <div class="absolute w-40 h-40 rounded-full blur-[60px] opacity-30 pointer-events-none transition-colors duration-700" style="background-color: var(--egg-glow);"></div>
-                <img id="egg-img" src="images/AQUARIUS_DIADEM/egg.png" alt="Egg" class="relative z-10 h-[70%] w-auto max-w-full object-contain drop-shadow-[0_0_30px_rgba(0,0,0,0.5)] pointer-events-none transition-all duration-300" />
-            </div>
-            
-            <div class="mt-4 text-center select-none pointer-events-none">
-                 <p class="text-[11px] md:text-xs font-bold text-slate-300 tracking-widest uppercase bg-slate-800/50 px-4 py-2 rounded-full border border-slate-600/50 shadow-lg backdrop-blur-sm animate-pulse">
-                    👆 แตะเพื่อสุ่ม x1 <span class="mx-2 text-slate-500">|</span> กดค้างเพื่อสุ่ม x10
-                </p>
-            </div>
-
-            <div class="flex justify-center mt-5 w-full">
-                <button id="btn-pull-until-ssr" onclick="pullUntilSSR()" 
-                        class="group relative px-5 py-2 rounded-full bg-[#05020a]/60 border border-fuchsia-500/40 text-fuchsia-300 font-bold text-[10px] md:text-xs tracking-widest uppercase hover:bg-fuchsia-900/40 hover:border-fuchsia-400 hover:text-white transition-all duration-300 flex items-center gap-2 overflow-hidden shadow-[0_0_15px_rgba(192,38,211,0.15)] hover:shadow-[0_0_25px_rgba(192,38,211,0.4)] active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
-                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-fuchsia-500/20 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out"></div>
-                    <svg class="w-3.5 h-3.5 text-fuchsia-400 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
-                        <path d="M21 3v5h-5"/>
-                    </svg>
-                    Auto: Until SSR
-                </button>
-            </div>
-        </div>
-
-        <div class="w-full lg:w-7/12 flex flex-col gap-6 p-4 md:p-8 lg:overflow-y-auto">
-            <div class="glass-panel rounded-3xl p-6 min-h-[300px]">
-                <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-                    <h3 class="text-lg font-bold text-white uppercase tracking-widest">Inventory</h3>
-                    <button onclick="resetData()" class="px-4 py-2 text-[10px] font-bold uppercase text-red-400 bg-red-950/30 border border-red-900/50 rounded-lg hover:bg-red-900/60 transition-colors">Clear</button>
-                </div>
-                <div id="empty-inventory-state" class="h-40 flex flex-col items-center justify-center text-slate-500 text-sm italic">Tap Summon to start</div>
-                <div id="inventory-section" class="hidden"><div id="inventory-container" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3"></div></div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-                <div id="luck-meter-container" class="glass-panel rounded-3xl p-6 hidden text-center">
-                    <h3 class="text-[10px] font-bold tracking-widest uppercase mb-4 text-slate-400">Luck Meter</h3>
-                    <div id="luck-tier-name" class="text-xl font-black mb-1">👑 ลูกรัก GM</div>
-                    <div id="luck-tier-desc" class="text-[10px] font-medium text-slate-400 uppercase mb-4">Lucky! Let's pull more!</div>
-                    <div class="space-y-3 text-[10px] font-medium text-slate-300 mb-6 text-left">
-                        <div class="flex justify-between items-center bg-slate-800/40 p-2 rounded-lg"><span>Luck Score:</span> <span id="luck-score-text" class="font-black text-white">120%</span></div>
-                        <div class="flex justify-between px-2"><span>SSR Acquired:</span> <span id="luck-ssr-actual" class="font-bold text-yellow-400">0</span></div>
-                        <div class="flex justify-between px-2 text-slate-500"><span>Expected:</span> <span id="luck-ssr-expected">0.00</span></div>
-                    </div>
-                    <button onclick="openShareModal()" class="w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white py-3 font-black text-sm uppercase shadow-lg hover:scale-[1.02] transition-all">แชร์ผลประกอบการ 📸</button>
-                </div>
-                <div class="glass-panel rounded-3xl p-6">
-                    <h3 class="text-[10px] font-bold tracking-widest uppercase mb-4 text-slate-400">Rates</h3>
-                    <div id="rates-container" class="space-y-2"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🎯 วาดดาวด้านหลัง -->
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            const starsContainer = document.getElementById('stars-container');
-            let starsHTML = '';
-            for(let i=0; i<60; i++) {
-                starsHTML += `<circle cx="${Math.random() * 100}%" cy="${Math.random() * 100}%" r="${Math.random() * 1.5 + 0.5}" fill="#ffffff" opacity="${Math.random() * 0.8 + 0.2}" />`;
+            isSuccess = false;
+            if (useFurnace && req.furnaceReq > 0) {
+                logMsg = `ล้มเหลว! (โอกาส ${currentChance}% สุ่มได้ ${roll}) <br><span class="text-blue-600">God Furnace ทำงาน ป้องกันการลดขั้น</span>`;
+            } else {
+                state.level = Math.max(req.safeLevel, state.level - 1);
+                logMsg = `ล้มเหลว! (โอกาส ${currentChance}% สุ่มได้ ${roll}) <br><span class="text-red-600">อุปกรณ์ลดขั้นเหลือ +${state.level}</span>`;
+                
+                const lvlDisplay = document.getElementById('currentLevelDisplay');
+                lvlDisplay.classList.add('text-red-500');
+                setTimeout(() => lvlDisplay.classList.remove('text-red-500'), 300);
             }
-            starsContainer.innerHTML = starsHTML;
-        });
-    </script>
-    <script src="js/app.js"></script>
+        }
 
+        addLog(logMsg, isSuccess, attemptLevel);
+        updateUI();
+    }
+
+    function resetApp() {
+        state = { level: 0, zeny: 0, medal: 0, hammer: 0, furnace: 0, tries: 0 };
+        document.getElementById('logArea').innerHTML = '<div class="text-gray-400 text-center italic mt-4">ยังไม่มีประวัติการตีบวก</div>';
+        
+        // Reset checkboxes
+        document.getElementById('useGodHammer').checked = false;
+        document.getElementById('useGodFurnace').checked = false;
+        
+        updateUI();
+        showNotification("รีเซ็ตข้อมูลทั้งหมดเรียบร้อยแล้ว");
+    }
+
+    function updateUI() {
+        document.getElementById('currentLevelDisplay').innerText = `+${state.level}`;
+        document.getElementById('totalZeny').innerText = state.zeny.toLocaleString();
+        document.getElementById('totalMedal').innerText = state.medal.toLocaleString();
+        document.getElementById('totalHammer').innerText = state.hammer.toLocaleString();
+        document.getElementById('totalFurnace').innerText = state.furnace.toLocaleString();
+        document.getElementById('totalTry').innerText = `${state.tries.toLocaleString()} ครั้ง`;
+        
+        // คำนวณค่าใช้จ่ายเงินบาท
+        const hammerPrice = parseFloat(document.getElementById('hammerPrice').value) || 0;
+        const furnacePrice = parseFloat(document.getElementById('furnacePrice').value) || 0;
+        const totalBaht = (state.hammer * hammerPrice) + (state.furnace * furnacePrice);
+        document.getElementById('totalBaht').innerText = `${totalBaht.toLocaleString()} ฿`;
+        
+        updateRequirementText();
+    }
+
+    // Initialize UI
+    updateRequirementText();
+
+</script>
 </body>
 </html>
