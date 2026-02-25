@@ -27,27 +27,35 @@ async function initApp() {
         if (!listRes.ok) throw new Error("ไม่พบไฟล์ banners_list.json");
         bannersList = await listRes.json();
         
-        // 🎯 1. เช็คว่ามี Parameter ใน URL ไหม (เช่น ?banner=time_sacred)
         const urlParams = new URLSearchParams(window.location.search);
         const bannerFromUrl = urlParams.get('banner');
-        
-        // 🎯 2. เช็คว่าเคยเปิดตู้ไหนไว้ล่าสุดในเครื่องนี้
         const savedBanner = localStorage.getItem('lastGachaBanner');
 
-        // 🎯 3. ตัดสินใจว่าจะโหลดตู้ไหน
         if (bannerFromUrl && bannersList[bannerFromUrl]) {
-            currentBannerId = bannerFromUrl; // มาจากลิงก์ที่เพื่อนแชร์มา
+            currentBannerId = bannerFromUrl;
         } else if (savedBanner && bannersList[savedBanner]) {
-            currentBannerId = savedBanner; // โหลดจากที่จำไว้ล่าสุด
+            currentBannerId = savedBanner;
         } else {
-            currentBannerId = Object.keys(bannersList)[0]; // ถ้าไม่มีอะไรเลย เอาตู้แรกสุดในรายการ
+            currentBannerId = Object.keys(bannersList)[0];
         }
         
         await loadBanner(currentBannerId);
+        
+        // 🚀 เพิ่มตรงนี้: สั่งซ่อนหน้า Loading หลังจากเตรียมทุกอย่างเสร็จแล้ว (หน่วงเวลาให้ Tailwind ทำงานแปบนึง)
+        setTimeout(() => {
+            const preloader = document.getElementById('app-preloader');
+            if (preloader) {
+                preloader.style.opacity = '0';
+                setTimeout(() => preloader.style.display = 'none', 500);
+            }
+        }, 800);
+
     } catch (error) {
         console.error("เกิดข้อผิดพลาดตอนเริ่มแอป: ", error);
         document.getElementById('main-title-1').innerText = "ERROR";
         document.getElementById('main-title-2').innerText = "LOADING DATA";
+        // ปิด Loading ถึงแม้จะ Error เพื่อให้เห็นข้อความ
+        document.getElementById('app-preloader').style.display = 'none';
     }
 }
 
