@@ -3,11 +3,19 @@
   "title1": "TIME",
   "title2": "SACRED",
   "eggImage": "images/TIME_SACRED/egg.png",
-  "rates": { "SSR": 0.5, "SR": 1.5, "R": 10.0, "A": 15.0, "B": 31.0, "C": 21.0, "E": 21.0 },
+  "rates": {
+    "SSR": 0.5,
+    "SR": 1.5,
+    "R": 10.0,
+    "A": 15.0,
+    "B": 31.0,
+    "C": 21.0,
+    "E": 21.0
+  },
   "expectedScore": 10.43,
   "themeColors": {
     "--bg-color": "#0b101a",
-    "--bg-main": "url('images/TIME_SACRED/bg.jpg')",
+    "--bg-main": "url('images/TIME_SACRED/bg.png')",
     "--ambient1": "rgba(56, 189, 248, 0.15)",
     "--ambient2": "rgba(148, 163, 184, 0.15)",
     "--egg-glow": "#38bdf8",
