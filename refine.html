@@ -243,14 +243,14 @@
                                 <!-- Input: God Hammer -->
                                 <div class="relative w-1/2 flex items-center bg-black/40 border border-white/10 rounded focus-within:border-amber-500 transition" title="ราคา God Hammer">
                                     <div class="pl-2 pr-1 flex items-center justify-center opacity-80">
-                                        <img src="images/refine/God_Hammer.png" class="w-3 h-3 md:w-4 md:h-4 object-contain" onerror="this.style.display='none'">
+                                        <img src="images/refine/God_Hammer.png" class="w-4 h-4 md:w-5 md:h-5 object-contain" onerror="this.style.display='none'">
                                     </div>
                                     <input type="number" id="hammerPrice" value="75" min="0" class="w-full bg-transparent text-amber-100 p-1 md:p-1.5 text-[10px] md:text-xs outline-none" oninput="updateUI()">
                                 </div>
                                 <!-- Input: God Furnace -->
                                 <div class="relative w-1/2 flex items-center bg-black/40 border border-white/10 rounded focus-within:border-amber-500 transition" title="ราคา God Furnace">
                                     <div class="pl-2 pr-1 flex items-center justify-center opacity-80">
-                                        <img src="images/refine/God_Furnace.png" class="w-3 h-3 md:w-4 md:h-4 object-contain" onerror="this.style.display='none'">
+                                        <img src="images/refine/God_Furnace.png" class="w-4 h-4 md:w-5 md:h-5 object-contain" onerror="this.style.display='none'">
                                     </div>
                                     <input type="number" id="furnacePrice" value="75" min="0" class="w-full bg-transparent text-amber-100 p-1 md:p-1.5 text-[10px] md:text-xs outline-none" oninput="updateUI()">
                                 </div>
@@ -324,7 +324,7 @@
     </div>
 
     <!-- Hidden Share Card Structure (สำหรับการเจนภาพ) แบบไร้กรอบ -->
-    <div id="shareCard" class="absolute left-[-9999px] top-0 w-[1080px] h-[1080px] bg-[#2d1b11] overflow-hidden flex flex-col" style="background-image: url('images/refine/bg.png'); background-size: cover; background-position: center;">
+    <div id="shareCard" class="absolute left-[-9999px] top-0 w-[1080px] h-[1200px] bg-[#2d1b11] overflow-hidden flex flex-col" style="background-image: url('images/refine/bg.png'); background-size: cover; background-position: center;">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
         <div class="relative z-10 flex flex-col h-full p-12 text-white font-['Kanit']">
             <!-- Header -->
@@ -837,9 +837,9 @@
             const canvas = await html2canvas(shareCard, {
                 scale: 1, 
                 width: 1080,
-                height: 1080,
+                height: 1200,
                 windowWidth: 1080,
-                windowHeight: 1080,
+                windowHeight: 1200,
                 x: 0,
                 y: 0,
                 backgroundColor: null,
