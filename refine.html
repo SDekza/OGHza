@@ -780,6 +780,7 @@
         const modal = document.getElementById('shareModal');
         const previewImg = document.getElementById('shareImagePreview');
         const loading = document.getElementById('shareLoading');
+        const shareCard = document.getElementById('shareCard');
         
         previewImg.classList.add('hidden');
         loading.classList.remove('hidden');
@@ -812,12 +813,23 @@
         else if (state.level >= 10) title = "🔥 ผู้ไม่ยอมแพ้ 🔥";
         document.getElementById('shareTitle').innerText = title;
 
+        // ดึงตัวจับภาพมาในพื้นที่ viewport ชั่วคราว (ซ่อนไว้ข้างหลังด้วย z-index) 
+        // เพื่อแก้ปัญหา html2canvas capture ส่วนที่อยู่นอกจอไม่ได้
+        shareCard.style.position = 'fixed';
+        shareCard.style.top = '0px';
+        shareCard.style.left = '0px';
+        shareCard.style.zIndex = '-9999';
+
         // 3. ใช้ html2canvas แปลง div เป็นรูปภาพ
         try {
-            const shareCard = document.getElementById('shareCard');
-            // บังคับให้โหลดเสร็จก่อนจับภาพ (ปรับ scale เป็น 1 เพื่อไม่ให้กินเครื่องเกินไป เพราะภาพตั้งต้นใหญ่แล้ว)
             const canvas = await html2canvas(shareCard, {
                 scale: 1, 
+                width: 1080,
+                height: 1080,
+                windowWidth: 1080,
+                windowHeight: 1080,
+                x: 0,
+                y: 0,
                 backgroundColor: null,
                 useCORS: true, 
                 logging: false
@@ -835,6 +847,9 @@
             console.error("Error generating image:", err);
             closeShareModal();
             showNotification("เกิดข้อผิดพลาดในการสร้างรูปภาพ", "error");
+        } finally {
+            // เอาหน้าต่างซ่อนกลับไปที่เดิม
+            shareCard.style.left = '-9999px';
         }
     }
 
