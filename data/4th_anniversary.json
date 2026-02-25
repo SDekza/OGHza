@@ -1,0 +1,70 @@
+{
+  "id": "4th_anniversary",
+  "title1": "4TH",
+  "title2": "ANNIVERSARY",
+  "eggImage": "images/4TH/egg.png",
+  "rates": {
+    "SSR": 0.5,
+    "SR": 1.5,
+    "R": 10.0,
+    "A": 15.0,
+    "B": 31.0,
+    "C": 21.0,
+    "E": 21.0
+  },
+  "expectedScore": 10.43,
+  "themeColors": {
+    "--bg-color": "#1a0b0b",
+    "--bg-main": "url('images/4TH/bg.png')",
+    "--ambient1": "rgba(234, 179, 8, 0.25)",
+    "--ambient2": "rgba(220, 38, 38, 0.2)",
+    "--egg-glow": "#facc15",
+    "--magic-circle": "#fef08a",
+    "--title1-grad": "linear-gradient(to bottom, #fef08a, #facc15, #ca8a04)",
+    "--title2-grad": "linear-gradient(to bottom, #fca5a5, #ef4444, #991b1b)",
+    "--share-t1": "#facc15",
+    "--share-t2": "#ef4444",
+    "--share-bg": "#140a0a",
+    "--share-overlay": "radial-gradient(circle at 50% 30%, rgba(234, 179, 8, 0.2) 0%, transparent 100%)"
+  },
+  "items": [
+    { "id": "4th_ssr1", "name": "Anniversary SSR Item 1", "rank": "SSR", "qty": 1, "imgSrc": "images/4TH/1.png" },
+    { "id": "4th_ssr2", "name": "Anniversary SSR Item 2", "rank": "SSR", "qty": 1, "imgSrc": "images/4TH/2.png" },
+    { "id": "4th_ssr3", "name": "Anniversary SSR Item 3", "rank": "SSR", "qty": 1, "imgSrc": "images/4TH/3.png" },
+    { "id": "4th_ssr4", "name": "Anniversary SSR Item 4", "rank": "SSR", "qty": 1, "imgSrc": "images/4TH/4.png" },
+    { "id": "4th_ssr5", "name": "Anniversary SSR Item 5", "rank": "SSR", "qty": 1, "imgSrc": "images/4TH/5.png" },
+    
+    { "id": "4th_sr1", "name": "Anniversary SR Item 1", "rank": "SR", "qty": 1, "imgSrc": "images/4TH/6.png" },
+    { "id": "4th_sr2", "name": "Anniversary SR Item 2", "rank": "SR", "qty": 1, "imgSrc": "images/4TH/7.png" },
+    { "id": "4th_sr3", "name": "Anniversary SR Item 3", "rank": "SR", "qty": 1, "imgSrc": "images/4TH/8.png" },
+    { "id": "4th_sr4", "name": "Anniversary SR Item 4", "rank": "SR", "qty": 1, "imgSrc": "images/4TH/9.png" },
+    
+    { "id": "4th_r1", "name": "Anniversary R Item 1", "rank": "R", "qty": 1, "imgSrc": "images/4TH/10.png" },
+    { "id": "4th_r2", "name": "Anniversary R Item 2", "rank": "R", "qty": 1, "imgSrc": "images/4TH/11.png" },
+    { "id": "4th_r3", "name": "Anniversary R Item 3", "rank": "R", "qty": 1, "imgSrc": "images/4TH/12.png" },
+    { "id": "4th_r4", "name": "Anniversary R Item 4", "rank": "R", "qty": 1, "imgSrc": "images/4TH/13.png" },
+    { "id": "4th_r5", "name": "Anniversary R Item 5", "rank": "R", "qty": 1, "imgSrc": "images/4TH/14.png" },
+    { "id": "4th_r6", "name": "Anniversary R Item 6", "rank": "R", "qty": 1, "imgSrc": "images/4TH/15.png" },
+    
+    { "id": "4th_a1", "name": "Anniversary A Item 1", "rank": "A", "qty": 1, "imgSrc": "images/4TH/16.png" },
+    { "id": "4th_a2", "name": "Anniversary A Item 2", "rank": "A", "qty": 1, "imgSrc": "images/4TH/17.png" },
+    
+    { "id": "4th_b1", "name": "Anniversary B Item 1", "rank": "B", "qty": 5, "imgSrc": "images/4TH/18.png" },
+    { "id": "4th_b2", "name": "Anniversary B Item 2", "rank": "B", "qty": 5, "imgSrc": "images/4TH/19.png" },
+    { "id": "4th_b3", "name": "Anniversary B Item 3", "rank": "B", "qty": 5, "imgSrc": "images/4TH/20.png" },
+    { "id": "4th_b4", "name": "Anniversary B Item 4", "rank": "B", "qty": 5, "imgSrc": "images/4TH/21.png" },
+    { "id": "4th_b5", "name": "Anniversary B Item 5", "rank": "B", "qty": 5, "imgSrc": "images/4TH/22.png" },
+    { "id": "4th_b6", "name": "Anniversary B Item 6", "rank": "B", "qty": 5, "imgSrc": "images/4TH/23.png" },
+    { "id": "4th_b7", "name": "Anniversary B Item 7", "rank": "B", "qty": 5, "imgSrc": "images/4TH/24.png" },
+    { "id": "4th_b8", "name": "Anniversary B Item 8", "rank": "B", "qty": 5, "imgSrc": "images/4TH/25.png" },
+    
+    { "id": "4th_c1", "name": "Anniversary C Item 1", "rank": "C", "qty": 10, "imgSrc": "images/4TH/26.png" },
+    { "id": "4th_c2", "name": "Anniversary C Item 2", "rank": "C", "qty": 10, "imgSrc": "images/4TH/27.png" },
+    { "id": "4th_c3", "name": "Anniversary C Item 3", "rank": "C", "qty": 10, "imgSrc": "images/4TH/28.png" },
+    { "id": "4th_c4", "name": "Anniversary C Item 4", "rank": "C", "qty": 10, "imgSrc": "images/4TH/29.png" },
+    
+    { "id": "4th_e1", "name": "Anniversary E Item 1", "rank": "E", "qty": 10, "imgSrc": "images/4TH/30.png" },
+    { "id": "4th_e2", "name": "Anniversary E Item 2", "rank": "E", "qty": 10, "imgSrc": "images/4TH/31.png" },
+    { "id": "4th_e3", "name": "Anniversary E Item 3", "rank": "E", "qty": 10, "imgSrc": "images/4TH/32.png" }
+  ]
+}
