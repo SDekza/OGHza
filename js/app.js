@@ -310,6 +310,7 @@ function finishAutoPull(gS) {
     document.getElementById('egg-img').classList.remove('animate-bounce');
     document.getElementById('btn-pull-until-ssr').disabled = false;
     
+    // 🎯 อัปเดตตัวเลขหน้าเว็บหลังจาก Auto จบ
     document.getElementById('total-pulls-text').innerText = totalPulls.toLocaleString(); 
     updateCost(); 
     updateLuckMeter(); 
@@ -357,6 +358,10 @@ function pull(c, fO = false) {
         const ov = document.getElementById('pull-overlay'); ov.classList.remove('hidden'); ov.classList.add('flex');
         const cn = document.getElementById('overlay-items-container'); cn.innerHTML = ''; nP.forEach(i => cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(i)));
         document.getElementById('overlay-actions').classList.remove('hidden'); document.getElementById('overlay-skip-text').classList.add('hidden');
+        
+        // 🎯 เติมส่วนที่หายไป: อัปเดตตัวเลขจำนวนครั้งบนหน้าจอเวลาสุ่มแบบ x1 หรือ x10
+        document.getElementById('total-pulls-text').innerText = totalPulls.toLocaleString();
+        
         updateCost(); updateLuckMeter(); renderInventory();
         startPullAnimation(nP);
     }, fO ? 50 : 600);
