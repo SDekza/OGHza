@@ -203,7 +203,16 @@ function preloadImages() {
     if (!currentBanner) return;
     const allImages = new Set([currentBanner.eggImage]);
     currentBanner.items.forEach(i => allImages.add(i.imgSrc));
-    Array.from(allImages).forEach(src => { const img = new Image(); img.src = src; }); 
+    const imageArray = Array.from(allImages);
+    
+    // 🚀 อัปเกรด: ทยอยโหลดรูปในพื้นหลังแบบต่อคิว (Background Queue Preload)
+    // ป้องกันอาการมือถือค้างจากการเรียกดึงรูป 30+ รูปพร้อมกันในเสี้ยววินาที
+    imageArray.forEach((src, index) => {
+        setTimeout(() => {
+            const img = new Image();
+            img.src = src;
+        }, index * 100); // หน่วงเวลาโหลดรูปละ 100 มิลลิวินาที ทยอยมาเรื่อยๆ
+    });
 }
 
 function updateCost() { 
