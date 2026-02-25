@@ -58,7 +58,6 @@
         }
         .magic-glow-effect { animation: magic-glow 4s ease-in-out infinite; }
 
-        /* 🎯 แอนิเมชันใหม่สำหรับเวลากดไข่ค้าง (ชาร์จพลัง) */
         @keyframes charge-shake {
             0%, 100% { transform: scale(0.95) rotate(0deg); }
             25% { transform: scale(0.95) rotate(-3deg); }
@@ -133,9 +132,9 @@
         <div id="overlay-items-container" class="grid grid-cols-3 sm:grid-cols-5 gap-3 md:gap-5 max-w-5xl w-full justify-center pb-20"></div>
         <div id="overlay-actions" class="hidden fixed bottom-0 left-0 w-full flex-col items-center gap-4 pb-6 pt-12 bg-gradient-to-t from-[#020108] via-[#05020a]/90 to-transparent z-[120]" style="padding-bottom: calc(1.5rem + var(--safe-bottom));">
             <div class="flex flex-wrap justify-center gap-3">
-                <button onclick="pull(1, true)" class="rounded-full bg-slate-800/90 border border-slate-500 text-white px-6 py-3 font-bold shadow-lg text-sm backdrop-blur-md">สุ่ม x 1</button>
-                <button onclick="pull(10, true)" class="rounded-full bg-gradient-to-b from-yellow-500 to-amber-700 border border-yellow-300 text-amber-950 px-6 py-3 font-black shadow-lg text-sm">สุ่ม x 10</button>
-                <button onclick="pullUntilSSR(true)" class="rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-700 border border-fuchsia-400 text-white px-6 py-3 font-black shadow-lg text-sm">สุ่มจนกว่าจะออก SSR</button>
+                <button onclick="pull(1, true)" class="rounded-full bg-slate-800/90 border border-slate-500 text-white px-6 py-3 font-bold shadow-lg text-sm backdrop-blur-md hover:bg-slate-700">สุ่ม x 1</button>
+                <button onclick="pull(10, true)" class="rounded-full bg-gradient-to-b from-yellow-500 to-amber-700 border border-yellow-300 text-amber-950 px-6 py-3 font-black shadow-lg text-sm hover:scale-105 transition-transform">สุ่ม x 10</button>
+                <button onclick="pullUntilSSR(true)" class="rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-700 border border-fuchsia-400 text-white px-6 py-3 font-black shadow-lg text-sm hover:scale-105 transition-transform">สุ่มจนกว่าจะออก SSR</button>
             </div>
         </div>
     </div>
@@ -150,40 +149,34 @@
             </div>
             <img id="share-result-img" src="" alt="Share Result" class="w-full h-auto object-contain hidden" />
         </div>
-        <button onclick="closeShareModal()" class="mt-6 rounded-full bg-slate-800/80 border border-slate-500 text-white px-8 py-3 font-bold">ปิดหน้าต่าง</button>
+        <button onclick="closeShareModal()" class="mt-6 rounded-full bg-slate-800/80 border border-slate-500 text-white px-8 py-3 font-bold hover:bg-slate-700 transition-colors">ปิดหน้าต่าง</button>
     </div>
 
     <!-- 🎯 Hidden Template สำหรับสร้างรูปภาพ Share -->
     <div class="fixed top-0" style="left: -9999px;">
         <div id="share-template" class="p-10 relative overflow-hidden flex flex-col items-center bg-[#090314]">
-            
             <div class="absolute inset-0 z-0 pointer-events-none" style="background: radial-gradient(circle at 50% 30%, rgba(93, 21, 135, 0.4) 0%, transparent 100%);"></div>
-
             <div id="share-magic-circle" class="absolute top-[35%] left-[50%] w-[110%] opacity-20 pointer-events-none text-cyan-200 z-0" style="transform: translate(-50%, -50%);">
                 <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.3">
-                    <circle cx="50" cy="50" r="45" stroke-dasharray="2 6"/>
-                    <circle cx="50" cy="50" r="35"/><circle cx="50" cy="50" r="20" stroke-dasharray="10 5"/>
-                    <polygon points="50,5 95,75 5,75" stroke-width="0.2" opacity="0.4"/>
-                    <polygon points="50,95 5,25 95,25" stroke-width="0.2" opacity="0.4"/>
+                    <circle cx="50" cy="50" r="45" stroke-dasharray="2 6"/><circle cx="50" cy="50" r="35"/><circle cx="50" cy="50" r="20" stroke-dasharray="10 5"/>
+                    <polygon points="50,5 95,75 5,75" stroke-width="0.2" opacity="0.4"/><polygon points="50,95 5,25 95,25" stroke-width="0.2" opacity="0.4"/>
                 </svg>
             </div>
             
             <div class="relative z-10 w-full flex flex-col items-center">
-                
-                <!-- 🎯 Header: บังคับพิกเซล ขอบไข่บน=ขอบหนังสือบน / ขอบไข่ล่าง=ขอบหนังสือล่าง -->
+                <!-- Header (Share) -->
                 <div class="w-full flex items-center justify-center gap-6 mb-14 mt-6 z-10 relative h-[110px]">
-                    <!-- รูปไข่ล็อคความสูง 110px และสั่งไม่ให้มีช่องว่าง -->
                     <div class="h-[110px] w-[110px] shrink-0 flex items-center justify-center">
-                        <img src="images/egg.png" class="h-full w-auto max-w-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
+                        <!-- 🎯 เพิ่ม id="share-egg-img" และเปลี่ยน Path ไข่เป็นของโฟลเดอร์ AQUARIUS_DIADEM -->
+                        <img id="share-egg-img" src="images/AQUARIUS_DIADEM/egg.png" class="h-full w-auto max-w-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
                     </div>
-                    <!-- ชุดตัวหนังสือล็อคความสูง 110px ชนขอบบน-ล่าง -->
                     <div class="h-[110px] flex flex-col justify-between items-start">
-                        <h1 class="text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font text-yellow-400 m-0 p-0" style="margin-top: -8px;">AQUARIUS</h1>
-                        <h1 class="text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font text-cyan-400 m-0 p-0" style="margin-bottom: -10px;">DIADEM</h1>
+                        <h1 id="share-title-1" class="text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font text-yellow-400 m-0 p-0" style="margin-top: -8px;">AQUARIUS</h1>
+                        <h1 id="share-title-2" class="text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font text-cyan-400 m-0 p-0" style="margin-bottom: -10px;">DIADEM</h1>
                     </div>
                 </div>
 
-                <!-- สรุปดวง: ลดขนาดฟอนต์ฉายาลงเพื่อให้ชื่อตู้เด่นที่สุด -->
+                <!-- สรุปดวง -->
                 <div class="w-full text-center relative mb-12">
                     <div id="tpl-luck-name" class="text-[26px] leading-none font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,1)] mb-4 uppercase tracking-[0.3em]">👑 ลูกรัก GM</div>
                     <div id="tpl-fun-quote" class="text-yellow-300 font-bold text-xl italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"ชาตินี้ใช้ดวงหมดแล้ว!"</div>
@@ -226,15 +219,22 @@
     <!-- UI หน้าหลัก -->
     <div class="relative z-10 max-w-[1400px] mx-auto min-h-screen flex flex-col lg:flex-row main-content">
         <div class="w-full lg:w-5/12 flex flex-col items-center justify-center p-6 mt-4 lg:mt-0">
+            
+            <!-- 🎯 ระบบ Tabs สำหรับสลับตู้กาชา (Data-Driven Design) -->
+            <div class="flex justify-center gap-3 mb-6 relative z-20">
+                <button id="tab-banner1" onclick="switchBanner('banner1')" class="px-5 py-2 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest transition-all bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.6)] border border-blue-400 transform scale-105 pointer-events-none">1. AQUARIUS</button>
+                <button id="tab-banner2" onclick="switchBanner('banner2')" class="px-5 py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all bg-slate-800/80 text-slate-400 border border-slate-600 hover:text-white hover:bg-slate-700 backdrop-blur-sm cursor-pointer">2. DIADEM V2</button>
+            </div>
+
             <div class="text-center mb-8">
                 <h1 class="text-5xl md:text-7xl font-black mb-2 georgia-font leading-tight text-white drop-shadow-xl">
-                    <span class="bg-gradient-to-b from-yellow-100 via-yellow-400 to-amber-600 bg-clip-text text-transparent block uppercase">Aquarius</span>
-                    <span class="bg-gradient-to-b from-blue-100 via-blue-400 to-indigo-600 bg-clip-text text-transparent block uppercase">Diadem</span>
+                    <span id="main-title-1" class="bg-gradient-to-b from-yellow-100 via-yellow-400 to-amber-600 bg-clip-text text-transparent block uppercase">AQUARIUS</span>
+                    <span id="main-title-2" class="bg-gradient-to-b from-blue-100 via-blue-400 to-indigo-600 bg-clip-text text-transparent block uppercase">DIADEM</span>
                 </h1>
                 <p class="text-indigo-200/80 font-bold tracking-[0.3em] uppercase text-[10px] md:text-xs text-center">Scroll Simulator</p>
             </div>
             
-            <!-- 🎯 ทำให้ไข่กดได้ด้วย Pointer Events -->
+            <!-- ไข่กาชา (กดยุบ ชาร์จพลังได้) -->
             <div id="egg-container" 
                  class="relative flex items-center justify-center w-full max-w-[280px] aspect-square cursor-pointer transition-transform active:scale-95"
                  style="touch-action: none; -webkit-tap-highlight-color: transparent;"
@@ -252,24 +252,22 @@
                     </svg>
                 </div>
                 <div class="absolute w-40 h-40 bg-blue-500 rounded-full blur-[60px] opacity-30 pointer-events-none"></div>
-                <!-- ถอด id-egg-img แอนิเมชันเก่าออกชั่วคราวเวลาชาร์จ -->
-                <img id="egg-img" src="images/egg.png" alt="Egg" class="relative z-10 h-[70%] w-auto max-w-full object-contain drop-shadow-[0_0_30px_rgba(59,130,246,0.4)] pointer-events-none transition-all duration-300" />
+                <!-- 🎯 เปลี่ยน Path รูปไข่หน้าหลัก -->
+                <img id="egg-img" src="images/AQUARIUS_DIADEM/egg.png" alt="Egg" class="relative z-10 h-[70%] w-auto max-w-full object-contain drop-shadow-[0_0_30px_rgba(59,130,246,0.4)] pointer-events-none transition-all duration-300" />
             </div>
             
-            <!-- 🎯 ป้ายคำแนะนำการกด -->
+            <!-- ป้ายคำแนะนำการกด -->
             <div class="mt-4 text-center select-none pointer-events-none">
                  <p class="text-[11px] md:text-xs font-bold text-slate-300 tracking-widest uppercase bg-slate-800/50 px-4 py-2 rounded-full border border-slate-600/50 shadow-lg backdrop-blur-sm animate-pulse">
                     👆 แตะเพื่อสุ่ม x1 <span class="mx-2 text-slate-500">|</span> กดค้างเพื่อสุ่ม x10
                 </p>
             </div>
 
-            <!-- 🎯 เปลี่ยนปุ่ม SSR เทอะทะ ให้เป็นแคปซูล Auto Mode สุดล้ำ -->
+            <!-- ปุ่มแคปซูล Auto Mode (ซ่อนรูปปุ่มเทอะทะ) -->
             <div class="flex justify-center mt-5 w-full">
                 <button id="btn-pull-until-ssr" onclick="pullUntilSSR()" 
-                        class="group relative px-5 py-2 rounded-full bg-[#05020a]/60 border border-fuchsia-500/40 text-fuchsia-300 font-bold text-[10px] md:text-xs tracking-widest uppercase hover:bg-fuchsia-900/40 hover:border-fuchsia-400 hover:text-white transition-all duration-300 flex items-center gap-2 overflow-hidden shadow-[0_0_15px_rgba(192,38,211,0.15)] hover:shadow-[0_0_25px_rgba(192,38,211,0.4)] active:scale-95">
-                    <!-- แสงวิ่งด้านหลังตอน Hover -->
+                        class="group relative px-5 py-2 rounded-full bg-[#05020a]/60 border border-fuchsia-500/40 text-fuchsia-300 font-bold text-[10px] md:text-xs tracking-widest uppercase hover:bg-fuchsia-900/40 hover:border-fuchsia-400 hover:text-white transition-all duration-300 flex items-center gap-2 overflow-hidden shadow-[0_0_15px_rgba(192,38,211,0.15)] hover:shadow-[0_0_25px_rgba(192,38,211,0.4)] active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-fuchsia-500/20 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out"></div>
-                    
                     <svg class="w-3.5 h-3.5 text-fuchsia-400 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
                         <path d="M21 3v5h-5"/>
@@ -310,35 +308,64 @@
     </div>
 
     <script>
-        const ITEMS = [
-            { id: 'ssr1', name: 'Sealed Card Album II', rank: 'SSR', qty: 1, imgSrc: 'images/1.png' },
-            { id: 'ssr2', name: 'Sealed Card Album', rank: 'SSR', qty: 1, imgSrc: 'images/2.png' },
-            { id: 'ssr3', name: 'Costume Arabian Veil', rank: 'SSR', qty: 1, imgSrc: 'images/3.png' },
-            { id: 'ssr4', name: "Rasen Huuma's Orb [1]", rank: 'SSR', qty: 1, imgSrc: 'images/4.png' },
-            { id: 'ssr5', name: 'Aquarius Diadem [1]', rank: 'SSR', qty: 1, imgSrc: 'images/5.png' },
-            { id: 'sr1', name: 'Aquarius Staff [2]', rank: 'SR', qty: 1, imgSrc: 'images/6.png' },
-            { id: 'sr2', name: 'Aquarius Ring [1]', rank: 'SR', qty: 1, imgSrc: 'images/7.png' },
-            { id: 'sr3', name: 'Huuma Shuriken Clearness [2]', rank: 'SR', qty: 1, imgSrc: 'images/8.png' },
-            { id: 'r1', name: 'Cross Shuriken Shadow Earring', rank: 'R', qty: 1, imgSrc: 'images/9.png' },
-            { id: 'r2', name: 'Magic Compose Shadow Armor', rank: 'R', qty: 1, imgSrc: 'images/10.png' },
-            { id: 'r3', name: 'Blitz Shadow Pendant', rank: 'R', qty: 1, imgSrc: 'images/11.png' },
-            { id: 'r4', name: 'Blitz Shadow Earring', rank: 'R', qty: 1, imgSrc: 'images/12.png' },
-            { id: 'r5', name: 'Status Shadow Item Combiner', rank: 'R', qty: 1, imgSrc: 'images/13.png' },
-            { id: 'a1', name: 'Blood Twig', rank: 'A', qty: 1, imgSrc: 'images/14.png' },
-            { id: 'b1', name: 'Class Shadow Cube', rank: 'B', qty: 1, imgSrc: 'images/15.png' },
-            { id: 'b2', name: 'Poison Bottle Box', rank: 'B', qty: 1, imgSrc: 'images/16.png' },
-            { id: 'b3', name: 'STR Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/17.png' },
-            { id: 'b4', name: 'AGI Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/18.png' },
-            { id: 'b5', name: 'INT Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/19.png' },
-            { id: 'b6', name: 'VIT Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/20.png' },
-            { id: 'b7', name: 'DEX Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/21.png' },
-            { id: 'b8', name: 'LUK Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/22.png' },
-            { id: 'c1', name: 'Blessing Lv.10 Scroll', rank: 'C', qty: 10, imgSrc: 'images/23.png' },
-            { id: 'c2', name: 'Increase Agility Lv.10 Scroll', rank: 'C', qty: 10, imgSrc: 'images/24.png' },
-            { id: 'e1', name: 'Ex Def Potion', rank: 'E', qty: 5, imgSrc: 'images/25.png' },
-            { id: 'e2', name: 'Kafra Card', rank: 'E', qty: 5, imgSrc: 'images/26.png' },
+        // 🎯 1. เก็บไอเทมตั้งต้นไว้เป็น Base (อัปเดต Path ไปที่โฟลเดอร์ AQUARIUS_DIADEM)
+        const BASE_ITEMS = [
+            { id: 'ssr1', name: 'Sealed Card Album II', rank: 'SSR', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/1.png' },
+            { id: 'ssr2', name: 'Sealed Card Album', rank: 'SSR', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/2.png' },
+            { id: 'ssr3', name: 'Costume Arabian Veil', rank: 'SSR', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/3.png' },
+            { id: 'ssr4', name: "Rasen Huuma's Orb [1]", rank: 'SSR', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/4.png' },
+            { id: 'ssr5', name: 'Aquarius Diadem [1]', rank: 'SSR', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/5.png' },
+            { id: 'sr1', name: 'Aquarius Staff [2]', rank: 'SR', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/6.png' },
+            { id: 'sr2', name: 'Aquarius Ring [1]', rank: 'SR', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/7.png' },
+            { id: 'sr3', name: 'Huuma Shuriken Clearness [2]', rank: 'SR', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/8.png' },
+            { id: 'r1', name: 'Cross Shuriken Shadow Earring', rank: 'R', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/9.png' },
+            { id: 'r2', name: 'Magic Compose Shadow Armor', rank: 'R', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/10.png' },
+            { id: 'r3', name: 'Blitz Shadow Pendant', rank: 'R', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/11.png' },
+            { id: 'r4', name: 'Blitz Shadow Earring', rank: 'R', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/12.png' },
+            { id: 'r5', name: 'Status Shadow Item Combiner', rank: 'R', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/13.png' },
+            { id: 'a1', name: 'Blood Twig', rank: 'A', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/14.png' },
+            { id: 'b1', name: 'Class Shadow Cube', rank: 'B', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/15.png' },
+            { id: 'b2', name: 'Poison Bottle Box', rank: 'B', qty: 1, imgSrc: 'images/AQUARIUS_DIADEM/16.png' },
+            { id: 'b3', name: 'STR Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/AQUARIUS_DIADEM/17.png' },
+            { id: 'b4', name: 'AGI Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/AQUARIUS_DIADEM/18.png' },
+            { id: 'b5', name: 'INT Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/AQUARIUS_DIADEM/19.png' },
+            { id: 'b6', name: 'VIT Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/AQUARIUS_DIADEM/20.png' },
+            { id: 'b7', name: 'DEX Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/AQUARIUS_DIADEM/21.png' },
+            { id: 'b8', name: 'LUK Biscuit Stick', rank: 'B', qty: 2, imgSrc: 'images/AQUARIUS_DIADEM/22.png' },
+            { id: 'c1', name: 'Blessing Lv.10 Scroll', rank: 'C', qty: 10, imgSrc: 'images/AQUARIUS_DIADEM/23.png' },
+            { id: 'c2', name: 'Increase Agility Lv.10 Scroll', rank: 'C', qty: 10, imgSrc: 'images/AQUARIUS_DIADEM/24.png' },
+            { id: 'e1', name: 'Ex Def Potion', rank: 'E', qty: 5, imgSrc: 'images/AQUARIUS_DIADEM/25.png' },
+            { id: 'e2', name: 'Kafra Card', rank: 'E', qty: 5, imgSrc: 'images/AQUARIUS_DIADEM/26.png' },
         ];
-        const RATES = { SSR: 0.5, SR: 1.5, R: 10.0, A: 15.0, B: 31.0, C: 21.0, E: 21.0 };
+
+        // 🎯 2. สถาปัตยกรรม Gacha Hub: นำข้อมูลทุกตู้อยู่ใน Object เดียว
+        const GACHA_BANNERS = {
+            'banner1': {
+                id: 'banner1',
+                title1: 'AQUARIUS',
+                title2: 'DIADEM',
+                eggImage: 'images/AQUARIUS_DIADEM/egg.png', // 🎯 เพิ่มคุณสมบัติรูปไข่แบบแยกตู้
+                rates: { SSR: 0.5, SR: 1.5, R: 10.0, A: 15.0, B: 31.0, C: 21.0, E: 21.0 },
+                expectedScore: 10.43,
+                items: BASE_ITEMS
+            },
+            'banner2': {
+                id: 'banner2',
+                title1: 'AQUARIUS',
+                title2: 'DIADEM 2',
+                eggImage: 'images/AQUARIUS_DIADEM/egg.png', // 🎯 ทดสอบด้วยรูปเดิมไปก่อน
+                rates: { SSR: 0.5, SR: 1.5, R: 10.0, A: 15.0, B: 31.0, C: 21.0, E: 21.0 },
+                expectedScore: 10.43,
+                // จำลองเพิ่มคำว่า (V.2) เพื่อให้เห็นชัดว่าเปลี่ยนตู้แล้วไอเทมเปลี่ยนจริง
+                items: BASE_ITEMS.map(item => ({ ...item, id: item.id + '_v2', name: item.name + ' (V.2)' }))
+            }
+        };
+
+        // ตัวแปรเก็บสถานะตู้ปัจจุบัน (เริ่มต้นที่ตู้แรก)
+        let currentBannerId = 'banner1';
+        let currentBanner = GACHA_BANNERS[currentBannerId];
+
+        // Style ของแต่ละ Rank (ใช้ร่วมกันได้ทุกตู้)
         const RANK_STYLES = {
             'SSR': { bg: 'bg-gradient-to-br from-yellow-100 to-amber-200 ssr-glow', border: 'border-yellow-400', text: 'text-amber-900 font-extrabold', grad: 'from-amber-400 to-yellow-600', hex: 'text-yellow-400', shareBg: 'bg-yellow-500/10 border border-yellow-500/30' },
             'SR': { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-900 font-bold', grad: 'from-purple-400 to-purple-600', hex: 'text-purple-400', shareBg: 'bg-purple-500/10 border border-purple-500/30' },
@@ -349,27 +376,61 @@
             'E': { bg: 'bg-slate-200', border: 'border-slate-400', text: 'text-slate-700 font-bold', grad: 'from-slate-400 to-slate-500' }
         };
         const RANK_POINTS = { 'SSR': 500, 'SR': 100, 'R': 20, 'A': 15, 'B': 5, 'C': 2, 'E': 1 };
-        const EXPECTED_SCORE_PER_PULL = 10.43;
 
         let history = [], totalPulls = 0, isSpinning = false, currentAnimationInterval = null, pullTimeout = null;
         let isOverlayAnimating = false, isAutoPulling = false, autoPullCount = 0, currentLuckData = {};
         
-        // 🎯 ตัวแปรสำหรับระบบกดค้าง (Press & Hold)
         let holdTimer = null;
         let isHolding = false;
-        const HOLD_DURATION = 600; // เวลาที่ต้องกดค้าง (มิลลิวินาที) - 0.6 วินาที
+        const HOLD_DURATION = 600;
+
+        // 🎯 3. ฟังก์ชันสลับตู้ (Switch Banner)
+        function switchBanner(targetId) {
+            // ป้องกันการเปลี่ยนตู้ระหว่างที่กดสุ่มอยู่
+            if (isSpinning || isOverlayAnimating || isAutoPulling) return;
+            
+            currentBannerId = targetId;
+            currentBanner = GACHA_BANNERS[targetId];
+
+            // 3.1 อัปเดต UI ปุ่ม Tab ด้านบน
+            const tabs = ['banner1', 'banner2'];
+            tabs.forEach(tId => {
+                const btn = document.getElementById('tab-' + tId);
+                if (tId === targetId) {
+                    btn.className = "px-5 py-2 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest transition-all bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.6)] border border-blue-400 transform scale-105 pointer-events-none";
+                } else {
+                    btn.className = "px-5 py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all bg-slate-800/80 text-slate-400 border border-slate-600 hover:text-white hover:bg-slate-700 backdrop-blur-sm cursor-pointer";
+                }
+            });
+
+            // 3.2 เปลี่ยนข้อความ Title ในหน้าหลัก
+            document.getElementById('main-title-1').innerText = currentBanner.title1;
+            document.getElementById('main-title-2').innerText = currentBanner.title2;
+            
+            // 3.3 เปลี่ยนข้อความ Title ในเทมเพลตใบแชร์
+            document.getElementById('share-title-1').innerText = currentBanner.title1;
+            document.getElementById('share-title-2').innerText = currentBanner.title2;
+            
+            // 🎯 3.4 เปลี่ยนรูปไข่ตามตู้ (ทั้งหน้าจอหลักและเทมเพลตแชร์)
+            document.getElementById('egg-img').src = currentBanner.eggImage;
+            document.getElementById('share-egg-img').src = currentBanner.eggImage;
+
+            // 3.5 ล้างข้อมูลการสุ่มเก่าทั้งหมด และเริ่มใหม่
+            resetData();
+            renderRates(); // อัปเดตตารางเรทใหม่ (เผื่ออนาคตเรทแต่ละตู้ไม่เท่ากัน)
+        }
 
         function startHold(e) {
             if (isSpinning) return;
             isHolding = false;
             const egg = document.getElementById('egg-img');
-            egg.classList.add('egg-charging'); // ใส่คลาสสั่นและเรืองแสง
+            egg.classList.add('egg-charging');
             
             holdTimer = setTimeout(() => {
                 isHolding = true;
                 egg.classList.remove('egg-charging');
-                if (navigator.vibrate) navigator.vibrate([50, 50, 100]); // สั่นมือถือเตือนว่าชาร์จเต็มแล้ว
-                pull(10); // เรียกฟังก์ชันสุ่ม 10 ครั้ง
+                if (navigator.vibrate) navigator.vibrate([50, 50, 100]);
+                pull(10);
             }, HOLD_DURATION);
         }
 
@@ -378,10 +439,7 @@
             clearTimeout(holdTimer);
             const egg = document.getElementById('egg-img');
             egg.classList.remove('egg-charging');
-
-            if (!isHolding && !isSpinning) {
-                pull(1); // ถ้าปล่อยมือก่อนเวลา (Tap) ให้สุ่ม 1 ครั้ง
-            }
+            if (!isHolding && !isSpinning) { pull(1); }
             isHolding = false;
         }
 
@@ -391,9 +449,27 @@
             document.getElementById('egg-img').classList.remove('egg-charging');
         }
 
-        function preloadImages() { ['images/egg.png', ...ITEMS.map(i => i.imgSrc)].forEach(src => { const img = new Image(); img.src = src; }); }
+        function preloadImages() { 
+            // 🎯 ดึงภาพไข่และภาพไอเทมจาก "ทุกตู้" มารวมกันเพื่อโหลดล่วงหน้าแบบไดนามิก
+            const allImages = new Set();
+            Object.values(GACHA_BANNERS).forEach(banner => {
+                allImages.add(banner.eggImage);
+                banner.items.forEach(i => allImages.add(i.imgSrc));
+            });
+            Array.from(allImages).forEach(src => { const img = new Image(); img.src = src; }); 
+        }
+
         function updateCost() { const price = parseFloat(document.getElementById('price-per-pull').value) || 0; const totalCost = totalPulls * price; document.getElementById('total-cost-text').innerText = totalCost.toLocaleString(); return totalCost; }
-        function renderRates() { let html = ''; for (const [rank, rate] of Object.entries(RATES)) { const style = RANK_STYLES[rank]; html += `<div class="flex justify-between items-center text-[10px] font-medium"><span class="w-8 font-black text-transparent bg-clip-text bg-gradient-to-b ${style.grad}">${rank}</span><div class="flex-1 mx-3 h-1 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r ${style.grad}" style="width: ${rate}%"></div></div><span class="text-slate-400 w-10 text-right">${rate}%</span></div>`; } document.getElementById('rates-container').innerHTML = html; }
+        
+        function renderRates() { 
+            let html = ''; 
+            // 🎯 ใช้ currentBanner.rates แทนการ Fixed
+            for (const [rank, rate] of Object.entries(currentBanner.rates)) { 
+                const style = RANK_STYLES[rank]; 
+                html += `<div class="flex justify-between items-center text-[10px] font-medium"><span class="w-8 font-black text-transparent bg-clip-text bg-gradient-to-b ${style.grad}">${rank}</span><div class="flex-1 mx-3 h-1 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r ${style.grad}" style="width: ${rate}%"></div></div><span class="text-slate-400 w-10 text-right">${rate}%</span></div>`; 
+            } 
+            document.getElementById('rates-container').innerHTML = html; 
+        }
         
         function updateLuckMeter() {
             const container = document.getElementById('luck-meter-container');
@@ -401,8 +477,11 @@
             container.classList.remove('hidden');
             let totalPoints = 0, ssrCount = 0;
             history.forEach(item => { totalPoints += RANK_POINTS[item.rank] || 0; if (item.rank === 'SSR') ssrCount++; });
-            const luckRatio = (totalPoints / totalPulls) / EXPECTED_SCORE_PER_PULL;
+            
+            // 🎯 คำนวณโดยใช้ Expected Score ประจำตู้
+            const luckRatio = (totalPoints / totalPulls) / currentBanner.expectedScore;
             const luckPercent = (luckRatio * 100).toFixed(0);
+            
             let tN, tD, tC, funQuote;
             if (luckRatio >= 3.0) { tN = '👼 จุติมาเกิด'; tD = 'GOD TIER!'; tC = 'text-amber-400'; funQuote = '"หล่อเท่กว่านี้ก็เทพเจ้าแล้ว!"'; } 
             else if (luckRatio >= 2.0) { tN = '👑 ลูกรัก GM'; tD = 'GM PICKET!'; tC = 'text-purple-400'; funQuote = '"ระวังสิบล้อตอนเดินข้ามถนนด้วยนะเพื่อน!"'; } 
@@ -413,10 +492,13 @@
             else if (luckRatio >= 0.7) { tN = '🤏 แอบเกลือ'; tD = 'SLIGHTLY SALTY'; tC = 'text-yellow-500'; funQuote = '"ได้กลิ่นเกลือโชยมาแต่ไกล..."'; } 
             else if (luckRatio >= 0.5) { tN = '🧂 เกลือ'; tD = 'SALTY'; tC = 'text-orange-400'; funQuote = '"เค็มปี๋เลยลูกพี่ ไตจะพังแล้ว!"'; } 
             else if (luckRatio >= 0.3) { tN = '🏜️ โคตรเกลือ'; tD = 'VERY SALTY'; tC = 'text-orange-600'; funQuote = '"แห้งแล้งเหลือเกิน ถอนตัวตอนนี้ยังทัน"'; } 
-            document.getElementById('luck-tier-name').className = `text-xl font-black mb-1 ${tC}`;
-            document.getElementById('luck-tier-desc').innerText = tD;
-            document.getElementById('luck-score-text').innerText = `${luckPercent}%`;
-            document.getElementById('luck-ssr-actual').innerText = ssrCount.toLocaleString(); document.getElementById('luck-ssr-expected').innerText = (totalPulls * 0.005).toFixed(2);
+            else { tN = '💀 ทะเลเดดซี'; tD = 'EXTREME SALT'; tC = 'text-red-500'; funQuote = '"สวดอภิธรรมศพกระเป๋าตังค์ ลบเกมทิ้งเถอะ"'; }
+            
+            document.getElementById('luck-tier-name').innerText = tN; document.getElementById('luck-tier-name').className = `text-xl font-black mb-1 ${tC}`;
+            document.getElementById('luck-tier-desc').innerText = tD; document.getElementById('luck-score-text').innerText = `${luckPercent}%`;
+            document.getElementById('luck-ssr-actual').innerText = ssrCount.toLocaleString(); 
+            // คำนวณ Expected SSR แบบไดนามิกตามเรทของตู้
+            document.getElementById('luck-ssr-expected').innerText = (totalPulls * (currentBanner.rates.SSR / 100)).toFixed(2);
             currentLuckData = { tN, tD, tC, luckPercent, ssrCount, funQuote };
         }
 
@@ -448,7 +530,20 @@
         }
 
         function closeShareModal() { document.getElementById('share-modal').classList.add('hidden'); }
-        function generateRandomItem() { const rand = Math.random() * 100; let cum = 0; for (const [rank, rate] of Object.entries(RATES)) { cum += rate; if (rand <= cum) { const pos = ITEMS.filter(i => i.rank === rank); return pos[Math.floor(Math.random() * pos.length)]; } } return ITEMS[ITEMS.length - 1]; }
+        
+        // 🎯 4. สุ่มไอเทมโดยอ้างอิงจากตู้ปัจจุบัน
+        function generateRandomItem() { 
+            const rand = Math.random() * 100; 
+            let cum = 0; 
+            for (const [rank, rate] of Object.entries(currentBanner.rates)) { 
+                cum += rate; 
+                if (rand <= cum) { 
+                    const pos = currentBanner.items.filter(i => i.rank === rank); 
+                    return pos[Math.floor(Math.random() * pos.length)]; 
+                } 
+            } 
+            return currentBanner.items[currentBanner.items.length - 1]; 
+        }
         
         function startPullAnimation(pulls) {
             currentPullsToAnimate = pulls; isOverlayAnimating = true;
