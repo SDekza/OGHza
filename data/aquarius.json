@@ -1,0 +1,19 @@
+{
+  "id": "aquarius",
+  "title1": "AQUARIUS",
+  "title2": "DIADEM",
+  "eggImage": "images/AQUARIUS_DIADEM/egg.png",
+  "rates": { "SSR": 0.5, "SR": 1.5, "R": 10.0, "A": 15.0, "B": 31.0, "C": 21.0, "E": 21.0 },
+  "expectedScore": 10.43,
+  "theme": { 
+    "mainT1": "bg-gradient-to-b from-yellow-100 via-yellow-400 to-amber-600 bg-clip-text text-transparent block uppercase", 
+    "mainT2": "bg-gradient-to-b from-blue-100 via-blue-400 to-indigo-600 bg-clip-text text-transparent block uppercase",
+    "shareT1": "text-yellow-400",
+    "shareT2": "text-cyan-400"
+  },
+  "items": [
+    { "id": "aq_ssr1", "name": "Sealed Card Album II", "rank": "SSR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/1.png" },
+    { "id": "aq_ssr2", "name": "Sealed Card Album", "rank": "SSR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/2.png" }
+    // ... (ใส่ไอเทมให้ครบ 26 ชิ้น ตามเดิม)
+  ]
+}
