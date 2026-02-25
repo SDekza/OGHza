@@ -263,9 +263,19 @@
                 </p>
             </div>
 
-            <!-- 🎯 เอาปุ่ม x1, x10 ออก เหลือแต่กดจนกว่าจะออก SSR -->
-            <div class="flex flex-col gap-3 mt-6 w-full max-w-xs px-4">
-                <button id="btn-pull-until-ssr" onclick="pullUntilSSR()" class="w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-700 text-white py-4 font-black text-sm uppercase hover:scale-105 transition-transform shadow-lg shadow-fuchsia-900/30">สุ่มจนกว่าจะออก SSR</button>
+            <!-- 🎯 เปลี่ยนปุ่ม SSR เทอะทะ ให้เป็นแคปซูล Auto Mode สุดล้ำ -->
+            <div class="flex justify-center mt-5 w-full">
+                <button id="btn-pull-until-ssr" onclick="pullUntilSSR()" 
+                        class="group relative px-5 py-2 rounded-full bg-[#05020a]/60 border border-fuchsia-500/40 text-fuchsia-300 font-bold text-[10px] md:text-xs tracking-widest uppercase hover:bg-fuchsia-900/40 hover:border-fuchsia-400 hover:text-white transition-all duration-300 flex items-center gap-2 overflow-hidden shadow-[0_0_15px_rgba(192,38,211,0.15)] hover:shadow-[0_0_25px_rgba(192,38,211,0.4)] active:scale-95">
+                    <!-- แสงวิ่งด้านหลังตอน Hover -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-fuchsia-500/20 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out"></div>
+                    
+                    <svg class="w-3.5 h-3.5 text-fuchsia-400 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                    </svg>
+                    Auto: Until SSR
+                </button>
             </div>
         </div>
 
