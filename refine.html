@@ -421,7 +421,7 @@
             <!-- Footer -->
             <div class="text-center mt-auto text-slate-400 text-2xl flex justify-between px-10 font-medium pb-8">
                 <span>Created by Refine Simulator</span>
-                <span id="shareDate"></span>
+                <span class="flex items-center text-red-400 drop-shadow-md"><i class="fab fa-youtube mr-2"></i>ช่อง Youtube: @SDekza-RO</span>
             </div>
         </div>
     </div>
@@ -911,10 +911,6 @@
         document.getElementById('shareHammer').innerText = state.hammerUsed.toLocaleString();
         document.getElementById('shareFurnace').innerText = state.furnaceUsed.toLocaleString();
         document.getElementById('shareBaht').innerText = `${totalBaht.toLocaleString()} ฿`;
-        
-        // ตั้งวันที่
-        const now = new Date();
-        document.getElementById('shareDate').innerText = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
 
         // คำนวณฉายาฮาๆ
         let title = "นักตีดาบหน้าใหม่";
