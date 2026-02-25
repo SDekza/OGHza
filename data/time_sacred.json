@@ -3,21 +3,21 @@
   "title1": "TIME",
   "title2": "SACRED",
   "eggImage": "images/TIME_SACRED/egg.png",
-  "rates": {
-    "SSR": 0.5,
-    "SR": 1.5,
-    "R": 10.0,
-    "A": 15.0,
-    "B": 31.0,
-    "C": 21.0,
-    "E": 21.0
-  },
+  "rates": { "SSR": 0.5, "SR": 1.5, "R": 10.0, "A": 15.0, "B": 31.0, "C": 21.0, "E": 21.0 },
   "expectedScore": 10.43,
-  "theme": {
-    "mainT1": "bg-gradient-to-b from-slate-100 via-slate-300 to-slate-500 bg-clip-text text-transparent block uppercase",
-    "mainT2": "bg-gradient-to-b from-blue-200 via-blue-500 to-indigo-800 bg-clip-text text-transparent block uppercase",
-    "shareT1": "text-slate-300",
-    "shareT2": "text-blue-500"
+  "themeColors": {
+    "--bg-color": "#0b101a",
+    "--bg-main": "url('images/TIME_SACRED/bg.jpg')",
+    "--ambient1": "rgba(56, 189, 248, 0.15)",
+    "--ambient2": "rgba(148, 163, 184, 0.15)",
+    "--egg-glow": "#38bdf8",
+    "--magic-circle": "#94a3b8",
+    "--title1-grad": "linear-gradient(to bottom, #f8fafc, #cbd5e1, #64748b)",
+    "--title2-grad": "linear-gradient(to bottom, #bae6fd, #3b82f6, #1e3a8a)",
+    "--share-t1": "#cbd5e1",
+    "--share-t2": "#38bdf8",
+    "--share-bg": "#070c14",
+    "--share-overlay": "radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.2) 0%, transparent 100%)"
   },
   "items": [
     { "id": "ts_ssr1", "name": "Sealed Card Album II", "rank": "SSR", "qty": 1, "imgSrc": "images/TIME_SACRED/1.png" },
