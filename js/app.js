@@ -27,7 +27,6 @@ async function initApp() {
         if (!listRes.ok) throw new Error("ไม่พบไฟล์ banners_list.json");
         bannersList = await listRes.json();
         
-        // ถ้าไม่มี currentBannerId ให้เอาอันแรกจาก object
         if (!bannersList[currentBannerId]) {
             currentBannerId = Object.keys(bannersList)[0];
         }
@@ -40,7 +39,7 @@ async function initApp() {
     }
 }
 
-// 🎯 ฟังก์ชันดึงข้อมูลตู้
+// 🎯 ฟังก์ชันดึงข้อมูลตู้และฉีด CSS Variables
 async function loadBanner(targetId) {
     if (isSpinning || isOverlayAnimating || isAutoPulling) return;
     
@@ -50,6 +49,13 @@ async function loadBanner(targetId) {
         
         currentBanner = await res.json();
         currentBannerId = targetId;
+        
+        // 🎯 ฉีดสี Theme เข้าไปในหน้าเว็บ
+        if (currentBanner.themeColors) {
+            Object.entries(currentBanner.themeColors).forEach(([key, value]) => {
+                document.documentElement.style.setProperty(key, value);
+            });
+        }
         
         updateUI();
         resetData();
@@ -88,21 +94,14 @@ function updateUI() {
     document.getElementById('dropdown-current-name').innerText = bannersList[currentBannerId].name;
     renderDropdownMenu();
 
-    const mt1 = document.getElementById('main-title-1');
-    const mt2 = document.getElementById('main-title-2');
-    mt1.innerText = currentBanner.title1;
-    mt2.innerText = currentBanner.title2;
-    mt1.className = currentBanner.theme.mainT1;
-    mt2.className = currentBanner.theme.mainT2;
+    // อัปเดต Title
+    document.getElementById('main-title-1').innerText = currentBanner.title1;
+    document.getElementById('main-title-2').innerText = currentBanner.title2;
+    document.getElementById('share-title-1').innerText = currentBanner.title1;
+    document.getElementById('share-title-2').innerText = currentBanner.title2;
     
+    // อัปเดตรูปไข่
     document.getElementById('egg-img').src = currentBanner.eggImage;
-    
-    const st1 = document.getElementById('share-title-1');
-    const st2 = document.getElementById('share-title-2');
-    st1.innerText = currentBanner.title1;
-    st2.innerText = currentBanner.title2;
-    st1.className = `text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font m-0 p-0 ${currentBanner.theme.shareT1}`;
-    st2.className = `text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font m-0 p-0 ${currentBanner.theme.shareT2}`;
     document.getElementById('share-egg-img').src = currentBanner.eggImage;
 }
 
