@@ -6,6 +6,8 @@
     <title>RO Classic - Chrono Equipment Refine Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- เพิ่ม html2canvas สำหรับทำฟีเจอร์แชร์รูปภาพ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
         
@@ -135,10 +137,15 @@
         <div class="shop-banner p-6 text-center relative overflow-hidden">
             <div class="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-yellow-400 via-transparent to-transparent pointer-events-none"></div>
             
-            <!-- เพิ่มปุ่ม (i) สำหรับดูตารางข้อมูล -->
-            <button onclick="openInfoModal()" class="absolute top-4 right-4 md:top-6 md:right-6 text-yellow-300 hover:text-white text-2xl transition z-20 drop-shadow-md" title="ดูข้อมูลตารางตีบวก">
-                <i class="fas fa-info-circle"></i>
-            </button>
+            <!-- ปุ่มเมนูด้านขวาบน (เปิดปิดเสียง + ดูข้อมูล) -->
+            <div class="absolute top-4 right-4 md:top-6 md:right-6 flex space-x-4 z-20">
+                <button onclick="toggleSound()" id="btnSoundToggle" class="text-yellow-300 hover:text-white text-2xl transition drop-shadow-md" title="เปิด/ปิดเสียง">
+                    <i class="fas fa-volume-up" id="soundIcon"></i>
+                </button>
+                <button onclick="openInfoModal()" class="text-yellow-300 hover:text-white text-2xl transition drop-shadow-md" title="ดูข้อมูลตารางตีบวก">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
 
             <h2 class="text-sm text-yellow-200 font-semibold tracking-widest mb-1 z-10 relative"><i class="fas fa-gavel mr-2"></i>ระดับอุปกรณ์ปัจจุบัน</h2>
             <div class="text-6xl font-black text-white ro-text-shadow text-glow z-10 relative" id="currentLevelDisplay">+0</div>
@@ -245,6 +252,10 @@
                     <div class="p-2.5 bg-black/30 border-b border-white/10 rounded-t-xl text-xs md:text-sm font-bold text-amber-200 flex justify-between items-center z-10">
                         <span><i class="fas fa-scroll mr-1"></i>บันทึกการตีเหล็ก</span>
                         <div class="flex space-x-2">
+                            <!-- ปุ่มแชร์สถิติ (Share) -->
+                            <button onclick="generateShareImage()" class="text-xs bg-blue-700 hover:bg-blue-600 text-blue-100 px-3 py-1.5 rounded transition shadow flex items-center border border-blue-500/50 font-bold">
+                                <i class="fas fa-share-square mr-1.5"></i>แชร์สถิติ
+                            </button>
                             <!-- ปุ่มล้างข้อมูล (Reset) ที่ทำให้มองเห็นได้ชัดเจน -->
                             <button onclick="resetApp()" class="text-xs bg-red-900/80 hover:bg-red-700 text-red-100 px-3 py-1.5 rounded transition shadow flex items-center border border-red-500/50 font-bold">
                                 <i class="fas fa-sync-alt mr-1.5"></i>ล้างข้อมูล (Reset)
@@ -283,6 +294,89 @@
         </div>
     </div>
 
+    <!-- Share Modal (หน้าต่างแสดงรูปที่เจนเสร็จแล้ว) -->
+    <div id="shareModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[110] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-4 flex-col">
+        <h3 class="text-white font-bold text-xl mb-4 ro-text-shadow text-glow"><i class="fas fa-camera retro-icon mr-2"></i>ภาพผลประกอบการของคุณ</h3>
+        <p class="text-amber-200 mb-4 text-sm bg-amber-900/50 px-4 py-2 rounded-full border border-amber-500/50"><i class="fas fa-hand-pointer mr-2"></i>แตะค้างที่รูปภาพ (หรือคลิกขวา) เพื่อบันทึกลงเครื่อง</p>
+        
+        <div class="relative max-w-sm w-full bg-black rounded-lg overflow-hidden shadow-2xl border-4 border-amber-600 mb-6 flex justify-center items-center min-h-[300px]" id="shareImageWrapper">
+            <!-- Loading Indicator -->
+            <div id="shareLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10 text-amber-400">
+                <i class="fas fa-spinner fa-spin text-4xl mb-2"></i>
+                <span class="font-bold text-sm">กำลังสร้างรูปภาพ...</span>
+            </div>
+            <img id="shareImagePreview" src="" alt="Share Card" class="w-full h-auto hidden relative z-20">
+        </div>
+
+        <button onclick="closeShareModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-full font-bold shadow-lg transition border border-slate-500"><i class="fas fa-times mr-2"></i>ปิดหน้าต่าง</button>
+    </div>
+
+    <!-- Hidden Share Card Structure (สำหรับการเจนภาพ) -->
+    <div id="shareCard" class="absolute left-[-9999px] top-0 w-[800px] h-[800px] bg-[#2d1b11] overflow-hidden flex flex-col" style="background-image: url('images/refine/bg.png'); background-size: cover; background-position: center;">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+        <div class="relative z-10 flex flex-col h-full p-10 text-white font-['Kanit']">
+            <!-- Header -->
+            <div class="text-center border-b-4 border-amber-500 pb-6 mb-8">
+                <h1 class="text-5xl font-black text-yellow-400 drop-shadow-[0_4px_4px_rgba(0,0,0,1)] tracking-wide">สรุปผลประกอบการตีบวก!</h1>
+                <p class="text-2xl mt-2 text-amber-200 drop-shadow-md">RO Classic - Chrono Equipment Pass</p>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="flex-1 flex flex-col items-center justify-center bg-black/40 rounded-3xl border-2 border-amber-600/50 p-8 shadow-2xl backdrop-blur-md">
+                <div class="text-3xl text-amber-100 mb-2 font-medium" id="shareTitle">ฉายา: -</div>
+                <div class="text-9xl font-black text-white drop-shadow-[0_0_30px_rgba(251,191,36,0.8)] mb-6" id="shareLevel">+15</div>
+                
+                <div class="bg-amber-900/60 rounded-full px-8 py-3 mb-8 border border-amber-500/50">
+                    <span class="text-2xl text-amber-200">ใช้ความพยายามไปทั้งหมด <span class="text-white font-bold text-3xl mx-2" id="shareTries">120</span> ครั้ง</span>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 gap-6 w-full px-8">
+                    <div class="bg-black/50 border border-slate-600 p-4 rounded-xl flex items-center">
+                        <i class="fas fa-coins text-yellow-400 text-4xl mr-4 w-12 text-center"></i>
+                        <div>
+                            <div class="text-slate-400 text-lg">Zeny ที่ใช้</div>
+                            <div class="text-yellow-400 font-bold text-2xl" id="shareZeny">0</div>
+                        </div>
+                    </div>
+                    <div class="bg-black/50 border border-slate-600 p-4 rounded-xl flex items-center">
+                        <i class="fas fa-medal text-purple-400 text-4xl mr-4 w-12 text-center"></i>
+                        <div>
+                            <div class="text-slate-400 text-lg">Mysterious Medal</div>
+                            <div class="text-purple-400 font-bold text-2xl" id="shareMedal">0</div>
+                        </div>
+                    </div>
+                    <div class="bg-black/50 border border-slate-600 p-4 rounded-xl flex items-center">
+                        <img src="images/refine/God_Hammer.png" class="w-12 h-12 object-contain mr-4" onerror="this.style.display='none'">
+                        <div>
+                            <div class="text-slate-400 text-lg">God Hammer</div>
+                            <div class="text-orange-400 font-bold text-2xl" id="shareHammer">0</div>
+                        </div>
+                    </div>
+                    <div class="bg-black/50 border border-slate-600 p-4 rounded-xl flex items-center">
+                        <img src="images/refine/God_Furnace.png" class="w-12 h-12 object-contain mr-4" onerror="this.style.display='none'">
+                        <div>
+                            <div class="text-slate-400 text-lg">God Furnace</div>
+                            <div class="text-red-400 font-bold text-2xl" id="shareFurnace">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Baht -->
+                <div class="mt-8 w-full bg-gradient-to-r from-green-900/80 to-green-800/80 border-2 border-green-500/50 rounded-2xl p-6 text-center shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+                    <div class="text-green-300 text-xl font-medium mb-1">รวมมูลค่าความเสียหาย (Cash)</div>
+                    <div class="text-6xl font-black text-green-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" id="shareBaht">0 ฿</div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="text-center mt-6 text-slate-400 text-xl flex justify-between px-4">
+                <span>Created by Refine Simulator</span>
+                <span id="shareDate"></span>
+            </div>
+        </div>
+    </div>
+
     <!-- Audio -->
     <audio id="sfxSuccess" src="sounds/refine-success.mp3" preload="auto"></audio>
     <audio id="sfxFail" src="sounds/refine-failed.mp3" preload="auto"></audio>
@@ -310,6 +404,9 @@
     const MAX_LEVEL = 15;
     const sfxSuccess = document.getElementById('sfxSuccess');
     const sfxFail = document.getElementById('sfxFail');
+
+    // ตัวแปรสำหรับควบคุมเสียง (แยกจาก state ปกติเพื่อไม่ให้ถูกรีเซ็ตเวลาล้างข้อมูล)
+    let isSoundEnabled = true;
 
     let state = { 
         level: 0, 
@@ -407,6 +504,23 @@
             <span class="text-[10px] text-amber-200/50 bg-black/40 px-2 py-0.5 rounded font-bold">#${state.tries}</span>
         `;
         logArea.insertBefore(logItem, logArea.firstChild);
+    }
+
+    // ฟังก์ชันเปิด/ปิดเสียง
+    function toggleSound() {
+        isSoundEnabled = !isSoundEnabled;
+        const icon = document.getElementById('soundIcon');
+        const btn = document.getElementById('btnSoundToggle');
+        
+        if (isSoundEnabled) {
+            icon.className = 'fas fa-volume-up';
+            btn.classList.replace('text-slate-400', 'text-yellow-300');
+            showNotification("ระบบเสียง: เปิด", "success");
+        } else {
+            icon.className = 'fas fa-volume-mute';
+            btn.classList.replace('text-yellow-300', 'text-slate-400');
+            showNotification("ระบบเสียง: ปิด", "info");
+        }
     }
 
     function toggleItem(type) {
@@ -541,9 +655,12 @@
         const berlinBtn = document.getElementById('btnBerlinGacha');
 
         if (roll <= currentChance) {
-            sfxSuccess.currentTime = 0;
-            let playPromise = sfxSuccess.play();
-            if (playPromise !== undefined) playPromise.catch(e => playFallbackSound(true));
+            // เล่นเสียงถ้าไม่ได้ปิดไว้
+            if (isSoundEnabled) {
+                sfxSuccess.currentTime = 0;
+                let playPromise = sfxSuccess.play();
+                if (playPromise !== undefined) playPromise.catch(e => playFallbackSound(true));
+            }
 
             state.level += 1;
             isSuccess = true;
@@ -562,9 +679,12 @@
             setTimeout(() => lvlDisplay.classList.remove('scale-125', 'text-yellow-200'), 300);
 
         } else {
-            sfxFail.currentTime = 0;
-            let playPromise = sfxFail.play();
-            if (playPromise !== undefined) playPromise.catch(e => playFallbackSound(false));
+            // เล่นเสียงถ้าไม่ได้ปิดไว้
+            if (isSoundEnabled) {
+                sfxFail.currentTime = 0;
+                let playPromise = sfxFail.play();
+                if (playPromise !== undefined) playPromise.catch(e => playFallbackSound(false));
+            }
 
             isSuccess = false;
             
@@ -646,6 +766,80 @@
         // ปิด Modal
         modal.classList.add('opacity-0', 'pointer-events-none');
         modalContent.classList.add('scale-95');
+    }
+
+    // ฟังก์ชันสร้างรูปภาพสำหรับแชร์
+    async function generateShareImage() {
+        if (state.tries === 0) {
+            showNotification("ยังไม่มีข้อมูลให้แชร์ ลองตีบวกสักครั้งก่อนนะ!", "error");
+            return;
+        }
+
+        // 1. เปิด Modal แจ้งว่ากำลังโหลด
+        const modal = document.getElementById('shareModal');
+        const previewImg = document.getElementById('shareImagePreview');
+        const loading = document.getElementById('shareLoading');
+        
+        previewImg.classList.add('hidden');
+        loading.classList.remove('hidden');
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+
+        // 2. เตรียมข้อมูลใส่ใน Share Card
+        const hammerPrice = parseFloat(document.getElementById('hammerPrice').value) || 0;
+        const furnacePrice = parseFloat(document.getElementById('furnacePrice').value) || 0;
+        const totalBaht = (state.hammerUsed * hammerPrice) + (state.furnaceUsed * furnacePrice);
+
+        document.getElementById('shareLevel').innerText = `+${state.level}`;
+        document.getElementById('shareTries').innerText = state.tries.toLocaleString();
+        document.getElementById('shareZeny').innerText = state.zeny.toLocaleString();
+        document.getElementById('shareMedal').innerText = state.medal.toLocaleString();
+        document.getElementById('shareHammer').innerText = state.hammerUsed.toLocaleString();
+        document.getElementById('shareFurnace').innerText = state.furnaceUsed.toLocaleString();
+        document.getElementById('shareBaht').innerText = `${totalBaht.toLocaleString()} ฿`;
+        
+        // ตั้งวันที่
+        const now = new Date();
+        document.getElementById('shareDate').innerText = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+
+        // คำนวณฉายาฮาๆ
+        let title = "นักตีดาบหน้าใหม่";
+        if (totalBaht > 20000) title = "💸 มหาเศรษฐีสุลต่าน 💸";
+        else if (totalBaht > 10000) title = "💎 สายเปย์ตัวจริง 💎";
+        else if (totalBaht > 5000) title = "💰 พ่อบุญทุ่ม 💰";
+        else if (state.level === 15 && state.tries < 50) title = "✨ เทพเจ้าจุติ ดวงดีจัด! ✨";
+        else if (state.level <= 5 && state.tries > 30) title = "🧂 เกลือเรียกพี่ 🧂";
+        else if (state.level >= 10) title = "🔥 ผู้ไม่ยอมแพ้ 🔥";
+        document.getElementById('shareTitle').innerText = title;
+
+        // 3. ใช้ html2canvas แปลง div เป็นรูปภาพ
+        try {
+            const shareCard = document.getElementById('shareCard');
+            // บังคับให้โหลดเสร็จก่อนจับภาพ
+            const canvas = await html2canvas(shareCard, {
+                scale: 1.5, // ความคมชัด
+                backgroundColor: null,
+                useCORS: true, // ให้ดึงรูป bg ได้
+                logging: false
+            });
+
+            // แปลงเป็น base64
+            const imgData = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // 4. นำรูปไปใส่ใน Modal
+            previewImg.src = imgData;
+            loading.classList.add('hidden');
+            previewImg.classList.remove('hidden');
+
+        } catch (err) {
+            console.error("Error generating image:", err);
+            closeShareModal();
+            showNotification("เกิดข้อผิดพลาดในการสร้างรูปภาพ", "error");
+        }
+    }
+
+    function closeShareModal() {
+        const modal = document.getElementById('shareModal');
+        modal.classList.add('opacity-0', 'pointer-events-none');
     }
 
     function resetApp() {
