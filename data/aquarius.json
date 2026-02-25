@@ -3,17 +3,48 @@
   "title1": "AQUARIUS",
   "title2": "DIADEM",
   "eggImage": "images/AQUARIUS_DIADEM/egg.png",
-  "rates": { "SSR": 0.5, "SR": 1.5, "R": 10.0, "A": 15.0, "B": 31.0, "C": 21.0, "E": 21.0 },
+  "rates": {
+    "SSR": 0.5,
+    "SR": 1.5,
+    "R": 10.0,
+    "A": 15.0,
+    "B": 31.0,
+    "C": 21.0,
+    "E": 21.0
+  },
   "expectedScore": 10.43,
-  "theme": { 
-    "mainT1": "bg-gradient-to-b from-yellow-100 via-yellow-400 to-amber-600 bg-clip-text text-transparent block uppercase", 
+  "theme": {
+    "mainT1": "bg-gradient-to-b from-yellow-100 via-yellow-400 to-amber-600 bg-clip-text text-transparent block uppercase",
     "mainT2": "bg-gradient-to-b from-blue-100 via-blue-400 to-indigo-600 bg-clip-text text-transparent block uppercase",
     "shareT1": "text-yellow-400",
     "shareT2": "text-cyan-400"
   },
   "items": [
     { "id": "aq_ssr1", "name": "Sealed Card Album II", "rank": "SSR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/1.png" },
-    { "id": "aq_ssr2", "name": "Sealed Card Album", "rank": "SSR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/2.png" }
-    // ... (ใส่ไอเทมให้ครบ 26 ชิ้น ตามเดิม)
+    { "id": "aq_ssr2", "name": "Sealed Card Album", "rank": "SSR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/2.png" },
+    { "id": "aq_ssr3", "name": "Costume Arabian Veil", "rank": "SSR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/3.png" },
+    { "id": "aq_ssr4", "name": "Rasen Huuma's Orb [1]", "rank": "SSR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/4.png" },
+    { "id": "aq_ssr5", "name": "Aquarius Diadem [1]", "rank": "SSR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/5.png" },
+    { "id": "aq_sr1", "name": "Aquarius Staff [2]", "rank": "SR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/6.png" },
+    { "id": "aq_sr2", "name": "Aquarius Ring [1]", "rank": "SR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/7.png" },
+    { "id": "aq_sr3", "name": "Huuma Shuriken Clearness [2]", "rank": "SR", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/8.png" },
+    { "id": "aq_r1", "name": "Cross Shuriken Shadow Earring", "rank": "R", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/9.png" },
+    { "id": "aq_r2", "name": "Magic Compose Shadow Armor", "rank": "R", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/10.png" },
+    { "id": "aq_r3", "name": "Blitz Shadow Pendant", "rank": "R", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/11.png" },
+    { "id": "aq_r4", "name": "Blitz Shadow Earring", "rank": "R", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/12.png" },
+    { "id": "aq_r5", "name": "Status Shadow Item Combiner", "rank": "R", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/13.png" },
+    { "id": "aq_a1", "name": "Blood Twig", "rank": "A", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/14.png" },
+    { "id": "aq_b1", "name": "Class Shadow Cube", "rank": "B", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/15.png" },
+    { "id": "aq_b2", "name": "Poison Bottle Box", "rank": "B", "qty": 1, "imgSrc": "images/AQUARIUS_DIADEM/16.png" },
+    { "id": "aq_b3", "name": "STR Biscuit Stick", "rank": "B", "qty": 2, "imgSrc": "images/AQUARIUS_DIADEM/17.png" },
+    { "id": "aq_b4", "name": "AGI Biscuit Stick", "rank": "B", "qty": 2, "imgSrc": "images/AQUARIUS_DIADEM/18.png" },
+    { "id": "aq_b5", "name": "INT Biscuit Stick", "rank": "B", "qty": 2, "imgSrc": "images/AQUARIUS_DIADEM/19.png" },
+    { "id": "aq_b6", "name": "VIT Biscuit Stick", "rank": "B", "qty": 2, "imgSrc": "images/AQUARIUS_DIADEM/20.png" },
+    { "id": "aq_b7", "name": "DEX Biscuit Stick", "rank": "B", "qty": 2, "imgSrc": "images/AQUARIUS_DIADEM/21.png" },
+    { "id": "aq_b8", "name": "LUK Biscuit Stick", "rank": "B", "qty": 2, "imgSrc": "images/AQUARIUS_DIADEM/22.png" },
+    { "id": "aq_c1", "name": "Blessing Lv.10 Scroll", "rank": "C", "qty": 10, "imgSrc": "images/AQUARIUS_DIADEM/23.png" },
+    { "id": "aq_c2", "name": "Increase Agility Lv.10 Scroll", "rank": "C", "qty": 10, "imgSrc": "images/AQUARIUS_DIADEM/24.png" },
+    { "id": "aq_e1", "name": "Ex Def Potion", "rank": "E", "qty": 5, "imgSrc": "images/AQUARIUS_DIADEM/25.png" },
+    { "id": "aq_e2", "name": "Kafra Card", "rank": "E", "qty": 5, "imgSrc": "images/AQUARIUS_DIADEM/26.png" }
   ]
 }
