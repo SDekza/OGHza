@@ -109,17 +109,17 @@
 </head>
 <body class="relative min-h-screen overflow-x-hidden selection:bg-indigo-500/30">
 
-    <!-- 🚀 เพิ่ม Preloader ตรงนี้ (ใช้ CSS ธรรมดาเพื่อให้โหลดทันทีก่อน Tailwind ทำงานเสร็จ) -->
+    <!-- 🚀 หน้าต่าง Loading (Preloader) ช่วยให้มือถือโหลดไวขึ้น -->
     <div id="app-preloader" style="position: fixed; inset: 0; background-color: #05020a; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease-out;">
         <div style="width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #3b82f6; border-radius: 50%; animation: spin-loader 1s linear infinite;"></div>
-        <p style="margin-top: 20px; color: #60a5fa; font-family: sans-serif; font-weight: bold; letter-spacing: 3px; font-size: 12px; animation: pulse-text 1.5s infinite;">INITIALIZING SYSTEM...</p>
+        <p style="margin-top: 20px; color: #60a5fa; font-family: 'Sarabun', sans-serif; font-weight: bold; letter-spacing: 3px; font-size: 12px; animation: pulse-text 1.5s infinite;">INITIALIZING SYSTEM...</p>
         <style>
             @keyframes spin-loader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
             @keyframes pulse-text { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         </style>
     </div>
 
-    <!-- 🎯 ภาพพื้นหลัง (ถ้าตู้ไหนมีรูปพื้นหลัง จะมาโผล่ตรงนี้) -->
+    <!-- 🎯 ภาพพื้นหลัง Lazy Load -->
     <div class="fixed inset-0 pointer-events-none z-0 opacity-40 transition-all duration-700" style="background-image: var(--bg-main); background-size: cover; background-position: center;"></div>
 
     <div id="sparkle-overlay" class="fixed inset-0 pointer-events-none z-[999] hidden items-center justify-center">
@@ -139,7 +139,7 @@
         <div class="relative" id="banner-dropdown-container">
             <button onclick="toggleDropdown()" class="flex items-center gap-2 md:gap-3 bg-slate-800/60 hover:bg-slate-700/80 border border-slate-600/60 rounded-full px-2 py-1 md:px-3 md:py-1.5 transition-colors shadow-lg group">
                 <div class="w-8 h-8 rounded-full bg-black/40 border border-slate-500 flex items-center justify-center overflow-hidden shrink-0">
-                    <img id="dropdown-current-egg" src="images/AQUARIUS_DIADEM/egg.png" class="w-6 h-6 object-contain drop-shadow-md transition-transform group-hover:scale-110" />
+                    <img id="dropdown-current-egg" src="" class="w-6 h-6 object-contain drop-shadow-md transition-transform group-hover:scale-110" />
                 </div>
                 <div class="flex flex-col items-start hidden sm:flex">
                     <span class="text-[8px] text-cyan-400 font-bold uppercase tracking-widest leading-none mb-0.5">Select Banner</span>
@@ -182,12 +182,13 @@
             <h2 id="overlay-skip-text" class="text-slate-300 font-medium text-xs animate-pulse tracking-widest uppercase text-center bg-black/60 px-4 py-1 rounded-full backdrop-blur-md border border-white/10 shadow-lg cursor-pointer">แตะที่ใดก็ได้เพื่อข้าม</h2>
             <h3 id="overlay-pull-count-text" class="text-fuchsia-400 font-black text-lg md:text-xl text-center drop-shadow-[0_0_10px_rgba(192,38,211,0.6)] bg-black/70 px-6 py-2 rounded-full backdrop-blur-md border border-fuchsia-500/30 w-full hidden"></h3>
         </div>
-        <div id="overlay-items-container" class="grid grid-cols-3 sm:grid-cols-5 gap-3 md:gap-5 max-w-5xl w-full justify-center pb-20"></div>
-        <div id="overlay-actions" class="hidden fixed bottom-0 left-0 w-full flex-col items-center gap-4 pb-6 pt-12 bg-gradient-to-t from-[#020108] via-[#05020a]/90 to-transparent z-[120]" style="padding-bottom: calc(1.5rem + var(--safe-bottom));">
-            <div class="flex flex-wrap justify-center gap-3">
-                <button onclick="pull(1, true)" class="rounded-full bg-slate-800/90 border border-slate-500 text-white px-6 py-3 font-bold shadow-lg text-sm backdrop-blur-md hover:bg-slate-700">สุ่ม x 1</button>
-                <button onclick="pull(10, true)" class="rounded-full bg-gradient-to-b from-yellow-500 to-amber-700 border border-yellow-300 text-amber-950 px-6 py-3 font-black shadow-lg text-sm hover:scale-105 transition-transform">สุ่ม x 10</button>
-                <button onclick="pullUntilSSR(true)" class="rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-700 border border-fuchsia-400 text-white px-6 py-3 font-black shadow-lg text-sm hover:scale-105 transition-transform">สุ่มจนกว่าจะออก SSR</button>
+        <div id="overlay-items-container" class="grid grid-cols-3 sm:grid-cols-5 gap-3 md:gap-5 max-w-5xl w-full justify-center pb-32"></div>
+        <div id="overlay-actions" class="hidden fixed bottom-0 left-0 w-full flex-col items-center gap-3 pb-6 pt-12 bg-gradient-to-t from-[#020108] via-[#05020a]/90 to-transparent z-[120]" style="padding-bottom: calc(1.5rem + var(--safe-bottom));">
+            <div class="flex flex-wrap justify-center gap-2 md:gap-3 px-2">
+                <button onclick="pull(1, true)" class="rounded-full bg-slate-800/90 border border-slate-500 text-white px-4 md:px-6 py-2.5 md:py-3 font-bold shadow-lg text-xs md:text-sm backdrop-blur-md hover:bg-slate-700">สุ่ม x 1</button>
+                <button onclick="pull(10, true)" class="rounded-full bg-gradient-to-b from-yellow-500 to-amber-700 border border-yellow-300 text-amber-950 px-4 md:px-6 py-2.5 md:py-3 font-black shadow-lg text-xs md:text-sm hover:scale-105 transition-transform">สุ่ม x 10</button>
+                <button onclick="pullUntilSR()" class="rounded-full bg-gradient-to-r from-blue-600 to-indigo-700 border border-blue-400 text-white px-4 md:px-6 py-2.5 md:py-3 font-black shadow-lg text-xs md:text-sm hover:scale-105 transition-transform">หา SR</button>
+                <button onclick="pullUntilSSR()" class="rounded-full bg-gradient-to-r from-fuchsia-600 to-purple-700 border border-fuchsia-400 text-white px-4 md:px-6 py-2.5 md:py-3 font-black shadow-lg text-xs md:text-sm hover:scale-105 transition-transform">หา SSR</button>
             </div>
         </div>
     </div>
@@ -220,7 +221,7 @@
                 <!-- Header (Share) -->
                 <div class="w-full flex items-center justify-center gap-6 mb-14 mt-6 z-10 relative h-[110px]">
                     <div class="h-[110px] w-[110px] shrink-0 flex items-center justify-center">
-                        <img id="share-egg-img" src="images/AQUARIUS_DIADEM/egg.png" class="h-full w-auto max-w-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
+                        <img id="share-egg-img" src="" class="h-full w-auto max-w-full object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]" crossorigin="anonymous" />
                     </div>
                     <div class="h-[110px] flex flex-col justify-between items-start">
                         <h1 id="share-title-1" class="text-[60px] font-black leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] georgia-font m-0 p-0" style="margin-top: -8px; color: var(--share-t1);">LOADING</h1>
@@ -295,7 +296,7 @@
                 </div>
                 <!-- ออร่าหลังไข่ -->
                 <div class="absolute w-40 h-40 rounded-full blur-[60px] opacity-30 pointer-events-none transition-colors duration-700" style="background-color: var(--egg-glow);"></div>
-                <img id="egg-img" src="images/AQUARIUS_DIADEM/egg.png" alt="Egg" class="relative z-10 h-[70%] w-auto max-w-full object-contain drop-shadow-[0_0_30px_rgba(0,0,0,0.5)] pointer-events-none transition-all duration-300" />
+                <img id="egg-img" src="" alt="Egg" class="relative z-10 h-[70%] w-auto max-w-full object-contain drop-shadow-[0_0_30px_rgba(0,0,0,0.5)] pointer-events-none transition-all duration-300" />
             </div>
             
             <div class="mt-4 text-center select-none pointer-events-none">
@@ -304,9 +305,22 @@
                 </p>
             </div>
 
-            <div class="flex justify-center mt-5 w-full">
+            <!-- 🎯 ชุดปุ่ม Auto ที่เพิ่มเข้ามาใหม่ -->
+            <div class="flex flex-row justify-center mt-5 w-full gap-2 md:gap-4 px-2">
+                <!-- ปุ่มสุ่มจนกว่าจะออก SR (สีฟ้า-ม่วง) -->
+                <button id="btn-pull-until-sr" onclick="pullUntilSR()" 
+                        class="group relative w-1/2 max-w-[160px] py-2 md:py-3 rounded-full bg-[#05020a]/60 border border-blue-500/40 text-blue-300 font-bold text-[9px] md:text-xs tracking-widest uppercase hover:bg-blue-900/40 hover:border-blue-400 hover:text-white transition-all duration-300 flex items-center justify-center gap-1.5 overflow-hidden shadow-[0_0_15px_rgba(59,130,246,0.15)] hover:shadow-[0_0_25px_rgba(59,130,246,0.4)] active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out"></div>
+                    <svg class="w-3.5 h-3.5 text-blue-400 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m5 12 7-7 7 7"/>
+                        <path d="M12 19V5"/>
+                    </svg>
+                    Auto: Until SR
+                </button>
+
+                <!-- ปุ่มสุ่มจนกว่าจะออก SSR (สีชมพู) -->
                 <button id="btn-pull-until-ssr" onclick="pullUntilSSR()" 
-                        class="group relative px-5 py-2 rounded-full bg-[#05020a]/60 border border-fuchsia-500/40 text-fuchsia-300 font-bold text-[10px] md:text-xs tracking-widest uppercase hover:bg-fuchsia-900/40 hover:border-fuchsia-400 hover:text-white transition-all duration-300 flex items-center gap-2 overflow-hidden shadow-[0_0_15px_rgba(192,38,211,0.15)] hover:shadow-[0_0_25px_rgba(192,38,211,0.4)] active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
+                        class="group relative w-1/2 max-w-[160px] py-2 md:py-3 rounded-full bg-[#05020a]/60 border border-fuchsia-500/40 text-fuchsia-300 font-bold text-[9px] md:text-xs tracking-widest uppercase hover:bg-fuchsia-900/40 hover:border-fuchsia-400 hover:text-white transition-all duration-300 flex items-center justify-center gap-1.5 overflow-hidden shadow-[0_0_15px_rgba(192,38,211,0.15)] hover:shadow-[0_0_25px_rgba(192,38,211,0.4)] active:scale-95 disabled:opacity-50 disabled:pointer-events-none">
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-fuchsia-500/20 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out"></div>
                     <svg class="w-3.5 h-3.5 text-fuchsia-400 group-hover:text-white transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
