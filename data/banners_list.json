@@ -8,5 +8,10 @@
     "id": "time_sacred",
     "name": "Time Sacred",
     "eggImage": "images/TIME_SACRED/egg.png"
+  },
+  "4th_anniversary": {
+    "id": "4th_anniversary",
+    "name": "4th Anniversary",
+    "eggImage": "images/4TH/egg.png"
   }
 }
