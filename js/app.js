@@ -20,7 +20,7 @@ let isOverlayAnimating = false, isAutoPulling = false, autoPullCount = 0, curren
 let holdTimer = null, isHolding = false;
 const HOLD_DURATION = 600;
 
-// 🎯 ฟังก์ชันเริ่มต้นแอป (อัปเกรดความฉลาด)
+// 🎯 ฟังก์ชันเริ่มต้นแอป
 async function initApp() {
     try {
         const listRes = await fetch('data/banners_list.json');
@@ -41,7 +41,7 @@ async function initApp() {
         
         await loadBanner(currentBannerId);
         
-        // 🚀 เพิ่มตรงนี้: สั่งซ่อนหน้า Loading หลังจากเตรียมทุกอย่างเสร็จแล้ว (หน่วงเวลาให้ Tailwind ทำงานแปบนึง)
+        // สั่งซ่อนหน้า Loading หลังจากเตรียม UI เสร็จ
         setTimeout(() => {
             const preloader = document.getElementById('app-preloader');
             if (preloader) {
@@ -54,12 +54,12 @@ async function initApp() {
         console.error("เกิดข้อผิดพลาดตอนเริ่มแอป: ", error);
         document.getElementById('main-title-1').innerText = "ERROR";
         document.getElementById('main-title-2').innerText = "LOADING DATA";
-        // ปิด Loading ถึงแม้จะ Error เพื่อให้เห็นข้อความ
-        document.getElementById('app-preloader').style.display = 'none';
+        const preloader = document.getElementById('app-preloader');
+        if(preloader) preloader.style.display = 'none';
     }
 }
 
-// 🎯 ฟังก์ชันดึงข้อมูลตู้
+// 🎯 ฟังก์ชันดึงข้อมูลตู้และฉีด CSS Variables แบบ Lazy Load ภาพพื้นหลัง
 async function loadBanner(targetId) {
     if (isSpinning || isOverlayAnimating || isAutoPulling) return;
     
@@ -70,17 +70,42 @@ async function loadBanner(targetId) {
         currentBanner = await res.json();
         currentBannerId = targetId;
         
-        // 🎯 จำตู้ลงเครื่องผู้เล่น
         localStorage.setItem('lastGachaBanner', targetId);
         
-        // 🎯 เปลี่ยน URL ด้านบนแบบเงียบๆ (ไม่ต้องรีเฟรชหน้า)
         const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?banner=' + targetId;
         window.history.replaceState({ path: newUrl }, '', newUrl);
         
         if (currentBanner.themeColors) {
+            const bgMain = currentBanner.themeColors['--bg-main'];
+            
+            // 1. ลงสีทั้งหมดบนหน้าเว็บทันทีก่อน (ไม่รอรูป)
             Object.entries(currentBanner.themeColors).forEach(([key, value]) => {
-                document.documentElement.style.setProperty(key, value);
+                if (key !== '--bg-main') {
+                    document.documentElement.style.setProperty(key, value);
+                }
             });
+
+            // 2. ซ่อนภาพพื้นหลังเดิมก่อน
+            document.documentElement.style.setProperty('--bg-main', 'none');
+
+            // 3. เริ่มโหลดภาพพื้นหลังแบบเบื้องหลัง (Lazy Load)
+            if (bgMain && bgMain !== 'none') {
+                const urlMatch = bgMain.match(/url\(['"]?(.*?)['"]?\)/);
+                if (urlMatch && urlMatch[1]) {
+                    const imgUrl = urlMatch[1];
+                    // หน่วงเวลาให้ CPU ประมวลผล UI หลักให้เสร็จก่อน แล้วค่อยดึงภาพใหญ่มา
+                    setTimeout(() => {
+                        const img = new Image();
+                        img.onload = () => {
+                            // โหลดภาพเสร็จค่อยสาดขึ้นหน้าจอ
+                            document.documentElement.style.setProperty('--bg-main', bgMain);
+                        };
+                        img.src = imgUrl;
+                    }, 200);
+                } else {
+                    document.documentElement.style.setProperty('--bg-main', bgMain);
+                }
+            }
         }
         
         updateUI();
@@ -328,32 +353,57 @@ function endAnimation() {
     }
 }
 
-function finishAutoPull(gS) {
-    isAutoPulling = false; isSpinning = false; isOverlayAnimating = false; if (pullTimeout) clearTimeout(pullTimeout); if (currentAnimationInterval) clearInterval(currentAnimationInterval);
+// อัปเดตเพื่อรองรับการแสดงข้อความเป้าหมาย (SR หรือ SSR)
+function finishAutoPullConfigurable(isSuccess, rankFound) {
+    isAutoPulling = false; isSpinning = false; isOverlayAnimating = false; 
+    if (pullTimeout) clearTimeout(pullTimeout); 
+    if (currentAnimationInterval) clearInterval(currentAnimationInterval);
+
     document.getElementById('egg-img').classList.remove('animate-bounce');
+    
     document.getElementById('btn-pull-until-ssr').disabled = false;
+    const btnSr = document.getElementById('btn-pull-until-sr');
+    if (btnSr) btnSr.disabled = false;
     
     document.getElementById('total-pulls-text').innerText = totalPulls.toLocaleString(); 
-    updateCost(); 
-    updateLuckMeter(); 
-    renderInventory(); 
+    updateCost(); updateLuckMeter(); renderInventory(); 
     
-    const ct = document.getElementById('overlay-pull-count-text'); const pr = (autoPullCount * (parseFloat(document.getElementById('price-per-pull').value) || 0)).toLocaleString();
-    ct.innerHTML = `🎉 ออก SSR ในครั้งที่ <span class="text-white text-2xl mx-1">${autoPullCount}</span><br><span class="text-xs font-normal text-slate-400">ใช้เงินไป ${pr} ฿</span>`;
+    const ct = document.getElementById('overlay-pull-count-text'); 
+    const pr = (autoPullCount * (parseFloat(document.getElementById('price-per-pull').value) || 0)).toLocaleString();
+    
+    const rankText = rankFound || (window.currentAutoPullTarget === 'SR' ? 'SR' : 'SSR');
+    ct.innerHTML = `🎉 ออก <span class="${rankText === 'SSR' ? 'text-amber-400' : 'text-purple-400'}">${rankText}</span> ในครั้งที่ <span class="text-white text-2xl mx-1">${autoPullCount}</span><br><span class="text-xs font-normal text-slate-400">ใช้เงินไป ${pr} ฿</span>`;
+    
     document.getElementById('overlay-actions').classList.remove('hidden'); document.getElementById('overlay-skip-text').classList.add('hidden');
-    if (gS) { const s = document.getElementById('sparkle-overlay'); s.classList.remove('hidden'); s.classList.add('flex'); setTimeout(() => s.classList.add('hidden'), 1500); }
+    
+    // โชว์ออร่าแสงถ้าได้ SSR
+    if (isSuccess && rankFound === 'SSR') { 
+        const s = document.getElementById('sparkle-overlay'); 
+        s.classList.remove('hidden'); s.classList.add('flex'); 
+        setTimeout(() => s.classList.add('hidden'), 1500); 
+    }
 }
 
+// อัปเดตให้กดข้ามระหว่างกำลังสุ่มออโต้แล้วหยุดให้ถูกเป้าหมาย
 function handleOverlayClick(e) {
     if (e.target.closest('button')) return;
     if (isAutoPulling) { 
         let gS = false; 
+        let foundRank = '';
+        const targetRank = window.currentAutoPullTarget || 'SSR';
         if (currentAnimationInterval) clearInterval(currentAnimationInterval);
+        
         while (!gS && autoPullCount < 5000) { 
-            autoPullCount++; const nI = generateRandomItem(); history.push(nI); totalPulls++; if (nI.rank === 'SSR') gS = true; 
+            autoPullCount++; 
+            const nI = generateRandomItem(); 
+            history.push(nI); totalPulls++; 
+            
+            // เงื่อนไขในการข้ามออโต้
+            if (targetRank === 'SSR' && nI.rank === 'SSR') { gS = true; foundRank = nI.rank; }
+            if (targetRank === 'SR' && (nI.rank === 'SR' || nI.rank === 'SSR')) { gS = true; foundRank = nI.rank; }
         }
         const lp = history.slice(-15); const cn = document.getElementById('overlay-items-container'); cn.innerHTML = ''; lp.forEach(i => cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(i)));
-        finishAutoPull(gS);
+        finishAutoPullConfigurable(gS, foundRank);
     } else if (isOverlayAnimating) { 
         clearInterval(currentAnimationInterval); 
         const cn = document.getElementById('overlay-items-container');
@@ -369,14 +419,27 @@ function pull(c, fO = false) {
     if (isSpinning || !currentBanner) return; 
     isSpinning = true; 
     document.getElementById('overlay-pull-count-text').classList.add('hidden');
-    if (!fO) { document.getElementById('btn-pull-until-ssr').disabled = true; document.getElementById('egg-img').classList.add('animate-bounce'); }
+    
+    if (!fO) { 
+        document.getElementById('btn-pull-until-ssr').disabled = true; 
+        const btnSr = document.getElementById('btn-pull-until-sr');
+        if (btnSr) btnSr.disabled = true;
+        document.getElementById('egg-img').classList.add('animate-bounce'); 
+    }
     
     const nP = []; 
     for (let i = 0; i < c; i++) nP.push(generateRandomItem());
     
     pullTimeout = setTimeout(() => {
         history = [...nP, ...history]; totalPulls += c; isSpinning = false;
-        if (!fO) { document.getElementById('btn-pull-until-ssr').disabled = false; document.getElementById('egg-img').classList.remove('animate-bounce'); }
+        
+        if (!fO) { 
+            document.getElementById('btn-pull-until-ssr').disabled = false; 
+            const btnSr = document.getElementById('btn-pull-until-sr');
+            if (btnSr) btnSr.disabled = false;
+            document.getElementById('egg-img').classList.remove('animate-bounce'); 
+        }
+        
         const ov = document.getElementById('pull-overlay'); ov.classList.remove('hidden'); ov.classList.add('flex');
         const cn = document.getElementById('overlay-items-container'); cn.innerHTML = ''; nP.forEach(i => cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(i)));
         document.getElementById('overlay-actions').classList.remove('hidden'); document.getElementById('overlay-skip-text').classList.add('hidden');
@@ -386,26 +449,45 @@ function pull(c, fO = false) {
     }, fO ? 50 : 600);
 }
 
-function pullUntilSSR() {
+// 🎯 ฟังก์ชันหลักสำหรับการสุ่มจนกว่าจะออก Rank ที่กำหนด
+function pullUntilRank(targetRank) {
     if (isSpinning || !currentBanner) return; 
     isSpinning = true; isAutoPulling = true; autoPullCount = 0;
     const ov = document.getElementById('pull-overlay'), cn = document.getElementById('overlay-items-container'), ct = document.getElementById('overlay-pull-count-text');
-    document.getElementById('btn-pull-until-ssr').disabled = true; document.getElementById('egg-img').classList.add('animate-bounce');
+    
+    document.getElementById('btn-pull-until-ssr').disabled = true; 
+    const btnSr = document.getElementById('btn-pull-until-sr');
+    if (btnSr) btnSr.disabled = true;
+    
+    document.getElementById('egg-img').classList.add('animate-bounce');
     document.getElementById('overlay-actions').classList.add('hidden'); document.getElementById('overlay-skip-text').classList.remove('hidden'); 
     ct.classList.remove('hidden'); cn.innerHTML = ''; ov.classList.remove('hidden'); ov.classList.add('flex');
+    
+    window.currentAutoPullTarget = targetRank; // จำค่าไว้เผื่อถูกกดข้ามการแสดงผล
     
     currentAnimationInterval = setInterval(() => {
         if (!isAutoPulling) { clearInterval(currentAnimationInterval); return; }
         autoPullCount++; const nI = generateRandomItem(); history.push(nI); totalPulls++;
+        
         if (cn.children.length >= 15) cn.innerHTML = ''; cn.insertAdjacentHTML('beforeend', createOverlayItemHTML(nI));
         ct.innerHTML = `กำลังสุ่มครั้งที่ <span class="text-white text-xl mx-1">${autoPullCount}</span>`; updateCost();
-        if (nI.rank === 'SSR' || autoPullCount >= 5000) { 
-            const isSSR = nI.rank === 'SSR';
+        
+        let shouldStop = false;
+        if (targetRank === 'SSR' && nI.rank === 'SSR') shouldStop = true;
+        // ถ้าหา SR แล้วดันแจ็คพอตแตกได้ SSR ก่อน ก็ให้หยุดเหมือนกัน
+        if (targetRank === 'SR' && (nI.rank === 'SR' || nI.rank === 'SSR')) shouldStop = true; 
+        
+        if (shouldStop || autoPullCount >= 5000) { 
             clearInterval(currentAnimationInterval); 
-            finishAutoPull(isSSR); 
+            finishAutoPullConfigurable(shouldStop, nI.rank); 
         }
     }, 150);
 }
+
+// ให้ปุ่มเดิมเรียกใช้ได้ปกติ
+function pullUntilSSR() { pullUntilRank('SSR'); }
+// ให้ปุ่มใหม่เรียกใช้
+function pullUntilSR() { pullUntilRank('SR'); }
 
 function renderInventory() {
     const section = document.getElementById('inventory-section'), container = document.getElementById('inventory-container'), emptyState = document.getElementById('empty-inventory-state');
