@@ -3,16 +3,48 @@
   "title1": "TIME",
   "title2": "SACRED",
   "eggImage": "images/TIME_SACRED/egg.png",
-  "rates": { "SSR": 0.5, "SR": 1.5, "R": 10.0, "A": 15.0, "B": 31.0, "C": 21.0, "E": 21.0 },
+  "rates": {
+    "SSR": 0.5,
+    "SR": 1.5,
+    "R": 10.0,
+    "A": 15.0,
+    "B": 31.0,
+    "C": 21.0,
+    "E": 21.0
+  },
   "expectedScore": 10.43,
-  "theme": { 
-    "mainT1": "bg-gradient-to-b from-slate-100 via-slate-300 to-slate-500 bg-clip-text text-transparent block uppercase", 
+  "theme": {
+    "mainT1": "bg-gradient-to-b from-slate-100 via-slate-300 to-slate-500 bg-clip-text text-transparent block uppercase",
     "mainT2": "bg-gradient-to-b from-blue-200 via-blue-500 to-indigo-800 bg-clip-text text-transparent block uppercase",
     "shareT1": "text-slate-300",
     "shareT2": "text-blue-500"
   },
   "items": [
-    { "id": "ts_ssr1", "name": "Sealed Card Album II", "rank": "SSR", "qty": 1, "imgSrc": "images/TIME_SACRED/1.png" }
-    // ... (ใส่ไอเทมให้ครบ 26 ชิ้น)
+    { "id": "ts_ssr1", "name": "Sealed Card Album II", "rank": "SSR", "qty": 1, "imgSrc": "images/TIME_SACRED/1.png" },
+    { "id": "ts_ssr2", "name": "Sealed Card Album", "rank": "SSR", "qty": 1, "imgSrc": "images/TIME_SACRED/2.png" },
+    { "id": "ts_ssr3", "name": "Costume Auspicious Clouds", "rank": "SSR", "qty": 1, "imgSrc": "images/TIME_SACRED/3.png" },
+    { "id": "ts_ssr4", "name": "God's Spiritual Earth [1]", "rank": "SSR", "qty": 1, "imgSrc": "images/TIME_SACRED/4.png" },
+    { "id": "ts_ssr5", "name": "Fairy Lamp", "rank": "SSR", "qty": 1, "imgSrc": "images/TIME_SACRED/5.png" },
+    { "id": "ts_sr1", "name": "Awakened Blessed Knife [2]", "rank": "SR", "qty": 1, "imgSrc": "images/TIME_SACRED/6.png" },
+    { "id": "ts_sr2", "name": "Awakened Dragonic Slayer [2]", "rank": "SR", "qty": 1, "imgSrc": "images/TIME_SACRED/7.png" },
+    { "id": "ts_sr3", "name": "Shadow Staff [2]", "rank": "SR", "qty": 1, "imgSrc": "images/TIME_SACRED/8.png" },
+    { "id": "ts_r1", "name": "Sigrun Shadow Shield", "rank": "R", "qty": 1, "imgSrc": "images/TIME_SACRED/9.png" },
+    { "id": "ts_r2", "name": "Sigrun Shadow Armor", "rank": "R", "qty": 1, "imgSrc": "images/TIME_SACRED/10.png" },
+    { "id": "ts_r3", "name": "Mortal Blow Shadow Weapon", "rank": "R", "qty": 1, "imgSrc": "images/TIME_SACRED/11.png" },
+    { "id": "ts_r4", "name": "Mortal Blow Shadow Earring", "rank": "R", "qty": 1, "imgSrc": "images/TIME_SACRED/12.png" },
+    { "id": "ts_r5", "name": "Mortal Blow Shadow Pendant", "rank": "R", "qty": 1, "imgSrc": "images/TIME_SACRED/13.png" },
+    { "id": "ts_a1", "name": "Blood Twig", "rank": "A", "qty": 1, "imgSrc": "images/TIME_SACRED/14.png" },
+    { "id": "ts_b1", "name": "Class Shadow Cube", "rank": "B", "qty": 1, "imgSrc": "images/TIME_SACRED/15.png" },
+    { "id": "ts_b2", "name": "Poison Bottle Box", "rank": "B", "qty": 1, "imgSrc": "images/TIME_SACRED/16.png" },
+    { "id": "ts_b3", "name": "[Scroll] Mental Potion", "rank": "B", "qty": 5, "imgSrc": "images/TIME_SACRED/17.png" },
+    { "id": "ts_b4", "name": "Thai Perfume ATK", "rank": "B", "qty": 5, "imgSrc": "images/TIME_SACRED/18.png" },
+    { "id": "ts_b5", "name": "Thai Perfume MATK", "rank": "B", "qty": 5, "imgSrc": "images/TIME_SACRED/19.png" },
+    { "id": "ts_b6", "name": "Thai Perfume ASPD", "rank": "B", "qty": 5, "imgSrc": "images/TIME_SACRED/20.png" },
+    { "id": "ts_b7", "name": "[Scroll] Adrenaline Lv.5 Scroll", "rank": "B", "qty": 5, "imgSrc": "images/TIME_SACRED/21.png" },
+    { "id": "ts_b8", "name": "LV5 Aspersio Scroll", "rank": "B", "qty": 15, "imgSrc": "images/TIME_SACRED/22.png" },
+    { "id": "ts_c1", "name": "[Scroll] Blessing Lv.10 Scroll", "rank": "C", "qty": 10, "imgSrc": "images/TIME_SACRED/23.png" },
+    { "id": "ts_c2", "name": "[Scroll] Increase Agility Lv.10 Scroll", "rank": "C", "qty": 10, "imgSrc": "images/TIME_SACRED/24.png" },
+    { "id": "ts_e1", "name": "[Scroll] Ex Def Potion", "rank": "E", "qty": 5, "imgSrc": "images/TIME_SACRED/25.png" },
+    { "id": "ts_e2", "name": "[Scroll] Kafra Card", "rank": "E", "qty": 5, "imgSrc": "images/TIME_SACRED/26.png" }
   ]
 }
