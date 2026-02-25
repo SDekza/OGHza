@@ -1,0 +1,18 @@
+{
+  "id": "time_sacred",
+  "title1": "TIME",
+  "title2": "SACRED",
+  "eggImage": "images/TIME_SACRED/egg.png",
+  "rates": { "SSR": 0.5, "SR": 1.5, "R": 10.0, "A": 15.0, "B": 31.0, "C": 21.0, "E": 21.0 },
+  "expectedScore": 10.43,
+  "theme": { 
+    "mainT1": "bg-gradient-to-b from-slate-100 via-slate-300 to-slate-500 bg-clip-text text-transparent block uppercase", 
+    "mainT2": "bg-gradient-to-b from-blue-200 via-blue-500 to-indigo-800 bg-clip-text text-transparent block uppercase",
+    "shareT1": "text-slate-300",
+    "shareT2": "text-blue-500"
+  },
+  "items": [
+    { "id": "ts_ssr1", "name": "Sealed Card Album II", "rank": "SSR", "qty": 1, "imgSrc": "images/TIME_SACRED/1.png" }
+    // ... (ใส่ไอเทมให้ครบ 26 ชิ้น)
+  ]
+}
