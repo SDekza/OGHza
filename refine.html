@@ -127,6 +127,30 @@
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
+
+        /* ตกแต่งแถบเลื่อน (Slider) สำหรับ Auto Refine */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #f59e0b;
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
     </style>
 </head>
 <body>
@@ -209,6 +233,18 @@
                         </div>
                         <div class="text-xs md:text-sm font-bold text-amber-200 mt-2 ro-text-shadow text-center" id="furnaceText">God Furnace<br><span class="text-blue-400 font-normal" id="furnaceCostTxt">ใช้ 1 ea</span></div>
                     </div>
+                </div>
+
+                <!-- Auto Refine Panel (แถบตั้งค่าตีออโต้) -->
+                <div class="mt-8 w-full px-6 md:px-10 flex flex-col items-center bg-black/20 p-4 rounded-xl border border-white/5 shadow-inner">
+                    <div class="w-full flex justify-between items-center text-amber-200 text-xs md:text-sm mb-3 font-bold">
+                        <span><i class="fas fa-cogs mr-1 text-slate-400"></i>เป้าหมาย Auto Refine:</span>
+                        <span class="text-white bg-amber-900/80 px-3 py-1 rounded-full border border-amber-500/50 shadow-md">+<span id="autoTargetVal">15</span></span>
+                    </div>
+                    <input type="range" id="autoTargetSlider" min="1" max="15" value="15" class="w-full" oninput="document.getElementById('autoTargetVal').innerText = this.value">
+                    <button id="btnAutoRefine" onclick="toggleAutoRefine()" class="mt-4 w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold py-2 md:py-2.5 px-4 rounded-full shadow-lg transition border border-amber-400/50 flex justify-center items-center text-sm md:text-base">
+                        <i class="fas fa-robot mr-2"></i>เริ่มตีบวกออโต้ (Auto)
+                    </button>
                 </div>
             </div>
 
@@ -420,6 +456,7 @@
 
     // ตัวแปรสำหรับควบคุมเสียง (แยกจาก state ปกติเพื่อไม่ให้ถูกรีเซ็ตเวลาล้างข้อมูล)
     let isSoundEnabled = false;
+    let isAutoRefining = false; // ตรวจสอบสถานะการตีบวกออโต้
 
     let state = { 
         level: 0, 
@@ -430,7 +467,8 @@
         tries: 0,
         useHammer: false,
         useFurnace: false,
-        logHistory: [] // เก็บประวัติสำหรับตอนกดเซฟไฟล์
+        intendedFurnace: false, // จำความต้องการว่า "อยากเปิดเตาไฟตลอดเวลา" หรือไม่
+        logHistory: [] 
     };
 
     function playFallbackSound(isSuccess) {
@@ -519,6 +557,51 @@
         logArea.insertBefore(logItem, logArea.firstChild);
     }
 
+    // ฟังก์ชันสำหรับ Auto Refine
+    async function toggleAutoRefine() {
+        if (isAutoRefining) {
+            stopAutoRefine();
+            return;
+        }
+
+        const targetLevel = parseInt(document.getElementById('autoTargetSlider').value);
+        if (state.level >= targetLevel) {
+            showNotification(`อุปกรณ์ถึงหรือเลยระดับ +${targetLevel} แล้ว`, "error");
+            return;
+        }
+
+        isAutoRefining = true;
+        const btn = document.getElementById('btnAutoRefine');
+        btn.innerHTML = '<i class="fas fa-stop-circle mr-2"></i>หยุด Auto Refine';
+        btn.classList.replace('from-amber-600', 'from-red-600');
+        btn.classList.replace('to-amber-700', 'to-red-700');
+        btn.classList.replace('hover:from-amber-500', 'hover:from-red-500');
+        btn.classList.replace('hover:to-amber-600', 'hover:to-red-600');
+        btn.classList.replace('border-amber-400/50', 'border-red-400/50');
+        
+        // Loop ตีบวกอัตโนมัติ
+        while (isAutoRefining && state.level < targetLevel && state.level < MAX_LEVEL) {
+            refine(true); // สั่งตีบวก (ส่งค่า true ว่าเป็นการตีอัตโนมัติ)
+            await new Promise(resolve => setTimeout(resolve, 250)); // หน่วงเวลาให้เห็นอนิเมชั่น (ปรับตัวเลขลดลงเพื่อความเร็ว)
+        }
+
+        stopAutoRefine();
+        if (state.level >= targetLevel) {
+            showNotification(`Auto Refine สำเร็จถึงเป้าหมาย +${state.level}!`, "success");
+        }
+    }
+
+    function stopAutoRefine() {
+        isAutoRefining = false;
+        const btn = document.getElementById('btnAutoRefine');
+        btn.innerHTML = '<i class="fas fa-robot mr-2"></i>เริ่มตีบวกออโต้ (Auto)';
+        btn.classList.replace('from-red-600', 'from-amber-600');
+        btn.classList.replace('to-red-700', 'to-amber-700');
+        btn.classList.replace('hover:from-red-500', 'hover:from-amber-500');
+        btn.classList.replace('hover:to-red-600', 'hover:to-amber-600');
+        btn.classList.replace('border-red-400/50', 'border-amber-400/50');
+    }
+
     // ฟังก์ชันเปิด/ปิดเสียง
     function toggleSound() {
         isSoundEnabled = !isSoundEnabled;
@@ -540,12 +623,17 @@
         if (type === 'hammer') {
             state.useHammer = !state.useHammer;
         } else if (type === 'furnace') {
+            // สลับสถานะที่ต้องการ (อยากเปิดหรือปิด)
+            state.intendedFurnace = !state.intendedFurnace;
+            
             const nextLevel = state.level + 1;
             if (nextLevel <= MAX_LEVEL && refineTable[nextLevel].furnaceReq > 0) {
-                state.useFurnace = !state.useFurnace;
+                state.useFurnace = state.intendedFurnace;
             } else {
                 state.useFurnace = false; 
-                if(nextLevel <= MAX_LEVEL) showNotification("ระดับนี้ปลอดภัย ไม่จำเป็นต้องใช้เตาไฟ", "error");
+                if(nextLevel <= MAX_LEVEL && state.intendedFurnace) {
+                    showNotification("เปิดเตาไฟออโต้ (จะทำงานในระดับถัดไปให้เอง)", "success");
+                }
             }
         }
         updateUI();
@@ -571,30 +659,36 @@
         const nextLevel = state.level + 1;
         const req = (nextLevel <= MAX_LEVEL) ? refineTable[nextLevel] : null;
 
+        // เปลี่ยนสีไฟสถานะตาม "ความตั้งใจ (intended)"
+        if (state.intendedFurnace) {
+            indFurnace.classList.replace('bg-slate-500', 'bg-blue-400');
+            indFurnace.classList.replace('bg-slate-700', 'bg-blue-400');
+        } else {
+            indFurnace.classList.replace('bg-blue-400', 'bg-slate-500');
+            indFurnace.classList.replace('bg-slate-700', 'bg-slate-500');
+        }
+
         if (req && req.furnaceReq === 0) {
+            // จุดปลอดภัย
             btnFurnace.classList.add('item-disabled');
             btnFurnace.classList.remove('item-on', 'item-off');
-            indFurnace.classList.replace('bg-blue-400', 'bg-slate-700');
-            indFurnace.classList.replace('bg-slate-500', 'bg-slate-700');
             furnaceCostTxt.innerText = "ระดับปลอดภัย";
             furnaceCostTxt.className = "text-slate-400 font-normal text-[10px] md:text-xs";
         } else {
+            // จุดอันตรายที่ต้องใช้เตา
             btnFurnace.classList.remove('item-disabled');
             if (req) {
                 furnaceCostTxt.innerText = `ใช้ ${req.furnaceReq} ea`;
                 furnaceCostTxt.className = "text-blue-400 font-bold";
             }
 
+            // แสดงแสงสีปุ่มตามการใช้งานจริง (ใช้เตาหรือไม่)
             if (state.useFurnace) {
                 btnFurnace.classList.remove('item-off');
                 btnFurnace.classList.add('item-on');
-                indFurnace.classList.replace('bg-slate-500', 'bg-blue-400');
-                indFurnace.classList.replace('bg-slate-700', 'bg-blue-400');
             } else {
                 btnFurnace.classList.add('item-off');
                 btnFurnace.classList.remove('item-on');
-                indFurnace.classList.replace('bg-blue-400', 'bg-slate-500');
-                indFurnace.classList.replace('bg-slate-700', 'bg-slate-500');
             }
         }
     }
@@ -625,7 +719,12 @@
         const nextLevel = state.level + 1;
         const req = refineTable[nextLevel];
 
-        if(req.furnaceReq === 0) state.useFurnace = false;
+        // ตรวจสอบเตาไฟอัตโนมัติ
+        if(req.furnaceReq === 0) {
+            state.useFurnace = false; // บังคับปิดเมื่อถึงจุดปลอดภัย
+        } else {
+            state.useFurnace = state.intendedFurnace; // ดึงสถานะที่จำไว้กลับมาใช้งาน
+        }
 
         applyToggleStyles();
 
@@ -643,8 +742,10 @@
         else chanceDisplay.className = "text-4xl md:text-5xl font-black mt-1 ro-text-shadow text-red-500";
     }
 
-    function refine() {
+    function refine(isAuto = false) {
         if (state.level >= MAX_LEVEL) return;
+        // ป้องกันการคลิกรัวด้วยมือในขณะที่ระบบ Auto กำลังทำงานอยู่
+        if (isAutoRefining && !isAuto) return; 
 
         const nextLevel = state.level + 1;
         const req = refineTable[nextLevel];
@@ -871,7 +972,8 @@
     }
 
     function resetApp() {
-        state = { level: 0, zeny: 0, medal: 0, hammerUsed: 0, furnaceUsed: 0, tries: 0, useHammer: false, useFurnace: false, logHistory: [] };
+        stopAutoRefine(); // สั่งหยุด Auto เผื่อว่ากำลังทำงานอยู่
+        state = { level: 0, zeny: 0, medal: 0, hammerUsed: 0, furnaceUsed: 0, tries: 0, useHammer: false, useFurnace: false, intendedFurnace: false, logHistory: [] };
         document.getElementById('logArea').innerHTML = '<div class="text-white/40 text-center italic mt-4 font-medium" id="emptyLogMsg">-- บันทึกยังว่างเปล่า --</div>';
         updateUI();
         showNotification("รีเซ็ตอุปกรณ์และใบเสร็จแล้ว");
