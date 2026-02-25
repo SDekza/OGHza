@@ -1,0 +1,12 @@
+{
+  "aquarius": {
+    "id": "aquarius",
+    "name": "Aquarius Diadem",
+    "eggImage": "images/AQUARIUS_DIADEM/egg.png"
+  },
+  "time_sacred": {
+    "id": "time_sacred",
+    "name": "Time Sacred",
+    "eggImage": "images/TIME_SACRED/egg.png"
+  }
+}
