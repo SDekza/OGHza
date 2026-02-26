@@ -151,6 +151,12 @@
             background: rgba(255,255,255,0.2);
             border-radius: 2px;
         }
+
+        /* ตกแต่งแถบเลื่อน Start Level ให้เป็นสีฟ้าแยกกันชัดเจน */
+        input[type=range].start-slider::-webkit-slider-thumb {
+            background: #3b82f6; 
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+        }
     </style>
 </head>
 <body>
@@ -235,14 +241,31 @@
                     </div>
                 </div>
 
-                <!-- Auto Refine Panel (แถบตั้งค่าตีออโต้) -->
-                <div class="mt-8 w-full px-6 md:px-10 flex flex-col items-center bg-black/20 p-4 rounded-xl border border-white/5 shadow-inner">
-                    <div class="w-full flex justify-between items-center text-amber-200 text-xs md:text-sm mb-3 font-bold">
-                        <span><i class="fas fa-cogs mr-1 text-slate-400"></i>เป้าหมาย Auto Refine:</span>
-                        <span class="text-white bg-amber-900/80 px-3 py-1 rounded-full border border-amber-500/50 shadow-md">+<span id="autoTargetVal">15</span></span>
+                <!-- Setting & Auto Refine Panel (แถบตั้งค่าระดับและตีออโต้) -->
+                <div class="mt-8 w-full px-6 md:px-10 flex flex-col items-center bg-black/20 p-4 rounded-xl border border-white/5 shadow-inner space-y-4">
+                    
+                    <!-- เริ่มต้น Slider -->
+                    <div class="w-full">
+                        <div class="w-full flex justify-between items-center text-amber-200 text-xs md:text-sm mb-2 font-bold">
+                            <span><i class="fas fa-play-circle mr-1 text-blue-400"></i>เริ่มจำลองที่ระดับ:</span>
+                            <span class="text-white bg-blue-900/80 px-3 py-1 rounded-full border border-blue-500/50 shadow-md">+<span id="startLevelVal">0</span></span>
+                        </div>
+                        <!-- ใช้ onchange เพื่อให้รีเซ็ตตอนปล่อยนิ้ว/เมาส์ -->
+                        <input type="range" id="startLevelSlider" min="0" max="14" value="0" class="w-full start-slider" oninput="document.getElementById('startLevelVal').innerText = this.value" onchange="setStartLevel(this.value)">
                     </div>
-                    <input type="range" id="autoTargetSlider" min="1" max="15" value="15" class="w-full" oninput="document.getElementById('autoTargetVal').innerText = this.value">
-                    <button id="btnAutoRefine" onclick="toggleAutoRefine()" class="mt-4 w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold py-2 md:py-2.5 px-4 rounded-full shadow-lg transition border border-amber-400/50 flex justify-center items-center text-sm md:text-base">
+
+                    <div class="w-full border-t border-white/10"></div>
+
+                    <!-- เป้าหมาย Slider -->
+                    <div class="w-full">
+                        <div class="w-full flex justify-between items-center text-amber-200 text-xs md:text-sm mb-2 font-bold">
+                            <span><i class="fas fa-bullseye mr-1 text-orange-400"></i>เป้าหมายออโต้:</span>
+                            <span class="text-white bg-amber-900/80 px-3 py-1 rounded-full border border-amber-500/50 shadow-md">+<span id="autoTargetVal">15</span></span>
+                        </div>
+                        <input type="range" id="autoTargetSlider" min="1" max="15" value="15" class="w-full" oninput="document.getElementById('autoTargetVal').innerText = this.value">
+                    </div>
+
+                    <button id="btnAutoRefine" onclick="toggleAutoRefine()" class="mt-2 w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold py-2 md:py-2.5 px-4 rounded-full shadow-lg transition border border-amber-400/50 flex justify-center items-center text-sm md:text-base">
                         <i class="fas fa-robot mr-2"></i>เริ่มตีบวกออโต้ (Auto)
                     </button>
                 </div>
@@ -266,29 +289,30 @@
                     </div>
 
                     <!-- Settings & Tries -->
-                    <div class="flex flex-col gap-3">
-                        <div class="panel p-3 flex-1 flex flex-col justify-center text-center">
-                            <span class="text-xs text-amber-200/70">จำนวนครั้งที่ตีเหล็ก</span>
-                            <span class="text-3xl md:text-4xl font-black text-white ro-text-shadow mt-1" id="totalTry">0</span>
-                            <span class="text-[10px] text-amber-500">ครั้ง</span>
+                    <div class="flex flex-col gap-2">
+                        <div class="panel p-2 flex-1 flex flex-col justify-center text-center">
+                            <span class="text-[10px] md:text-xs text-amber-200/70">จำนวนครั้งที่ตีเหล็ก</span>
+                            <span class="text-2xl md:text-3xl font-black text-white ro-text-shadow mt-1" id="totalTry">0</span>
                         </div>
                         
                         <div class="panel p-2">
-                            <h3 class="text-[10px] md:text-xs font-bold text-amber-400 mb-1"><i class="fas fa-coins mr-1"></i>ตั้งราคา (฿/ea)</h3>
-                            <div class="flex space-x-2">
-                                <!-- Input: God Hammer -->
-                                <div class="relative w-1/2 flex items-center bg-black/40 border border-white/10 rounded focus-within:border-amber-500 transition" title="ราคา God Hammer">
-                                    <div class="pl-2 pr-1 flex items-center justify-center opacity-80">
-                                        <img src="images/refine/God_Hammer.png" class="w-4 h-4 md:w-5 md:h-5 object-contain" onerror="this.style.display='none'">
+                            <div class="mb-2">
+                                <h3 class="text-[10px] md:text-xs font-bold text-amber-400 mb-1"><i class="fas fa-coins mr-1"></i>ตั้งราคา (฿/ea)</h3>
+                                <div class="flex space-x-2">
+                                    <!-- Input: God Hammer -->
+                                    <div class="relative w-1/2 flex items-center bg-black/40 border border-white/10 rounded focus-within:border-amber-500 transition" title="ราคา God Hammer">
+                                        <div class="pl-2 pr-1 flex items-center justify-center opacity-80">
+                                            <img src="images/refine/God_Hammer.png" class="w-4 h-4 md:w-5 md:h-5 object-contain" onerror="this.style.display='none'">
+                                        </div>
+                                        <input type="number" id="hammerPrice" value="75" min="0" class="w-full bg-transparent text-amber-100 p-1 text-[10px] md:text-xs outline-none" oninput="updateUI()">
                                     </div>
-                                    <input type="number" id="hammerPrice" value="75" min="0" class="w-full bg-transparent text-amber-100 p-1 md:p-1.5 text-[10px] md:text-xs outline-none" oninput="updateUI()">
-                                </div>
-                                <!-- Input: God Furnace -->
-                                <div class="relative w-1/2 flex items-center bg-black/40 border border-white/10 rounded focus-within:border-amber-500 transition" title="ราคา God Furnace">
-                                    <div class="pl-2 pr-1 flex items-center justify-center opacity-80">
-                                        <img src="images/refine/God_Furnace.png" class="w-4 h-4 md:w-5 md:h-5 object-contain" onerror="this.style.display='none'">
+                                    <!-- Input: God Furnace -->
+                                    <div class="relative w-1/2 flex items-center bg-black/40 border border-white/10 rounded focus-within:border-amber-500 transition" title="ราคา God Furnace">
+                                        <div class="pl-2 pr-1 flex items-center justify-center opacity-80">
+                                            <img src="images/refine/God_Furnace.png" class="w-4 h-4 md:w-5 md:h-5 object-contain" onerror="this.style.display='none'">
+                                        </div>
+                                        <input type="number" id="furnacePrice" value="75" min="0" class="w-full bg-transparent text-amber-100 p-1 text-[10px] md:text-xs outline-none" oninput="updateUI()">
                                     </div>
-                                    <input type="number" id="furnacePrice" value="75" min="0" class="w-full bg-transparent text-amber-100 p-1 md:p-1.5 text-[10px] md:text-xs outline-none" oninput="updateUI()">
                                 </div>
                             </div>
                         </div>
@@ -306,7 +330,7 @@
                             </button>
                             <!-- ปุ่มล้างข้อมูล (Reset) ที่ทำให้มองเห็นได้ชัดเจน -->
                             <button onclick="resetApp()" class="text-xs bg-red-900/80 hover:bg-red-700 text-red-100 px-3 py-1.5 rounded transition shadow flex items-center border border-red-500/50 font-bold">
-                                <i class="fas fa-sync-alt mr-1.5"></i>ล้างข้อมูล (Reset)
+                                <i class="fas fa-sync-alt mr-1.5"></i>ล้างข้อมูล
                             </button>
                         </div>
                     </div>
@@ -555,6 +579,42 @@
             <span class="text-[10px] text-amber-200/50 bg-black/40 px-2 py-0.5 rounded font-bold">#${state.tries}</span>
         `;
         logArea.insertBefore(logItem, logArea.firstChild);
+    }
+
+    // ฟังก์ชันสำหรับตั้งค่าระดับเริ่มต้น (Start Level)
+    function setStartLevel(val) {
+        let startLvl = parseInt(val);
+        if (isNaN(startLvl) || startLvl < 0) startLvl = 0;
+        if (startLvl > 14) startLvl = 14;
+        
+        // อัปเดต UI แถบเลื่อนเผื่อเรียกฟังก์ชันจากที่อื่น
+        document.getElementById('startLevelSlider').value = startLvl;
+        document.getElementById('startLevelVal').innerText = startLvl;
+
+        stopAutoRefine(); // หยุดระบบตีออโต้ถ้าทำงานอยู่
+
+        state = { 
+            level: startLvl, 
+            zeny: 0, 
+            medal: 0, 
+            hammerUsed: 0, 
+            furnaceUsed: 0, 
+            tries: 0, 
+            useHammer: false, 
+            useFurnace: false, 
+            intendedFurnace: false, 
+            logHistory: [] 
+        };
+        
+        let emptyMsgText = startLvl > 0 ? `-- เริ่มต้นจำลองที่ +${startLvl} --` : `-- บันทึกยังว่างเปล่า --`;
+        document.getElementById('logArea').innerHTML = `<div class="text-white/40 text-center italic mt-4 font-medium" id="emptyLogMsg">${emptyMsgText}</div>`;
+        updateUI();
+        
+        if (startLvl > 0) {
+            showNotification(`รีเซ็ตข้อมูลและเริ่มที่ +${startLvl} แล้ว`, "success");
+        } else {
+            showNotification("รีเซ็ตอุปกรณ์และใบเสร็จแล้ว");
+        }
     }
 
     // ฟังก์ชันสำหรับ Auto Refine
@@ -968,11 +1028,9 @@
     }
 
     function resetApp() {
-        stopAutoRefine(); // สั่งหยุด Auto เผื่อว่ากำลังทำงานอยู่
-        state = { level: 0, zeny: 0, medal: 0, hammerUsed: 0, furnaceUsed: 0, tries: 0, useHammer: false, useFurnace: false, intendedFurnace: false, logHistory: [] };
-        document.getElementById('logArea').innerHTML = '<div class="text-white/40 text-center italic mt-4 font-medium" id="emptyLogMsg">-- บันทึกยังว่างเปล่า --</div>';
-        updateUI();
-        showNotification("รีเซ็ตอุปกรณ์และใบเสร็จแล้ว");
+        // ใช้ค่าจากแถบเลื่อนเริ่มต้นในปัจจุบันไปเลย
+        let startLvl = document.getElementById('startLevelSlider').value;
+        setStartLevel(startLvl);
     }
 
     function updateUI() {
