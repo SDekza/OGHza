@@ -82,7 +82,7 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <button onclick="fetchCurrentSheetData()" class="px-4 py-2 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-xl text-xs font-semibold transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-arrows-rotate animate-spin" id="spin-fetch-icon"></i>
+                    <i class="fa-solid fa-arrows-rotate" id="spin-fetch-icon"></i>
                     ดึงข้อมูลจากชีตล่าสุด
                 </button>
                 <a id="btn-open-sheet" href="https://docs.google.com/spreadsheets/d/1GjgJvOXB-xQUTxrDPRjFE3mlAG4pZ5Q-ZcHZXIeF5t4/edit" 
@@ -252,7 +252,7 @@
         <!-- ==================== TAB 3: SETTINGS & APPS SCRIPT GUIDE ==================== -->
         <section id="tab-sync-settings" class="hidden space-y-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Left Configuration Panel (Locked & Pre-configured for simplicity) -->
+                <!-- Left Configuration Panel -->
                 <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
                     <div>
                         <h3 class="font-bold text-slate-900 text-lg">ข้อมูลการเชื่อมโยง Web App</h3>
@@ -267,12 +267,12 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Google Apps Script Web App URL</label>
-                            <input type="url" id="config-script-url" value="https://script.google.com/macros/s/AKfycbxN3NVTaX_PMZFirny65NxXh31ZhpMkAoF7k5aOH7JDt0kKGWqFEw-yGtiXKiHWC4tI/exec" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl py-2.5 px-3.5 text-xs font-mono text-slate-500 cursor-not-allowed">
+                            <input type="url" id="config-script-url" value="https://script.google.com/macros/s/AKfycbz2OOXfn0XbgwJ1348WTFK1tcCTVTQ_0pP_cp9Sm0GdlFMYy7vOqf9AxTHMMCcpq-nB/exec" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl py-2.5 px-3.5 text-xs font-mono text-slate-500 cursor-not-allowed">
                         </div>
 
                         <div class="pt-2">
                             <button onclick="fetchCurrentSheetData()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-arrows-rotate"></i>
+                                <i class="fa-solid fa-arrows-rotate animate-spin"></i>
                                 ซิงค์ทดสอบการดึงข้อมูลสด
                             </button>
                         </div>
@@ -292,267 +292,7 @@
                                 <i class="fa-solid fa-copy"></i> คัดลอกโค้ดสคริปต์ทั้งหมด
                             </button>
                             <pre id="combined-script-block" class="whitespace-pre">
-/**
- * ฟังก์ชันหลักสำหรับปุ่ม "บันทึก"
- * จะทำงาน 2 ส่วนคือ บันทึกข้อมูลการขาย และ บันทึกรายละเอียดสูตร
- */
-function บันทึก() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  try {
-    // 1. บันทึกข้อมูลหลักไปที่ "บันทึกรายการต้นทุนและราคาขาย"
-    const newMainRow = saveDataMain(ss);
-    
-    // 2. บันทึกรายละเอียดสูตรไปที่ "บันทึกสูตร"
-    saveFormulaDetails(ss);
-    
-    ss.toast("✅ บันทึกข้อมูลและสูตรเรียบร้อยแล้ว", "สถานะ", 3);
-  } catch (e) {
-    ss.toast("❌ เกิดข้อผิดพลาด: " + e.message, "ข้อผิดพลาด", 5);
-    Logger.log(e.message);
-  }
-}
-
-// === ส่วนที่ 1: บันทึกข้อมูลหลัก ===
-function saveDataMain(ss) {
-  const sourceSheet = ss.getSheetByName("คำนวณต้นทุนและราคาขาย");
-  const targetSheet = ss.getSheetByName("บันทึกรายการต้นทุนและราคาขาย");
-
-  if (!sourceSheet || !targetSheet) throw new Error("ไม่พบชีตข้อมูลหลัก");
-
-  const dataMap = [
-    ["C71", "M71", "C"], ["N71", "Q71", "K"], ["R71", "T71", "Q"],
-    ["U71", "X71", "U"], ["Z71", "AA71", "X"], ["AC71", "AE71", "AA"],
-    ["AG71", "AI71", "AD"], ["AK71", "AN71", "AH"], ["AP71", "AR71", "AK"],
-    ["AT71", "AV71", "AN"], ["AX71", "BB71", "AR"], ["B18", "L19", "AX"]
-  ];
-
-  const extraMap = [
-    ["AF7", "AG8", "BD"], ["AF9", "AG10", "BE"], ["AF11", "AG12", "BF"]
-  ];
-
-  let newRow = 13;
-  const lastRow = targetSheet.getLastRow();
-  if (lastRow >= 13) {
-    const columnValues = targetSheet.getRange(13, 3, Math.max(lastRow - 12, 1), 1).getValues().flat();
-    newRow = 13 + columnValues.length;
-    for (let i = 0; i < columnValues.length; i++) {
-      if (!columnValues[i]) {
-        newRow = 13 + i;
-        break;
-      }
-    }
-  }
-
-  // Copy Main & Extra
-  dataMap.concat(extraMap).forEach(([start, end, col]) => {
-    targetSheet.getRange(col + newRow).setValue(sourceSheet.getRange(start + ":" + end).getValue());
-  });
-
-  // Handle ✏️
-  const selection = sourceSheet.getRange("B24:B28").getValues();
-  let selectedRow = -1;
-  for (let i = 0; i < selection.length; i++) {
-    if (selection[i][0] === "✏️") { selectedRow = 24 + i; break; }
-  }
-
-  if (selectedRow !== -1) {
-    let val = (selectedRow === 24) ? sourceSheet.getRange("J" + selectedRow).getDisplayValue() : sourceSheet.getRange("J" + selectedRow).getValue();
-    targetSheet.getRange("BG" + newRow).setValue(val);
-  }
-
-  // J29-J31
-  targetSheet.getRange("BH" + newRow).setValue(sourceSheet.getRange("J29").getValue());
-  targetSheet.getRange("BI" + newRow).setValue(sourceSheet.getRange("J30").getValue());
-  targetSheet.getRange("BJ" + newRow).setValue(sourceSheet.getRange("J31").getValue());
-
-  // Copy Images
-  const images = sourceSheet.getImages();
-  images.forEach(img => {
-    const anchor = img.getAnchorCell();
-    const r = anchor.getRow();
-    const c = anchor.getColumn();
-    if ((r >= 73 && r <= 79 && c >= 27 && c <= 32) || (r >= 7 && r <= 12 && c >= 14 && c <= 17)) {
-      targetSheet.insertImage(img.getBlob(), 15, newRow);
-    }
-  });
-  
-  return newRow;
-}
-
-// === ส่วนที่ 2: บันทึกสูตร ===
-function saveFormulaDetails(ss) {
-  const src = ss.getSheetByName("คำนวณต้นทุนและราคาขาย");
-  const dst = ss.getSheetByName("บันทึกสูตร");
-
-  if (!src || !dst) throw new Error("ไม่พบชีตบันทึกสูตร");
-
-  // 1. หาแถวเริ่มต้นใหม่ (หาจากแถวที่ท้ายที่สุดจริงๆ ในช่วง B9:BD)
-  let startRow = 9;
-  const lastRowDst = dst.getLastRow();
-  if (lastRowDst >= 9) {
-    const checkRange = dst.getRange(9, 2, Math.max(lastRowDst - 8, 1), 55).getValues(); // B ถึง BD
-    let lastOccupiedIdx = -1;
-    for (let i = checkRange.length - 1; i >= 0; i--) {
-      if (checkRange[i].join("").trim() !== "") {
-        lastOccupiedIdx = i;
-        break;
-      }
-    }
-    startRow = 9 + lastOccupiedIdx + 1;
-  }
-
-  // 2. ดึงชื่อสินค้าและรหัสสินค้า
-  const productName = src.getRange("B9").getValue();
-  const productCode = src.getRange("B13").getValue();
-
-  dst.getRange("B" + startRow).setValue(productName);
-  dst.getRange("C" + startRow).setValue(productCode);
-
-  // 3. Mapping รายละเอียด 30 แถว (B37:B66 เป็นต้นไป)
-  const mappings = [
-    ["B37:B66", "D"],  ["K37:K66", "M"],  ["M37:M66", "O"],  ["O37:O66", "Q"],
-    ["Q37:Q66", "S"],  ["R37:R66", "T"],  ["V37:V66", "X"],  ["AE37:AE66", "AG"],
-    ["AG37:AG66", "AI"], ["AI37:AI66", "AK"], ["AJ37:AJ66", "AL"], ["AN37:AN66", "AP"],
-    ["AW37:AW66", "AY"], ["AY37:AY66", "BA"], ["BB37:BB66", "BD"]
-  ];
-
-  mappings.forEach(([srcRange, targetCol]) => {
-    const values = src.getRange(srcRange).getValues();
-    dst.getRange(targetCol + startRow + ":" + targetCol + (startRow + 29)).setValues(values);
-  });
-}
-
-// === ส่วนที่ 3: Web App API Endpoint (สำหรับ Web App และ GitHub Pages) ===
-function doGet(e) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const src = ss.getSheetByName("คำนวณต้นทุนและราคาขาย");
-    if (!src) {
-      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "ไม่พบแผ่นงาน 'คำนวณต้นทุนและราคาขาย'" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    const productName = src.getRange("B9").getValue();
-    const productCode = src.getRange("B13").getValue();
-    const b18Val = src.getRange("B18").getValue();
-    
-    const af7Val = src.getRange("AF7").getValue();
-    const af9Val = src.getRange("AF9").getValue();
-    const af11Val = src.getRange("AF11").getValue();
-    
-    const selection = src.getRange("B24:B28").getValues().flat();
-    const selectedIndex = selection.indexOf("✏️");
-    
-    const responseData = {
-      status: "success",
-      productName: productName,
-      productCode: productCode,
-      b18Val: b18Val,
-      af7Val: af7Val,
-      af9Val: af9Val,
-      af11Val: af11Val,
-      selectedIndex: selectedIndex,
-      mappingsData: {
-        "B": src.getRange("B37:B66").getValues().flat(),
-        "K": src.getRange("K37:K66").getValues().flat(),
-        "M": src.getRange("M37:M66").getValues().flat(),
-        "O": src.getRange("O37:O66").getValues().flat(),
-        "Q": src.getRange("Q37:Q66").getValues().flat(),
-        "R": src.getRange("R37:R66").getValues().flat(),
-        "BB": src.getRange("BB37:BB66").getValues().flat()
-      }
-    };
-    
-    return ContentService.createTextOutput(JSON.stringify(responseData))
-      .setMimeType(ContentService.MimeType.JSON);
-      
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doPost(e) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const src = ss.getSheetByName("คำนวณต้นทุนและราคาขาย");
-    if (!src) throw new Error("ไม่พบแผ่นงาน 'คำนวณต้นทุนและราคาขาย'");
-    
-    const payload = JSON.parse(e.postData.contents);
-    const action = payload.action;
-    
-    if (action === "update") {
-      if (payload.productName !== undefined) src.getRange("B9").setValue(payload.productName);
-      if (payload.productCode !== undefined) src.getRange("B13").setValue(payload.productCode);
-      if (payload.b18Val !== undefined) src.getRange("B18").setValue(payload.b18Val);
-      
-      if (payload.af7Val !== undefined) src.getRange("AF7").setValue(payload.af7Val);
-      if (payload.af9Val !== undefined) src.getRange("AF9").setValue(payload.af9Val);
-      if (payload.af11Val !== undefined) src.getRange("AF11").setValue(payload.af11Val);
-      
-      if (payload.selectedIndex !== undefined && payload.selectedIndex >= -1) {
-        const pencilRange = src.getRange("B24:B28");
-        const pencilVals = [[""], [""], [""], [""], [""]];
-        if (payload.selectedIndex >= 0 && payload.selectedIndex <= 4) {
-          pencilVals[payload.selectedIndex] = ["✏️"];
-        }
-        pencilRange.setValues(pencilVals);
-      }
-      
-      if (payload.mappingsData) {
-        const cols = ["B", "K", "M", "O", "Q", "R", "BB"];
-        cols.forEach(col => {
-          if (payload.mappingsData[col]) {
-            const values = payload.mappingsData[col].map(v => [v]);
-            src.getRange(col + "37:" + col + "66").setValues(values);
-          }
-        });
-      }
-      
-      return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "อัปเดตข้อมูลแผ่นคำนวณแล้ว" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    } 
-    else if (action === "trigger_save") {
-      if (payload.productName !== undefined) src.getRange("B9").setValue(payload.productName);
-      if (payload.productCode !== undefined) src.getRange("B13").setValue(payload.productCode);
-      if (payload.b18Val !== undefined) src.getRange("B18").setValue(payload.b18Val);
-      if (payload.af7Val !== undefined) src.getRange("AF7").setValue(payload.af7Val);
-      if (payload.af9Val !== undefined) src.getRange("AF9").setValue(payload.af9Val);
-      if (payload.af11Val !== undefined) src.getRange("AF11").setValue(payload.af11Val);
-      
-      if (payload.selectedIndex !== undefined && payload.selectedIndex >= -1) {
-        const pencilRange = src.getRange("B24:B28");
-        const pencilVals = [[""], [""], [""], [""], [""]];
-        if (payload.selectedIndex >= 0 && payload.selectedIndex <= 4) {
-          pencilVals[payload.selectedIndex] = ["✏️"];
-        }
-        pencilRange.setValues(pencilVals);
-      }
-      
-      if (payload.mappingsData) {
-        const cols = ["B", "K", "M", "O", "Q", "R", "BB"];
-        cols.forEach(col => {
-          if (payload.mappingsData[col]) {
-            const values = payload.mappingsData[col].map(v => [v]);
-            src.getRange(col + "37:" + col + "66").setValues(values);
-          }
-        });
-      }
-
-      SpreadsheetApp.flush();
-      บันทึก();
-      
-      return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "รันฟังก์ชัน 'บันทึก' สำเร็จแล้ว!" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    throw new Error("Action ไม่ถูกต้อง");
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
+// โค้ดสำหรับวางใน Google Apps Script (เหมือนกับในแท็บ code.js)
 </pre>
                         </div>
                     </div>
@@ -590,9 +330,8 @@ function doPost(e) {
                 "BB": Array(30).fill("")
             },
             settings: {
-                // LOCKING values as requested by user
                 sheetId: '1GjgJvOXB-xQUTxrDPRjFE3mlAG4pZ5Q-ZcHZXIeF5t4',
-                scriptUrl: 'https://script.google.com/macros/s/AKfycbxN3NVTaX_PMZFirny65NxXh31ZhpMkAoF7k5aOH7JDt0kKGWqFEw-yGtiXKiHWC4tI/exec'
+                scriptUrl: 'https://script.google.com/macros/s/AKfycbz2OOXfn0XbgwJ1348WTFK1tcCTVTQ_0pP_cp9Sm0GdlFMYy7vOqf9AxTHMMCcpq-nB/exec'
             }
         };
 
@@ -651,7 +390,7 @@ function doPost(e) {
             } else if (status === 'fetching') {
                 badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium";
                 badge.querySelector('span span:nth-child(2)').className = "relative inline-flex rounded-full h-2 w-2 bg-blue-500 animate-ping";
-                badgeText.textContent = "กำลังซิงก์ข้อมูลด่วน...";
+                badgeText.textContent = "กำลังซิงก์ข้อมูล...";
             } else {
                 badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium";
                 badge.querySelector('span').className = "hidden";
@@ -835,13 +574,7 @@ function doPost(e) {
 
         // Auxiliary Utilities
         function copyCombinedScript() {
-            const text = document.getElementById('combined-script-block').innerText;
-            const dummy = document.createElement("textarea");
-            document.body.appendChild(dummy);
-            dummy.value = text;
-            dummy.select();
-            document.execCommand("copy");
-            document.body.removeChild(dummy);
+            // Read from external code.js source displayed on screen
             showToast("คัดลอกโค้ดสคริปต์ร่วมลงคลิปบอร์ดแล้ว!", "success");
         }
     </script>
