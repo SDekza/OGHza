@@ -48,7 +48,7 @@
                         <i class="fa-solid fa-list-check mr-1.5"></i>ตารางวัตถุดิบ (30 แถว)
                     </button>
                     <button onclick="switchTab('sync-settings')" class="tab-link text-slate-600 hover:text-emerald-600 font-medium text-sm transition-colors py-2 px-1 border-b-2 border-transparent" id="tab-btn-sync-settings">
-                        <i class="fa-solid fa-gears mr-1.5"></i>โค้ด Apps Script & ตั้งค่า
+                        <i class="fa-solid fa-gears mr-1.5"></i>ดูคู่มือและโค้ดดั้งเดิม
                     </button>
                 </div>
 
@@ -59,7 +59,7 @@
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                         </span>
-                        <span id="badge-text">สแตนด์บาย (Local Mode)</span>
+                        <span id="badge-text">กำลังซิงก์...</span>
                     </div>
                 </div>
             </div>
@@ -76,20 +76,20 @@
                     <i class="fa-solid fa-file-excel"></i>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-sm">ลิ้งค์หน้าเว็บแอปกับ Google Sheets</h4>
-                    <p id="header-sheet-id" class="text-xs text-slate-300 truncate max-w-xs sm:max-w-md lg:max-w-lg font-mono">ID: 1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g</p>
+                    <h4 class="font-semibold text-sm">เชื่อมต่อกับ Google Sheet ส่วนตัวของคุณแล้ว</h4>
+                    <p id="header-sheet-id" class="text-xs text-slate-300 truncate max-w-xs sm:max-w-md lg:max-w-lg font-mono">ID: 1GjgJvOXB-xQUTxrDPRjFE3mlAG4pZ5Q-ZcHZXIeF5t4</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <button onclick="fetchCurrentSheetData()" class="px-4 py-2 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-xl text-xs font-semibold transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                    ดึงข้อมูลล่าสุดจากชีต
+                    <i class="fa-solid fa-arrows-rotate animate-spin" id="spin-fetch-icon"></i>
+                    ดึงข้อมูลจากชีตล่าสุด
                 </button>
-                <a id="btn-open-sheet" href="https://docs.google.com/spreadsheets/d/1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g/edit" 
+                <a id="btn-open-sheet" href="https://docs.google.com/spreadsheets/d/1GjgJvOXB-xQUTxrDPRjFE3mlAG4pZ5Q-ZcHZXIeF5t4/edit" 
                    target="_blank" 
                    class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shadow-lg shadow-emerald-900/20">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    เปิดไฟล์หลัก
+                    เปิดหน้าชีตหลัก
                 </a>
             </div>
         </div>
@@ -252,30 +252,28 @@
         <!-- ==================== TAB 3: SETTINGS & APPS SCRIPT GUIDE ==================== -->
         <section id="tab-sync-settings" class="hidden space-y-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Left Configuration Panel -->
+                <!-- Left Configuration Panel (Locked & Pre-configured for simplicity) -->
                 <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
                     <div>
-                        <h3 class="font-bold text-slate-900 text-lg">ตั้งค่า Web App Integration</h3>
-                        <p class="text-xs text-slate-400">กรอกลิงก์ Web App URL และ Google Sheet ID ส่วนตัวของคุณ</p>
+                        <h3 class="font-bold text-slate-900 text-lg">ข้อมูลการเชื่อมโยง Web App</h3>
+                        <p class="text-xs text-slate-400">ระบบนี้ถูกตั้งค่าล็อคเพื่อใช้งานกับชีตส่วนตัวของคุณแบบถาวรแล้ว</p>
                     </div>
 
                     <div class="space-y-4">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Google Sheet ID</label>
-                            <input type="text" id="config-sheet-id" value="1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g" class="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="ระบุ Sheet ID ใหม่ของคุณ" oninput="saveToLocalStorage()">
-                            <p class="text-[10px] text-slate-400 mt-1">คัดลอกจาก URL ของ Google Sheets ส่วนตัวของคุณ</p>
+                            <input type="text" id="config-sheet-id" value="1GjgJvOXB-xQUTxrDPRjFE3mlAG4pZ5Q-ZcHZXIeF5t4" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl py-2.5 px-3.5 text-xs font-mono text-slate-500 cursor-not-allowed">
                         </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Google Apps Script Web App URL</label>
-                            <input type="url" id="config-script-url" class="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="https://script.google.com/macros/s/.../exec" oninput="saveToLocalStorage()">
-                            <p class="text-[10px] text-slate-400 mt-1">ลิงก์ที่ระบุคำว่า /exec ที่ได้รับจากการทำ "Deployment" บนหน้าสคริปต์แผ่นงานใหม่</p>
+                            <input type="url" id="config-script-url" value="https://script.google.com/macros/s/AKfycbxN3NVTaX_PMZFirny65NxXh31ZhpMkAoF7k5aOH7JDt0kKGWqFEw-yGtiXKiHWC4tI/exec" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl py-2.5 px-3.5 text-xs font-mono text-slate-500 cursor-not-allowed">
                         </div>
 
                         <div class="pt-2">
-                            <button onclick="testConnection()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-circle-nodes"></i>
-                                ทดสอบ & ดึงค่าเริ่มต้นจากชีต
+                            <button onclick="fetchCurrentSheetData()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                ซิงค์ทดสอบการดึงข้อมูลสด
                             </button>
                         </div>
                     </div>
@@ -285,7 +283,7 @@
                 <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm lg:col-span-2 space-y-6">
                     <div>
                         <h3 class="font-bold text-slate-900 text-lg">รวมโค้ด Google Apps Script ล่าสุด</h3>
-                        <p class="text-xs text-slate-400">คัดลอกชุดสคริปต์ด้านล่างนี้ ไปวางทับลงในหน้าต่างส่วนขยายสคริปต์ (Apps Script) ของ Google Sheet ของคุณ เพื่อเชื่อมโยงการทำงานแบบ 2-Way ซิงก์</p>
+                        <p class="text-xs text-slate-400">นี่คือชุดโค้ด Google Apps Script ดั้งเดิมและ API ชุดพิเศษสำหรับการเชื่อมต่อ ซึ่งคุณได้ทำการ Deploy เรียบร้อยแล้ว</p>
                     </div>
 
                     <div class="space-y-4">
@@ -315,7 +313,7 @@ function บันทึก() {
   }
 }
 
-// === ส่วนที่ 1: บันทึกข้อมูลหลัก (โค้ดเดิมของคุณที่ปรับปรุงแล้ว) ===
+// === ส่วนที่ 1: บันทึกข้อมูลหลัก ===
 function saveDataMain(ss) {
   const sourceSheet = ss.getSheetByName("คำนวณต้นทุนและราคาขาย");
   const targetSheet = ss.getSheetByName("บันทึกรายการต้นทุนและราคาขาย");
@@ -435,7 +433,6 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     
-    // ดึงค่าระบุตัวตนผลิตภัณฑ์
     const productName = src.getRange("B9").getValue();
     const productCode = src.getRange("B13").getValue();
     const b18Val = src.getRange("B18").getValue();
@@ -444,11 +441,9 @@ function doGet(e) {
     const af9Val = src.getRange("AF9").getValue();
     const af11Val = src.getRange("AF11").getValue();
     
-    // หาตำแหน่งดินสอ
     const selection = src.getRange("B24:B28").getValues().flat();
     const selectedIndex = selection.indexOf("✏️");
     
-    // จัดส่ง Mapping Data 30 แถว
     const responseData = {
       status: "success",
       productName: productName,
@@ -488,7 +483,6 @@ function doPost(e) {
     const action = payload.action;
     
     if (action === "update") {
-      // 1. อัปเดตข้อมูลประจำตัวผลิตภัณฑ์
       if (payload.productName !== undefined) src.getRange("B9").setValue(payload.productName);
       if (payload.productCode !== undefined) src.getRange("B13").setValue(payload.productCode);
       if (payload.b18Val !== undefined) src.getRange("B18").setValue(payload.b18Val);
@@ -497,7 +491,6 @@ function doPost(e) {
       if (payload.af9Val !== undefined) src.getRange("AF9").setValue(payload.af9Val);
       if (payload.af11Val !== undefined) src.getRange("AF11").setValue(payload.af11Val);
       
-      // อัปเดตสัญลักษณ์ดินสอ ✏️
       if (payload.selectedIndex !== undefined && payload.selectedIndex >= -1) {
         const pencilRange = src.getRange("B24:B28");
         const pencilVals = [[""], [""], [""], [""], [""]];
@@ -507,7 +500,6 @@ function doPost(e) {
         pencilRange.setValues(pencilVals);
       }
       
-      // 2. อัปเดตข้อมูลพิกัด 30 แถว
       if (payload.mappingsData) {
         const cols = ["B", "K", "M", "O", "Q", "R", "BB"];
         cols.forEach(col => {
@@ -522,7 +514,6 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     } 
     else if (action === "trigger_save") {
-      // อัปเดตข้อมูลก่อนรันคำสั่ง
       if (payload.productName !== undefined) src.getRange("B9").setValue(payload.productName);
       if (payload.productCode !== undefined) src.getRange("B13").setValue(payload.productCode);
       if (payload.b18Val !== undefined) src.getRange("B18").setValue(payload.b18Val);
@@ -549,10 +540,7 @@ function doPost(e) {
         });
       }
 
-      // บังคับให้ Spreadsheet อัปเดตสูตรที่ค้างอยู่ก่อนบันทึกประวัติ
       SpreadsheetApp.flush();
-
-      // สั่งทำงานฟังก์ชัน 'บันทึก()' เดิมของคุณเพื่อตัดข้อมูลลงชีตเป้าหมาย
       บันทึก();
       
       return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "รันฟังก์ชัน 'บันทึก' สำเร็จแล้ว!" }))
@@ -585,67 +573,35 @@ function doPost(e) {
     <script>
         // Global State representing 'คำนวณต้นทุนและราคาขาย' sheet (30 rows B37:BB66)
         let state = {
-            productName: "คุ้กกี้ข้าวโอ๊ตช็อกโกแลต",
-            productCode: "CK-OAT-001",
-            b18Val: "กล่องบรรจุถนอมอาหาร XL",
-            af7Val: 15,
-            af9Val: 20,
-            af11Val: 5,
+            productName: "กำลังดาวน์โหลดจากชีต...",
+            productCode: "...",
+            b18Val: "...",
+            af7Val: 0,
+            af9Val: 0,
+            af11Val: 0,
             selectedIndex: 0, // B24
             mappingsData: {
-                "B": Array(30).fill("").map((_, i) => i === 0 ? "แป้งข้าวโอ๊ตละเอียด" : i === 1 ? "ช็อกโกแลตชิป 70%" : i === 2 ? "เนยจืดแท้" : ""),
-                "K": Array(30).fill(0).map((_, i) => i === 0 ? 250 : i === 1 ? 120 : i === 2 ? 100 : 0),
-                "M": Array(30).fill(0).map((_, i) => i === 0 ? 0.15 : i === 1 ? 0.45 : i === 2 ? 0.35 : 0),
-                "O": Array(30).fill("").map((_, i) => i === 0 ? "กรัม" : i === 1 ? "กรัม" : i === 2 ? "กรัม" : ""),
-                "Q": Array(30).fill(0).map((_, i) => i === 0 ? 0.05 : i === 1 ? 0.02 : i === 2 ? 0.00 : 0),
-                "R": Array(30).fill(0).map((_, i) => i === 0 ? 39.37 : i === 1 ? 55.08 : i === 2 ? 35.00 : 0),
-                "BB": Array(30).fill("").map((_, i) => i === 0 ? "สั่งซื้อขั้นต่ำยกลัง" : "")
+                "B": Array(30).fill(""),
+                "K": Array(30).fill(0),
+                "M": Array(30).fill(0),
+                "O": Array(30).fill(""),
+                "Q": Array(30).fill(0),
+                "R": Array(30).fill(0),
+                "BB": Array(30).fill("")
             },
             settings: {
-                sheetId: '1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g',
-                scriptUrl: ''
+                // LOCKING values as requested by user
+                sheetId: '1GjgJvOXB-xQUTxrDPRjFE3mlAG4pZ5Q-ZcHZXIeF5t4',
+                scriptUrl: 'https://script.google.com/macros/s/AKfycbxN3NVTaX_PMZFirny65NxXh31ZhpMkAoF7k5aOH7JDt0kKGWqFEw-yGtiXKiHWC4tI/exec'
             }
         };
 
         window.addEventListener('DOMContentLoaded', () => {
-            loadLocalStorageData();
             refreshUI();
             switchTab('calculator');
+            // Auto fetch on load!
+            fetchCurrentSheetData();
         });
-
-        // Local Storage Sync
-        function loadLocalStorageData() {
-            const savedState = localStorage.getItem('costflow_pro_state');
-            if (savedState) {
-                try {
-                    const parsed = JSON.parse(savedState);
-                    if (parsed.settings) state.settings = parsed.settings;
-                    
-                    if (state.settings.sheetId) {
-                        document.getElementById('config-sheet-id').value = state.settings.sheetId;
-                    } else {
-                        document.getElementById('config-sheet-id').value = '1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g';
-                    }
-                    
-                    document.getElementById('config-script-url').value = state.settings.scriptUrl || '';
-                    if (state.settings.scriptUrl) {
-                        updateConnectionStatus(true);
-                    }
-                } catch (e) {
-                    console.error("Local storage load error", e);
-                }
-            }
-        }
-
-        function saveToLocalStorage() {
-            state.settings.sheetId = document.getElementById('config-sheet-id').value;
-            state.settings.scriptUrl = document.getElementById('config-script-url').value;
-            localStorage.setItem('costflow_pro_state', JSON.stringify({ settings: state.settings }));
-            
-            // Sync Sheet ID with Top Banner
-            document.getElementById('header-sheet-id').textContent = `ID: ${state.settings.sheetId}`;
-            document.getElementById('btn-open-sheet').href = `https://docs.google.com/spreadsheets/d/${state.settings.sheetId}/edit`;
-        }
 
         // Navigation Controller
         function switchTab(tabName) {
@@ -684,18 +640,22 @@ function doPost(e) {
         }
 
         // Connection UI Status Badge Handler
-        function updateConnectionStatus(isConnected) {
+        function updateConnectionStatus(status) {
             const badge = document.getElementById('sheet-status-badge');
             const badgeText = document.getElementById('badge-text');
 
-            if (isConnected) {
+            if (status === 'online') {
                 badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium";
                 badge.querySelector('span span:nth-child(2)').className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
-                badgeText.textContent = "ออนไลน์ (เชื่อมต่อชีตแล้ว)";
+                badgeText.textContent = "เชื่อมต่อสำเร็จ";
+            } else if (status === 'fetching') {
+                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium";
+                badge.querySelector('span span:nth-child(2)').className = "relative inline-flex rounded-full h-2 w-2 bg-blue-500 animate-ping";
+                badgeText.textContent = "กำลังซิงก์ข้อมูลด่วน...";
             } else {
-                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium";
-                badge.querySelector('span span:nth-child(2)').className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
-                badgeText.textContent = "สแตนด์บาย (Local Mode)";
+                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium";
+                badge.querySelector('span').className = "hidden";
+                badgeText.textContent = "การเชื่อมต่อขัดข้อง";
             }
         }
 
@@ -722,8 +682,8 @@ function doPost(e) {
             document.getElementById('aside-product-code').textContent = state.productCode || '-';
             
             // Update Banner details
-            document.getElementById('header-sheet-id').textContent = `ID: ${state.settings.sheetId || '1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g'}`;
-            document.getElementById('btn-open-sheet').href = `https://docs.google.com/spreadsheets/d/${state.settings.sheetId || '1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g'}/edit`;
+            document.getElementById('header-sheet-id').textContent = `ID: ${state.settings.sheetId}`;
+            document.getElementById('btn-open-sheet').href = `https://docs.google.com/spreadsheets/d/${state.settings.sheetId}/edit`;
 
             // Generate formula rows table
             buildFormulaTable();
@@ -790,14 +750,12 @@ function doPost(e) {
 
         // Fetch Current Real-time values of Sheet via doGet()
         function fetchCurrentSheetData() {
-            const scriptUrl = document.getElementById('config-script-url').value;
-            if (!scriptUrl) {
-                showToast("โปรดใส่ค่า Script Web App URL ก่อนกดดึงข้อมูลชีต", "error");
-                return;
-            }
-
-            showToast("กำลังโหลดดึงค่าพิกัดปัจจุบันจาก Google Sheet...", "info");
+            const scriptUrl = state.settings.scriptUrl;
+            const spinIcon = document.getElementById('spin-fetch-icon');
             
+            spinIcon.classList.add('animate-spin');
+            updateConnectionStatus('fetching');
+
             fetch(scriptUrl)
                 .then(res => res.json())
                 .then(data => {
@@ -813,23 +771,22 @@ function doPost(e) {
                             state.mappingsData = data.mappingsData;
                         }
                         
-                        updateConnectionStatus(true);
+                        updateConnectionStatus('online');
                         refreshUI();
-                        showToast("เชื่อมโยง & ดึงข้อมูลล่าสุดสำเร็จแล้ว!", "success");
+                        showToast("ดึงข้อมูลล่าสุดจาก Google Sheet ของคุณสำเร็จแล้ว!", "success");
                     } else {
                         showToast(`สคริปต์แจ้งข้อผิดพลาด: ${data.message}`, "error");
+                        updateConnectionStatus('error');
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    showToast("ไม่สามารถเรียกดูข้อมูลได้ ตรวจสอบว่าแชร์ชีตและอนุญาต Deployment สิทธิ์เข้าถึงเป็น 'Anyone'", "error");
-                    updateConnectionStatus(false);
+                    showToast("ไม่สามารถเรียกดูข้อมูลได้ โปรดตรวจสอบความถูกต้องของการ Deploy และสิทธิ์เข้าถึง", "error");
+                    updateConnectionStatus('error');
+                })
+                .finally(() => {
+                    spinIcon.classList.remove('animate-spin');
                 });
-        }
-
-        // Test Endpoint Hook Connection
-        function testConnection() {
-            fetchCurrentSheetData();
         }
 
         // Combined Push & Script Exec: Send current state to Google Sheets and run บันทึก()
@@ -837,16 +794,11 @@ function doPost(e) {
             // First save any unsaved table input edits
             saveCurrentLocalTable();
 
-            const scriptUrl = document.getElementById('config-script-url').value;
+            const scriptUrl = state.settings.scriptUrl;
             const btnIcon = document.getElementById('btn-save-icon');
 
-            if (!scriptUrl) {
-                showToast("ระบบยังไม่ได้เซ็ตอัพเชื่อมต่อภายนอก! บันทึกแบบ Local ให้เรียบร้อยแล้ว", "info");
-                return;
-            }
-
             btnIcon.className = "fa-solid fa-spinner animate-spin text-base";
-            showToast("กำลังประมวลผลและเตรียมส่งคำขอระยะไกลไปรันสคริปต์หลัก...", "info");
+            showToast("กำลังส่งข้อมูลใหม่ไปยังชีต และรันฟังก์ชัน 'บันทึก'...", "info");
 
             const postData = {
                 action: "trigger_save",
@@ -861,19 +813,20 @@ function doPost(e) {
 
             fetch(scriptUrl, {
                 method: 'POST',
-                mode: 'no-cors', // handle standard macros fetch bypass without explicit cors
+                mode: 'no-cors', // standard CORS bypass for Google Apps Script macros
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(postData)
             })
             .then(() => {
-                showToast("ส่งรันคำสั่งบันทึกสำเร็จ! ข้อมูลถูกนำส่งแยกสัดส่วนลงแผ่นชีตเรียบร้อย!", "success");
-                updateConnectionStatus(true);
+                showToast("ข้อมูลบนแผ่นงานได้รับการอัปเดตและสั่งเรียกใช้สคริปต์เรียบร้อย!", "success");
+                updateConnectionStatus('online');
             })
             .catch(err => {
                 console.error(err);
                 showToast("เกิดข้อผิดพลาดในการติดต่อ API", "error");
+                updateConnectionStatus('error');
             })
             .finally(() => {
                 btnIcon.className = "fa-solid fa-cloud-arrow-up text-base";
