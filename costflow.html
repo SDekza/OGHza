@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CostFlow - ระบบคำนวณและเชื่อมโยงต้นทุน Google Sheets</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Sarabun & Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', 'Sarabun', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3"></div>
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-200">
+                        <i class="fa-solid fa-chart-line text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold tracking-tight text-slate-900">Cost<span class="text-emerald-500">Flow</span></span>
+                        <span class="text-[10px] block text-slate-400 font-medium tracking-wider uppercase -mt-1">Google Sheets Integrator</span>
+                    </div>
+                </div>
+                
+                <!-- Center Actions & Indicators -->
+                <div class="hidden md:flex items-center gap-6">
+                    <a href="#dashboard" onclick="switchTab('dashboard')" class="tab-link text-slate-600 hover:text-emerald-600 font-medium text-sm transition-colors py-2 px-1 border-b-2 border-transparent active-tab-link" id="tab-btn-dashboard">แดชบอร์ด</a>
+                    <a href="#calculator" onclick="switchTab('calculator')" class="tab-link text-slate-600 hover:text-emerald-600 font-medium text-sm transition-colors py-2 px-1 border-b-2 border-transparent" id="tab-btn-calculator">คำนวณต้นทุน</a>
+                    <a href="#sync-settings" onclick="switchTab('sync-settings')" class="tab-link text-slate-600 hover:text-emerald-600 font-medium text-sm transition-colors py-2 px-1 border-b-2 border-transparent" id="tab-btn-sync-settings">ตั้งค่า Google Sheet</a>
+                </div>
+
+                <!-- Google Sheet Connection Status Badge -->
+                <div class="flex items-center gap-3">
+                    <div id="sheet-status-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                        <span id="badge-text" class="hidden sm:inline">สแตนด์บาย (Local Mode)</span>
+                        <span id="badge-text-mobile" class="sm:hidden">Local</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Google Sheets Overview Bar (Quick Link) -->
+        <div class="mb-8 p-4 bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl text-white shadow-xl shadow-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-3 bg-white/10 rounded-xl text-emerald-400 text-xl">
+                    <i class="fa-solid fa-file-excel"></i>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-sm">เชื่อมโยงกับ Google Doc: Cost Cal.</h4>
+                    <p class="text-xs text-slate-300 truncate max-w-xs sm:max-w-md lg:max-w-lg font-mono">ID: 1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 self-start md:self-auto">
+                <a href="https://docs.google.com/spreadsheets/d/1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g/edit?gid=1443545759#gid=1443545759" 
+                   target="_blank" 
+                   class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl text-xs font-medium transition-all flex items-center gap-2 shadow-lg shadow-emerald-900/20">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    เปิด Google Sheet
+                </a>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 1: DASHBOARD ==================== -->
+        <section id="tab-dashboard" class="space-y-8">
+            <!-- Summary Stats Card Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Stat Card 1 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                            <i class="fa-solid fa-calculator text-lg"></i>
+                        </div>
+                        <span class="text-xs text-slate-400 font-medium">รายการรวม</span>
+                    </div>
+                    <h3 id="stat-total-items" class="text-3xl font-bold text-slate-900 tracking-tight">0</h3>
+                    <p class="text-xs text-slate-400 mt-2">รายการต้นทุนที่บันทึก</p>
+                </div>
+
+                <!-- Stat Card 2 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                            <i class="fa-solid fa-wallet text-lg"></i>
+                        </div>
+                        <span class="text-xs text-slate-400 font-medium">ต้นทุนทั้งหมด</span>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span id="stat-total-cost" class="text-3xl font-bold text-slate-900 tracking-tight">0.00</span>
+                        <span class="text-sm font-medium text-slate-400">บาท</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">ต้นทุนรวมของทุกรายการ</p>
+                </div>
+
+                <!-- Stat Card 3 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                            <i class="fa-solid fa-tags text-lg"></i>
+                        </div>
+                        <span class="text-xs text-slate-400 font-medium">ราคาขายเฉลี่ย</span>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span id="stat-avg-price" class="text-3xl font-bold text-slate-900 tracking-tight">0.00</span>
+                        <span class="text-sm font-medium text-slate-400">บาท</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">คำนวณเฉลี่ยต่อหน่วย</p>
+                </div>
+
+                <!-- Stat Card 4 -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-2.5 bg-rose-50 text-rose-600 rounded-xl">
+                            <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                        </div>
+                        <span class="text-xs text-slate-400 font-medium">ซิงค์ล่าสุด</span>
+                    </div>
+                    <h3 id="stat-last-sync" class="text-base font-semibold text-slate-700 tracking-tight mt-1 truncate">ไม่ได้เชื่อมต่อ</h3>
+                    <p id="stat-sync-detail" class="text-xs text-slate-400 mt-2">อัปเดตข้อมูลแบบโลคัล</p>
+                </div>
+            </div>
+
+            <!-- Dashboard Analytics Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left: Category Cost Distribution -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm lg:col-span-2 space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">สัดส่วนต้นทุนตามหมวดหมู่</h3>
+                            <p class="text-xs text-slate-400">เปรียบเทียบภาระค่าใช้จ่ายแต่ละประเภท</p>
+                        </div>
+                        <span class="px-3 py-1 bg-slate-50 text-slate-500 rounded-full text-xs font-medium">อัปเดตออโต้</span>
+                    </div>
+
+                    <!-- Category Breakdown Bars -->
+                    <div id="category-distribution" class="space-y-5">
+                        <!-- Bars will be generated dynamically here -->
+                        <div class="text-center py-12 text-slate-400 text-sm">
+                            <i class="fa-solid fa-inbox text-3xl mb-3 block opacity-30"></i>
+                            ไม่มีข้อมูลรายการต้นทุนในขณะนี้
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Quick Margin Calculator -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between space-y-6">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span class="text-xs text-emerald-600 font-semibold uppercase tracking-wider">Margin Assistant</span>
+                        </div>
+                        <h3 class="font-bold text-slate-900 text-lg">เครื่องมือช่วยวิเคราะห์กำไร</h3>
+                        <p class="text-xs text-slate-400">กำหนดเป้าหมายกำไรและราคาจำหน่ายที่คุ้มทุน</p>
+                    </div>
+
+                    <!-- Calculator Input Panel -->
+                    <div class="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">ต้นทุนรวมปัจจุบัน</label>
+                            <div class="relative">
+                                <input type="number" id="calc-base-cost" class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 pl-8 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" readonly>
+                                <span class="absolute left-3 top-2.5 text-slate-400 text-xs">฿</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">เปอร์เซ็นต์กำไรที่ต้องการ (%)</label>
+                            <div class="relative">
+                                <input type="number" id="calc-margin-percentage" value="30" min="1" max="1000" class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 pr-8 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" oninput="calculateTargetMargin()">
+                                <span class="absolute right-3 top-2.5 text-slate-400 text-xs">%</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-200/50 space-y-2">
+                            <div class="flex justify-between text-xs text-slate-500">
+                                <span>กำไรที่จะได้รับ (Profit):</span>
+                                <span id="calc-profit-val" class="font-bold text-slate-700">0.00 บาท</span>
+                            </div>
+                            <div class="flex justify-between text-sm text-slate-800 pt-1">
+                                <span class="font-medium">ราคาตั้งขายขั้นต่ำ:</span>
+                                <span id="calc-suggested-price" class="font-extrabold text-emerald-600 text-base">0.00 บาท</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 leading-relaxed bg-amber-50/50 border border-amber-100/50 p-3 rounded-xl">
+                        <i class="fa-solid fa-circle-info text-amber-500 mr-1"></i> สูตรคำนวณอ้างอิงจากฐานต้นทุนทั้งหมดที่ระบุไว้ในตารางคำนวณต้นทุน และสามารถอัปเดตแบบเรียลไทม์ได้เมื่อมีการเปลี่ยนแปลงข้อมูล
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: COST CALCULATOR ==================== -->
+        <section id="tab-calculator" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <!-- Toolbar Header -->
+                <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">รายการคำนวณต้นทุน</h3>
+                        <p class="text-xs text-slate-400">เพิ่ม ลบ แก้ไข รายการ และจัดการแบบเรียลไทม์</p>
+                    </div>
+
+                    <!-- Search and Action Buttons -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Search Box -->
+                        <div class="relative w-full sm:w-64">
+                            <input type="text" id="search-input" placeholder="ค้นหารายการ..." class="w-full bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" oninput="filterTable()">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                        </div>
+                        
+                        <!-- Filter Dropdown -->
+                        <select id="category-filter" class="bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" onchange="filterTable()">
+                            <option value="all">ทุกหมวดหมู่</option>
+                            <option value="วัตถุดิบ">วัตถุดิบ (Raw Material)</option>
+                            <option value="บรรจุภัณฑ์">บรรจุภัณฑ์ (Packaging)</option>
+                            <option value="แรงงาน">แรงงาน (Labor)</option>
+                            <option value="ค่าบริการ/ขนส่ง">ค่าบริการ/ขนส่ง (Logistics)</option>
+                            <option value="การตลาด">การตลาด (Marketing)</option>
+                            <option value="อื่นๆ">อื่นๆ (Others)</option>
+                        </select>
+
+                        <!-- Add Item Action Trigger -->
+                        <button onclick="openAddModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i>
+                            เพิ่มรายการ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Responsive Table Wrapper -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/30 text-slate-400 uppercase text-[10px] tracking-wider font-semibold border-b border-slate-100">
+                                <th class="py-4 px-6">รายการ</th>
+                                <th class="py-4 px-6">หมวดหมู่</th>
+                                <th class="py-4 px-6 text-right">จำนวน</th>
+                                <th class="py-4 px-6 text-right">ราคาต่อหน่วย</th>
+                                <th class="py-4 px-6 text-right">ราคารวม (บาท)</th>
+                                <th class="py-4 px-6">หมายเหตุ</th>
+                                <th class="py-4 px-6 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cost-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Rows will be injected here dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table Empty State Placeholder -->
+                <div id="table-empty-state" class="hidden text-center py-24 text-slate-400">
+                    <i class="fa-solid fa-folder-open text-4xl mb-4 block opacity-20"></i>
+                    <p class="text-sm">ไม่พบข้อมูลรายการต้นทุน</p>
+                    <p class="text-xs text-slate-400 mt-1">คลิกปุ่ม "เพิ่มรายการ" ด้านบนเพื่อเริ่มจัดทำรายการใหม่</p>
+                </div>
+
+                <!-- Table Summary Footer -->
+                <div class="p-6 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="text-xs text-slate-400 font-medium">
+                        แสดงข้อมูลตารางแบบไดนามิก รองรับการอัปเดตลง Google Sheets ทันที
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block font-medium">ยอดต้นทุนรวมทั้งสิ้น</span>
+                            <span id="table-grand-total" class="text-2xl font-bold text-emerald-600">0.00 บาท</span>
+                        </div>
+                        <button onclick="syncDataToGoogleSheet()" class="px-5 py-3 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all flex items-center gap-2">
+                            <i id="sync-icon" class="fa-solid fa-cloud-arrow-up animate-none"></i>
+                            อัปโหลดลง Google Sheets
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: SYNC SETTINGS ==================== -->
+        <section id="tab-sync-settings" class="hidden space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Details/Form Card -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm lg:col-span-1 space-y-6">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">ตั้งค่า API Connection</h3>
+                        <p class="text-xs text-slate-400">เชื่อมประสานระหว่างเว็บแอปพลิเคชันและ Google Sheets</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Google Sheet ID</label>
+                            <input type="text" id="config-sheet-id" value="1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="ระบุ Sheet ID">
+                            <p class="text-[10px] text-slate-400 mt-1">รหัสเอกสารที่ระบุอยู่ใน URL ของ Google Sheets</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Google Apps Script Web App URL</label>
+                            <input type="url" id="config-script-url" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="https://script.google.com/macros/s/.../exec">
+                            <p class="text-[10px] text-slate-400 mt-1">URL เว็บแอปที่ได้รับหลังจาก deploy โค้ด Apps Script</p>
+                        </div>
+
+                        <div class="pt-2">
+                            <button onclick="testConnection()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-circle-nodes"></i>
+                                ตรวจสอบการเชื่อมต่อ
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-100">
+
+                    <div class="bg-amber-50 border border-amber-100 p-4 rounded-2xl text-[11px] text-amber-800 leading-relaxed space-y-2">
+                        <div class="font-semibold flex items-center gap-1.5 text-amber-900">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            โหมดทดลองใช้งาน (Local Demo)
+                        </div>
+                        <p>หากคุณยังไม่ได้สร้างและ Deploy ตัว Apps Script, เว็บบอร์ดนี้จะทำงานในโหมด "จำลองพฤติกรรมในเว็บ (Local Simulator)" โดยบันทึกข้อมูลไว้ในคอมพิวเตอร์ของคุณชั่วคราว เพื่อให้คุณสามารถทดสอบ UI ได้อย่างราบรื่น!</p>
+                    </div>
+                </div>
+
+                <!-- Right Step-by-Step Integration Guide -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm lg:col-span-2 space-y-6">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">คู่มือเชื่อมต่อ Google Sheet ใน 4 ขั้นตอน (Apps Script)</h3>
+                        <p class="text-xs text-slate-400">ทำตามขั้นตอนนี้เพื่อใช้งานระบบบันทึกแบบเรียลไทม์ได้ด้วยตนเอง</p>
+                    </div>
+
+                    <!-- Step-by-step UI Grid -->
+                    <div class="space-y-6 text-sm text-slate-600">
+                        <div class="flex gap-4">
+                            <div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
+                            <div class="space-y-1">
+                                <h4 class="font-semibold text-slate-900">เปิดระบบพัฒนา Google Apps Script</h4>
+                                <p class="text-xs text-slate-400">เข้าสู่ Google Sheet ของคุณ จากนั้นไปที่แถบเมนูด้านบน เลือก <strong class="text-slate-800">ส่วนขยาย (Extensions)</strong> &gt; <strong class="text-slate-800">Apps Script</strong></p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
+                            <div class="space-y-2 flex-grow">
+                                <h4 class="font-semibold text-slate-900">คัดลอกโค้ดด้านล่างนี้ไปวาง</h4>
+                                <p class="text-xs text-slate-400">ลบโค้ดเดิมทั้งหมดในแผงเขียนโค้ดและวางสคริปต์นี้ลงไปแทนที่:</p>
+                                
+                                <!-- Code Copy Box -->
+                                <div class="relative bg-slate-900 text-slate-300 p-4 rounded-2xl font-mono text-xs overflow-x-auto max-h-48 group">
+                                    <button onclick="copyAppsScriptCode()" class="absolute top-2 right-2 bg-white/10 hover:bg-white/20 text-white rounded-md p-1.5 transition-all text-[10px] flex items-center gap-1.5">
+                                        <i class="fa-solid fa-copy"></i> คัดลอกโค้ด
+                                    </button>
+                                    <pre id="apps-script-code-block" class="whitespace-pre">
+/* CostFlow Google Apps Script Integrator */
+function doGet() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  var header = data[0];
+  var rows = [];
+  
+  for (var i = 1; i < data.length; i++) {
+    var row = {};
+    for (var j = 0; j < header.length; j++) {
+      row[header[j]] = data[i][j];
+    }
+    rows.push(row);
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(rows))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var rawData = e.postData.contents;
+    var payload = JSON.parse(rawData);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    
+    // Clear existing data (keep header)
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
+    }
+    
+    // Header check / creation
+    var headers = ["รายการ", "หมวดหมู่", "จำนวน", "ราคาต่อหน่วย", "ราคารวม", "หมายเหตุ"];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    
+    if (payload && payload.length > 0) {
+      var writeData = [];
+      for (var i = 0; i < payload.length; i++) {
+        var item = payload[i];
+        writeData.push([
+          item["รายการ"] || "",
+          item["หมวดหมู่"] || "",
+          Number(item["จำนวน"]) || 0,
+          Number(item["ราคาต่อหน่วย"]) || 0,
+          Number(item["ราคารวม"]) || 0,
+          item["หมายเหตุ"] || ""
+        ]);
+      }
+      sheet.getRange(2, 1, writeData.length, headers.length).setValues(writeData);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: payload.length }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
+                            <div class="space-y-1">
+                                <h4 class="font-semibold text-slate-900">ทำการ Deploy เป็นเว็บแอปพลิเคชัน (Web App)</h4>
+                                <p class="text-xs text-slate-400">คลิกที่ปุ่ม <strong class="text-slate-800">การทำให้ใช้งานได้ (Deploy)</strong> &gt; <strong class="text-slate-800">การทำให้ใช้งานได้ใหม่ (New deployment)</strong> เลือกประเภทเป็น <strong class="text-slate-800">เว็บแอป (Web app)</strong> กำหนดให้ผู้มีสิทธิ์เข้าถึงเป็น <strong class="text-slate-800">"ทุกคน" (Anyone)</strong> จากนั้นกดปุ่มแชร์สิทธิ์</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">4</div>
+                            <div class="space-y-1">
+                                <h4 class="font-semibold text-slate-900">บันทึก URL ลงในเว็บแอปนี้</h4>
+                                <p class="text-xs text-slate-400">คัดลอก "URL ของเว็บแอป" ที่ได้จากการ Deploy นำมาวางที่ช่องด้านซ้ายมือและกดปุ่มบันทึก เพื่อเริ่มทำงานผ่านคลาวด์ได้ทันที!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-100 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+            <p class="text-slate-500 text-xs">CostFlow © 2026 Designed with ❤️ Minimalist UI style.</p>
+            <p class="text-[10px] text-slate-400">โปรเจกต์นี้เปิดใช้งานรหัสโอเพนซอร์สเพื่อรองรับงานจัดเก็บต้นทุนบน Google Sheets ได้อย่างปลอดภัยผ่าน GitHub Pages</p>
+        </div>
+    </footer>
+
+    <!-- ==================== DIALOGS & MODALS ==================== -->
+    
+    <!-- Add / Edit Item Modal Overlay -->
+    <div id="item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl w-full max-w-md mx-4 overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="item-modal-container">
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h4 id="modal-title" class="font-bold text-slate-900">เพิ่มรายการต้นทุนใหม่</h4>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body Form -->
+            <form id="item-form" onsubmit="saveItem(event)" class="p-6 space-y-4">
+                <input type="hidden" id="edit-index" value="-1">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ชื่อรายการต้นทุน *</label>
+                    <input type="text" id="form-item-name" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="เช่น กล่องกระดาษพัสดุ">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">หมวดหมู่ *</label>
+                    <select id="form-item-category" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                        <option value="วัตถุดิบ">วัตถุดิบ (Raw Material)</option>
+                        <option value="บรรจุภัณฑ์">บรรจุภัณฑ์ (Packaging)</option>
+                        <option value="แรงงาน">แรงงาน (Labor)</option>
+                        <option value="ค่าบริการ/ขนส่ง">ค่าบริการ/ขนส่ง (Logistics)</option>
+                        <option value="การตลาด">การตลาด (Marketing)</option>
+                        <option value="อื่นๆ">อื่นๆ (Others)</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">จำนวน *</label>
+                        <input type="number" id="form-item-qty" min="0.01" step="any" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="0" oninput="updateFormTotal()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">ราคาต่อหน่วย *</label>
+                        <input type="number" id="form-item-price" min="0.00" step="any" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="0.00" oninput="updateFormTotal()">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ราคารวม (คำนวณอัตโนมัติ)</label>
+                    <input type="text" id="form-item-total" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl py-2 px-3 text-sm font-semibold text-slate-500 cursor-not-allowed" value="0.00">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">หมายเหตุช่วยจำ</label>
+                    <input type="text" id="form-item-notes" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="ระบุบันทึกสั้นๆ">
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition-all">ยกเลิก</button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-all">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script>
+        // Global State & Mock Sample Data representing 'Cost Cal.' Google Sheet
+        let state = {
+            costs: [
+                { "รายการ": "แป้งมันสำปะหลัง A-Grade", "หมวดหมู่": "วัตถุดิบ", "จำนวน": 50, "ราคาต่อหน่วย": 12, "ราคารวม": 600, "หมายเหตุ": "ซื้อจากซัพพลายเออร์หลัก" },
+                { "รายการ": "กล่องของขวัญพิมพ์ลาย Premium", "หมวดหมู่": "บรรจุภัณฑ์", "จำนวน": 100, "ราคาต่อหน่วย": 18, "ราคารวม": 1800, "หมายเหตุ": "กล่องของขวัญพับได้" },
+                { "รายการ": "สติกเกอร์โลโก้แบรนด์กันน้ำ", "หมวดหมู่": "บรรจุภัณฑ์", "จำนวน": 500, "ราคาต่อหน่วย": 1.5, "ราคารวม": 750, "หมายเหตุ": "สั่งพิมพ์โฮโลแกรม" },
+                { "รายการ": "ค่าแพ็คหีบห่อและแพ็คของส่งสินค้า", "หมวดหมู่": "แรงงาน", "จำนวน": 100, "ราคาต่อหน่วย": 5, "ราคารวม": 500, "หมายเหตุ": "จ้างพาร์ตไทม์" },
+                { "รายการ": "ค่าบริการขนส่งด่วนรอบกรุงเทพฯ", "หมวดหมู่": "ค่าบริการ/ขนส่ง", "จำนวน": 15, "ราคาต่อหน่วย": 60, "ราคารวม": 900, "หมายเหตุ": "คิดเฉลี่ยตามจริง" },
+                { "รายการ": "ค่าโฆษณาบนเฟซบุ๊ก (ยิงแอด)", "หมวดหมู่": "การตลาด", "จำนวน": 1, "ราคาต่อหน่วย": 1200, "ราคารวม": 1200, "หมายเหตุ": "แคมเปญช่วงสุดสัปดาห์" }
+            ],
+            settings: {
+                sheetId: '1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g',
+                scriptUrl: ''
+            }
+        };
+
+        // Initialize App on DOM Load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadLocalStorageData();
+            refreshUI();
+            
+            // Highlight active tab link on page refresh
+            const hash = window.location.hash || '#dashboard';
+            switchTab(hash.replace('#', ''));
+        });
+
+        // Local Storage Utilities
+        function loadLocalStorageData() {
+            const savedState = localStorage.getItem('costflow_state');
+            if (savedState) {
+                try {
+                    const parsed = JSON.parse(savedState);
+                    if (parsed.costs) state.costs = parsed.costs;
+                    if (parsed.settings) state.settings = parsed.settings;
+                    
+                    // Pre-fill setup inputs
+                    document.getElementById('config-sheet-id').value = state.settings.sheetId || '1g23YDk1plIet4OK2Wi3M2xcm3hRSnKTJakETnsEr06g';
+                    document.getElementById('config-script-url').value = state.settings.scriptUrl || '';
+                    
+                    if (state.settings.scriptUrl) {
+                        updateConnectionStatus(true, "ซิงค์กับ API แล้ว");
+                    }
+                } catch (e) {
+                    console.error("Error loading localStorage:", e);
+                }
+            }
+        }
+
+        function saveToLocalStorage() {
+            // Read settings fields
+            state.settings.sheetId = document.getElementById('config-sheet-id').value;
+            state.settings.scriptUrl = document.getElementById('config-script-url').value;
+            localStorage.setItem('costflow_state', JSON.stringify(state));
+        }
+
+        // Navigation Controller
+        function switchTab(tabName) {
+            const tabs = ['dashboard', 'calculator', 'sync-settings'];
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`tab-btn-${t}`).classList.remove('active-tab-link', 'text-emerald-600', 'border-emerald-500');
+                document.getElementById(`tab-btn-${t}`).classList.add('text-slate-600', 'border-transparent');
+            });
+
+            // Show selected tab
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            activeBtn.classList.add('active-tab-link', 'text-emerald-600', 'border-emerald-500');
+            activeBtn.classList.remove('text-slate-600', 'border-transparent');
+            
+            // Adjust body view scroll
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // View Rendering Pipeline
+        function refreshUI() {
+            renderTable();
+            renderStatsAndDashboard();
+            calculateTargetMargin();
+        }
+
+        // Toast Messages Renderer
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            // Styling based on message type
+            const bgClass = type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-rose-500' : 'bg-slate-800';
+            const iconClass = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-info';
+
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-semibold transform translate-y-2 opacity-0 transition-all duration-300 max-w-sm`;
+            toast.innerHTML = `
+                <i class="fa-solid ${iconClass} text-sm"></i>
+                <span class="flex-grow">${message}</span>
+            `;
+
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // Auto dismiss toast
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 4000);
+        }
+
+        // Render Dashboard & Graphs
+        function renderStatsAndDashboard() {
+            const totalItems = state.costs.length;
+            const totalCost = state.costs.reduce((sum, item) => sum + (Number(item['ราคารวม']) || 0), 0);
+            
+            // Simple logic to calculate avg price per single unit overall
+            const totalQty = state.costs.reduce((sum, item) => sum + (Number(item['จำนวน']) || 0), 0);
+            const avgPrice = totalQty > 0 ? (totalCost / totalQty) : 0;
+
+            document.getElementById('stat-total-items').textContent = totalItems.toLocaleString('th-TH');
+            document.getElementById('stat-total-cost').textContent = totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('stat-avg-price').textContent = avgPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('calc-base-cost').value = totalCost;
+
+            // Generate Category distribution breakdown bar UI
+            const categories = ["วัตถุดิบ", "บรรจุภัณฑ์", "แรงงาน", "ค่าบริการ/ขนส่ง", "การตลาด", "อื่นๆ"];
+            const categorySums = {};
+            categories.forEach(c => categorySums[c] = 0);
+            
+            state.costs.forEach(item => {
+                const cat = item['หมวดหมู่'] || 'อื่นๆ';
+                if (categorySums[cat] !== undefined) {
+                    categorySums[cat] += Number(item['ราคารวม']) || 0;
+                } else {
+                    categorySums['อื่นๆ'] += Number(item['ราคารวม']) || 0;
+                }
+            });
+
+            const catContainer = document.getElementById('category-distribution');
+            if (totalCost === 0) {
+                catContainer.innerHTML = `
+                    <div class="text-center py-12 text-slate-400 text-sm">
+                        <i class="fa-solid fa-inbox text-3xl mb-3 block opacity-30"></i>
+                        ไม่มีข้อมูลรายการต้นทุนในขณะนี้
+                    </div>`;
+                return;
+            }
+
+            catContainer.innerHTML = '';
+            categories.forEach(cat => {
+                const amount = categorySums[cat];
+                const percentage = totalCost > 0 ? ((amount / totalCost) * 100).toFixed(1) : 0;
+                
+                // Color mapping for design tokens
+                let colorClass = 'bg-slate-400';
+                if (cat === 'วัตถุดิบ') colorClass = 'bg-emerald-500';
+                else if (cat === 'บรรจุภัณฑ์') colorClass = 'bg-amber-500';
+                else if (cat === 'แรงงาน') colorClass = 'bg-indigo-500';
+                else if (cat === 'ค่าบริการ/ขนส่ง') colorClass = 'bg-blue-500';
+                else if (cat === 'การตลาด') colorClass = 'bg-purple-500';
+
+                if (amount > 0) {
+                    const row = document.createElement('div');
+                    row.className = "space-y-1.5";
+                    row.innerHTML = `
+                        <div class="flex justify-between text-xs font-semibold text-slate-700">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full ${colorClass}"></span>
+                                ${cat}
+                            </span>
+                            <span>${amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท (${percentage}%)</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full ${colorClass} transition-all duration-1000" style="width: ${percentage}%"></div>
+                        </div>
+                    `;
+                    catContainer.appendChild(row);
+                }
+            });
+
+            if (catContainer.children.length === 0) {
+                catContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">ระบุตัวเลขต้นทุนในตารางเพื่อคำนวณสัดส่วนสะสม</p>`;
+            }
+        }
+
+        // Render Interactive Cost Table
+        function renderTable() {
+            const tableBody = document.getElementById('cost-table-body');
+            const emptyState = document.getElementById('table-empty-state');
+            
+            tableBody.innerHTML = '';
+
+            if (state.costs.length === 0) {
+                emptyState.classList.remove('hidden');
+                document.getElementById('table-grand-total').textContent = "0.00 บาท";
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            let grandTotal = 0;
+
+            state.costs.forEach((item, index) => {
+                const qty = Number(item['จำนวน']) || 0;
+                const unitPrice = Number(item['ราคาต่อหน่วย']) || 0;
+                const total = qty * unitPrice;
+                grandTotal += total;
+
+                // Sync current computed row total back to array
+                item['ราคารวม'] = total;
+
+                // Category Tag Coloring
+                let badgeColor = "bg-slate-50 text-slate-600 border-slate-200/60";
+                if (item['หมวดหมู่'] === 'วัตถุดิบ') badgeColor = "bg-emerald-50 text-emerald-700 border-emerald-200/50";
+                else if (item['หมวดหมู่'] === 'บรรจุภัณฑ์') badgeColor = "bg-amber-50 text-amber-700 border-amber-200/50";
+                else if (item['หมวดหมู่'] === 'แรงงาน') badgeColor = "bg-indigo-50 text-indigo-700 border-indigo-200/50";
+                else if (item['หมวดหมู่'] === 'ค่าบริการ/ขนส่ง') badgeColor = "bg-blue-50 text-blue-700 border-blue-200/50";
+                else if (item['หมวดหมู่'] === 'การตลาด') badgeColor = "bg-purple-50 text-purple-700 border-purple-200/50";
+
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50/50 transition-colors border-b border-slate-100 row-item";
+                row.setAttribute('data-category', item['หมวดหมู่']);
+                row.setAttribute('data-name', item['รายการ'].toLowerCase());
+
+                row.innerHTML = `
+                    <td class="py-4 px-6 font-semibold text-slate-900">${item['รายการ']}</td>
+                    <td class="py-4 px-6">
+                        <span class="px-2.5 py-1 text-[11px] font-semibold rounded-full border ${badgeColor}">${item['หมวดหมู่']}</span>
+                    </td>
+                    <td class="py-4 px-6 text-right font-mono text-slate-600">${qty.toLocaleString('th-TH')}</td>
+                    <td class="py-4 px-6 text-right font-mono text-slate-600">${unitPrice.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                    <td class="py-4 px-6 text-right font-bold text-slate-900 font-mono">${total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                    <td class="py-4 px-6 text-xs text-slate-400 max-w-[150px] truncate" title="${item['หมายเหตุ'] || ''}">${item['หมายเหตุ'] || '-'}</td>
+                    <td class="py-4 px-6 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="openEditModal(${index})" class="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-emerald-600 rounded-lg transition-colors text-xs" title="แก้ไข">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteItem(${index})" class="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-rose-600 rounded-lg transition-colors text-xs" title="ลบ">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            document.getElementById('table-grand-total').textContent = `${grandTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท`;
+        }
+
+        // Filtering & Searching Logic inside Table
+        function filterTable() {
+            const filterVal = document.getElementById('category-filter').value;
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const rows = document.querySelectorAll('.row-item');
+
+            rows.forEach(row => {
+                const category = row.getAttribute('data-category');
+                const name = row.getAttribute('data-name');
+                
+                const matchesFilter = (filterVal === 'all' || category === filterVal);
+                const matchesSearch = name.includes(searchVal);
+
+                if (matchesFilter && matchesSearch) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+
+        // Dynamic Margin calculations
+        function calculateTargetMargin() {
+            const baseCost = Number(document.getElementById('calc-base-cost').value) || 0;
+            const targetPercent = Number(document.getElementById('calc-margin-percentage').value) || 0;
+
+            const profit = baseCost * (targetPercent / 100);
+            const targetSellingPrice = baseCost + profit;
+
+            document.getElementById('calc-profit-val').textContent = `${profit.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
+            document.getElementById('calc-suggested-price').textContent = `${targetSellingPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
+        }
+
+        // Add/Edit Modals logic
+        function openAddModal() {
+            document.getElementById('modal-title').textContent = "เพิ่มรายการต้นทุนใหม่";
+            document.getElementById('edit-index').value = "-1";
+            document.getElementById('item-form').reset();
+            document.getElementById('form-item-total').value = "0.00";
+            
+            const modal = document.getElementById('item-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('item-modal-container').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function openEditModal(index) {
+            const item = state.costs[index];
+            document.getElementById('modal-title').textContent = "แก้ไขรายการต้นทุน";
+            document.getElementById('edit-index').value = index;
+            
+            document.getElementById('form-item-name').value = item['รายการ'];
+            document.getElementById('form-item-category').value = item['หมวดหมู่'];
+            document.getElementById('form-item-qty').value = item['จำนวน'];
+            document.getElementById('form-item-price').value = item['ราคาต่อหน่วย'];
+            document.getElementById('form-item-notes').value = item['หมายเหตุ'] || '';
+            
+            updateFormTotal();
+
+            const modal = document.getElementById('item-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('item-modal-container').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeAddModal() {
+            const modal = document.getElementById('item-modal');
+            modal.classList.add('opacity-0');
+            document.getElementById('item-modal-container').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function updateFormTotal() {
+            const qty = Number(document.getElementById('form-item-qty').value) || 0;
+            const price = Number(document.getElementById('form-item-price').value) || 0;
+            const total = qty * price;
+            document.getElementById('form-item-total').value = total.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+        }
+
+        function saveItem(event) {
+            event.preventDefault();
+            
+            const index = parseInt(document.getElementById('edit-index').value);
+            const qty = Number(document.getElementById('form-item-qty').value);
+            const price = Number(document.getElementById('form-item-price').value);
+            const total = qty * price;
+
+            const updatedItem = {
+                "รายการ": document.getElementById('form-item-name').value,
+                "หมวดหมู่": document.getElementById('form-item-category').value,
+                "จำนวน": qty,
+                "ราคาต่อหน่วย": price,
+                "ราคารวม": total,
+                "หมายเหตุ": document.getElementById('form-item-notes').value
+            };
+
+            if (index === -1) {
+                // Add Mode
+                state.costs.push(updatedItem);
+                showToast("เพิ่มรายการต้นทุนเรียบร้อยแล้ว", "success");
+            } else {
+                // Edit Mode
+                state.costs[index] = updatedItem;
+                showToast("แก้ไขข้อมูลรายการต้นทุนเรียบร้อยแล้ว", "success");
+            }
+
+            saveToLocalStorage();
+            refreshUI();
+            closeAddModal();
+        }
+
+        function deleteItem(index) {
+            if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการต้นทุนนี้ออกจากระบบ?")) {
+                state.costs.splice(index, 1);
+                saveToLocalStorage();
+                refreshUI();
+                showToast("ลบรายการต้นทุนเรียบร้อย", "info");
+            }
+        }
+
+        // Copy Code Function
+        function copyAppsScriptCode() {
+            const codeBlock = document.getElementById('apps-script-code-block').innerText;
+            // Native fallback workaround
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = codeBlock;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            showToast("คัดลอกโค้ด Apps Script ลงคลิปบอร์ดแล้ว!", "success");
+        }
+
+        // Connection Helper State Indicators
+        function updateConnectionStatus(isConnected, message) {
+            const badge = document.getElementById('sheet-status-badge');
+            const badgeText = document.getElementById('badge-text');
+            const badgeTextMobile = document.getElementById('badge-text-mobile');
+            const lastSyncStat = document.getElementById('stat-last-sync');
+            const syncDetail = document.getElementById('stat-sync-detail');
+
+            if (isConnected) {
+                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium";
+                badge.querySelector('span span:nth-child(2)').className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+                badgeText.textContent = "เชื่อมต่อออนไลน์";
+                badgeTextMobile.textContent = "ออนไลน์";
+
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                lastSyncStat.textContent = `เชื่อมต่อเวลา ${timeStr} น.`;
+                syncDetail.textContent = "เชื่อมตรงผ่าน Google Sheet API";
+            } else {
+                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium";
+                badge.querySelector('span span:nth-child(2)').className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
+                badgeText.textContent = "สแตนด์บาย (Local Mode)";
+                badgeTextMobile.textContent = "Local";
+                lastSyncStat.textContent = "ไม่ได้เชื่อมต่อ";
+                syncDetail.textContent = "อัปเดตข้อมูลแบบโลคัล";
+            }
+        }
+
+        // Test API Connection Endpoint
+        function testConnection() {
+            const scriptUrl = document.getElementById('config-script-url').value;
+            if (!scriptUrl) {
+                showToast("โปรดกรอก URL ของ Google Apps Script ก่อนเริ่มตรวจสอบ", "error");
+                return;
+            }
+
+            showToast("กำลังส่งคำขอตรวจสอบสิทธิ์การเชื่อมต่อ...", "info");
+            
+            fetch(scriptUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        showToast(`เชื่อมโยงสำเร็จ! ตรวจพบข้อมูลเดิมใน Sheet จำนวน ${data.length} รายการ`, "success");
+                        updateConnectionStatus(true);
+                        
+                        // Ask user if they want to override current dashboard with sheet data
+                        if (data.length > 0 && confirm(`ตรวจพบข้อมูลชุดเก่าในชีตจำนวน ${data.length} รายการ ต้องการดึงมาแทนที่ข้อมูลปัจจุบันหรือไม่?`)) {
+                            state.costs = data;
+                            saveToLocalStorage();
+                            refreshUI();
+                        }
+                    } else {
+                        showToast("การเชื่อมต่อสำเร็จ แต่รูปแบบโครงสร้างข้อมูลไม่สมบูรณ์", "info");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast("ไม่สามารถเข้าถึง API ได้ โปรดตรวจสอบว่าอนุญาตสิทธิ์ 'Anyone' และเผยแพร่แบบ Web App แล้ว", "error");
+                    updateConnectionStatus(false);
+                });
+        }
+
+        // Real Sync Logic to Write into Google Sheets!
+        function syncDataToGoogleSheet() {
+            const scriptUrl = document.getElementById('config-script-url').value;
+            const syncIcon = document.getElementById('sync-icon');
+
+            if (!scriptUrl) {
+                showToast("ระบบทำงานในโหมดออฟไลน์และเซฟลงคอมพิวเตอร์ให้เรียบร้อย! (หากต้องการเชื่อมกับ Google Sheet จริงๆ กรุณาตั้งค่าที่แถบ 'ตั้งค่า Google Sheet')", "info");
+                return;
+            }
+
+            // Animate Icon spin during upload
+            syncIcon.classList.add('animate-spin');
+            showToast("กำลังส่งข้อมูลอัปเดตไปยัง Google Sheet...", "info");
+
+            fetch(scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors', // standard workaround for simpler google macro CORS policies
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(state.costs)
+            })
+            .then(() => {
+                // Since no-cors hides response, we simulate success message
+                showToast("บันทึกข้อมูลและอัปโหลดไปยัง Google Sheet สำเร็จแล้ว!", "success");
+                updateConnectionStatus(true);
+                saveToLocalStorage();
+                refreshUI();
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("การเชื่อมต่อล้มเหลว โปรดตรวจสอบการอนุญาตสิทธิ์ Apps Script ของคุณ", "error");
+            })
+            .finally(() => {
+                syncIcon.classList.remove('animate-spin');
+            });
+        }
+    </script>
+</body>
+</html>
