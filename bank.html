@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมจำลองและเปรียบเทียบการผ่อนชำระเงินกู้ - Zen White Edition</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter & Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Kanit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.354.0/dist/umd/lucide.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', 'Kanit', sans-serif;
+            background-color: #F9F9FB;
+            color: #2D2D30;
+        }
+
+        /* Zen Minimalist Shadow & Borders */
+        .zen-card {
+            background-color: #FFFFFF;
+            border: 1px solid #EDEDF0;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.015);
+        }
+
+        .zen-card-interactive {
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .zen-card-interactive:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.025);
+            border-color: #E2E2E6;
+        }
+
+        /* Hide Scrollbar for Carousel Containers */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Inputs customized style */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        /* Beautiful Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FAF9F6;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E4E4E7;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #D1D1D6;
+        }
+
+        /* Soft transition effects */
+        .transition-theme {
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative pb-16 antialiased">
+
+    <!-- Top Floating Pill Navigation Bar -->
+    <nav class="sticky top-6 z-50 mx-auto w-full max-w-4xl px-4 mt-4">
+        <div class="bg-white/70 backdrop-blur-md rounded-full px-6 py-3 flex items-center justify-between border border-[#EDEDF0] shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
+            <!-- Left Branding -->
+            <div class="flex items-center gap-2.5">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span class="text-xs font-bold tracking-widest text-[#2D2D30] uppercase">Zen Compare</span>
+                <span class="text-[10px] text-slate-400 font-light border-l border-[#EDEDF0] pl-2.5 hidden sm:inline">ระบบวิเคราะห์เงินกู้อัจฉริยะ</span>
+            </div>
+
+            <!-- Real-time verdict update inside pill -->
+            <div id="islandVerdict" class="hidden md:block text-xs font-medium text-slate-500 max-w-xs truncate bg-slate-50 border border-slate-100 rounded-full px-4 py-1">
+                กำลังวิเคราะห์พอร์ตโฟลิโอ...
+            </div>
+
+            <!-- Sleek Minimal Tab Switcher -->
+            <div class="flex space-x-1 p-0.5 bg-[#F4F4F6] rounded-full border border-[#EDEDF0] text-[11px] font-semibold">
+                <button id="tabDashboardBtn" onclick="switchTab('dashboard')" class="px-4 py-1.5 rounded-full bg-white text-[#2D2D30] shadow-sm transition-all duration-200 flex items-center gap-1.5">
+                    <i data-lucide="line-chart" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>กราฟสรุป</span>
+                </button>
+                <button id="tabScheduleBtn" onclick="switchTab('schedule')" class="px-4 py-1.5 rounded-full text-slate-500 hover:text-[#2D2D30] transition-all duration-200 flex items-center gap-1.5">
+                    <i data-lucide="table-properties" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>ตารางผ่อน</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Zen Hero Dashboard Summary Area -->
+    <header class="max-w-7xl mx-auto px-6 pt-10 w-full">
+        <div id="comparisonWinnerHero" class="bg-white border border-[#EDEDF0] rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.01)] p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
+            <!-- Subtle accent background highlight -->
+            <div class="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-emerald-500/5 blur-[100px] pointer-events-none"></div>
+            
+            <div class="flex items-center gap-4 text-center md:text-left flex-col md:flex-row relative z-10">
+                <div class="p-4 bg-[#FAF9F6] border border-[#F3EFE9] rounded-2xl text-slate-600 flex items-center justify-center">
+                    <i data-lucide="sparkles" class="w-6 h-6 text-[#8C7853]"></i>
+                </div>
+                <div class="space-y-1">
+                    <div class="text-[9px] uppercase font-bold tracking-widest text-[#8C7853] bg-[#FAF8F5] border border-[#F3EFE9] px-2.5 py-1 rounded-full inline-block">สรุปการตัดสินใจ</div>
+                    <p id="winnerTitle" class="text-lg sm:text-xl font-bold text-[#2D2D30] leading-snug">กำลังเตรียมคำนวณเปรียบเทียบสัญญา...</p>
+                    <p id="winnerSubtitle" class="text-xs sm:text-sm text-slate-400 font-light leading-relaxed"></p>
+                </div>
+            </div>
+            
+            <!-- Beautiful minimal saving highlight box -->
+            <div class="bg-[#F9FAF9] border border-[#E9EFE9] px-6 py-4 rounded-2xl text-center w-full md:w-auto relative z-10 flex flex-col justify-center min-w-[200px]">
+                <span class="text-[9px] text-[#2E7D32] block uppercase tracking-widest font-bold mb-1">ส่วนต่างดอกเบี้ยจ่ายทั้งหมด</span>
+                <span id="savingsDifferenceAmount" class="text-2xl sm:text-3xl font-bold text-[#2E7D32] tracking-tight">฿0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Comparison Columns (Side-by-Side on Desktop, Swipe Carousel on Mobile) -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+        
+        <!-- Interactive Layout wrapper -->
+        <div class="relative">
+            <!-- Carousel Container (Horizontal scrolling on mobile, normal grid on desktop) -->
+            <div id="carouselContainer" class="flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar lg:grid lg:grid-cols-2 lg:gap-8 gap-6 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0" style="scrollbar-width: none; -ms-overflow-style: none;">
+                
+                <!-- OPTION A PANEL -->
+                <div id="cardA" class="zen-card rounded-[24px] p-6 space-y-6 relative transition-theme border-t-4 border-slate-300 w-full shrink-0 snap-center lg:w-auto lg:shrink">
+                    
+                    <!-- Header: Selector dropdown for SCB, BAY, BBL -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[#EDEDF0] pb-4">
+                        <div class="flex items-center gap-2.5 w-full sm:w-auto">
+                            <div id="iconDotA" class="w-2.5 h-2.5 rounded-full transition-colors duration-300"></div>
+                            <div class="relative w-full sm:w-56">
+                                <select id="bankSelectorA" onchange="onBankSelectorChange('A', this.value)" class="w-full bg-[#F4F4F6] border border-[#EDEDF0] rounded-xl px-3 py-2 text-sm font-bold text-[#2D2D30] focus:outline-none focus:ring-1 focus:ring-slate-300 cursor-pointer">
+                                    <option value="SCB">SCB - ธนาคารไทยพาณิชย์</option>
+                                    <option value="BAY">BAY - ธนาคารกรุงศรีอยุธยา</option>
+                                    <option value="BBL" selected>BBL - ธนาคารกรุงเทพ</option>
+                                </select>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-bold text-[#6E6E73] bg-[#F4F4F6] border border-[#EDEDF0] px-2.5 py-1 rounded-md uppercase tracking-widest self-end">ทางเลือกที่ 1</span>
+                    </div>
+
+                    <!-- Input Controls A -->
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Principal A -->
+                            <div class="space-y-1">
+                                <label class="block text-[11px] font-bold text-[#6E6E73] uppercase tracking-wider">วงเงินกู้ทั้งหมด (บาท)</label>
+                                <div class="relative">
+                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-light">฿</span>
+                                    <input id="principalA" type="number" class="w-full pl-8 pr-4 py-2 bg-white border border-[#EDEDF0] rounded-xl text-sm font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300 transition-colors">
+                                </div>
+                            </div>
+                            <!-- Term A -->
+                            <div class="space-y-1">
+                                <label class="block text-[11px] font-bold text-[#6E6E73] uppercase tracking-wider">ระยะเวลากู้ (ปี)</label>
+                                <div class="relative">
+                                    <input id="termA" type="number" class="w-full pl-4 pr-10 py-2 bg-white border border-[#EDEDF0] rounded-xl text-sm font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300 transition-colors">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[#6E6E73] text-xs">ปี</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interest Step Rates Panel -->
+                        <div class="bg-[#F9F9FB] p-4 rounded-xl border border-[#EDEDF0] space-y-3">
+                            <div class="text-[11px] font-bold text-[#6E6E73] flex justify-between uppercase tracking-wider">
+                                <span>อัตราดอกเบี้ยรายปี (%)</span>
+                                <span class="text-[10px] tracking-widest uppercase font-extrabold text-[#8C7853]">ตารางดอกเบี้ย</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold block uppercase tracking-widest">ปีที่ 1</label>
+                                    <input id="rateA_Y1" type="number" step="0.01" class="w-full text-center py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold block uppercase tracking-widest">ปีที่ 2</label>
+                                    <input id="rateA_Y2" type="number" step="0.01" class="w-full text-center py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold block uppercase tracking-widest">ปีที่ 3</label>
+                                    <input id="rateA_Y3" type="number" step="0.01" class="w-full text-center py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[9px] text-[#6E6E73] font-bold uppercase block tracking-widest">ปีที่ 4 เป็นต้นไป (ดอกเบี้ยลอยตัว)</label>
+                                <div class="relative">
+                                    <input id="rateA_Y4" type="number" step="0.01" class="w-full px-4 py-2 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Monthly Minimum Installment -->
+                        <div class="bg-[#F9F9FB] p-4 rounded-xl border border-[#EDEDF0] space-y-3">
+                            <div class="text-[11px] font-bold text-[#6E6E73] uppercase tracking-wider">ค่างวดผ่อนรายเดือนเริ่มต้น (บาท)</div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold block uppercase tracking-widest">ปีที่ 1-3 (ต่อเดือน)</label>
+                                    <input id="payA_Y1_3" type="number" class="w-full px-3 py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold block uppercase tracking-widest">ปีที่ 4 ขึ้นไป (ต่อเดือน)</label>
+                                    <input id="payA_Y4" type="number" class="w-full px-3 py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Plan Overpayments (Extra Payments) -->
+                        <div class="bg-[#FAF8F5] p-4 rounded-xl border border-[#F3EFE9] space-y-3">
+                            <div class="text-[11px] font-bold text-[#8C7853] flex items-center gap-1.5 uppercase tracking-wider">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                <span>แผนการชำระโปะพิเศษหักเงินต้น</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold uppercase tracking-wider block">โปะรายเดือนเพิ่ม (บาท)</label>
+                                    <input id="extraA_Monthly" type="number" class="w-full px-3 py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300" placeholder="0">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold uppercase tracking-wider block">โปะเพิ่มพิเศษสิ้นปี (บาท)</label>
+                                    <input id="extraA_Yearly" type="number" class="w-full px-3 py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300" placeholder="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Internal Negative Amortization warning A -->
+                    <div id="negativeAmortWarningA" class="hidden bg-[#FAF0F0] border border-[#F5E2E2] text-[#9E4141] rounded-xl p-3.5 text-xs leading-relaxed transition-all">
+                        ค่างวดผ่อนไม่เพียงพอสำหรับชำระดอกเบี้ยที่เกิดขึ้นในเบื้องต้น ยอดหนี้จะงอกเงย กรุณาเพิ่มค่างวดหรือกำหนดค่าโปะเพิ่มขึ้น
+                    </div>
+                </div>
+
+                <!-- OPTION B PANEL -->
+                <div id="cardB" class="zen-card rounded-[24px] p-6 space-y-6 relative transition-theme border-t-4 border-slate-300 w-full shrink-0 snap-center lg:w-auto lg:shrink">
+                    
+                    <!-- Glowing Aura backdrop specific to B -->
+                    <div id="auraB" class="absolute -inset-1 rounded-[24px] -z-10 blur-xl opacity-20"></div>
+
+                    <!-- Header: Selector dropdown for SCB, BAY, BBL -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[#EDEDF0] pb-4">
+                        <div class="flex items-center gap-2.5 w-full sm:w-auto">
+                            <div id="iconDotB" class="w-2.5 h-2.5 rounded-full transition-colors duration-300"></div>
+                            <div class="relative w-full sm:w-56">
+                                <select id="bankSelectorB" onchange="onBankSelectorChange('B', this.value)" class="w-full bg-[#F4F4F6] border border-[#EDEDF0] rounded-xl px-3 py-2 text-sm font-bold text-[#2D2D30] focus:outline-none focus:ring-1 focus:ring-slate-300 cursor-pointer">
+                                    <option value="SCB">SCB - ธนาคารไทยพาณิชย์</option>
+                                    <option value="BAY" selected>BAY - ธนาคารกรุงศรีอยุธยา</option>
+                                    <option value="BBL">BBL - ธนาคารกรุงเทพ</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Sync Configuration button to clone B from A -->
+                        <div class="flex flex-col sm:flex-row items-end sm:items-center gap-2.5 self-end">
+                            <button onclick="cloneConfigFromSide('A', 'B')" class="text-[9px] font-extrabold text-[#6E6E73] hover:text-[#2D2D30] bg-[#F4F4F6] border border-[#EDEDF0] px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all">
+                                <i data-lucide="copy" class="w-3 h-3"></i>
+                                คัดลอกค่าจากฝั่งซ้าย
+                            </button>
+                            <span class="text-[10px] font-bold text-[#6E6E73] bg-[#F4F4F6] border border-[#EDEDF0] px-2.5 py-1 rounded-md uppercase tracking-widest">ทางเลือกที่ 2</span>
+                        </div>
+                    </div>
+
+                    <!-- Input Controls B -->
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Principal B -->
+                            <div class="space-y-1">
+                                <label class="block text-[11px] font-bold text-[#6E6E73] uppercase tracking-wider">วงเงินกู้ทั้งหมด (บาท)</label>
+                                <div class="relative">
+                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-light">฿</span>
+                                    <input id="principalB" type="number" class="w-full pl-8 pr-4 py-2 bg-white border border-[#EDEDF0] rounded-xl text-sm font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300 transition-colors">
+                                </div>
+                            </div>
+                            <!-- Term B -->
+                            <div class="space-y-1">
+                                <label class="block text-[11px] font-bold text-[#6E6E73] uppercase tracking-wider">ระยะเวลากู้ (ปี)</label>
+                                <div class="relative">
+                                    <input id="termB" type="number" class="w-full pl-4 pr-10 py-2 bg-white border border-[#EDEDF0] rounded-xl text-sm font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300 transition-colors">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[#6E6E73] text-xs">ปี</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interest Step Rates Panel -->
+                        <div class="bg-[#F9F9FB] p-4 rounded-xl border border-[#EDEDF0] space-y-3">
+                            <div class="text-[11px] font-bold text-[#6E6E73] flex justify-between uppercase tracking-wider">
+                                <span>อัตราดอกเบี้ยรายปี (%)</span>
+                                <span class="text-[10px] tracking-widest uppercase font-extrabold text-[#8C7853]">ตารางดอกเบี้ย</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold block uppercase tracking-widest">ปีที่ 1</label>
+                                    <input id="rateB_Y1" type="number" step="0.01" class="w-full text-center py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold block uppercase tracking-widest">ปีที่ 2</label>
+                                    <input id="rateB_Y2" type="number" step="0.01" class="w-full text-center py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold block uppercase tracking-widest">ปีที่ 3</label>
+                                    <input id="rateB_Y3" type="number" step="0.01" class="w-full text-center py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[9px] text-[#6E6E73] font-bold uppercase block tracking-widest">ปีที่ 4 เป็นต้นไป (ดอกเบี้ยลอยตัว)</label>
+                                <div class="relative">
+                                    <input id="rateB_Y4" type="number" step="0.01" class="w-full px-4 py-2 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Monthly Minimum Installment -->
+                        <div class="bg-[#F9F9FB] p-4 rounded-xl border border-[#EDEDF0] space-y-3">
+                            <div class="text-[11px] font-bold text-[#6E6E73] uppercase tracking-wider">ค่างวดผ่อนรายเดือนเริ่มต้น (บาท)</div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold block uppercase tracking-widest">ปีที่ 1-3 (ต่อเดือน)</label>
+                                    <input id="payB_Y1_3" type="number" class="w-full px-3 py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold block uppercase tracking-widest">ปีที่ 4 ขึ้นไป (ต่อเดือน)</label>
+                                    <input id="payB_Y4" type="number" class="w-full px-3 py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Plan Overpayments (Extra Payments) -->
+                        <div class="bg-[#FAF8F5] p-4 rounded-xl border border-[#F3EFE9] space-y-3">
+                            <div class="text-[11px] font-bold text-[#8C7853] flex items-center gap-1.5 uppercase tracking-wider">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                <span>แผนการชำระโปะพิเศษหักเงินต้น</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold uppercase tracking-wider block">โปะรายเดือนเพิ่ม (บาท)</label>
+                                    <input id="extraB_Monthly" type="number" class="w-full px-3 py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300" placeholder="0">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[9px] text-[#6E6E73] font-bold uppercase tracking-wider block">โปะเพิ่มพิเศษสิ้นปี (บาท)</label>
+                                    <input id="extraB_Yearly" type="number" class="w-full px-3 py-1.5 bg-white border border-[#EDEDF0] rounded-lg text-xs font-bold text-[#2D2D30] focus:outline-none focus:border-slate-300" placeholder="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Internal Negative Amortization warning B -->
+                    <div id="negativeAmortWarningB" class="hidden bg-[#FAF0F0] border border-[#F5E2E2] text-[#9E4141] rounded-xl p-3.5 text-xs leading-relaxed transition-all">
+                        ค่างวดผ่อนไม่เพียงพอสำหรับชำระดอกเบี้ยที่เกิดขึ้นในเบื้องต้น ยอดหนี้จะงอกเงย กรุณาเพิ่มค่างวดหรือกำหนดค่าโปะเพิ่มขึ้น
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- UIPageControl Dot Indicators for Mobile View (Hidden on Desktop) -->
+            <div class="flex justify-center items-center gap-2 mt-4 lg:hidden">
+                <button id="dotA" onclick="scrollToCard('A')" class="h-2 rounded-full transition-all duration-300 bg-slate-800 w-5" aria-label="Page 1"></button>
+                <button id="dotB" onclick="scrollToCard('B')" class="h-2 rounded-full transition-all duration-300 bg-slate-300 w-2" aria-label="Page 2"></button>
+            </div>
+            
+            <!-- Quick Swipe Assistive Hint on Mobile -->
+            <p class="text-[10px] text-slate-400 text-center mt-1 lg:hidden flex items-center justify-center gap-1">
+                <i data-lucide="arrow-left-right" class="w-3 h-3"></i> ปัดซ้าย-ขวาเพื่อเปรียบเทียบสัญญากู้ยืม
+            </p>
+        </div>
+
+        <!-- Section 3: Comparative Financial KPI Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- KPI: Total Cumulative Paid -->
+            <div class="zen-card zen-card-interactive rounded-2xl p-5 flex flex-col justify-between space-y-4">
+                <div class="flex items-center justify-between border-b border-[#F4F4F6] pb-2">
+                    <span class="text-xs font-bold text-[#6E6E73] uppercase tracking-widest">ยอดเงินชำระคืนรวม</span>
+                    <div class="p-1.5 bg-[#FAF9F6] border border-[#EDEDF0] rounded-lg text-slate-500"><i data-lucide="credit-card" class="w-4 h-4"></i></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 divide-x divide-[#EDEDF0] text-center">
+                    <div>
+                        <span id="kpiLabelPaidA" class="text-[9px] font-bold text-slate-400 block truncate">-</span>
+                        <span id="kpiTotalPaidA" class="text-sm font-bold text-[#2D2D30]">฿0</span>
+                    </div>
+                    <div>
+                        <span id="kpiLabelPaidB" class="text-[9px] font-bold text-slate-400 block truncate">-</span>
+                        <span id="kpiTotalPaidB" class="text-sm font-bold text-[#2D2D30]">฿0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI: Total Cumulative Interest -->
+            <div class="zen-card zen-card-interactive rounded-2xl p-5 flex flex-col justify-between space-y-4">
+                <div class="flex items-center justify-between border-b border-[#F4F4F6] pb-2">
+                    <span class="text-xs font-bold text-rose-500 uppercase tracking-widest">ดอกเบี้ยจ่ายสะสมรวม</span>
+                    <div class="p-1.5 bg-rose-50/50 border border-rose-100 rounded-lg text-rose-600"><i data-lucide="percent" class="w-4 h-4"></i></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 divide-x divide-[#EDEDF0] text-center">
+                    <div>
+                        <span id="kpiLabelIntA" class="text-[9px] font-bold text-slate-400 block truncate">-</span>
+                        <span id="kpiTotalInterestA" class="text-sm font-bold text-[#2D2D30]">฿0</span>
+                    </div>
+                    <div>
+                        <span id="kpiLabelIntB" class="text-[9px] font-bold text-slate-400 block truncate">-</span>
+                        <span id="kpiTotalInterestB" class="text-sm font-bold text-[#2D2D30]">฿0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI: Year/Month Payoff Speed -->
+            <div class="zen-card zen-card-interactive rounded-2xl p-5 flex flex-col justify-between space-y-4">
+                <div class="flex items-center justify-between border-b border-[#F4F4F6] pb-2">
+                    <span class="text-xs font-bold text-[#8C7853] uppercase tracking-widest">ระยะเวลาผ่อนเสร็จสิ้น</span>
+                    <div class="p-1.5 bg-[#FAF8F5] border border-[#F3EFE9] rounded-lg text-[#8C7853]"><i data-lucide="clock" class="w-4 h-4"></i></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 divide-x divide-[#EDEDF0] text-center">
+                    <div>
+                        <span id="kpiLabelTimeA" class="text-[9px] font-bold text-slate-400 block truncate">-</span>
+                        <span id="kpiTimeA" class="text-sm font-bold text-[#2D2D30]">0 ปี 0 ด.</span>
+                    </div>
+                    <div>
+                        <span id="kpiLabelTimeB" class="text-[9px] font-bold text-slate-400 block truncate">-</span>
+                        <span id="kpiTimeB" class="text-sm font-bold text-[#2D2D30]">0 ปี 0 ด.</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- View Controls & Visual Data presentation -->
+        <section class="space-y-6">
+
+            <!-- Tab content 1: Line Chart Visual Analytics -->
+            <div id="tabDashboard" class="zen-card rounded-[24px] p-6 space-y-6">
+                <div>
+                    <h3 class="font-bold text-[#2D2D30] text-base tracking-tight">เปรียบเทียบความเร็วของการชำระเงินต้น</h3>
+                    <p class="text-xs text-slate-400">เส้นแนวโน้มของพอร์ตวงเงินกู้คงค้างปลายงวด ยิ่งชันลงเร็วเท่าใดหมายถึงความคุ้มค่าของการหักเงินต้นที่เร็วขึ้นเท่านั้น</p>
+                </div>
+                <div class="relative w-full h-[320px] sm:h-[450px]">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Tab content 2: Detailed year/month portfolio tables -->
+            <div id="tabSchedule" class="hidden zen-card rounded-[24px] p-6 space-y-6">
+                
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#EDEDF0] pb-5">
+                    <div>
+                        <h3 class="font-bold text-[#2D2D30] text-base tracking-tight">พอร์ตชำระสะสมรายงวดโดยละเอียด</h3>
+                        <p class="text-xs text-slate-400">คลิกตรวจสอบรายละเอียดของยอดเงินต้น ดอกเบี้ย และเงินต้นสะสมที่ถูกหักชำระเป็นรายงวด</p>
+                    </div>
+                    
+                    <!-- Sched table choice toggle -->
+                    <div class="flex items-center gap-1.5 bg-[#F4F4F6] p-1 rounded-full border border-[#EDEDF0] w-full md:w-auto text-xs font-semibold">
+                        <button id="tableSelectorA" onclick="toggleActiveTable('A')" class="flex-1 md:flex-none px-5 py-2 rounded-full bg-white text-[#2D2D30] shadow-sm transition-all duration-300">
+                            -
+                        </button>
+                        <button id="tableSelectorB" onclick="toggleActiveTable('B')" class="flex-1 md:flex-none px-5 py-2 rounded-full text-slate-500 hover:text-[#2D2D30] transition-all duration-300">
+                            -
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Filters and exports -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="flex items-center gap-2.5 text-xs w-full sm:w-auto">
+                        <span class="font-bold text-slate-500 uppercase tracking-widest">ตัวกรองมุมมองรายปี:</span>
+                        <select id="filterYear" onchange="renderActiveScheduleTable()" class="bg-[#F4F4F6] border border-[#EDEDF0] text-[#2D2D30] font-bold px-3 py-1.5 rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-300">
+                            <option value="all">แสดงงวดการจ่ายทั้งหมด</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="downloadCSV()" class="w-full sm:w-auto px-5 py-2.5 bg-[#FAF9F6] hover:bg-[#F3EFE9] border border-[#EDEDF0] rounded-xl text-xs font-bold text-[#8C7853] flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        ดาวน์โหลดตารางผ่อนชำระ (.CSV)
+                    </button>
+                </div>
+
+                <!-- Minimalist Table Wrap design -->
+                <div class="overflow-x-auto rounded-2xl border border-[#EDEDF0]">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#F9F9FB] border-b border-[#EDEDF0] text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                                <th class="py-3.5 px-4 text-center">งวดที่</th>
+                                <th class="py-3.5 px-4 text-right">ยอดคงเหลือเริ่มต้น</th>
+                                <th class="py-3.5 px-4 text-right">ค่างวดชำระปกติ</th>
+                                <th class="py-3.5 px-4 text-right">ยอดโปะเพิ่มพิเศษ</th>
+                                <th class="py-3.5 px-4 text-right">ดอกเบี้ยประจำงวด</th>
+                                <th class="py-3.5 px-4 text-right">หักเงินต้นทางตรง</th>
+                                <th class="py-3.5 px-4 text-right bg-[#FAF9F6]/50">ยอดคงเหลือปลายงวด</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTableBody" class="divide-y divide-[#EDEDF0] text-xs text-[#2D2D30]">
+                            <!-- Appended dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-10 text-xs text-slate-400 border-t border-[#EDEDF0] max-w-4xl mx-auto w-full space-y-1">
+        <p>© 2026 Zen Compare Pro. ตารางการจำลองหักเงินต้นและอัตราดอกเบี้ยแบบลดต้นลดดอกสะสม.</p>
+        <p class="font-light text-slate-300">ระบบประมวลผลภายในบราวเซอร์อย่างปลอดภัย 100% ไม่มีข้อมูลการเงินถูกส่งขึ้นเซิร์ฟเวอร์ภายนอก</p>
+    </footer>
+
+    <!-- JS Calculator Controller & State Manager -->
+    <script>
+        // Core Bank profiles config mapped details
+        const bankConfig = {
+            SCB: {
+                id: 'SCB',
+                name: 'SCB ไทยพาณิชย์',
+                themeColor: '#7C3AED', // SCB Purple
+                themeBg: '#F5F3FF',
+                themeBorder: '#DDD6FE',
+                glowColor: 'rgba(124, 58, 237, 0.15)',
+                defaults: { principal: 2039058, term: 30, rY1: 2.10, rY2: 2.10, rY3: 2.10, rY4: 4.83, payY1_3: 6400, payY4: 11300, monthlyExtra: 0, annualExtra: 0 }
+            },
+            BAY: {
+                id: 'BAY',
+                name: 'Krungsri กรุงศรีฯ',
+                themeColor: '#D97706', // BAY Gold/Yellow
+                themeBg: '#FEF3C7',
+                themeBorder: '#FDE68A',
+                glowColor: 'rgba(217, 119, 6, 0.15)',
+                defaults: { principal: 2039058, term: 30, rY1: 2.50, rY2: 2.50, rY3: 2.50, rY4: 4.20, payY1_3: 7000, payY4: 10500, monthlyExtra: 0, annualExtra: 0 }
+            },
+            BBL: {
+                id: 'BBL',
+                name: 'BBL กรุงเทพ',
+                themeColor: '#1E3A8A', // BBL Deep Blue
+                themeBg: '#EFF6FF',
+                themeBorder: '#BFDBFE',
+                glowColor: 'rgba(30, 58, 138, 0.15)',
+                defaults: { principal: 2039058, term: 30, rY1: 1.90, rY2: 2.20, rY3: 2.50, rY4: 4.50, payY1_3: 6500, payY4: 11000, monthlyExtra: 0, annualExtra: 0 }
+            }
+        };
+
+        // App States
+        let bankData = { SCB: null, BAY: null, BBL: null };
+        let currentBankA = 'BBL';
+        let currentBankB = 'BAY';
+        let activeTab = 'dashboard';
+        let activeTableOption = 'A'; // Displays either side 'A' or 'B'
+        let chartInstance = null;
+
+        // Holding computed financial schedules
+        let amortData = { A: null, B: null };
+
+        // Initialize state engine
+        window.onload = function() {
+            lucide.createIcons();
+            initLocalStorageData();
+            setupCarouselScroller();
+            
+            // Set initial selectors
+            document.getElementById('bankSelectorA').value = currentBankA;
+            document.getElementById('bankSelectorB').value = currentBankB;
+
+            // Load values to DOM
+            loadBankValuesToDOM('A', currentBankA);
+            loadBankValuesToDOM('B', currentBankB);
+
+            // Wire input events
+            setupInputListeners();
+
+            // Run calculations
+            runAmortizationEngine();
+        };
+
+        // Swipe Carousel Controller for Mobile views
+        function setupCarouselScroller() {
+            const carousel = document.getElementById('carouselContainer');
+            const dotA = document.getElementById('dotA');
+            const dotB = document.getElementById('dotB');
+
+            // Listen to CSS Snap scrolling updates
+            carousel.addEventListener('scroll', () => {
+                const width = carousel.offsetWidth;
+                const scrollLeft = carousel.scrollLeft;
+
+                // Mark first page as active if scroll is less than halfway to second
+                if (scrollLeft < width / 2) {
+                    updateCarouselDots('A');
+                } else {
+                    updateCarouselDots('B');
+                }
+            });
+        }
+
+        // Toggle Dots CSS styles seamlessly
+        function updateCarouselDots(activeSide) {
+            const dotA = document.getElementById('dotA');
+            const dotB = document.getElementById('dotB');
+
+            if (activeSide === 'A') {
+                dotA.classList.add('bg-slate-800', 'w-5');
+                dotA.classList.remove('bg-slate-300', 'w-2');
+                dotB.classList.add('bg-slate-300', 'w-2');
+                dotB.classList.remove('bg-slate-800', 'w-5');
+            } else {
+                dotB.classList.add('bg-slate-800', 'w-5');
+                dotB.classList.remove('bg-slate-300', 'w-2');
+                dotA.classList.add('bg-slate-300', 'w-2');
+                dotA.classList.remove('bg-slate-800', 'w-5');
+            }
+        }
+
+        // Smooth scrolling programmatically triggered on Dot click actions
+        function scrollToCard(side) {
+            const carousel = document.getElementById('carouselContainer');
+            const cardWidth = carousel.querySelector('#cardA').offsetWidth;
+            
+            if (side === 'A') {
+                carousel.scrollTo({ left: 0, behavior: 'smooth' });
+            } else {
+                carousel.scrollTo({ left: cardWidth + 24, behavior: 'smooth' }); // accounting for gap spacing
+            }
+        }
+
+        // Retrieve saved states or setup defaults
+        function initLocalStorageData() {
+            Object.keys(bankConfig).forEach(bankKey => {
+                const saved = localStorage.getItem(`zen_loan_calc_${bankKey}`);
+                if (saved) {
+                    try {
+                        bankData[bankKey] = JSON.parse(saved);
+                    } catch (e) {
+                        bankData[bankKey] = { ...bankConfig[bankKey].defaults };
+                    }
+                } else {
+                    bankData[bankKey] = { ...bankConfig[bankKey].defaults };
+                    localStorage.setItem(`zen_loan_calc_${bankKey}`, JSON.stringify(bankData[bankKey]));
+                }
+            });
+        }
+
+        // Programmatically push memory states onto DOM controls
+        function loadBankValuesToDOM(side, bankKey) {
+            const data = bankData[bankKey];
+            if (!data) return;
+
+            document.getElementById(`principal${side}`).value = data.principal;
+            document.getElementById(`term${side}`).value = data.term;
+            document.getElementById(`rate${side}_Y1`).value = data.rY1;
+            document.getElementById(`rate${side}_Y2`).value = data.rY2;
+            document.getElementById(`rate${side}_Y3`).value = data.rY3;
+            document.getElementById(`rate${side}_Y4`).value = data.rY4;
+            document.getElementById(`pay${side}_Y1_3`).value = data.payY1_3;
+            document.getElementById(`pay${side}_Y4`).value = data.payY4;
+            document.getElementById(`extra${side}_Monthly`).value = data.monthlyExtra;
+            document.getElementById(`extra${side}_Yearly`).value = data.annualExtra;
+
+            // Update border design colors to fit target bank identity
+            const theme = bankConfig[bankKey];
+            const cardElement = document.getElementById(`card${side}`);
+            cardElement.style.borderTopColor = theme.themeColor;
+            
+            // Subtle dynamic indicator dot updates
+            const dotElement = document.getElementById(`iconDot${side}`);
+            dotElement.style.backgroundColor = theme.themeColor;
+
+            // Soft glowing aura setup
+            cardElement.style.boxShadow = `0 10px 40px -10px ${theme.glowColor}, 0 4px 30px rgba(0, 0, 0, 0.015)`;
+        }
+
+        // Pull values from DOM controls, commit to memory and update local storage
+        function saveDOMValuesToState(side) {
+            const bankKey = side === 'A' ? currentBankA : currentBankB;
+            if (!bankKey || !bankData[bankKey]) return;
+
+            bankData[bankKey].principal = Math.max(1000, Number(document.getElementById(`principal${side}`).value) || 0);
+            bankData[bankKey].term = Math.min(50, Math.max(1, Number(document.getElementById(`term${side}`).value) || 1));
+            bankData[bankKey].rY1 = Number(document.getElementById(`rate${side}_Y1`).value) || 0;
+            bankData[bankKey].rY2 = Number(document.getElementById(`rate${side}_Y2`).value) || 0;
+            bankData[bankKey].rY3 = Number(document.getElementById(`rate${side}_Y3`).value) || 0;
+            bankData[bankKey].rY4 = Number(document.getElementById(`rate${side}_Y4`).value) || 0;
+            bankData[bankKey].payY1_3 = Number(document.getElementById(`pay${side}_Y1_3`).value) || 0;
+            bankData[bankKey].payY4 = Number(document.getElementById(`pay${side}_Y4`).value) || 0;
+            bankData[bankKey].monthlyExtra = Math.max(0, Number(document.getElementById(`extra${side}_Monthly`).value) || 0);
+            bankData[bankKey].annualExtra = Math.max(0, Number(document.getElementById(`extra${side}_Yearly`).value) || 0);
+
+            // Commit state to storage
+            localStorage.setItem(`zen_loan_calc_${bankKey}`, JSON.stringify(bankData[bankKey]));
+        }
+
+        // Wire event listeners to capture any adjustments
+        function setupInputListeners() {
+            const sides = ['A', 'B'];
+            sides.forEach(side => {
+                const fields = [
+                    `principal${side}`, `term${side}`, `rate${side}_Y1`, `rate${side}_Y2`, 
+                    `rate${side}_Y3`, `rate${side}_Y4`, `pay${side}_Y1_3`, `pay${side}_Y4`, 
+                    `extra${side}_Monthly`, `extra${side}_Yearly`
+                ];
+                fields.forEach(fId => {
+                    document.getElementById(fId).addEventListener('input', () => {
+                        saveDOMValuesToState(side);
+                        runAmortizationEngine();
+                    });
+                });
+            });
+        }
+
+        // Change Bank selections
+        function onBankSelectorChange(side, bankKey) {
+            if (side === 'A') {
+                currentBankA = bankKey;
+            } else {
+                currentBankB = bankKey;
+            }
+            loadBankValuesToDOM(side, bankKey);
+            runAmortizationEngine();
+        }
+
+        // Clone/Copy Config settings from one bank card to the other
+        function cloneConfigFromSide(sourceSide, destSide) {
+            const srcBank = sourceSide === 'A' ? currentBankA : currentBankB;
+            const dstBank = destSide === 'A' ? currentBankA : currentBankB;
+
+            if (srcBank === dstBank) return; // Prevent cloning to identical bank
+
+            // Shallow clone variables
+            bankData[dstBank] = { ...bankData[srcBank] };
+            localStorage.setItem(`zen_loan_calc_${dstBank}`, JSON.stringify(bankData[dstBank]));
+
+            // Load and run recomputations
+            loadBankValuesToDOM(destSide, dstBank);
+            runAmortizationEngine();
+        }
+
+        // Swapping view Tab menus
+        function switchTab(tabId) {
+            activeTab = tabId;
+            const tabDashboard = document.getElementById('tabDashboard');
+            const tabSchedule = document.getElementById('tabSchedule');
+            const btnDashboard = document.getElementById('tabDashboardBtn');
+            const btnSchedule = document.getElementById('tabScheduleBtn');
+
+            if (tabId === 'dashboard') {
+                tabDashboard.classList.remove('hidden');
+                tabSchedule.classList.add('hidden');
+                
+                btnDashboard.className = "px-4 py-1.5 rounded-full bg-white text-[#2D2D30] shadow-sm transition-all duration-200 flex items-center gap-1.5";
+                btnSchedule.className = "px-4 py-1.5 rounded-full text-slate-500 hover:text-[#2D2D30] transition-all duration-200 flex items-center gap-1.5";
+            } else {
+                tabDashboard.classList.add('hidden');
+                tabSchedule.classList.remove('hidden');
+                
+                btnSchedule.className = "px-4 py-1.5 rounded-full bg-white text-[#2D2D30] shadow-sm transition-all duration-200 flex items-center gap-1.5";
+                btnDashboard.className = "px-4 py-1.5 rounded-full text-slate-500 hover:text-[#2D2D30] transition-all duration-200 flex items-center gap-1.5";
+                
+                populateYearFilters();
+                renderActiveScheduleTable();
+            }
+        }
+
+        // Toggle detailed table outputs selection
+        function toggleActiveTable(side) {
+            activeTableOption = side;
+            const btnA = document.getElementById('tableSelectorA');
+            const btnB = document.getElementById('tableSelectorB');
+
+            if (side === 'A') {
+                btnA.className = "flex-1 md:flex-none px-5 py-2 rounded-full bg-white text-[#2D2D30] shadow-sm transition-all duration-300";
+                btnB.className = "flex-1 md:flex-none px-5 py-2 rounded-full text-slate-500 hover:text-[#2D2D30] transition-all duration-300";
+            } else {
+                btnB.className = "flex-1 md:flex-none px-5 py-2 rounded-full bg-white text-[#2D2D30] shadow-sm transition-all duration-300";
+                btnA.className = "flex-1 md:flex-none px-5 py-2 rounded-full text-slate-500 hover:text-[#2D2D30] transition-all duration-300";
+            }
+
+            populateYearFilters();
+            renderActiveScheduleTable();
+        }
+
+        // Trigger evaluations calculations on change updates
+        function runAmortizationEngine() {
+            const dataA = bankData[currentBankA];
+            const dataB = bankData[currentBankB];
+
+            if (!dataA || !dataB) return;
+
+            // Calculate profiles
+            amortData.A = computeAmortization(dataA);
+            amortData.B = computeAmortization(dataB);
+
+            // Update UI Labels names representation
+            updateNamesLabels();
+
+            // Run Negative Amortization checks
+            checkNegativeAmortWarnings(dataA, dataB);
+
+            // Refresh Comparative statistics
+            updateComparisonDashboard();
+            renderComparisonChart();
+
+            // Refresh schedule if table container is open
+            if (activeTab === 'schedule') {
+                populateYearFilters();
+                renderActiveScheduleTable();
+            }
+        }
+
+        // Update indicators labels text
+        function updateNamesLabels() {
+            const nameA = bankConfig[currentBankA].name;
+            const nameB = bankConfig[currentBankB].name;
+
+            document.getElementById('kpiLabelPaidA').innerText = nameA;
+            document.getElementById('kpiLabelPaidB').innerText = nameB;
+            document.getElementById('kpiLabelIntA').innerText = nameA;
+            document.getElementById('kpiLabelIntB').innerText = nameB;
+            document.getElementById('kpiLabelTimeA').innerText = nameA;
+            document.getElementById('kpiLabelTimeB').innerText = nameB;
+
+            // Table buttons
+            document.getElementById('tableSelectorA').innerText = `ธนาคาร ${currentBankA}`;
+            document.getElementById('tableSelectorB').innerText = `ธนาคาร ${currentBankB}`;
+        }
+
+        // Amortization mathematical framework logic
+        function computeAmortization(data) {
+            const schedule = [];
+            let balance = data.principal;
+            
+            let totalInterest = 0;
+            let totalPrincipal = 0;
+            let totalPaid = 0;
+            let month = 1;
+
+            const MAX_RUNS = 600; // 50 years max calculation ceiling protection
+
+            while (balance > 0.01 && month <= MAX_RUNS) {
+                let currentRate = 0;
+                let normalInstallment = 0;
+
+                // Steps configuration
+                if (month <= 12) currentRate = data.rY1;
+                else if (month <= 24) currentRate = data.rY2;
+                else if (month <= 36) currentRate = data.rY3;
+                else currentRate = data.rY4;
+
+                if (month <= 36) normalInstallment = data.payY1_3;
+                else normalInstallment = data.payY4;
+
+                // Monthly Interest calculation (rounded to 2 decimal checkpoints)
+                const monthlyIntRate = currentRate / 100 / 12;
+                const interestThisPeriod = Math.round((balance * monthlyIntRate) * 100) / 100;
+
+                // Regular payments configurations
+                let extraPay = data.monthlyExtra;
+                if (data.annualExtra > 0 && month % 12 === 0) {
+                    extraPay += data.annualExtra;
+                }
+
+                let plannedAmount = normalInstallment + extraPay;
+                let actualRegularPaid = normalInstallment;
+                let actualExtraPaid = extraPay;
+
+                // Bounds corrections for final payoff period
+                if (plannedAmount >= (balance + interestThisPeriod)) {
+                    plannedAmount = balance + interestThisPeriod;
+                    if (normalInstallment >= (balance + interestThisPeriod)) {
+                        actualRegularPaid = balance + interestThisPeriod;
+                        actualExtraPaid = 0;
+                    } else {
+                        actualRegularPaid = normalInstallment;
+                        actualExtraPaid = (balance + interestThisPeriod) - normalInstallment;
+                    }
+                }
+
+                let principalRepaid = Math.round((plannedAmount - interestThisPeriod) * 100) / 100;
+                if (principalRepaid < 0) {
+                    principalRepaid = 0; // Guard against negative amortization additions
+                }
+
+                const startingBalance = balance;
+                balance = Math.round((balance - principalRepaid) * 100) / 100;
+                if (balance < 0) balance = 0;
+
+                totalInterest += interestThisPeriod;
+                totalPrincipal += principalRepayment = principalRepaid;
+                totalPaid += plannedAmount;
+
+                schedule.push({
+                    month,
+                    year: Math.ceil(month / 12),
+                    monthInYear: ((month - 1) % 12) + 1,
+                    beginningBalance: startingBalance,
+                    payment: actualRegularPaid,
+                    extra: actualExtraPaid,
+                    interest: interestThisPeriod,
+                    principalPaid: principalRepaid,
+                    endingBalance: balance
+                });
+
+                month++;
+            }
+
+            return {
+                schedule,
+                totalInterest,
+                totalPrincipal,
+                totalPaid,
+                actualMonths: month - 1,
+                isNeverEnding: (month > MAX_RUNS && balance > 0.01)
+            };
+        }
+
+        // Warnings engine check
+        function checkNegativeAmortWarnings(dataA, dataB) {
+            const isWarnA = (dataA.rY1 > 0 && dataA.payY1_3 < (dataA.principal * (dataA.rY1 / 100) / 12));
+            const isWarnB = (dataB.rY1 > 0 && dataB.payY1_3 < (dataB.principal * (dataB.rY1 / 100) / 12));
+
+            const warnAElement = document.getElementById('negativeAmortWarningA');
+            const warnBElement = document.getElementById('negativeAmortWarningB');
+
+            if (isWarnA) warnAElement.classList.remove('hidden');
+            else warnAElement.classList.add('hidden');
+
+            if (isWarnB) warnBElement.classList.remove('hidden');
+            else warnBElement.classList.add('hidden');
+        }
+
+        // Side-by-side dashboard update calculations
+        function updateComparisonDashboard() {
+            const dataA = amortData.A;
+            const dataB = amortData.B;
+
+            if (!dataA || !dataB) return;
+
+            const nameA = bankConfig[currentBankA].name;
+            const nameB = bankConfig[currentBankB].name;
+
+            // Basic KPI stats output mapping
+            document.getElementById('kpiTotalPaidA').innerText = '฿' + Math.round(dataA.totalPaid).toLocaleString('th-TH');
+            document.getElementById('kpiTotalPaidB').innerText = '฿' + Math.round(dataB.totalPaid).toLocaleString('th-TH');
+
+            document.getElementById('kpiTotalInterestA').innerText = '฿' + Math.round(dataA.totalInterest).toLocaleString('th-TH');
+            document.getElementById('kpiTotalInterestB').innerText = '฿' + Math.round(dataB.totalInterest).toLocaleString('th-TH');
+
+            const yrsA = Math.floor(dataA.actualMonths / 12);
+            const mosA = dataA.actualMonths % 12;
+            document.getElementById('kpiTimeA').innerText = `${yrsA} ปี ${mosA} ด.`;
+
+            const yrsB = Math.floor(dataB.actualMonths / 12);
+            const mosB = dataB.actualMonths % 12;
+            document.getElementById('kpiTimeB').innerText = `${yrsB} ปี ${mosB} ด.`;
+
+            // Deciding Winner analysis
+            const diffInterest = dataA.totalInterest - dataB.totalInterest;
+            const absSavings = Math.abs(diffInterest);
+
+            const savingsDiffDisplay = document.getElementById('savingsDifferenceAmount');
+            const winnerTitle = document.getElementById('winnerTitle');
+            const winnerSubtitle = document.getElementById('winnerSubtitle');
+            const islandVerdict = document.getElementById('islandVerdict');
+
+            savingsDiffDisplay.innerText = '฿' + Math.round(absSavings).toLocaleString('th-TH');
+            islandVerdict.classList.remove('hidden');
+
+            if (Math.round(absSavings) === 0) {
+                winnerTitle.innerText = "ผลลัพธ์ทั้ง 2 สัญญาเท่ากันพอดี";
+                winnerSubtitle.innerText = "ไม่มียอดส่วนต่างสะสมระหว่างตัวเลือกที่คุณกรอก";
+                islandVerdict.innerText = "ยอดภาระหนี้ทั้ง 2 ฝั่งเท่ากัน";
+            } else if (diffInterest > 0) {
+                // Bank B is cheaper than A
+                winnerTitle.innerText = `แนะนำเลือก ${nameB} (ฝั่งขวา)`;
+                const speedDiff = dataA.actualMonths - dataB.actualMonths;
+                let speedText = "";
+                if (speedDiff > 0) {
+                    speedText = ` และผ่อนชำระหนี้หมดเร็วขึ้นอีก ${Math.floor(speedDiff/12)} ปี ${speedDiff%12} เดือน`;
+                }
+                winnerSubtitle.innerText = `${nameB} เสียดอกเบี้ยสะสมรวมน้อยกว่าข้อเสนอของ ${nameA} เป็นมูลค่ากว่า ${Math.round(absSavings).toLocaleString('th-TH')} บาท${speedText}`;
+                islandVerdict.innerHTML = `<span class="text-[#2E7D32]">✓ ${currentBankB} ประหยัดขึ้น ฿${Math.round(absSavings).toLocaleString('th-TH')}</span>`;
+            } else {
+                // Bank A is cheaper than B
+                winnerTitle.innerText = `แนะนำเลือก ${nameA} (ฝั่งซ้าย)`;
+                const speedDiff = dataB.actualMonths - dataA.actualMonths;
+                let speedText = "";
+                if (speedDiff > 0) {
+                    speedText = ` และผ่อนชำระหนี้หมดเร็วขึ้นอีก ${Math.floor(speedDiff/12)} ปี ${speedDiff%12} เดือน`;
+                }
+                winnerSubtitle.innerText = `${nameA} เสียดอกเบี้ยสะสมรวมน้อยกว่าข้อเสนอของ ${nameB} เป็นมูลค่ากว่า ${Math.round(absSavings).toLocaleString('th-TH')} บาท${speedText}`;
+                islandVerdict.innerHTML = `<span class="text-[#2E7D32]">✓ ${currentBankA} ประหยัดขึ้น ฿${Math.round(absSavings).toLocaleString('th-TH')}</span>`;
+            }
+        }
+
+        // Render Minimalist comparisons Line chart using Chart.js
+        function renderComparisonChart() {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+
+            const balancesA = amortData.A.schedule.map(item => item.endingBalance);
+            const balancesB = amortData.B.schedule.map(item => item.endingBalance);
+
+            const maxLength = Math.max(balancesA.length, balancesB.length);
+            const labels = Array.from({ length: maxLength }, (_, i) => `งวดที่ ${i + 1}`);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // Colors mapping
+            const colorA = bankConfig[currentBankA].themeColor;
+            const colorB = bankConfig[currentBankB].themeColor;
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: bankConfig[currentBankA].name,
+                            data: balancesA,
+                            borderColor: colorA,
+                            backgroundColor: `${colorA}06`,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.1,
+                            fill: true
+                        },
+                        {
+                            label: bankConfig[currentBankB].name,
+                            data: balancesB,
+                            borderColor: colorB,
+                            backgroundColor: `${colorB}06`,
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.1,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: { family: 'Kanit', size: 11, weight: '500' },
+                                color: '#2D2D30',
+                                boxWidth: 12
+                            }
+                        },
+                        tooltip: {
+                            titleFont: { family: 'Kanit' },
+                            bodyFont: { family: 'Kanit' },
+                            backgroundColor: '#FFFFFF',
+                            titleColor: '#2D2D30',
+                            bodyColor: '#6E6E73',
+                            borderColor: '#EDEDF0',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += '฿' + Math.round(context.parsed.y).toLocaleString('th-TH');
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                font: { family: 'Inter', size: 10 },
+                                color: '#6E6E73',
+                                callback: function(val) {
+                                    return '฿' + (val / 1000000).toFixed(2) + ' ล้าน';
+                                }
+                            },
+                            grid: { color: '#F4F4F6' },
+                            title: {
+                                display: true,
+                                text: 'ยอดหนี้เงินกู้คงค้างปลายงวด',
+                                color: '#2D2D30',
+                                font: { family: 'Kanit', size: 11, weight: '500' }
+                            }
+                        },
+                        x: {
+                            ticks: { font: { family: 'Inter', size: 10 }, color: '#6E6E73', maxTicksLimit: 12 },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Years Filters population logic
+        function populateYearFilters() {
+            const filterYear = document.getElementById('filterYear');
+            const activeValue = filterYear.value;
+
+            filterYear.innerHTML = '<option value="all">แสดงงวดการจ่ายทั้งหมด</option>';
+
+            const selectedData = activeTableOption === 'A' ? amortData.A : amortData.B;
+            if (!selectedData) return;
+
+            const years = [...new Set(selectedData.schedule.map(item => item.year))];
+            years.forEach(yr => {
+                const opt = document.createElement('option');
+                opt.value = yr;
+                opt.innerText = `ปีที่ ${yr}`;
+                filterYear.appendChild(opt);
+            });
+
+            if (years.includes(Number(activeValue))) {
+                filterYear.value = activeValue;
+            }
+        }
+
+        // Render schedule table inside DOM
+        function renderActiveScheduleTable() {
+            const tableBody = document.getElementById('scheduleTableBody');
+            tableBody.innerHTML = '';
+
+            const targetData = activeTableOption === 'A' ? amortData.A : amortData.B;
+            const targetBank = activeTableOption === 'A' ? currentBankA : currentBankB;
+
+            if (!targetData) return;
+
+            const selectedFilter = document.getElementById('filterYear').value;
+            const fullSchedule = targetData.schedule;
+
+            const displaySchedule = selectedFilter === 'all'
+                ? fullSchedule
+                : fullSchedule.filter(item => item.year === Number(selectedFilter));
+
+            if (displaySchedule.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-6 text-center text-slate-400">
+                            ไม่มีรายงวดข้อมูลจำลองการผ่อนให้แสดงผล
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const activeColor = bankConfig[targetBank].themeColor;
+
+            displaySchedule.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors duration-100 text-[#2D2D30]";
+
+                // End of annual boundaries highlights
+                if (item.monthInYear === 12) {
+                    tr.style.borderBottom = `2px solid ${activeColor}33`;
+                    tr.style.backgroundColor = `${activeColor}08`;
+                }
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 text-center font-bold text-slate-400">
+                        งวดที่ ${item.month} <span class="text-[9px] text-slate-400 font-light block">ปีที่ ${item.year} ด. ${item.monthInYear}</span>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                        ฿${item.beginningBalance.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                    <td class="py-3 px-4 text-right font-medium">
+                        ฿${item.payment.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                    <td class="py-3 px-4 text-right text-emerald-600 font-semibold">
+                        ${item.extra > 0 ? `฿${item.extra.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '-'}
+                    </td>
+                    <td class="py-3 px-4 text-right text-rose-500 font-medium">
+                        ฿${item.interest.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                    <td class="py-3 px-4 text-right text-slate-700 font-semibold">
+                        ฿${item.principalPaid.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                    <td class="py-3 px-4 text-right font-bold bg-[#FAF9F6]/50" style="color: ${activeColor}">
+                        ฿${item.endingBalance.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Spreadsheet exporting
+        function downloadCSV() {
+            const targetData = activeTableOption === 'A' ? amortData.A : amortData.B;
+            const targetBank = activeTableOption === 'A' ? currentBankA : currentBankB;
+            const bankName = bankConfig[targetBank].name;
+
+            if (!targetData) return;
+
+            const schedule = targetData.schedule;
+            
+            // Generate columns header details with UTF-8 BOM representation for Thai MS Excel compatibility
+            let csvContent = "\uFEFF"; 
+            csvContent += `ตารางรายงานแผนผ่อนชำระรายงวดเชิงลึก - ${bankName}\n`;
+            csvContent += "งวดที่,ปี,เดือนในรอบปี,ยอดคงค้างต้นงวด (บาท),ค่างวดปกติ (บาท),ยอดโปะเพิ่มพิเศษ (บาท),ดอกเบี้ยจ่ายประจำงวด (บาท),ตัดหักยอดเงินต้น (บาท),คงค้างหนี้ปลายงวด (บาท)\n";
+
+            schedule.forEach(row => {
+                const line = [
+                    row.month,
+                    row.year,
+                    row.monthInYear,
+                    row.beginningBalance.toFixed(2),
+                    row.payment.toFixed(2),
+                    row.extra.toFixed(2),
+                    row.interest.toFixed(2),
+                    row.principalPaid.toFixed(2),
+                    row.endingBalance.toFixed(2)
+                ].join(",");
+                csvContent += line + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `ตารางผ่อนชำระ_${bankName.replace(/\s+/g, '_')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
