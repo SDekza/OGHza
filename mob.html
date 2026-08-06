@@ -2,584 +2,346 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>OGHza</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมตรวจสอบค่าส่งเกิน (TikTok Shop)</title>
     
-    <!-- App Icon -->
-    <link rel="icon" type="image/png" href="icon.png">
-    <link rel="apple-touch-icon" href="icon.png">
+    <!-- นำเข้าฟอนต์สำหรับภาษาไทยและอังกฤษ -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS -->
+    <!-- นำเข้า Tailwind CSS สำหรับจัดการความสวยงาม -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Libraries -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- นำเข้า SheetJS สำหรับอ่านไฟล์ Excel ออฟไลน์ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        window.firebaseModules = {
-            initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
-            getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc
-        };
-        
-        window.dispatchEvent(new Event('firebase-ready'));
-    </script>
-
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Kanit:wght@300;400;500;700;900&display=swap');
-        
-        html { font-size: clamp(14px, 0.85vw + 10px, 16px); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Inter', 'Kanit', sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; padding-bottom: 110px; /* Space for Bottom Nav + Safe Area */ }
-        
-        /* Dark Mode Override */
-        body.dark { background-color: #0f172a; color: #f1f5f9; }
-
-        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
-        .dark .glass-panel { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
-
-        /* Animations */
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .animate-fade-in { animation: fadeIn 0.2s ease-in-out forwards; }
-
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* iOS Safe Area Fixes */
-        .pb-safe {
-            padding-bottom: 20px; /* Default Fallback */
-            padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif'],
+                    }
+                }
+            }
         }
+    </script>
+    <style>
+        body { background-color: #f3f4f6; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .dragover { background-color: #dbeafe !important; border-color: #3b82f6 !important; }
     </style>
 </head>
-<body class="dark"> <!-- Default Dark Mode -->
-    <div id="root"></div>
+<body class="p-4 md:p-8 text-gray-800">
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef, Fragment } = React;
-        const { LineChart, Line, ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } = window.Recharts || {};
-
-        const MANUAL_FIREBASE_CONFIG = {
-            apiKey: "AIzaSyAbWzr8o_OhkjGbEetBYq_nzYmVZ2fTf40",
-            authDomain: "rocogh-88a38.firebaseapp.com",
-            projectId: "rocogh-88a38",
-            storageBucket: "rocogh-88a38.firebasestorage.app",
-            messagingSenderId: "1025971309206",
-            appId: "1:1025971309206:web:d4f9e0ab6bb016dde590b7",
-            measurementId: "G-04JN1ERQ4T"
-        };
-
-        // --- ICONS & ASSETS ---
-        const SVGs = {
-            Spell: ({className}) => <svg viewBox="0 0 32 32" className={className}><path d="M16 4 L24 12 L24 22 L16 28 L8 22 L8 12 Z" fill="#7E57C2" /><path d="M16 6 L22 12 L22 20 L16 26 L10 20 L10 12 Z" fill="#9575CD" /><rect x="13" y="10" width="2" height="2" fill="#EDE7F6" /></svg>,
-            Magic: ({className}) => <svg viewBox="0 0 32 32" className={className}><path d="M16 4 L24 12 L24 22 L16 28 L8 22 L8 12 Z" fill="#b91c1c" /><path d="M16 6 L22 12 L22 20 L16 26 L10 20 L10 12 Z" fill="#ef4444" /><rect x="13" y="10" width="2" height="2" fill="#fecaca" /></svg>,
-            Gum: ({className}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><rect x="6" y="10" width="12" height="10" rx="2" /><path d="M10 10V6a2 2 0 0 1 4 0v4" /></svg>,
-            GumBox: ({className}) => <svg viewBox="0 0 32 32" className={className} shapeRendering="crispEdges"><rect x="4" y="10" width="24" height="18" rx="2" fill="#42A5F5" /><rect x="4" y="10" width="24" height="6" rx="2" fill="#1E88E5" /><circle cx="16" cy="19" r="5" fill="#F06292" /><path d="M12 10 L12 6 L20 6 L20 10" fill="none" stroke="#BBDEFB" strokeWidth="2" /></svg>,
-            Silvervine: ({className}) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#10b981" fill="#10b981" fillOpacity="0.2"/></svg>,
-            SilvervineBox: ({className}) => <svg viewBox="0 0 32 32" className={className} shapeRendering="crispEdges"><rect x="4" y="10" width="24" height="18" fill="#8D6E63" /><path d="M4 10 L16 14 L28 10" fill="none" stroke="#5D4037" strokeWidth="2" /><path d="M16 4 L14 10 L18 10 Z" fill="#4CAF50" /><rect x="12" y="18" width="8" height="2" fill="#FFD600" /></svg>,
-            SilvervineFruit: ({className, style}) => ( <svg viewBox="0 0 32 32" className={className} style={style}> <path d="M16 4c-5 0-9 6-9 14s4 12 9 12 9-4 9-12-4-14-9-14z" fill="#81C784"/> <path d="M16 4c0 0-3 6-3 14s3 12 3 12" fill="none" stroke="#4CAF50" strokeWidth="2"/> <path d="M16 2v4" stroke="#5D4037" strokeWidth="3" strokeLinecap="round"/> </svg> ),
-            Zeny: ({className}) => <span className={`font-black ${className}`}>Z</span>
-        };
-
-        const Icon = ({ name, size = 20, className = "" }) => {
-            const icons = {
-                Home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-                History: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-                Box: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
-                Settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-                Plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-                X: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-                Trash: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
-                Edit: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
-                Copy: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1-2-2h9a2 2 0 0 1 2 2v1"/></svg>,
-                Check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>,
-                Moon: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
-                Sun: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
-                TrendingUp: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
-                MinusCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
-                PlusCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
-                RefreshCw: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            };
-            return icons[name] || null;
-        };
-
-        const formatMoney = (n) => new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(n);
-        const formatFullMoney = (n) => new Intl.NumberFormat('th-TH').format(n);
+    <div class="max-w-5xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-lg border border-gray-100">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8 flex items-center justify-center gap-3">
+            <span class="text-4xl">📦</span> ตรวจสอบออเดอร์ค่าส่งเกิน
+        </h1>
         
-        let auth, db;
-
-        const NumberStepper = ({ value, onChange, min = 0, max = 999, step = 1, theme }) => {
-            const handleStep = (amount) => {
-                let current = parseInt(value) || 0;
-                let next = current + amount;
-                if (next < min) next = min;
-                if (next > max) next = max;
-                onChange(next);
-            };
-            return (
-                <div className={`flex items-center gap-1 w-full rounded-xl p-1 h-[52px] transition-colors ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                    <button type="button" onClick={() => handleStep(-step)} className={`w-12 h-full rounded-lg flex items-center justify-center transition-all active:scale-95 ${theme === 'dark' ? 'bg-slate-700 text-white hover:bg-rose-600' : 'bg-white text-stone-600 hover:bg-rose-500 hover:text-white shadow-sm'}`}><Icon name="MinusCircle" size={20} /></button>
-                    <input type="number" inputMode="numeric" pattern="[0-9]*" value={value} onFocus={(e) => e.target.select()} onChange={(e) => { let val = parseInt(e.target.value); if (isNaN(val)) val = ""; else if (val < min) val = min; else if (val > max) val = max; onChange(val); }} className={`flex-1 text-center font-black text-2xl bg-transparent outline-none ${theme === 'dark' ? 'text-white' : 'text-stone-800'}`} placeholder="0" />
-                    <button type="button" onClick={() => handleStep(step)} className={`w-12 h-full rounded-lg flex items-center justify-center transition-all active:scale-95 ${theme === 'dark' ? 'bg-slate-700 text-white hover:bg-emerald-600' : 'bg-white text-stone-600 hover:bg-emerald-500 hover:text-white shadow-sm'}`}><Icon name="PlusCircle" size={20} /></button>
-                </div>
-            );
-        };
-
-        const calculateProfit = (f, p) => {
-            let rev = Number(f.trashAmount) || 0;
-            const sp = f.isSellingSpell ? (Number(f.customSpellPrice) || p.purpleStonePrice) : 0;
-            const mp = (f.runMode === 'aogh' && f.isSellingMagic) ? (Number(f.customMagicPrice) || p.contMagicPrice) : 0;
+        <!-- พื้นที่สำหรับอัปโหลด/ลากไฟล์วาง -->
+        <div id="drop_zone" onclick="document.getElementById('file_input').click()" 
+             class="border-2 border-dashed border-blue-400 bg-blue-50 hover:bg-blue-100 transition-colors duration-300 p-12 text-center rounded-xl cursor-pointer flex flex-col items-center justify-center gap-4 group">
             
-            rev += (f.purpleStoneCount * sp) + (f.contMagicCount * mp);
-            
-            const costGum = f.gumUsed * (p.gumBoxPrice / 10);
-            const costSv = f.useSilvervine ? (2 * (p.silvervineBoxPrice / 10)) : 0;
-            const costOther = f.otherCosts.reduce((a, c) => a + (Number(c.amount) || 0), 0);
-            
-            return rev - (costGum + costSv + costOther);
-        };
+            <svg class="w-16 h-16 text-blue-500 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            <div>
+                <p class="text-xl font-semibold text-blue-700 mb-1">ลากไฟล์ Excel รายงานรายได้ มาวางที่นี่</p>
+                <span class="text-sm text-blue-500">หรือ คลิกเพื่อเลือกไฟล์จากคอมพิวเตอร์ (.xlsx, .xls)</span>
+            </div>
+            <input type="file" id="file_input" accept=".xlsx, .xls" class="hidden">
+        </div>
 
-        // --- MAIN APP ---
-        function App() {
-            const [user, setUser] = useState(null);
-            const [activeTab, setActiveTab] = useState('home'); 
-            const [isAdding, setIsAdding] = useState(false);
-            const [records, setRecords] = useState([]);
-            const [globalPrices, setGlobalPrices] = useState({ purpleStonePrice: 0, contMagicPrice: 0, gumBoxPrice: 0, silvervineBoxPrice: 0 });
-            const [targetUid, setTargetUid] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [theme, setTheme] = useState('dark');
-            const [editRecordId, setEditRecordId] = useState(null);
-
-            useEffect(() => {
-                const init = async () => {
-                    if (!window.firebaseModules) { window.addEventListener('firebase-ready', init); return; }
-                    const { initializeApp, getAuth, getFirestore, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.firebaseModules;
-                    
-                    try {
-                        const config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : MANUAL_FIREBASE_CONFIG;
-                        const app = initializeApp(config);
-                        auth = getAuth(app);
-                        db = getFirestore(app);
-                        
-                        const savedUid = localStorage.getItem('ogh_restore_uid');
-                        
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                             await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                             await signInAnonymously(auth);
-                        }
-                        
-                        onAuthStateChanged(auth, (u) => {
-                            setUser(u);
-                            if(u) setTargetUid(savedUid || u.uid);
-                            setLoading(false);
-                        });
-                    } catch(e) { console.error(e); setLoading(false); }
-                };
-                init();
-            }, []);
-
-            useEffect(() => {
-                if(!targetUid || !db) return;
-                const { collection, onSnapshot, doc, query, orderBy } = window.firebaseModules;
-                
-                const q = query(collection(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records'), orderBy('timestamp', 'desc'));
-                const unsubRecords = onSnapshot(q, snap => setRecords(snap.docs.map(d => ({...d.data(), id: d.id}))));
-                const unsubConfig = onSnapshot(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'config', 'prices'), d => { if(d.exists()) setGlobalPrices(d.data()); });
-                
-                return () => { unsubRecords(); unsubConfig(); };
-            }, [targetUid]);
-
-            useEffect(() => {
-                document.body.className = theme;
-            }, [theme]);
-
-            if(loading) return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white animate-pulse">Loading OGHza...</div>;
-
-            return (
-                <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
-                    
-                    <div className="max-w-md mx-auto min-h-screen relative">
-                        
-                        {activeTab === 'home' && <HomeView records={records} prices={globalPrices} />}
-
-                        {activeTab === 'history' && <HistoryView records={records} onEdit={(r) => { setEditRecordId(r.id); setIsAdding(true); }} onDelete={async(id) => {
-                             const { deleteDoc, doc } = window.firebaseModules;
-                             if(confirm('ลบรายการนี้?')) await deleteDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records', id));
-                        }} />}
-
-                        {activeTab === 'inventory' && <InventoryView records={records} prices={globalPrices} />}
-
-                        {activeTab === 'settings' && <SettingsView uid={targetUid} prices={globalPrices} theme={theme} setTheme={setTheme} setTargetUid={setTargetUid} />}
-
-                    </div>
-
-                    <nav className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto border-t pb-safe pt-2 px-6 flex justify-between items-center z-40 ${theme === 'dark' ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'} backdrop-blur-md`}>
-                        <NavButton icon="Home" label="หน้าหลัก" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                        <NavButton icon="History" label="ประวัติ" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
-                        
-                        <div className="relative -top-6">
-                            <button onClick={() => { setEditRecordId(null); setIsAdding(true); }} className="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/40 flex items-center justify-center transform transition-transform active:scale-95">
-                                <Icon name="Plus" size={28} />
-                            </button>
-                        </div>
-
-                        <NavButton icon="Box" label="คลัง" active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} />
-                        <NavButton icon="Settings" label="ตั้งค่า" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
-                    </nav>
-
-                    {isAdding && (
-                        <AddDataSheet 
-                            onClose={() => setIsAdding(false)} 
-                            targetUid={targetUid} 
-                            db={db}
-                            prices={globalPrices}
-                            editRecord={records.find(r => r.id === editRecordId)}
-                            theme={theme}
-                        />
-                    )}
-
+        <!-- ส่วนแสดงผลรวม (ซ่อนไว้เริ่มต้น) -->
+        <div id="summary" class="hidden mt-8 p-6 bg-red-50 border-l-4 border-red-500 rounded-r-xl shadow-sm">
+            <h3 class="text-xl font-bold text-red-700 mb-4 flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                สรุปผลการตรวจสอบพบปัญหา
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-red-100">
+                    <p class="text-gray-600 text-sm mb-1">จำนวนออเดอร์ที่ถูกหักค่าส่ง</p>
+                    <p class="text-2xl font-bold text-red-600"><span id="count_orders">0</span> <span class="text-base font-normal">รายการ</span></p>
                 </div>
-            );
-        }
-
-        const NavButton = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center gap-1 w-12 transition-colors ${active ? 'text-purple-500' : 'opacity-40 hover:opacity-70'}`}>
-                <Icon name={icon} size={20} />
-                <span className="text-[9px] font-bold">{label}</span>
-            </button>
-        );
-
-        const HomeView = ({ records, prices }) => {
-            const totalProfit = records.reduce((acc, r) => acc + (r.profit || 0), 0);
-            const totalRuns = records.length;
-            const chartData = [...records].reverse().slice(-7).map(r => ({ name: r.date.split('/')[0], profit: r.profit }));
-
-            return (
-                <div className="p-6 space-y-6 animate-fade-in pb-24">
-                    <header className="flex justify-between items-center">
-                        <div>
-                            <h1 className="text-2xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">OGHza</h1>
-                            <p className="text-[10px] opacity-50 font-bold tracking-widest">MOBILE EDITION</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-[10px] opacity-50 uppercase font-bold">Total Profit</p>
-                            <p className="text-xl font-black text-emerald-500">{formatMoney(totalProfit)}</p>
-                        </div>
-                    </header>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="glass-panel p-4 rounded-3xl">
-                            <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center mb-2"><Icon name="TrendingUp" size={16}/></div>
-                            <p className="text-2xl font-black">{totalRuns}</p>
-                            <p className="text-[10px] opacity-50 font-bold">รอบการลง</p>
-                        </div>
-                        <div className="glass-panel p-4 rounded-3xl">
-                             <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center mb-2"><Icon name="History" size={16}/></div>
-                            <p className="text-2xl font-black">{records.length > 0 ? records[0].date : '-'}</p>
-                            <p className="text-[10px] opacity-50 font-bold">ล่าสุด</p>
-                        </div>
-                    </div>
-                    <div className="glass-panel p-4 rounded-3xl h-48 relative overflow-hidden">
-                         <p className="text-xs font-bold opacity-50 mb-2 absolute top-4 left-4 z-10">แนวโน้มกำไร (7 รอบล่าสุด)</p>
-                         <div className="absolute inset-0 pt-8 pl-0 pr-0">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData}>
-                                    <defs><linearGradient id="colorP" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/><stop offset="95%" stopColor="#a855f7" stopOpacity={0}/></linearGradient></defs>
-                                    <Area type="monotone" dataKey="profit" stroke="#a855f7" strokeWidth={3} fill="url(#colorP)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                         </div>
-                    </div>
-                    
-                    {/* Recent Feed */}
-                     <div className="space-y-2">
-                        <p className="text-xs font-bold opacity-50 px-2">RECENT ACTIVITY</p>
-                        {records.slice(0, 3).map(r => (
-                            <div key={r.id} className="glass-panel p-3 rounded-2xl flex justify-between items-center">
-                                <div className="flex gap-3 items-center">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[8px] font-black uppercase ${r.mode === 'aogh' ? 'bg-rose-500 text-white' : 'bg-purple-500 text-white'}`}>{r.mode}</div>
-                                    <div>
-                                        <p className="font-bold text-xs">{r.date}</p>
-                                        <p className="text-[10px] opacity-50">{r.purpleStoneCount} Spell {r.contMagicCount > 0 && `• ${r.contMagicCount} Magic`}</p>
-                                    </div>
-                                </div>
-                                <span className="font-black text-emerald-500 text-sm">+{formatMoney(r.profit)}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        const HistoryView = ({ records, onEdit, onDelete }) => (
-            <div className="p-4 pb-24 animate-fade-in">
-                <h2 className="text-lg font-black mb-4 px-2">ประวัติการฟาร์ม</h2>
-                <div className="space-y-3">
-                    {records.map((r) => (
-                        <div key={r.id} className="glass-panel p-4 rounded-3xl flex justify-between items-center relative group overflow-hidden">
-                            <div className="flex gap-4 items-center relative z-10">
-                                <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center text-[10px] font-black uppercase ${r.mode === 'aogh' ? 'bg-rose-500 text-white' : 'bg-purple-500 text-white'}`}>
-                                    <span>{r.mode}</span>
-                                </div>
-                                <div>
-                                    <p className="font-bold text-sm">{r.date}</p>
-                                    <div className="flex gap-2 text-[10px] opacity-60 mt-0.5">
-                                        <span className="flex items-center gap-1"><SVGs.Spell className="w-3 h-3"/> {r.purpleStoneCount || 0}</span>
-                                        {r.contMagicCount > 0 && <span className="flex items-center gap-1"><SVGs.Magic className="w-3 h-3"/> {r.contMagicCount}</span>}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="text-right relative z-10">
-                                <p className="font-black text-emerald-500 text-lg">{formatMoney(r.profit)}</p>
-                                <div className="flex justify-end gap-3 mt-1">
-                                    <button onClick={() => onEdit(r)} className="opacity-40 hover:opacity-100"><Icon name="Edit" size={14}/></button>
-                                    <button onClick={() => onDelete(r.id)} className="opacity-40 hover:opacity-100 hover:text-rose-500"><Icon name="Trash" size={14}/></button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                    {records.length === 0 && <div className="text-center py-10 opacity-30 font-bold">ยังไม่มีข้อมูล</div>}
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-red-100">
+                    <p class="text-gray-600 text-sm mb-1">ยอดรวมที่ร้านค้าจ่ายส่วนต่างไปทั้งหมด</p>
+                    <p class="text-2xl font-bold text-red-600"><span id="total_amount">0.00</span> <span class="text-base font-normal">บาท</span></p>
                 </div>
             </div>
-        );
+        </div>
 
-        const InventoryView = ({ records, prices }) => {
-            const soldSpell = records.reduce((acc, r) => acc + (r.isSellingSpell ? Number(r.purpleStoneCount) : 0), 0);
-            const totalSpell = records.reduce((acc, r) => acc + Number(r.purpleStoneCount || 0), 0);
-            const stockSpell = Math.max(0, totalSpell - soldSpell);
-            const soldMagic = records.reduce((acc, r) => acc + (r.isSellingMagic ? Number(r.contMagicCount) : 0), 0);
-            const totalMagic = records.reduce((acc, r) => acc + Number(r.contMagicCount || 0), 0);
-            const stockMagic = Math.max(0, totalMagic - soldMagic);
-            return (
-                <div className="p-6 pb-24 animate-fade-in">
-                    <h2 className="text-lg font-black mb-6">คลังสมบัติ</h2>
-                    <div className="space-y-4">
-                        <div className="glass-panel p-6 rounded-3xl flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-purple-500/20 rounded-2xl flex items-center justify-center"><SVGs.Spell className="w-10 h-10"/></div>
-                                <div><p className="text-xs opacity-50 font-bold uppercase">หินม่วงคงเหลือ</p><p className="text-3xl font-black">{stockSpell}</p></div>
-                            </div>
-                            <div className="text-right"><p className="text-[10px] opacity-50 mb-1">มูลค่าประมาณ</p><p className="text-sm font-bold text-purple-400">{formatMoney(stockSpell * prices.purpleStonePrice)} z</p></div>
-                        </div>
-                        <div className="glass-panel p-6 rounded-3xl flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-rose-500/20 rounded-2xl flex items-center justify-center"><SVGs.Magic className="w-10 h-10"/></div>
-                                <div><p className="text-xs opacity-50 font-bold uppercase">หินแดงคงเหลือ</p><p className="text-3xl font-black">{stockMagic}</p></div>
-                            </div>
-                            <div className="text-right"><p className="text-[10px] opacity-50 mb-1">มูลค่าประมาณ</p><p className="text-sm font-bold text-rose-400">{formatMoney(stockMagic * prices.contMagicPrice)} z</p></div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
+        <!-- ตารางแสดงรายละเอียด (ซ่อนไว้เริ่มต้น) -->
+        <div id="table_wrapper" class="hidden mt-8 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <div class="max-h-[500px] overflow-y-auto relative">
+                <table class="w-full text-left border-collapse text-sm whitespace-nowrap">
+                    <thead class="bg-gray-800 text-white sticky top-0 z-10">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold">ลำดับ</th>
+                            <th class="px-6 py-4 font-semibold">หมายเลขคำสั่งซื้อ</th>
+                            <th class="px-6 py-4 font-semibold text-right">ร้านค้าจ่ายจริง (บาท)</th>
+                            <th class="px-6 py-4 font-semibold text-right">น้ำหนักในระบบ</th>
+                            <th class="px-6 py-4 font-semibold text-right">ขนส่งชั่งได้จริง</th>
+                            <th class="px-6 py-4 font-semibold">สาเหตุที่ตรวจสอบพบ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table_body" class="bg-white divide-y divide-gray-200">
+                        <!-- ข้อมูลจะถูกเติมด้วย JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-        const SettingsView = ({ uid, prices, theme, setTheme, setTargetUid }) => {
-            const [localPrices, setLocalPrices] = useState(prices);
-            const [restoreCode, setRestoreCode] = useState('');
-            const handleSavePrices = async () => {
-                if(!uid) { alert("กรุณารอการเชื่อมต่อสักครู่..."); return; }
-                const { doc, setDoc } = window.firebaseModules;
-                await setDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', uid, 'config', 'prices'), localPrices, { merge: true });
-                alert('บันทึกราคาเรียบร้อย');
+    <script>
+        const dropZone = document.getElementById('drop_zone');
+        const fileInput = document.getElementById('file_input');
+        const summaryDiv = document.getElementById('summary');
+        const tableWrapper = document.getElementById('table_wrapper');
+        const countOrders = document.getElementById('count_orders');
+        const totalAmountEl = document.getElementById('total_amount');
+        const tbody = document.getElementById('table_body');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            dropZone.querySelector('p').innerText = "กำลังประมวลผลไฟล์...";
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // อ่านข้อมูลเป็น Array ของ Objects จะได้อ้างอิงจากหัวคอลัมน์ได้ง่ายขึ้น
+                    const rawData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                    
+                    // ส่งข้อมูลไปประมวลผล
+                    processData(rawData);
+                    
+                    dropZone.querySelector('p').innerText = "โหลดข้อมูลเสร็จสิ้น ลากไฟล์ใหม่วางที่นี่ได้เลย";
+                } catch (error) {
+                    console.error(error);
+                    dropZone.querySelector('p').innerText = "ลากไฟล์ Excel รายงานรายได้ มาวางที่นี่";
+                }
             };
-            const handleRestore = () => {
-                if(restoreCode.length < 5) return;
-                localStorage.setItem('ogh_restore_uid', restoreCode);
-                window.location.reload();
-            };
-            const copyUid = () => { navigator.clipboard.writeText(uid); alert('Copied UID'); };
+            reader.readAsArrayBuffer(file);
+        }
 
-            const priceConfig = [
-                { key: 'purpleStonePrice', label: 'Coagulated Spell', icon: <SVGs.Spell className="w-4 h-4" /> },
-                { key: 'contMagicPrice', label: 'Contaminated Magic', icon: <SVGs.Magic className="w-4 h-4" /> },
-                { key: 'gumBoxPrice', label: 'Bubble Gum (Box)', icon: <SVGs.GumBox className="w-4 h-4" /> },
-                { key: 'silvervineBoxPrice', label: 'Silvervine (Box)', icon: <SVGs.SilvervineBox className="w-4 h-4" /> }
-            ];
+        function extractNumber(val) {
+            if (val == null || val === '') return 0;
+            if (typeof val === 'number') return val;
+            const str = String(val).replace(/,/g, '');
+            const match = str.match(/-?\d+(\.\d+)?/);
+            return match ? parseFloat(match[0]) : 0;
+        }
 
-            return (
-                <div className="p-6 pb-24 animate-fade-in space-y-8">
-                    <h2 className="text-lg font-black">ตั้งค่า</h2>
-                    <div className="glass-panel p-5 rounded-3xl">
-                        <p className="text-[10px] font-bold opacity-50 uppercase mb-2">User ID (Backup Code)</p>
-                        <div className="flex gap-2">
-                            <code className={`p-3 rounded-xl text-xs font-mono flex-1 overflow-hidden ${uid ? 'bg-black/20' : 'bg-amber-500/20 text-amber-500'}`}>{uid || 'กำลังเชื่อมต่อ...'}</code>
-                            {uid ? <button onClick={copyUid} className="bg-slate-500/20 p-3 rounded-xl"><Icon name="Copy" size={16}/></button> : <button onClick={() => window.location.reload()} className="bg-slate-500/20 p-3 rounded-xl"><Icon name="RefreshCw" size={16}/></button>}
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        <p className="text-xs font-bold opacity-50 uppercase">ราคากลาง (Market Prices)</p>
-                        <div className="grid grid-cols-2 gap-4">
-                            {priceConfig.map(item => (
-                                <div key={item.key} className="glass-panel p-3 rounded-2xl">
-                                     <div className="flex items-center gap-2 mb-2 opacity-70">
-                                         {item.icon}
-                                         <label className="text-[10px] font-bold uppercase truncate">{item.label}</label>
-                                     </div>
-                                    <input type="number" inputMode="decimal" value={localPrices[item.key] || ''} onChange={e => setLocalPrices({...localPrices, [item.key]: Number(e.target.value)})} className="w-full bg-transparent font-bold outline-none" placeholder="0" />
-                                </div>
-                            ))}
-                        </div>
-                        <button onClick={handleSavePrices} className="w-full py-3 bg-slate-800 text-white rounded-2xl text-xs font-bold">บันทึกราคา</button>
-                    </div>
-                    <div className="space-y-4 pt-4 border-t border-slate-500/20">
-                         <div className="flex gap-2">
-                            <input type="text" placeholder="วางรหัส Restore ที่นี่..." value={restoreCode} onChange={e => setRestoreCode(e.target.value)} className="flex-1 bg-black/10 rounded-2xl px-4 text-xs outline-none" />
-                            <button onClick={handleRestore} className="px-6 py-3 bg-purple-600 text-white rounded-2xl text-xs font-bold">Restore</button>
-                         </div>
-                         <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="w-full py-3 border border-slate-500/20 rounded-2xl text-xs font-bold flex items-center justify-center gap-2">
-                             {theme === 'dark' ? <Icon name="Sun" size={16}/> : <Icon name="Moon" size={16}/>} เปลี่ยนธีม
-                         </button>
-                    </div>
-                </div>
-            );
-        };
+        function findColumnKey(row, possibleNames) {
+            // ค้นหา key ใน object ที่ตรงกับชื่อคอลัมน์ที่เป็นไปได้ (แบบไม่สนใจช่องว่างและตัวพิมพ์เล็กใหญ่)
+            for (let key in row) {
+                // ตัดช่องว่างหน้า-หลัง และแปลงเป็นพิมพ์เล็กทั้งหมดสำหรับการเปรียบเทียบ
+                const normalizedKey = key.toString().trim().toLowerCase().replace(/\s+/g, '');
+                for (let name of possibleNames) {
+                    const normalizedName = name.toLowerCase().replace(/\s+/g, '');
+                    // ใช้ includes เพื่อให้ยืดหยุ่นขึ้น เผื่อมีคำอื่นต่อท้าย
+                    if (normalizedKey.includes(normalizedName)) {
+                        return key;
+                    }
+                }
+            }
+            return null;
+        }
 
-        const AddDataSheet = ({ onClose, targetUid, db, prices, editRecord, theme }) => {
-            const [form, setForm] = useState(editRecord ? {
-                ...editRecord,
-                otherCosts: editRecord.otherCosts || [] 
-            } : {
-                date: new Date().toISOString().split('T')[0],
-                runMode: 'ogh',
-                trashAmount: '',
-                gumUsed: 0,
-                useSilvervine: true,
-                purpleStoneCount: 0,
-                contMagicCount: 0,
-                isSellingSpell: false,
-                isSellingMagic: false,
-                minutesUsed: '60',
-                otherCosts: [],
-                notes: ''
+        function processData(rows) {
+            let excessOrders = [];
+            let totalAmount = 0;
+
+            if (rows.length === 0) {
+                alert("ไฟล์ Excel ไม่มีข้อมูล");
+                return;
+            }
+
+            // หา key ของคอลัมน์จากแถวแรกสุด (ชื่อหัวตารางที่ sheet_to_json ดึงมา)
+            const firstRow = rows[0];
+            const availableColumns = Object.keys(firstRow);
+            
+            // แสดงชื่อคอลัมน์ทั้งหมดที่มีในไฟล์ เพื่อใช้ในการตรวจสอบ (Debug)
+            console.log("==========================================");
+            console.log("รายชื่อคอลัมน์ทั้งหมดที่พบในไฟล์ Excel (แถวแรก):");
+            console.log(availableColumns.join(" | "));
+            console.log("==========================================");
+            
+            // กำหนดคำค้นหาที่เป็นไปได้สำหรับแต่ละคอลัมน์ (เพิ่มคำค้นหาให้ครอบคลุมมากขึ้น)
+            const orderIdPossibleNames = ['หมายเลขคำสั่งซื้อ', 'Order ID', 'หมายเลขคำสั่ง', 'รหัสคำสั่งซื้อ', 'หมายเลขสั่งซื้อ'];
+            const sellerPaidPossibleNames = ['ยอดรวมค่าจัดส่งที่ร้านค้าจ่ายจริง', 'Shipping fee paid by seller', 'ร้านค้าจ่ายจริง', 'ค่าจัดส่งที่ร้านค้าจ่าย', 'ค่าจัดส่งที่ผู้ขายรับภาระ', 'ค่าจัดส่ง', 'หักค่าขนส่ง', 'Seller shipping fee'];
+            const estWeightPossibleNames = ['น้ำหนักพัสดุโดยประมาณ', 'Estimated weight', 'น้ำหนักโดยประมาณ', 'น้ำหนักในระบบ', 'น้ำหนัก (kg)'];
+            const billedWeightPossibleNames = ['น้ำหนักที่เรียกเก็บเงิน', 'Billed weight', 'น้ำหนักที่ชั่งได้', 'น้ำหนักจริง', 'น้ำหนักที่คิดค่าส่ง'];
+
+            const orderIdKey = findColumnKey(firstRow, orderIdPossibleNames);
+            const sellerPaidKey = findColumnKey(firstRow, sellerPaidPossibleNames);
+            const estWeightKey = findColumnKey(firstRow, estWeightPossibleNames);
+            const billedWeightKey = findColumnKey(firstRow, billedWeightPossibleNames);
+
+            console.log("คอลัมน์ที่ตรวจพบสำหรับการทำงาน:");
+            console.log("- รหัสคำสั่งซื้อ (Order ID):", orderIdKey || "ไม่พบ");
+            console.log("- ค่าจัดส่งร้านค้า (Seller Paid):", sellerPaidKey || "ไม่พบ");
+            console.log("- น้ำหนักระบบ (Est Weight):", estWeightKey || "ไม่พบ (ใช้ 0 แทน)");
+            console.log("- น้ำหนักจริง (Billed Weight):", billedWeightKey || "ไม่พบ (ใช้ 0 แทน)");
+            
+            // ตรวจสอบว่าพบคอลัมน์ที่จำเป็นหรือไม่
+            let errorMessage = "";
+            if (!orderIdKey) errorMessage += "- ไม่พบคอลัมน์ 'หมายเลขคำสั่งซื้อ'\n";
+            if (!sellerPaidKey) errorMessage += "- ไม่พบคอลัมน์ 'ยอดรวมค่าจัดส่งที่ร้านค้าจ่ายจริง'\n";
+            
+            if (errorMessage !== "") {
+                 // นำข้อความแจ้งเตือนไปแสดงในตารางแทน alert เพื่อไม่ให้ขัดจังหวะผู้ใช้
+                displayError(`ไม่สามารถวิเคราะห์ข้อมูลได้ เนื่องจากขาดคอลัมน์สำคัญ:\n${errorMessage}\nกรุณากด F12 เพื่อดูรายชื่อคอลัมน์ทั้งหมดใน Console`);
+                return;
+            }
+
+            rows.forEach(row => {
+                // ถ้าไม่มีรหัสคำสั่งซื้อ ข้ามไป (อาจเป็นแถวว่าง)
+                if (!row[orderIdKey]) return;
+
+                // ดึงค่าตาม key ที่หาได้ ถ้าหาคอลัมน์ไม่เจอให้เป็น 0
+                // บางครั้งข้อมูลใน Excel อาจมาในรูปแบบข้อความที่มีคอมม่าหรือเว้นวรรค
+                let sellerPaidValue = row[sellerPaidKey];
+                let sellerPaid = extractNumber(sellerPaidValue);
+                
+                // ถ้ายอดเป็นค่าบวก หรือเป็น 0 แสดงว่าร้านค้าไม่ได้จ่าย หรือได้เงินคืน (ข้าม)
+                // เราต้องการเฉพาะยอดที่ร้านค้า "ถูกหัก" (ค่าติดลบ)
+                // *หมายเหตุ: บางรายงาน ยอดที่ถูกหักอาจแสดงเป็นค่าบวก ให้ปรับเงื่อนไขตรงนี้หากจำเป็น*
+                
+                // สมมติฐาน 1: ยอดถูกหักแสดงเป็นค่าติดลบ (เช่น -45.00)
+                let isExcess = sellerPaid < -0.01;
+                let actualPaid = Math.abs(sellerPaid);
+                
+                // สมมติฐาน 2: หากรายงานแสดงยอดหักเป็นค่าบวก ให้เปลี่ยนเงื่อนไข
+                // หากคุณพบว่ารายงานของคุณแสดงยอดที่ร้านค้าจ่ายเป็นค่า "บวก" เสมอ ให้เปิดใช้บรรทัดด้านล่างแทน
+                // isExcess = sellerPaid > 0.01;
+                // actualPaid = sellerPaid;
+
+                if (isExcess) {
+                    let orderId = String(row[orderIdKey]).trim();
+                    let estWeight = estWeightKey ? extractNumber(row[estWeightKey]) : 0;
+                    let billedWeight = billedWeightKey ? extractNumber(row[billedWeightKey]) : 0;
+                    
+                    let reason = "ถูกหักค่าจัดส่ง";
+                    let badgeClass = "bg-yellow-100 text-yellow-700 border border-yellow-200";
+
+                    // วิเคราะห์สาเหตุจากน้ำหนัก
+                    if (actualPaid <= 1) {
+                        reason = "เศษทศนิยมคลาดเคลื่อน";
+                        badgeClass = "bg-gray-100 text-gray-700 border border-gray-200";
+                    } else if (billedWeight > estWeight && estWeight > 0) {
+                        reason = `น้ำหนักจริง (${billedWeight}) เกินกว่าระบบ (${estWeight})`;
+                        badgeClass = "bg-orange-100 text-orange-700 border border-orange-200 font-semibold";
+                    } else if (billedWeight === 0 && estWeight === 0) {
+                        reason = "ไม่มีข้อมูลน้ำหนักเปรียบเทียบ";
+                        badgeClass = "bg-blue-100 text-blue-700 border border-blue-200";
+                    }
+
+                    excessOrders.push({
+                        orderId: orderId,
+                        sellerPaid: actualPaid,
+                        estWeight: estWeight,
+                        billedWeight: billedWeight,
+                        reason: reason,
+                        badgeClass: badgeClass
+                    });
+                    
+                    totalAmount += actualPaid;
+                }
             });
 
-            const save = async (e) => {
-                e.preventDefault();
-                if(!targetUid) { alert("ระบบกำลังเชื่อมต่อ กรุณารอสักครู่..."); return; }
-                
-                const { addDoc, collection, updateDoc, doc } = window.firebaseModules;
-                const finalData = {
-                    ...form,
-                    trashAmount: Number(form.trashAmount) || 0,
-                    minutesUsed: Number(form.minutesUsed) || 60,
-                    timestamp: Date.now(),
-                    profit: calculateProfit(form, prices)
-                };
-                if(editRecord) {
-                     await updateDoc(doc(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records', editRecord.id), finalData);
-                } else {
-                     await addDoc(collection(db, 'artifacts', 'ogh-tracker-v2', 'users', targetUid, 'records'), finalData);
-                }
-                onClose();
-            };
+            displayResults(excessOrders, totalAmount);
+        }
+        
+        function displayError(message) {
+             countOrders.innerText = "0";
+             totalAmountEl.innerText = "0.00";
+             
+             tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="p-8 text-center bg-red-50">
+                        <span class="text-4xl mb-3 block text-red-500">⚠️</span>
+                        <p class="text-lg font-bold text-red-700 mb-2">เกิดข้อผิดพลาดในการวิเคราะห์ไฟล์</p>
+                        <p class="text-md text-red-600 whitespace-pre-line">${message}</p>
+                    </td>
+                </tr>`;
+             
+             summaryDiv.classList.remove('hidden');
+             tableWrapper.classList.remove('hidden');
+        }
 
-            const addCost = () => setForm(p => ({...p, otherCosts: [...p.otherCosts, {id: Date.now(), name: '', amount: ''}]}));
-            const removeCost = (id) => setForm(p => ({...p, otherCosts: p.otherCosts.filter(c => c.id !== id)}));
-            const updateCost = (id, field, val) => setForm(p => ({...p, otherCosts: p.otherCosts.map(c => c.id === id ? {...c, [field]: val} : c)}));
+        function displayResults(orders, totalAmount) {
+            countOrders.innerText = orders.length.toLocaleString();
+            totalAmountEl.innerText = totalAmount.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            tbody.innerHTML = ''; // ล้างข้อมูลเก่า
+            
+            if (orders.length === 0) {
+                tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="p-8 text-center bg-gray-50">
+                        <span class="text-4xl mb-3 block">🎉</span>
+                        <p class="text-xl font-bold text-gray-700 mb-2">ยินดีด้วย! ไม่พบออเดอร์ที่ถูกหักค่าจัดส่งเกินในไฟล์นี้</p>
+                    </td>
+                </tr>`;
+            } else {
+                orders.forEach((order, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-red-50/50 transition-colors duration-150";
+                    
+                    const weightColor = order.billedWeight > order.estWeight ? 'text-orange-600 font-bold' : 'text-gray-700';
+                    
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 text-gray-500">${index + 1}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900">${order.orderId}</td>
+                        <td class="px-6 py-4 text-right text-red-600 font-bold">-${order.sellerPaid.toFixed(2)}</td>
+                        <td class="px-6 py-4 text-right text-gray-600">${order.estWeight} ก.</td>
+                        <td class="px-6 py-4 text-right ${weightColor}">${order.billedWeight} ก.</td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 text-xs rounded-full inline-block ${order.badgeClass}">
+                                ${order.reason}
+                            </span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
 
-            // Logic to check validity for button state
-            const isValid = form.trashAmount !== '' && targetUid;
-
-            return (
-                <div className="fixed inset-0 z-50 flex items-end justify-center">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className={`relative w-full max-w-md rounded-t-[2.5rem] p-6 pb-safe shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto ${theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-stone-900'}`}>
-                        <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
-                        <form onSubmit={save} className="space-y-6 pb-20"> {/* Added pb-20 for safety space */}
-                            <div className="flex justify-between items-center">
-                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
-                                    <button type="button" onClick={() => setForm(p => ({...p, runMode: 'ogh'}))} className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${form.runMode === 'ogh' ? 'bg-purple-600 text-white shadow' : 'text-slate-400'}`}>OGH</button>
-                                    <button type="button" onClick={() => setForm(p => ({...p, runMode: 'aogh'}))} className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${form.runMode === 'aogh' ? 'bg-rose-600 text-white shadow' : 'text-slate-400'}`}>AOGH</button>
-                                </div>
-                                <input type="date" value={form.date} onChange={e => setForm(p => ({...p, date: e.target.value}))} className="bg-transparent font-bold text-sm outline-none text-right" />
-                            </div>
-                            <div className="text-center py-4">
-                                <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mb-2">ยอดขายขยะ (Trash Sales)</p>
-                                <input type="number" inputMode="decimal" value={form.trashAmount} onChange={e => setForm(p => ({...p, trashAmount: e.target.value}))} placeholder="0" className={`w-full text-center text-6xl font-black bg-transparent outline-none placeholder-slate-700 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`} autoFocus />
-                            </div>
-                            <div className={`${form.runMode === 'aogh' ? 'grid grid-cols-2 gap-4' : ''}`}>
-                                <div className="glass-panel p-4 rounded-3xl space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="flex items-center gap-2 text-xs font-bold"><SVGs.Spell className="w-5 h-5"/> หินม่วง</span>
-                                        <button type="button" onClick={() => setForm(p => ({...p, isSellingSpell: !p.isSellingSpell}))} className={`px-2 py-0.5 rounded text-[9px] font-bold ${form.isSellingSpell ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>{form.isSellingSpell ? 'ขายเลย' : 'เก็บ'}</button>
-                                    </div>
-                                    <NumberStepper value={form.purpleStoneCount} onChange={val => setForm(p => ({...p, purpleStoneCount: val}))} theme={theme} />
-                                    {form.isSellingSpell && <input type="number" inputMode="decimal" placeholder={prices.purpleStonePrice} className="w-full bg-transparent text-center border-b border-slate-500/20 text-sm font-bold pb-1" onChange={(e) => setForm(p => ({...p, customSpellPrice: e.target.value}))} value={form.customSpellPrice} />}
-                                </div>
-                                {form.runMode === 'aogh' && (
-                                    <div className="glass-panel p-4 rounded-3xl space-y-3 animate-fade-in">
-                                        <div className="flex justify-between items-center">
-                                            <span className="flex items-center gap-2 text-xs font-bold"><SVGs.Magic className="w-5 h-5"/> หินแดง</span>
-                                            <button type="button" onClick={() => setForm(p => ({...p, isSellingMagic: !p.isSellingMagic}))} className={`px-2 py-0.5 rounded text-[9px] font-bold ${form.isSellingMagic ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>{form.isSellingMagic ? 'ขายเลย' : 'เก็บ'}</button>
-                                        </div>
-                                        <NumberStepper value={form.contMagicCount} onChange={val => setForm(p => ({...p, contMagicCount: val}))} theme={theme} />
-                                        {form.isSellingMagic && <input type="number" inputMode="decimal" placeholder={prices.contMagicPrice} className="w-full bg-transparent text-center border-b border-slate-500/20 text-sm font-bold pb-1" onChange={(e) => setForm(p => ({...p, customMagicPrice: e.target.value}))} value={form.customMagicPrice} />}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex gap-3 overflow-x-auto no-scrollbar">
-                                <div className="glass-panel px-4 py-2 rounded-2xl flex items-center gap-3 min-w-fit">
-                                    <span className="text-[10px] font-bold opacity-50">GUM</span>
-                                    <div className="flex gap-1">
-                                        {[0,1,2].map(n => <button key={n} type="button" onClick={() => setForm(p => ({...p, gumUsed: n}))} className={`w-6 h-6 rounded-full text-xs font-black transition-all ${form.gumUsed === n ? 'bg-blue-500 text-white' : 'bg-slate-200 dark:bg-slate-700'}`}>{n}</button>)}
-                                    </div>
-                                </div>
-                                <button type="button" onClick={() => setForm(p => ({...p, useSilvervine: !p.useSilvervine}))} className={`glass-panel px-4 py-2 rounded-2xl flex items-center gap-2 min-w-fit transition-all ${!form.useSilvervine && 'opacity-50 grayscale'}`}>
-                                    <SVGs.Silvervine className="w-4 h-4" />
-                                    <span className="text-[10px] font-bold uppercase">Silvervine</span>
-                                </button>
-                                <div className="glass-panel px-4 py-2 rounded-2xl flex items-center gap-2 min-w-fit">
-                                    <input type="number" inputMode="numeric" value={form.minutesUsed} onChange={e => { let v = parseInt(e.target.value); if(v > 60) v=60; setForm(p => ({...p, minutesUsed: v})) }} className="w-8 bg-transparent font-black text-center outline-none" />
-                                    <span className="text-[10px] font-bold opacity-50">Min</span>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-[10px] font-bold opacity-50 uppercase">Other Costs</span>
-                                    <button type="button" onClick={addCost} className="text-xs text-purple-500 font-bold flex items-center gap-1"><Icon name="Plus" size={14}/> เพิ่ม</button>
-                                </div>
-                                <div className="space-y-2">
-                                    {form.otherCosts.map(c => (
-                                        <div key={c.id} className="flex gap-2">
-                                            <input type="text" placeholder="รายการ..." value={c.name} onChange={e => updateCost(c.id, 'name', e.target.value)} className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-xl px-3 h-10 text-xs font-bold outline-none" />
-                                            <input type="number" inputMode="numeric" placeholder="0" value={c.amount} onChange={e => updateCost(c.id, 'amount', e.target.value)} className="w-20 bg-slate-100 dark:bg-slate-800 rounded-xl px-3 h-10 text-xs font-bold outline-none text-right" />
-                                            <button type="button" onClick={() => removeCost(c.id)} className="p-2 text-rose-500"><Icon name="Trash" size={16}/></button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <textarea placeholder="Note..." value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} className="w-full h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl p-4 text-xs font-bold outline-none resize-none"></textarea>
-                            
-                            {/* Save Button with disabled state if no UID */}
-                            <button type="submit" disabled={!isValid} className={`w-full h-14 rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all ${isValid ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/20' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}>
-                                {targetUid ? "บันทึกข้อมูล" : "กำลังเชื่อมต่อ..."}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            );
-        };
-
-        const container = document.getElementById('root');
-        const root = ReactDOM.createRoot(container);
-        root.render(<App />);
+            summaryDiv.classList.remove('hidden');
+            tableWrapper.classList.remove('hidden');
+            summaryDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     </script>
 </body>
 </html>
