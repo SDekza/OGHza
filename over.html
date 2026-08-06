@@ -5,342 +5,509 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>โปรแกรมตรวจสอบค่าส่งเกิน (TikTok Shop)</title>
     
-    <!-- นำเข้าฟอนต์สำหรับภาษาไทยและอังกฤษ -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Load Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- นำเข้า Tailwind CSS สำหรับจัดการความสวยงาม -->
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- นำเข้า SheetJS สำหรับอ่านไฟล์ Excel ออฟไลน์ -->
+    <!-- Load SheetJS (XLSX) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
+    
+    <!-- Configure Tailwind to use loaded fonts -->
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'Sarabun', 'sans-serif'],
-                    }
-                }
-            }
+        tailwind.config = { 
+            theme: { 
+                extend: { 
+                    fontFamily: { sans: ['Inter', 'Sarabun', 'sans-serif'], } 
+                } 
+            } 
         }
     </script>
+    
     <style>
-        body { background-color: #f3f4f6; }
+        body { background-color: #f8fafc; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
-        .dragover { background-color: #dbeafe !important; border-color: #3b82f6 !important; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dragover { background-color: #f0fdf4 !important; border-color: #22c55e !important; }
+        .sort-icon { display: inline-block; width: 12px; height: 12px; margin-left: 4px; opacity: 0.4; transition: opacity 0.2s; }
+        .sort-active { opacity: 1; color: #10b981; }
+        th.cursor-pointer:hover .sort-icon { opacity: 0.8; }
     </style>
 </head>
-<body class="p-4 md:p-8 text-gray-800">
+<body class="p-4 md:p-8 text-slate-800 flex flex-col min-h-screen">
 
-    <div class="max-w-5xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-lg border border-gray-100">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8 flex items-center justify-center gap-3">
-            <span class="text-4xl">📦</span> ตรวจสอบออเดอร์ค่าส่งเกิน
-        </h1>
+    <div class="max-w-6xl mx-auto w-full bg-white p-6 md:p-10 rounded-2xl shadow-xl border border-slate-100 flex-grow">
         
-        <!-- พื้นที่สำหรับอัปโหลด/ลากไฟล์วาง -->
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-2 flex items-center justify-center gap-3">
+            <span class="text-4xl">📄</span> รายการออเดอร์ (ระบบตรวจสอบค่าส่งเกิน)
+        </h1>
+        <p class="text-center text-slate-500 mb-8">วิเคราะห์ส่วนต่างค่าขนส่ง รองรับการลากไฟล์รวมกันหลายไฟล์</p>
+        
+        <!-- Drop Zone -->
         <div id="drop_zone" onclick="document.getElementById('file_input').click()" 
-             class="border-2 border-dashed border-blue-400 bg-blue-50 hover:bg-blue-100 transition-colors duration-300 p-12 text-center rounded-xl cursor-pointer flex flex-col items-center justify-center gap-4 group">
-            
-            <svg class="w-16 h-16 text-blue-500 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+             class="border-2 border-dashed border-emerald-400 bg-emerald-50 hover:bg-emerald-100 transition-colors duration-300 p-8 text-center rounded-2xl cursor-pointer flex flex-col items-center justify-center gap-3 group relative overflow-hidden">
+            <svg class="w-14 h-14 text-emerald-500 group-hover:-translate-y-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
             <div>
-                <p class="text-xl font-semibold text-blue-700 mb-1">ลากไฟล์ Excel รายงานรายได้ มาวางที่นี่</p>
-                <span class="text-sm text-blue-500">หรือ คลิกเพื่อเลือกไฟล์จากคอมพิวเตอร์ (.xlsx, .xls)</span>
+                <p class="text-xl font-semibold text-emerald-700 mb-1" id="drop_status">ลากไฟล์ Excel มาวางที่นี่ (ลากเพิ่มได้เรื่อยๆ)</p>
+                <p class="text-sm text-emerald-600 mb-1">รองรับไฟล์ <span class="font-mono bg-emerald-200 px-1 py-0.5 rounded text-emerald-900">.xlsx, .xls</span></p>
+                <span class="text-xs text-emerald-500">ข้อมูลออเดอร์ซ้ำจะถูกอัปเดตเป็นข้อมูลจากไฟล์ล่าสุดอัตโนมัติ</span>
             </div>
-            <input type="file" id="file_input" accept=".xlsx, .xls" class="hidden">
+            <input type="file" id="file_input" accept=".xlsx, .xls" class="hidden" multiple>
         </div>
 
-        <!-- ส่วนแสดงผลรวม (ซ่อนไว้เริ่มต้น) -->
-        <div id="summary" class="hidden mt-8 p-6 bg-red-50 border-l-4 border-red-500 rounded-r-xl shadow-sm">
-            <h3 class="text-xl font-bold text-red-700 mb-4 flex items-center gap-2">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                สรุปผลการตรวจสอบพบปัญหา
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-red-100">
-                    <p class="text-gray-600 text-sm mb-1">จำนวนออเดอร์ที่ถูกหักค่าส่ง</p>
-                    <p class="text-2xl font-bold text-red-600"><span id="count_orders">0</span> <span class="text-base font-normal">รายการ</span></p>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-red-100">
-                    <p class="text-gray-600 text-sm mb-1">ยอดรวมที่ร้านค้าจ่ายส่วนต่างไปทั้งหมด</p>
-                    <p class="text-2xl font-bold text-red-600"><span id="total_amount">0.00</span> <span class="text-base font-normal">บาท</span></p>
-                </div>
+        <div id="error_message" class="hidden mt-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-3">
+            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+                <strong class="block font-bold">เกิดข้อผิดพลาด</strong>
+                <span id="error_text" class="text-sm"></span>
             </div>
         </div>
 
-        <!-- ตารางแสดงรายละเอียด (ซ่อนไว้เริ่มต้น) -->
-        <div id="table_wrapper" class="hidden mt-8 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <div class="max-h-[500px] overflow-y-auto relative">
+        <div id="results_container" class="hidden mt-8">
+            
+            <!-- Tools Bar -->
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div class="flex flex-col sm:flex-row items-center gap-4 text-slate-700 font-medium">
+                    <div class="text-lg">
+                        ออเดอร์รวม: <span id="total_orders" class="text-emerald-600 font-bold text-2xl">0</span>
+                    </div>
+                    <div class="hidden sm:block w-px h-8 bg-slate-300"></div>
+                    <div class="text-lg flex items-center gap-2">
+                        <span>ยอดโดนหักรวม:</span>
+                        <span class="text-red-600 font-bold text-2xl bg-red-100 px-3 py-0.5 rounded-lg border border-red-200">
+                            <span id="total_excess_amount">0.00</span> ฿
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Clear Data Button -->
+                    <button onclick="clearData()" class="flex items-center gap-1 px-4 py-2 bg-white border border-rose-200 text-rose-600 rounded-xl hover:bg-rose-50 transition-colors shadow-sm font-medium text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        ล้างข้อมูล
+                    </button>
+
+                    <!-- Filter Toggle (Default Checked) -->
+                    <label class="flex items-center cursor-pointer bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 transition duration-200 shadow-sm">
+                        <div class="relative">
+                            <input type="checkbox" id="filter_excess" class="sr-only peer" onchange="processAndRender()" checked>
+                            <div class="block bg-slate-300 w-10 h-6 rounded-full peer-checked:bg-red-500 transition-colors duration-300"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full peer-checked:translate-x-4 transition transform duration-300 shadow-sm"></div>
+                        </div>
+                        <span class="ml-3 text-slate-700 font-medium text-sm">แสดงเฉพาะ <span class="text-red-500 font-bold">"ค่าส่งเกิน"</span></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
                 <table class="w-full text-left border-collapse text-sm whitespace-nowrap">
-                    <thead class="bg-gray-800 text-white sticky top-0 z-10">
+                    <thead class="bg-slate-800 text-white select-none">
                         <tr>
-                            <th class="px-6 py-4 font-semibold">ลำดับ</th>
-                            <th class="px-6 py-4 font-semibold">หมายเลขคำสั่งซื้อ</th>
-                            <th class="px-6 py-4 font-semibold text-right">ร้านค้าจ่ายจริง (บาท)</th>
-                            <th class="px-6 py-4 font-semibold text-right">น้ำหนักในระบบ</th>
-                            <th class="px-6 py-4 font-semibold text-right">ขนส่งชั่งได้จริง</th>
-                            <th class="px-6 py-4 font-semibold">สาเหตุที่ตรวจสอบพบ</th>
+                            <th class="px-4 py-4 font-semibold w-16 text-center">ลำดับ</th>
+                            
+                            <!-- Sortable Date Header -->
+                            <th class="px-4 py-4 font-semibold cursor-pointer hover:bg-slate-700 transition-colors group" onclick="toggleSort('timestamp')">
+                                <div class="flex items-center">
+                                    วันที่ชำระเงิน 
+                                    <svg id="sort_icon_timestamp" class="sort-icon group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
+                                </div>
+                            </th>
+                            
+                            <th class="px-4 py-4 font-semibold">หมายเลขคำสั่งซื้อ (Order ID)</th>
+                            <th class="px-4 py-4 font-semibold text-right">ร้านค้าจ่าย (บาท)</th>
+                            <th class="px-4 py-4 font-semibold text-right">น้ำหนักระบบ</th>
+                            <th class="px-4 py-4 font-semibold text-right">ขนส่งชั่งได้</th>
+                            
+                            <!-- Sortable Reason Header -->
+                            <th class="px-4 py-4 font-semibold cursor-pointer hover:bg-slate-700 transition-colors group text-center" onclick="toggleSort('reason')">
+                                <div class="flex items-center justify-center">
+                                    สาเหตุ 
+                                    <svg id="sort_icon_reason" class="sort-icon group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
+                                </div>
+                            </th>
                         </tr>
                     </thead>
-                    <tbody id="table_body" class="bg-white divide-y divide-gray-200">
-                        <!-- ข้อมูลจะถูกเติมด้วย JavaScript -->
+                    <tbody id="table_body" class="bg-white divide-y divide-slate-200">
+                        <!-- Rows will be generated here -->
                     </tbody>
                 </table>
+            </div>
+
+            <div class="mt-4 flex flex-col sm:flex-row items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 gap-4">
+                <div class="text-sm text-slate-600">
+                    แสดง <span id="page_start" class="font-bold text-slate-900">0</span> ถึง <span id="page_end" class="font-bold text-slate-900">0</span> 
+                    (จากรายการที่แสดงผล <span id="filtered_count" class="font-bold text-slate-900">0</span> รายการ)
+                </div>
+                <div class="flex gap-2">
+                    <button id="btn_prev" onclick="changePage(-1)" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        ก่อนหน้า
+                    </button>
+                    <div class="flex items-center px-3 font-semibold text-slate-700">
+                        หน้า <span id="current_page_text" class="mx-1 text-emerald-600">1</span> จาก <span id="total_pages_text" class="mx-1">1</span>
+                    </div>
+                    <button id="btn_next" onclick="changePage(1)" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-sm flex items-center gap-1">
+                        ถัดไป
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // DOM Elements
         const dropZone = document.getElementById('drop_zone');
         const fileInput = document.getElementById('file_input');
-        const summaryDiv = document.getElementById('summary');
-        const tableWrapper = document.getElementById('table_wrapper');
-        const countOrders = document.getElementById('count_orders');
-        const totalAmountEl = document.getElementById('total_amount');
-        const tbody = document.getElementById('table_body');
+        const dropStatus = document.getElementById('drop_status');
+        const errorMessage = document.getElementById('error_message');
+        const errorText = document.getElementById('error_text');
+        
+        const resultsContainer = document.getElementById('results_container');
+        const totalOrdersEl = document.getElementById('total_orders');
+        const totalExcessAmountEl = document.getElementById('total_excess_amount');
+        const tableBody = document.getElementById('table_body');
+        
+        // Pagination Elements
+        const btnPrev = document.getElementById('btn_prev');
+        const btnNext = document.getElementById('btn_next');
+        const pageStartEl = document.getElementById('page_start');
+        const pageEndEl = document.getElementById('page_end');
+        const filteredCountEl = document.getElementById('filtered_count');
+        const currentPageText = document.getElementById('current_page_text');
+        const totalPagesText = document.getElementById('total_pages_text');
 
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+        const filterExcess = document.getElementById('filter_excess');
+
+        // State Variables
+        // ใช้ Map เพื่อป้องกันออเดอร์ซ้ำ (Deduplication) 
+        // ถ้าอัปโหลดไฟล์ใหม่มา แล้วมีรหัสเดิม มันจะเอาข้อมูลบรรทัดล่าสุดมาทับบรรทัดเก่าอัตโนมัติ
+        let orderMap = new Map(); 
+        let displayData = []; 
+        let currentPage = 1;
+        const itemsPerPage = 50;
         
-        dropZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-        });
-        
+        // Sorting State
+        let currentSort = { key: null, direction: 1 }; // 1 = ASC, -1 = DESC
+
+        // Event Listeners for Drag and Drop
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
         dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
+            e.preventDefault(); dropZone.classList.remove('dragover');
             if (e.dataTransfer.files.length) {
-                handleFile(e.dataTransfer.files[0]);
+                Array.from(e.dataTransfer.files).forEach(file => handleFile(file));
             }
         });
-        
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length) {
-                handleFile(e.target.files[0]);
+                Array.from(e.target.files).forEach(file => handleFile(file));
             }
+            fileInput.value = ''; // Reset
         });
 
+        // Clear Data Function
+        function clearData() {
+            orderMap.clear();
+            displayData = [];
+            currentPage = 1;
+            hideError();
+            resultsContainer.classList.add('hidden');
+            dropStatus.innerText = "ลากไฟล์ Excel มาวางที่นี่ (ลากเพิ่มได้เรื่อยๆ)";
+            totalOrdersEl.innerText = "0";
+            totalExcessAmountEl.innerText = "0.00";
+        }
+
+        // File Processing
         function handleFile(file) {
-            dropZone.querySelector('p').innerText = "กำลังประมวลผลไฟล์...";
-            
+            hideError();
+            dropStatus.innerText = "กำลังประมวลผลไฟล์... " + file.name;
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, {type: 'array'});
-                    
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     
-                    // อ่านข้อมูลเป็น Array ของ Objects จะได้อ้างอิงจากหัวคอลัมน์ได้ง่ายขึ้น
-                    const rawData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                    // สแกนและซ่อมแซมขอบเขตตาราง (!ref) ก่อนอ่านเสมอ
+                    let max_r = 0, max_c = 0;
+                    for (let key in worksheet) {
+                        if (key[0] === '!') continue;
+                        let cellRef = XLSX.utils.decode_cell(key);
+                        if (cellRef.r > max_r) max_r = cellRef.r;
+                        if (cellRef.c > max_c) max_c = cellRef.c;
+                    }
+                    worksheet['!ref'] = XLSX.utils.encode_range({s: {c: 0, r: 0}, e: {c: max_c, r: max_r}});
+
+                    // อ่านข้อมูลเป็น Array 2 มิติ
+                    const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "", raw: false });
                     
-                    // ส่งข้อมูลไปประมวลผล
-                    processData(rawData);
+                    if (rawData.length === 0) {
+                        showError("ไฟล์ว่างเปล่า"); return;
+                    }
                     
-                    dropZone.querySelector('p').innerText = "โหลดข้อมูลเสร็จสิ้น ลากไฟล์ใหม่วางที่นี่ได้เลย";
+                    extractDataFromSheet(rawData);
+                    dropStatus.innerText = "โหลดเสร็จสิ้น ลากไฟล์อื่นมาเพิ่มข้อมูลได้อีก";
+                    
                 } catch (error) {
                     console.error(error);
-                    dropZone.querySelector('p').innerText = "ลากไฟล์ Excel รายงานรายได้ มาวางที่นี่";
+                    showError("เกิดข้อผิดพลาดในการอ่านไฟล์ โปรดตรวจสอบว่าเป็นไฟล์ Excel ที่ถูกต้อง");
+                    dropStatus.innerText = "ลากไฟล์ Excel มาวางที่นี่";
                 }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        function extractNumber(val) {
-            if (val == null || val === '') return 0;
-            if (typeof val === 'number') return val;
-            const str = String(val).replace(/,/g, '');
-            const match = str.match(/-?\d+(\.\d+)?/);
-            return match ? parseFloat(match[0]) : 0;
-        }
+        function extractDataFromSheet(rawData) {
+            let headerRowIndex = -1;
+            let colOrder = -1, colSellerPaid = -1, colEstWeight = -1, colBilledWeight = -1, colDate = -1;
 
-        function findColumnKey(row, possibleNames) {
-            // ค้นหา key ใน object ที่ตรงกับชื่อคอลัมน์ที่เป็นไปได้ (แบบไม่สนใจช่องว่างและตัวพิมพ์เล็กใหญ่)
-            for (let key in row) {
-                // ตัดช่องว่างหน้า-หลัง และแปลงเป็นพิมพ์เล็กทั้งหมดสำหรับการเปรียบเทียบ
-                const normalizedKey = key.toString().trim().toLowerCase().replace(/\s+/g, '');
-                for (let name of possibleNames) {
-                    const normalizedName = name.toLowerCase().replace(/\s+/g, '');
-                    // ใช้ includes เพื่อให้ยืดหยุ่นขึ้น เผื่อมีคำอื่นต่อท้าย
-                    if (normalizedKey.includes(normalizedName)) {
-                        return key;
-                    }
+            // ค้นหาตำแหน่งหัวคอลัมน์
+            for (let r = 0; r < Math.min(20, rawData.length); r++) {
+                const row = rawData[r];
+                for (let c = 0; c < row.length; c++) {
+                    const val = String(row[c]).replace(/\s+/g, '').toLowerCase();
+                    if (val.includes('หมายเลขคำสั่งซื้อ') || val.includes('orderid') || val.includes('รหัสคำสั่งซื้อ')) colOrder = c;
+                    if (val.includes('ยอดรวมค่าจัดส่งที่ร้านค้าจ่ายจริง') || val.includes('ร้านค้าจ่ายจริง') || val.includes('ผู้ขายรับภาระ')) colSellerPaid = c;
+                    if (val.includes('น้ำหนักพัสดุโดยประมาณ') || val.includes('estweight') || val.includes('น้ำหนักในระบบ')) colEstWeight = c;
+                    if (val.includes('น้ำหนักที่เรียกเก็บเงิน') || val.includes('billedweight') || val.includes('น้ำหนักจริง')) colBilledWeight = c;
+                    if (val.includes('เวลาที่ชำระ') || val.includes('วันที่ชำระ') || val.includes('paytime')) colDate = c;
+                }
+                if (colOrder !== -1) {
+                    headerRowIndex = r;
+                    break;
                 }
             }
-            return null;
-        }
 
-        function processData(rows) {
-            let excessOrders = [];
-            let totalAmount = 0;
-
-            if (rows.length === 0) {
-                alert("ไฟล์ Excel ไม่มีข้อมูล");
+            if (headerRowIndex === -1 || colOrder === -1) {
+                showError("ไม่พบคอลัมน์ 'หมายเลขคำสั่งซื้อ' ในไฟล์นี้ (อาจไม่ใช่ไฟล์รายงานที่ถูกต้อง)");
                 return;
             }
 
-            // หา key ของคอลัมน์จากแถวแรกสุด (ชื่อหัวตารางที่ sheet_to_json ดึงมา)
-            const firstRow = rows[0];
-            const availableColumns = Object.keys(firstRow);
-            
-            // แสดงชื่อคอลัมน์ทั้งหมดที่มีในไฟล์ เพื่อใช้ในการตรวจสอบ (Debug)
-            console.log("==========================================");
-            console.log("รายชื่อคอลัมน์ทั้งหมดที่พบในไฟล์ Excel (แถวแรก):");
-            console.log(availableColumns.join(" | "));
-            console.log("==========================================");
-            
-            // กำหนดคำค้นหาที่เป็นไปได้สำหรับแต่ละคอลัมน์ (เพิ่มคำค้นหาให้ครอบคลุมมากขึ้น)
-            const orderIdPossibleNames = ['หมายเลขคำสั่งซื้อ', 'Order ID', 'หมายเลขคำสั่ง', 'รหัสคำสั่งซื้อ', 'หมายเลขสั่งซื้อ'];
-            const sellerPaidPossibleNames = ['ยอดรวมค่าจัดส่งที่ร้านค้าจ่ายจริง', 'Shipping fee paid by seller', 'ร้านค้าจ่ายจริง', 'ค่าจัดส่งที่ร้านค้าจ่าย', 'ค่าจัดส่งที่ผู้ขายรับภาระ', 'ค่าจัดส่ง', 'หักค่าขนส่ง', 'Seller shipping fee'];
-            const estWeightPossibleNames = ['น้ำหนักพัสดุโดยประมาณ', 'Estimated weight', 'น้ำหนักโดยประมาณ', 'น้ำหนักในระบบ', 'น้ำหนัก (kg)'];
-            const billedWeightPossibleNames = ['น้ำหนักที่เรียกเก็บเงิน', 'Billed weight', 'น้ำหนักที่ชั่งได้', 'น้ำหนักจริง', 'น้ำหนักที่คิดค่าส่ง'];
-
-            const orderIdKey = findColumnKey(firstRow, orderIdPossibleNames);
-            const sellerPaidKey = findColumnKey(firstRow, sellerPaidPossibleNames);
-            const estWeightKey = findColumnKey(firstRow, estWeightPossibleNames);
-            const billedWeightKey = findColumnKey(firstRow, billedWeightPossibleNames);
-
-            console.log("คอลัมน์ที่ตรวจพบสำหรับการทำงาน:");
-            console.log("- รหัสคำสั่งซื้อ (Order ID):", orderIdKey || "ไม่พบ");
-            console.log("- ค่าจัดส่งร้านค้า (Seller Paid):", sellerPaidKey || "ไม่พบ");
-            console.log("- น้ำหนักระบบ (Est Weight):", estWeightKey || "ไม่พบ (ใช้ 0 แทน)");
-            console.log("- น้ำหนักจริง (Billed Weight):", billedWeightKey || "ไม่พบ (ใช้ 0 แทน)");
-            
-            // ตรวจสอบว่าพบคอลัมน์ที่จำเป็นหรือไม่
-            let errorMessage = "";
-            if (!orderIdKey) errorMessage += "- ไม่พบคอลัมน์ 'หมายเลขคำสั่งซื้อ'\n";
-            if (!sellerPaidKey) errorMessage += "- ไม่พบคอลัมน์ 'ยอดรวมค่าจัดส่งที่ร้านค้าจ่ายจริง'\n";
-            
-            if (errorMessage !== "") {
-                 // นำข้อความแจ้งเตือนไปแสดงในตารางแทน alert เพื่อไม่ให้ขัดจังหวะผู้ใช้
-                displayError(`ไม่สามารถวิเคราะห์ข้อมูลได้ เนื่องจากขาดคอลัมน์สำคัญ:\n${errorMessage}\nกรุณากด F12 เพื่อดูรายชื่อคอลัมน์ทั้งหมดใน Console`);
-                return;
-            }
-
-            rows.forEach(row => {
-                // ถ้าไม่มีรหัสคำสั่งซื้อ ข้ามไป (อาจเป็นแถวว่าง)
-                if (!row[orderIdKey]) return;
-
-                // ดึงค่าตาม key ที่หาได้ ถ้าหาคอลัมน์ไม่เจอให้เป็น 0
-                // บางครั้งข้อมูลใน Excel อาจมาในรูปแบบข้อความที่มีคอมม่าหรือเว้นวรรค
-                let sellerPaidValue = row[sellerPaidKey];
-                let sellerPaid = extractNumber(sellerPaidValue);
+            // ดึงข้อมูลและ Merge ลง Map
+            for (let i = headerRowIndex + 1; i < rawData.length; i++) {
+                const row = rawData[i];
+                if (!row || row[colOrder] === undefined || row[colOrder] === null) continue;
                 
-                // ถ้ายอดเป็นค่าบวก หรือเป็น 0 แสดงว่าร้านค้าไม่ได้จ่าย หรือได้เงินคืน (ข้าม)
-                // เราต้องการเฉพาะยอดที่ร้านค้า "ถูกหัก" (ค่าติดลบ)
-                // *หมายเหตุ: บางรายงาน ยอดที่ถูกหักอาจแสดงเป็นค่าบวก ให้ปรับเงื่อนไขตรงนี้หากจำเป็น*
+                let idStr = String(row[colOrder]).trim();
+                if (idStr === '') continue;
+
+                // สกัดข้อมูลอื่นๆ
+                let dateStr = colDate !== -1 ? String(row[colDate]).trim() : "-";
+                let sellerPaidRaw = colSellerPaid !== -1 ? row[colSellerPaid] : 0;
+                let estWeightRaw = colEstWeight !== -1 ? row[colEstWeight] : 0;
+                let billedWeightRaw = colBilledWeight !== -1 ? row[colBilledWeight] : 0;
+
+                // แปลงค่า
+                let sellerPaid = parseFloat(String(sellerPaidRaw).replace(/,/g, '')) || 0;
+                let estWeight = parseFloat(String(estWeightRaw).replace(/,/g, '')) || 0;
+                let billedWeight = parseFloat(String(billedWeightRaw).replace(/,/g, '')) || 0;
                 
-                // สมมติฐาน 1: ยอดถูกหักแสดงเป็นค่าติดลบ (เช่น -45.00)
+                // คำนวณ Timestamp สำหรับ Sort วันที่
+                let timestamp = 0;
+                if(dateStr !== "-" && dateStr !== "") {
+                    let d = new Date(dateStr);
+                    if(!isNaN(d)) timestamp = d.getTime();
+                }
+
+                // วิเคราะห์สาเหตุ
                 let isExcess = sellerPaid < -0.01;
-                let actualPaid = Math.abs(sellerPaid);
-                
-                // สมมติฐาน 2: หากรายงานแสดงยอดหักเป็นค่าบวก ให้เปลี่ยนเงื่อนไข
-                // หากคุณพบว่ารายงานของคุณแสดงยอดที่ร้านค้าจ่ายเป็นค่า "บวก" เสมอ ให้เปิดใช้บรรทัดด้านล่างแทน
-                // isExcess = sellerPaid > 0.01;
-                // actualPaid = sellerPaid;
+                let reason = "-";
+                let badgeClass = "bg-slate-100 text-slate-500 border border-slate-200";
 
                 if (isExcess) {
-                    let orderId = String(row[orderIdKey]).trim();
-                    let estWeight = estWeightKey ? extractNumber(row[estWeightKey]) : 0;
-                    let billedWeight = billedWeightKey ? extractNumber(row[billedWeightKey]) : 0;
-                    
-                    let reason = "ถูกหักค่าจัดส่ง";
-                    let badgeClass = "bg-yellow-100 text-yellow-700 border border-yellow-200";
-
-                    // วิเคราะห์สาเหตุจากน้ำหนัก
-                    if (actualPaid <= 1) {
+                    if (sellerPaid >= -0.99) {
                         reason = "เศษทศนิยมคลาดเคลื่อน";
-                        badgeClass = "bg-gray-100 text-gray-700 border border-gray-200";
+                        badgeClass = "bg-slate-100 text-slate-700 border border-slate-300";
                     } else if (billedWeight > estWeight && estWeight > 0) {
-                        reason = `น้ำหนักจริง (${billedWeight}) เกินกว่าระบบ (${estWeight})`;
+                        reason = "น้ำหนักจริงเกินกว่าระบบ";
                         badgeClass = "bg-orange-100 text-orange-700 border border-orange-200 font-semibold";
-                    } else if (billedWeight === 0 && estWeight === 0) {
-                        reason = "ไม่มีข้อมูลน้ำหนักเปรียบเทียบ";
-                        badgeClass = "bg-blue-100 text-blue-700 border border-blue-200";
+                    } else {
+                        reason = "โดนหักค่าส่ง (ตรวจสอบโปรโมชั่น)";
+                        badgeClass = "bg-red-100 text-red-700 border border-red-200 font-semibold";
                     }
-
-                    excessOrders.push({
-                        orderId: orderId,
-                        sellerPaid: actualPaid,
-                        estWeight: estWeight,
-                        billedWeight: billedWeight,
-                        reason: reason,
-                        badgeClass: badgeClass
-                    });
-                    
-                    totalAmount += actualPaid;
                 }
-            });
 
-            displayResults(excessOrders, totalAmount);
-        }
-        
-        function displayError(message) {
-             countOrders.innerText = "0";
-             totalAmountEl.innerText = "0.00";
-             
-             tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="p-8 text-center bg-red-50">
-                        <span class="text-4xl mb-3 block text-red-500">⚠️</span>
-                        <p class="text-lg font-bold text-red-700 mb-2">เกิดข้อผิดพลาดในการวิเคราะห์ไฟล์</p>
-                        <p class="text-md text-red-600 whitespace-pre-line">${message}</p>
-                    </td>
-                </tr>`;
-             
-             summaryDiv.classList.remove('hidden');
-             tableWrapper.classList.remove('hidden');
-        }
-
-        function displayResults(orders, totalAmount) {
-            countOrders.innerText = orders.length.toLocaleString();
-            totalAmountEl.innerText = totalAmount.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            
-            tbody.innerHTML = ''; // ล้างข้อมูลเก่า
-            
-            if (orders.length === 0) {
-                tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="p-8 text-center bg-gray-50">
-                        <span class="text-4xl mb-3 block">🎉</span>
-                        <p class="text-xl font-bold text-gray-700 mb-2">ยินดีด้วย! ไม่พบออเดอร์ที่ถูกหักค่าจัดส่งเกินในไฟล์นี้</p>
-                    </td>
-                </tr>`;
-            } else {
-                orders.forEach((order, index) => {
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-red-50/50 transition-colors duration-150";
-                    
-                    const weightColor = order.billedWeight > order.estWeight ? 'text-orange-600 font-bold' : 'text-gray-700';
-                    
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 text-gray-500">${index + 1}</td>
-                        <td class="px-6 py-4 font-medium text-gray-900">${order.orderId}</td>
-                        <td class="px-6 py-4 text-right text-red-600 font-bold">-${order.sellerPaid.toFixed(2)}</td>
-                        <td class="px-6 py-4 text-right text-gray-600">${order.estWeight} ก.</td>
-                        <td class="px-6 py-4 text-right ${weightColor}">${order.billedWeight} ก.</td>
-                        <td class="px-6 py-4">
-                            <span class="px-3 py-1 text-xs rounded-full inline-block ${order.badgeClass}">
-                                ${order.reason}
-                            </span>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
+                // สร้าง Object และนำไปใส่ใน Map (รหัสซ้ำ จะถูกแทนที่ด้วยข้อมูลล่าสุดทันที)
+                orderMap.set(idStr, {
+                    orderId: idStr,
+                    dateStr: dateStr,
+                    timestamp: timestamp,
+                    sellerPaid: Math.abs(sellerPaid), // แสดงเป็นค่าบวก
+                    isNegative: sellerPaid < -0.01,
+                    estWeight: estWeight,
+                    billedWeight: billedWeight,
+                    isExcess: isExcess,
+                    reason: reason,
+                    badgeClass: badgeClass
                 });
             }
 
-            summaryDiv.classList.remove('hidden');
-            tableWrapper.classList.remove('hidden');
-            summaryDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            processAndRender(); // กรอง จัดเรียง และแสดงผล
+        }
+
+        function toggleSort(key) {
+            // สลับทิศทางถ้ากดคอลัมน์เดิม, หรือเปลี่ยนไปเรียงคอลัมน์ใหม่
+            if (currentSort.key === key) {
+                currentSort.direction *= -1;
+            } else {
+                currentSort.key = key;
+                currentSort.direction = 1;
+            }
+            
+            // อัปเดตไอคอนบนหัวตาราง
+            document.querySelectorAll('.sort-icon').forEach(el => el.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>'); // Default icon
+            document.querySelectorAll('.sort-icon').forEach(el => el.classList.remove('sort-active', 'text-emerald-400'));
+            
+            const activeIcon = document.getElementById(`sort_icon_${key}`);
+            if(activeIcon) {
+                activeIcon.classList.add('sort-active');
+                if(currentSort.direction === 1) {
+                    activeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>'; // Arrow Up
+                } else {
+                    activeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>'; // Arrow Down
+                }
+            }
+
+            processAndRender();
+        }
+
+        function processAndRender() {
+            // 1. นำข้อมูลทั้งหมดจาก Map มาใส่ Array
+            let allOrdersArray = Array.from(orderMap.values());
+            totalOrdersEl.innerText = allOrdersArray.length.toLocaleString();
+
+            // 2. คำนวณยอดเงินรวมเฉพาะที่โดนหัก
+            let totalSum = 0;
+            allOrdersArray.forEach(o => {
+                if (o.isExcess) totalSum += o.sellerPaid;
+            });
+            totalExcessAmountEl.innerText = totalSum.toLocaleString('th-TH', {minimumFractionDigits: 2});
+
+            // 3. กรองข้อมูล (Filter)
+            if (filterExcess.checked) {
+                displayData = allOrdersArray.filter(order => order.isExcess);
+            } else {
+                displayData = [...allOrdersArray];
+            }
+
+            // 4. จัดเรียงข้อมูล (Sort)
+            if (currentSort.key) {
+                displayData.sort((a, b) => {
+                    let valA = a[currentSort.key];
+                    let valB = b[currentSort.key];
+                    
+                    if (valA < valB) return -1 * currentSort.direction;
+                    if (valA > valB) return 1 * currentSort.direction;
+                    return 0;
+                });
+            }
+
+            // แสดงหน้าผลลัพธ์
+            resultsContainer.classList.remove('hidden');
+            currentPage = 1;
+            renderTable();
+        }
+
+        function renderTable() {
+            tableBody.innerHTML = '';
+            
+            const totalItems = displayData.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+            
+            if (currentPage < 1) currentPage = 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+            
+            const currentOrders = displayData.slice(startIndex, endIndex);
+
+            if (currentOrders.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-12 text-center text-slate-500 text-lg">ไม่พบออเดอร์ในเงื่อนไขปัจจุบัน 🎉</td></tr>`;
+            } else {
+                currentOrders.forEach((order, index) => {
+                    const globalIndex = startIndex + index + 1;
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition-colors duration-150";
+                    
+                    const amountColor = order.isExcess ? 'text-red-600 font-bold' : 'text-slate-400';
+                    const amountSign = order.isNegative ? '-' : '';
+                    const weightColor = order.billedWeight > order.estWeight ? 'text-orange-600 font-bold' : 'text-slate-600';
+
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-slate-500 text-center">${globalIndex}</td>
+                        <td class="px-4 py-3 text-slate-600">${order.dateStr}</td>
+                        <td class="px-4 py-3 font-mono font-medium text-slate-900 flex items-center gap-2">
+                            ${order.orderId}
+                            <button onclick="copyToClipboard('${order.orderId}', this)" class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors" title="คัดลอกหมายเลข">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            </button>
+                        </td>
+                        <td class="px-4 py-3 text-right ${amountColor}">${amountSign}${order.sellerPaid > 0 ? order.sellerPaid.toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-'}</td>
+                        <td class="px-4 py-3 text-right text-slate-500">${order.estWeight > 0 ? order.estWeight + ' ก.' : '-'}</td>
+                        <td class="px-4 py-3 text-right ${weightColor}">${order.billedWeight > 0 ? order.billedWeight + ' ก.' : '-'}</td>
+                        <td class="px-4 py-3 text-center"><span class="px-3 py-1 text-xs rounded-full inline-block whitespace-nowrap ${order.badgeClass}">${order.reason}</span></td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            // Update Pagination Text
+            pageStartEl.innerText = totalItems > 0 ? startIndex + 1 : 0;
+            pageEndEl.innerText = endIndex;
+            filteredCountEl.innerText = totalItems.toLocaleString();
+            currentPageText.innerText = currentPage;
+            totalPagesText.innerText = totalPages;
+
+            // Update Buttons
+            btnPrev.disabled = currentPage === 1;
+            btnNext.disabled = currentPage === totalPages || totalPages === 0;
+        }
+
+        function copyToClipboard(text, btn) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            el.setAttribute('readonly', '');
+            el.style.position = 'absolute';
+            el.style.left = '-9999px';
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            // เอฟเฟกต์เครื่องหมายถูก
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+            btn.classList.add('bg-emerald-100');
+            
+            setTimeout(() => { 
+                btn.innerHTML = originalHTML; 
+                btn.classList.remove('bg-emerald-100');
+            }, 1200);
+        }
+
+        function changePage(step) {
+            currentPage += step;
+            renderTable();
+        }
+
+        function showError(msg) {
+            errorText.innerText = msg;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+            errorText.innerText = '';
         }
     </script>
 </body>
