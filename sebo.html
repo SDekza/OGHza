@@ -2,7 +2,8 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
     <title>Work Management - SEBOFFICIAL</title>
     
     <link rel="icon" type="image/png" href="sebo.png">
@@ -27,6 +28,11 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap');
         
+        * {
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
+
         body { 
             font-family: 'Anuphan', sans-serif; 
             background-color: #f8fafc; 
@@ -35,6 +41,7 @@
             overflow-x: hidden; 
             user-select: none; 
             overscroll-behavior-y: contain; 
+            touch-action: manipulation;
         }
         
         .saas-shadow { 
@@ -193,6 +200,13 @@
             const [newCategoryInput, setNewCategoryInput] = useState("");
             const [toastMessage, setToastMessage] = useState(null);
 
+            // Image Zoom & Pan State for Lightbox
+            const [imageScale, setImageScale] = useState(1);
+            const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+            const [isDragging, setIsDragging] = useState(false);
+            const dragStartRef = useRef({ x: 0, y: 0 });
+            const touchDistanceRef = useRef(null);
+
             // Migration, Backup & Confirmation Modal State
             const [isMigrating, setIsMigrating] = useState(false);
             const [migrationStatus, setMigrationStatus] = useState('');
@@ -205,6 +219,49 @@
                 setToastMessage(message);
                 setTimeout(() => setToastMessage(null), 2500);
             };
+
+            // Prevent Pinch-to-Zoom globally except in Lightbox
+            useEffect(() => {
+                const preventMultiTouch = (e) => {
+                    if (e.touches && e.touches.length > 1) {
+                        const lightbox = document.getElementById('lightbox-image-container');
+                        if (lightbox && lightbox.contains(e.target)) {
+                            return; 
+                        }
+                        e.preventDefault();
+                    }
+                };
+
+                const preventGesture = (e) => {
+                    const lightbox = document.getElementById('lightbox-image-container');
+                    if (lightbox && lightbox.contains(e.target)) {
+                        return; 
+                    }
+                    e.preventDefault();
+                };
+
+                document.addEventListener('touchstart', preventMultiTouch, { passive: false });
+                document.addEventListener('touchmove', preventMultiTouch, { passive: false });
+                document.addEventListener('gesturestart', preventGesture, { passive: false });
+                document.addEventListener('gesturechange', preventGesture, { passive: false });
+                document.addEventListener('gestureend', preventGesture, { passive: false });
+
+                return () => {
+                    document.removeEventListener('touchstart', preventMultiTouch);
+                    document.removeEventListener('touchmove', preventMultiTouch);
+                    document.removeEventListener('gesturestart', preventGesture);
+                    document.removeEventListener('gesturechange', preventGesture);
+                    document.removeEventListener('gestureend', preventGesture);
+                };
+            }, []);
+
+            // Reset image scale when lightbox closes
+            useEffect(() => {
+                if (!previewImage) {
+                    setImageScale(1);
+                    setImagePosition({ x: 0, y: 0 });
+                }
+            }, [previewImage]);
 
             useEffect(() => {
                 if (!db) {
@@ -318,21 +375,16 @@
             };
 
             const handleSubmitBulk = async () => {
-                if (draftItems.length === 0) return;
+                if (draftItems.length === 0 || !db) return;
                 setIsSaving(true);
                 
                 try {
-                    if (db) {
-                        const batch = db.batch();
-                        draftItems.forEach(item => {
-                            const ref = db.collection("sebo_tasks").doc();
-                            batch.set(ref, item);
-                        });
-                        await batch.commit();
-                    } else {
-                        const updated = [...draftItems.map((item, idx) => ({ id: `local-${Date.now()}-${idx}`, ...item })), ...savedItems];
-                        setSavedItems(updated);
-                    }
+                    const batch = db.batch();
+                    draftItems.forEach(item => {
+                        const ref = db.collection("sebo_tasks").doc();
+                        batch.set(ref, item);
+                    });
+                    await batch.commit();
                     
                     await logAction("เพิ่มงานใหม่", `บันทึกคิวงาน ${draftItems.length} รายการ`);
                     setDraftItems([]); 
@@ -370,8 +422,6 @@
                 try {
                     if (db) {
                         await db.collection("sebo_tasks").doc(item.id).update(updateData);
-                    } else {
-                        setSavedItems(prev => prev.map(i => i.id === item.id ? { ...i, ...updateData } : i));
                     }
                     await logAction("เปลี่ยนสถานะงาน", `${item.productName} -> ${nextStatus.isDone ? 'เสร็จ' : nextStatus.isDoing ? 'กำลังทำ' : 'ค้าง'}`);
                 } catch (e) {
@@ -380,7 +430,7 @@
             };
 
             const confirmEditTask = async () => {
-                if (!editTaskItem) return;
+                if (!editTaskItem || !db) return;
                 const payload = {
                     quantity: editTaskForm.quantity,
                     memo: editTaskForm.memo,
@@ -388,11 +438,7 @@
                 };
 
                 try {
-                    if (db) {
-                        await db.collection("sebo_tasks").doc(editTaskItem.id).update(payload);
-                    } else {
-                        setSavedItems(prev => prev.map(i => i.id === editTaskItem.id ? { ...i, ...payload } : i));
-                    }
+                    await db.collection("sebo_tasks").doc(editTaskItem.id).update(payload);
                     await logAction("แก้ไขข้อมูลงาน", editTaskItem.productName);
                     showToast('อัปเดตข้อมูลงานแล้ว');
                 } catch(e) {}
@@ -400,13 +446,9 @@
             };
 
             const confirmDeleteTask = async () => {
-                if (!itemToDelete) return;
+                if (!itemToDelete || !db) return;
                 try {
-                    if (db) {
-                        await db.collection("sebo_tasks").doc(itemToDelete.id).delete();
-                    } else {
-                        setSavedItems(prev => prev.filter(i => i.id !== itemToDelete.id));
-                    }
+                    await db.collection("sebo_tasks").doc(itemToDelete.id).delete();
                     await logAction("ลบงาน", itemToDelete.productName);
                     showToast(`ลบ "${itemToDelete.productName}" เรียบร้อยแล้ว`);
                 } catch(e) {}
@@ -414,8 +456,8 @@
             };
 
             const handleAddProductMaster = async () => {
-                if (currentUserRank === 'Guest') {
-                    showToast("สิทธิ์ Guest ไม่สามารถเพิ่มสินค้าได้");
+                if (currentUserRank === 'Guest' || currentUserRank === 'User' || !db) {
+                    showToast("คุณไม่มีสิทธิ์ในการเพิ่มสินค้า");
                     return;
                 }
                 if (!newProduct.name.trim()) return;
@@ -425,14 +467,7 @@
                         name: newProduct.name.trim(),
                         imgUrl: newProduct.imageBase64 || ''
                     };
-
-                    if (db) {
-                        await db.collection("sebo_products").add(prodData);
-                    } else {
-                        const updated = [...masterProducts, { id: `prod-${Date.now()}`, ...prodData }];
-                        setMasterProducts(updated);
-                    }
-
+                    await db.collection("sebo_products").add(prodData);
                     await logAction("เพิ่มสินค้าหลัก", newProduct.name);
                     setNewProduct({ name: '', imageBase64: '', preview: '' });
                     setManageSubTab('search');
@@ -447,13 +482,9 @@
             };
 
             const confirmDeleteMaster = async (prod) => {
-                if (!prod) return;
+                if (!db || !prod) return;
                 try {
-                    if (db) {
-                        await db.collection("sebo_products").doc(prod.id).delete();
-                    } else {
-                        setMasterProducts(prev => prev.filter(p => p.id !== prod.id));
-                    }
+                    await db.collection("sebo_products").doc(prod.id).delete();
                     await logAction("ลบสินค้าหลัก", prod.name);
                     showToast(`ลบ "${prod.name}" เรียบร้อยแล้ว`);
                 } catch(e) {}
@@ -475,9 +506,74 @@
                 setEditCategoriesMode(false);
                 if (db) {
                     await db.collection("sebo_settings").doc("categories").set({ list: tempCategories });
+                    await logAction("อัปเดตหมวดหมู่", tempCategories.join(', '));
                 }
-                await logAction("อัปเดตหมวดหมู่", tempCategories.join(', '));
                 showToast("บันทึกหมวดหมู่เรียบร้อยแล้ว");
+            };
+
+            // Image Lightbox Interaction Handlers
+            const handleMouseDown = (e) => {
+                if (imageScale > 1) {
+                    setIsDragging(true);
+                    dragStartRef.current = { x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y };
+                }
+            };
+
+            const handleMouseMove = (e) => {
+                if (isDragging && imageScale > 1) {
+                    setImagePosition({
+                        x: e.clientX - dragStartRef.current.x,
+                        y: e.clientY - dragStartRef.current.y
+                    });
+                }
+            };
+
+            const handleMouseUp = () => {
+                setIsDragging(false);
+            };
+
+            const getTouchDistance = (touches) => {
+                return Math.hypot(
+                    touches[0].clientX - touches[1].clientX,
+                    touches[0].clientY - touches[1].clientY
+                );
+            };
+
+            const handleTouchStart = (e) => {
+                if (e.touches.length === 2) {
+                    touchDistanceRef.current = getTouchDistance(e.touches);
+                } else if (e.touches.length === 1 && imageScale > 1) {
+                    setIsDragging(true);
+                    dragStartRef.current = { x: e.touches[0].clientX - imagePosition.x, y: e.touches[0].clientY - imagePosition.y };
+                }
+            };
+
+            const handleTouchMove = (e) => {
+                if (e.touches.length === 2 && touchDistanceRef.current) {
+                    const newDist = getTouchDistance(e.touches);
+                    const factor = newDist / touchDistanceRef.current;
+                    setImageScale(prev => Math.min(Math.max(prev * factor, 1), 4));
+                    touchDistanceRef.current = newDist;
+                } else if (e.touches.length === 1 && isDragging && imageScale > 1) {
+                    setImagePosition({
+                        x: e.touches[0].clientX - dragStartRef.current.x,
+                        y: e.touches[0].clientY - dragStartRef.current.y
+                    });
+                }
+            };
+
+            const handleTouchEnd = () => {
+                setIsDragging(false);
+                touchDistanceRef.current = null;
+            };
+
+            const handleDoubleTap = () => {
+                if (imageScale > 1) {
+                    setImageScale(1);
+                    setImagePosition({ x: 0, y: 0 });
+                } else {
+                    setImageScale(2);
+                }
             };
 
             // Trigger Backup Confirmation Popup
@@ -746,8 +842,8 @@
                         if (row[0]) {
                             const pName = row[0].trim();
                             const pImg = row[1] ? row[1].trim() : '';
-                            const formattedImg = pImg.match(/id=([^&]+)/)?.[1] || pImg.match(/\/d\/([^/]+)/)?.[1] 
-                                ? `https://lh3.googleusercontent.com/d/${pImg.match(/id=([^&]+)/)?.[1] || pImg.match(/\/d\/([^/]+)/)?.[1]}=s400`
+                            const formattedImg = pImg.match(/id=([^&]+)/)?.[1] || pImg.match(/\/d\/([^\/]+)/)?.[1] 
+                                ? `https://lh3.googleusercontent.com/d/${pImg.match(/id=([^&]+)/)?.[1] || pImg.match(/\/d\/([^\/]+)/)?.[1]}=s400`
                                 : pImg;
 
                             await db.collection("sebo_products").add({
@@ -998,8 +1094,7 @@
 
                             <div className="flex items-center gap-2 border border-slate-200 bg-slate-50 px-3 py-1.5 rounded-full">
                                 <div className="w-5.5 h-5.5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-bold uppercase">{currentUser.charAt(0)}</div>
-                                <span className="text-[11px] text-slate-700 font-semibold">{currentUser}</span>
-                                <span className="text-[9px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full font-bold border border-indigo-100">{currentUserRank}</span>
+                                <span className="text-[11px] text-slate-700 hidden sm:block font-medium">{currentUser}</span>
                             </div>
                         </div>
                     </nav>
@@ -1508,7 +1603,7 @@
                             <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 space-y-4">
                                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                                     <h3 className="font-bold text-sm text-slate-800">จัดการหมวดหมู่งาน</h3>
-                                    <button onClick={() => setEditCategoriesMode(false)} className="text-slate-400 hover:text-slate-600"><LucideIcon name="x" size={16}/></button>
+                                    <button onClick={() => setEditCategoriesMode(false)} className="text-slate-400 hover:text-slate-600"><LucideIcon name="x" size={18} /></button>
                                 </div>
                                 <div className="flex gap-2">
                                     <input 
@@ -1642,12 +1737,80 @@
                         </div>
                     )}
 
-                    {/* Image Lightbox */}
+                    {/* LIGHTBOX PREVIEW IMAGE WITH INTERACTIVE ZOOM & PAN */}
                     {previewImage && (
-                        <div className="fixed inset-0 z-[400] bg-slate-950/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
-                            <div className="bg-white p-2 rounded-2xl max-w-lg max-h-[85vh] overflow-hidden relative shadow-2xl animate-modal">
-                                <button className="absolute top-4 right-4 bg-slate-900/60 text-white p-2 rounded-full"><LucideIcon name="x" size={16}/></button>
-                                <img src={previewImage} className="w-full h-full object-contain rounded-xl" />
+                        <div 
+                            className="fixed inset-0 z-[300] bg-slate-950/90 flex items-center justify-center p-4 animate-modal"
+                            onClick={(e) => {
+                                if (e.target.id === 'lightbox-backdrop') setPreviewImage(null);
+                            }}
+                            id="lightbox-backdrop"
+                        >
+                            <div 
+                                id="lightbox-image-container"
+                                className="bg-slate-900/90 p-2 rounded-2xl max-w-2xl max-h-[85vh] w-full h-full flex flex-col items-center justify-center relative shadow-2xl border border-slate-700/80 overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* Top Controls Toolbar */}
+                                <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-center pointer-events-auto">
+                                    <div className="bg-slate-900/80 text-white px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md border border-slate-700">
+                                        ซูม: {Math.round(imageScale * 100)}%
+                                    </div>
+                                    <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-full border border-slate-700 backdrop-blur-md">
+                                        <button 
+                                            onClick={() => setImageScale(s => Math.min(s + 0.5, 4))}
+                                            className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all"
+                                            title="ขยาย"
+                                        >
+                                            <LucideIcon name="zoom-in" size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={() => { setImageScale(1); setImagePosition({ x: 0, y: 0 }); }}
+                                            className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all text-[10px] font-bold"
+                                            title="รีเซ็ต"
+                                        >
+                                            1:1
+                                        </button>
+                                        <button 
+                                            onClick={() => setImageScale(s => Math.max(s - 0.5, 1))}
+                                            className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all"
+                                            title="ย่อ"
+                                        >
+                                            <LucideIcon name="zoom-out" size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={() => setPreviewImage(null)}
+                                            className="w-8 h-8 rounded-full bg-rose-600/90 text-white flex items-center justify-center hover:bg-rose-600 active:scale-90 transition-all ml-1"
+                                            title="ปิด"
+                                        >
+                                            <LucideIcon name="x" size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Zoomable Image Container */}
+                                <div 
+                                    className="w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onTouchStart={handleTouchStart}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
+                                    onDoubleClick={handleDoubleTap}
+                                >
+                                    <img 
+                                        src={previewImage} 
+                                        referrerPolicy="no-referrer" 
+                                        className="max-w-full max-h-full object-contain rounded-xl transition-transform duration-75 ease-out pointer-events-none" 
+                                        style={{
+                                            transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageScale})`
+                                        }}
+                                    />
+                                </div>
+                                <p className="absolute bottom-2 text-[10px] text-slate-400 font-medium bg-slate-900/60 px-2.5 py-0.5 rounded-full pointer-events-none">
+                                    แตะ 2 ครั้งเพื่อซูมเข้า/ออก หรือใช้ปุ่มควบคุมด้านบน
+                                </p>
                             </div>
                         </div>
                     )}
