@@ -131,12 +131,6 @@
         });
 
         const defaultCategories = ["งานตัด", "งานพับ", "งานสกรีน", "งานประกอบ", "งานแพ็ค", "งานทั่วไป"];
-        const defaultUsers = [
-            { name: "Admin", pass: "1234", rank: "Admin" },
-            { name: "Dev", pass: "9999", rank: "Dev" },
-            { name: "Staff1", pass: "1111", rank: "User" },
-            { name: "Guest", pass: "guest", rank: "Guest" }
-        ];
 
         const generateUUID = () => {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -146,7 +140,7 @@
         };
 
         const App = () => {
-            // User Session
+            // User Session strictly from localStorage set by login.html
             const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('seb_current_user') || 'Guest');
             const [currentUserRank, setCurrentUserRank] = useState(() => localStorage.getItem('seb_current_rank') || 'Guest');
 
@@ -154,13 +148,11 @@
             const [savedItems, setSavedItems] = useState([]);
             const [masterProducts, setMasterProducts] = useState([]);
             const [categories, setCategories] = useState(defaultCategories);
-            const [usersData, setUsersData] = useState(defaultUsers);
             const [announcement, setAnnouncement] = useState("");
             const [logsData, setLogsData] = useState([]);
 
             // UI Navigation State
             const [loading, setLoading] = useState(true);
-            const [recordsLoading, setRecordsLoading] = useState(false);
             const [activeTab, setActiveTab] = useState('view'); 
             const [viewSubTab, setViewSubTab] = useState('pending'); 
             const [manageSubTab, setManageSubTab] = useState('search');
@@ -196,10 +188,6 @@
             const [tempCategories, setTempCategories] = useState([]);
             const [newCategoryInput, setNewCategoryInput] = useState("");
             const [toastMessage, setToastMessage] = useState(null);
-            const [isGlobalRefreshing, setIsGlobalRefreshing] = useState(false);
-            const [devActionModal, setDevActionModal] = useState(null);
-            const [devPassInput, setDevPassInput] = useState('');
-            const [visiblePasswords, setVisiblePasswords] = useState(new Set());
 
             // Migration, Backup & Confirmation Modal State
             const [isMigrating, setIsMigrating] = useState(false);
@@ -227,7 +215,6 @@
                         const data = doc.data();
                         loadedTasks.push({ id: doc.id, ...data });
                     });
-                    // Sort descending by timestamp
                     loadedTasks.sort((a, b) => (b.timestampMs || 0) - (a.timestampMs || 0));
                     setSavedItems(loadedTasks);
                     setLoading(false);
@@ -297,7 +284,10 @@
             };
 
             const handleAddToDraft = () => {
-                if (currentUserRank === 'Guest') return;
+                if (currentUserRank === 'Guest') {
+                    showToast('สิทธิ์ Guest ไม่สามารถเพิ่มคิวงานได้');
+                    return;
+                }
                 if (!form.productName) return;
                 
                 const now = new Date();
@@ -324,16 +314,21 @@
             };
 
             const handleSubmitBulk = async () => {
-                if (draftItems.length === 0 || !db) return;
+                if (draftItems.length === 0) return;
                 setIsSaving(true);
                 
                 try {
-                    const batch = db.batch();
-                    draftItems.forEach(item => {
-                        const ref = db.collection("sebo_tasks").doc();
-                        batch.set(ref, item);
-                    });
-                    await batch.commit();
+                    if (db) {
+                        const batch = db.batch();
+                        draftItems.forEach(item => {
+                            const ref = db.collection("sebo_tasks").doc();
+                            batch.set(ref, item);
+                        });
+                        await batch.commit();
+                    } else {
+                        const updated = [...draftItems.map((item, idx) => ({ id: `local-${Date.now()}-${idx}`, ...item })), ...savedItems];
+                        setSavedItems(updated);
+                    }
                     
                     await logAction("เพิ่มงานใหม่", `บันทึกคิวงาน ${draftItems.length} รายการ`);
                     setDraftItems([]); 
@@ -346,9 +341,12 @@
             };
 
             const handleStatusToggle = async (item) => {
-                if (currentUserRank === 'Guest' || !db) return;
+                if (currentUserRank === 'Guest') {
+                    showToast('สิทธิ์ Guest ไม่สามารถเปลี่ยนสถานะได้');
+                    return;
+                }
                 
-                if (item.isDoing && item.doingBy && item.doingBy !== currentUser) {
+                if (item.isDoing && item.doingBy && item.doingBy !== currentUser && currentUserRank !== 'Admin' && currentUserRank !== 'Dev') {
                     showToast(`งานนี้กำลังดำเนินการโดย ${item.doingBy}`);
                     return;
                 }
@@ -366,7 +364,11 @@
                 };
 
                 try {
-                    await db.collection("sebo_tasks").doc(item.id).update(updateData);
+                    if (db) {
+                        await db.collection("sebo_tasks").doc(item.id).update(updateData);
+                    } else {
+                        setSavedItems(prev => prev.map(i => i.id === item.id ? { ...i, ...updateData } : i));
+                    }
                     await logAction("เปลี่ยนสถานะงาน", `${item.productName} -> ${nextStatus.isDone ? 'เสร็จ' : nextStatus.isDoing ? 'กำลังทำ' : 'ค้าง'}`);
                 } catch (e) {
                     console.error("Status update failed", e);
@@ -374,13 +376,19 @@
             };
 
             const confirmEditTask = async () => {
-                if (!editTaskItem || !db) return;
+                if (!editTaskItem) return;
+                const payload = {
+                    quantity: editTaskForm.quantity,
+                    memo: editTaskForm.memo,
+                    isUrgent: editTaskForm.isUrgent
+                };
+
                 try {
-                    await db.collection("sebo_tasks").doc(editTaskItem.id).update({
-                        quantity: editTaskForm.quantity,
-                        memo: editTaskForm.memo,
-                        isUrgent: editTaskForm.isUrgent
-                    });
+                    if (db) {
+                        await db.collection("sebo_tasks").doc(editTaskItem.id).update(payload);
+                    } else {
+                        setSavedItems(prev => prev.map(i => i.id === editTaskItem.id ? { ...i, ...payload } : i));
+                    }
                     await logAction("แก้ไขข้อมูลงาน", editTaskItem.productName);
                     showToast('อัปเดตข้อมูลงานแล้ว');
                 } catch(e) {}
@@ -388,9 +396,13 @@
             };
 
             const confirmDeleteTask = async () => {
-                if (!itemToDelete || !db) return;
+                if (!itemToDelete) return;
                 try {
-                    await db.collection("sebo_tasks").doc(itemToDelete.id).delete();
+                    if (db) {
+                        await db.collection("sebo_tasks").doc(itemToDelete.id).delete();
+                    } else {
+                        setSavedItems(prev => prev.filter(i => i.id !== itemToDelete.id));
+                    }
                     await logAction("ลบงาน", itemToDelete.productName);
                     showToast(`ลบ "${itemToDelete.productName}" เรียบร้อยแล้ว`);
                 } catch(e) {}
@@ -398,29 +410,45 @@
             };
 
             const handleAddProductMaster = async () => {
-                if (currentUserRank === 'Guest' || currentUserRank === 'User' || !db) return;
-                if (!newProduct.name || !newProduct.imageBase64) return;
+                if (currentUserRank === 'Guest') {
+                    showToast("สิทธิ์ Guest ไม่สามารถเพิ่มสินค้าได้");
+                    return;
+                }
+                if (!newProduct.name.trim()) return;
                 setIsEditingMaster(true);
                 try {
-                    await db.collection("sebo_products").add({
+                    const prodData = {
                         name: newProduct.name.trim(),
-                        imgUrl: newProduct.imageBase64
-                    });
+                        imgUrl: newProduct.imageBase64 || ''
+                    };
+
+                    if (db) {
+                        await db.collection("sebo_products").add(prodData);
+                    } else {
+                        const updated = [...masterProducts, { id: `prod-${Date.now()}`, ...prodData }];
+                        setMasterProducts(updated);
+                    }
+
                     await logAction("เพิ่มสินค้าหลัก", newProduct.name);
                     setNewProduct({ name: '', imageBase64: '', preview: '' });
                     setManageSubTab('search');
                     showToast("บันทึกสินค้าหลักเรียบร้อยแล้ว");
                 } catch(e) {
                     console.error("Add master error", e);
+                    showToast("เกิดข้อผิดพลาดในการบันทึกสินค้า");
                 } finally {
                     setIsEditingMaster(false);
                 }
             };
 
             const confirmDeleteMaster = async (prod) => {
-                if (!db || !prod) return;
+                if (!prod) return;
                 try {
-                    await db.collection("sebo_products").doc(prod.id).delete();
+                    if (db) {
+                        await db.collection("sebo_products").doc(prod.id).delete();
+                    } else {
+                        setMasterProducts(prev => prev.filter(p => p.id !== prod.id));
+                    }
                     await logAction("ลบสินค้าหลัก", prod.name);
                     showToast(`ลบ "${prod.name}" เรียบร้อยแล้ว`);
                 } catch(e) {}
@@ -434,6 +462,7 @@
                     await db.collection("sebo_settings").doc("announcement").set({ message: announcementInput });
                     await logAction("อัปเดตประกาศ", announcementInput);
                 }
+                showToast("อัปเดตข้อความประกาศแล้ว");
             };
 
             const handleSaveCategories = async () => {
@@ -441,8 +470,9 @@
                 setEditCategoriesMode(false);
                 if (db) {
                     await db.collection("sebo_settings").doc("categories").set({ list: tempCategories });
-                    await logAction("อัปเดตหมวดหมู่", tempCategories.join(', '));
                 }
+                await logAction("อัปเดตหมวดหมู่", tempCategories.join(', '));
+                showToast("บันทึกหมวดหมู่เรียบร้อยแล้ว");
             };
 
             // Trigger Backup Confirmation Popup
@@ -473,7 +503,6 @@
                     let ann = announcement;
                     let logs = logsData;
 
-                    // Fetch latest data from Firestore if online
                     if (db) {
                         const taskSnap = await db.collection("sebo_tasks").get();
                         const freshTasks = [];
@@ -493,7 +522,6 @@
 
                     const backupDate = new Date().toLocaleString('th-TH');
 
-                    // Construct HTML content tailored for Google Docs
                     const docContent = `
 <!DOCTYPE html>
 <html>
@@ -602,7 +630,6 @@
 </html>
                     `;
 
-                    // Generate downloadable document (.doc format) that opens directly in Google Docs
                     const blob = new Blob([docContent], { type: 'application/msword;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -687,7 +714,6 @@
                 };
 
                 try {
-                    // 1. Migrate Settings & Categories
                     setMigrationStatus("กำลังย้ายข้อมูลหมวดหมู่และประกาศ...");
                     const settingsText = await fetchCsv(SETTINGS_GID);
                     const settingsRows = parseCSV(settingsText);
@@ -706,7 +732,6 @@
                         await db.collection("sebo_settings").doc("announcement").set({ message: ann });
                     }
 
-                    // 2. Migrate Master Products
                     setMigrationStatus("กำลังย้ายข้อมูลสินค้าคลังหลัก...");
                     const masterText = await fetchCsv(MASTER_GID);
                     const masterRows = parseCSV(masterText).slice(1);
@@ -728,7 +753,6 @@
                         }
                     }
 
-                    // 3. Migrate Tasks Records
                     setMigrationStatus("กำลังย้ายข้อมูลรายการงานทั้งหมด...");
                     const recordsText = await fetchCsv(RECORDS_GID);
                     const recordRows = parseCSV(recordsText).slice(2);
@@ -898,7 +922,7 @@
                     { id: 'view', label: 'งาน', icon: 'list', show: true, badge: totalPendingCount > 0 ? totalPendingCount : null },
                     { id: 'manage', label: 'สินค้า', icon: 'package', show: true },
                     { id: 'analysis', label: 'สถิติ', icon: 'bar-chart-2', show: true }, 
-                    { id: 'dev', label: 'ระบบ', icon: 'terminal', show: currentUserRank === 'Dev' }
+                    { id: 'dev', label: 'ระบบ', icon: 'terminal', show: currentUserRank === 'Dev' || currentUserRank === 'Admin' }
                 ];
 
                 return (
@@ -936,8 +960,8 @@
                     {/* Top iOS Navbar */}
                     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 sm:px-6 navbar-ios flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200/50 shadow-sm shrink-0">
-                                <img src="sebo.png" className="w-full h-full object-cover" onError={(e) => {e.target.style.display='none'}} />
+                            <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200/50 shadow-sm shrink-0 bg-indigo-600 flex items-center justify-center text-white font-black text-xs">
+                                SEB
                             </div>
                             <div>
                                 <h1 className="text-sm font-bold text-slate-800 tracking-wider uppercase leading-none">SEBOFFICIAL</h1>
@@ -949,7 +973,7 @@
                             <a 
                                 href="login.html" 
                                 className="h-8.5 px-3 rounded-full border border-indigo-200 bg-indigo-50 flex items-center gap-1.5 text-indigo-600 text-xs font-bold active:scale-95 transition-all hover:bg-indigo-100 shadow-sm"
-                                title="กลับไปยัง Enterprise Portal"
+                                title="กลับไปยัง Enterprise Portal เพื่อเปลี่ยนผู้ใช้/ล็อกอิน"
                             >
                                 <LucideIcon name="grid" size={14} />
                                 <span className="hidden sm:inline text-[11px] font-semibold">หน้าหลัก Portal</span>
@@ -957,7 +981,8 @@
 
                             <div className="flex items-center gap-2 border border-slate-200 bg-slate-50 px-3 py-1.5 rounded-full">
                                 <div className="w-5.5 h-5.5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-bold uppercase">{currentUser.charAt(0)}</div>
-                                <span className="text-[11px] text-slate-600 hidden sm:block font-medium">{currentUser}</span>
+                                <span className="text-[11px] text-slate-700 font-semibold">{currentUser}</span>
+                                <span className="text-[9px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full font-bold border border-indigo-100">{currentUserRank}</span>
                             </div>
                         </div>
                     </nav>
@@ -966,7 +991,12 @@
                     {(announcement || currentUserRank === 'Admin' || currentUserRank === 'Dev') && (
                         <div 
                             className="bg-indigo-600 text-white text-[11px] tracking-wide py-2 overflow-hidden relative flex items-center cursor-pointer hover:bg-indigo-700 transition-colors shadow-sm" 
-                            onClick={() => (currentUserRank === 'Admin' || currentUserRank === 'Dev') && setShowAnnouncementModal(true)}
+                            onClick={() => {
+                                if (currentUserRank === 'Admin' || currentUserRank === 'Dev') {
+                                    setAnnouncementInput(announcement);
+                                    setShowAnnouncementModal(true);
+                                }
+                            }}
                         >
                             {announcement ? (
                                 <div className="animate-marquee whitespace-nowrap px-4 font-medium">{announcement}</div>
@@ -1171,7 +1201,7 @@
                                     {filteredItemsRender.map((item) => {
                                         const isGuest = currentUserRank === 'Guest';
                                         const isMyWork = item.doingBy === currentUser;
-                                        const isLocked = item.isDoing && !isMyWork;
+                                        const isLocked = item.isDoing && !isMyWork && currentUserRank !== 'Admin' && currentUserRank !== 'Dev';
 
                                         return (
                                             <div key={item.id} className={`group relative p-4 rounded-2xl border flex items-center gap-4 transition-all duration-300 ${item.isUrgent && !item.isDone ? 'urgent-minimal-card' : 'bg-white border-slate-200/80 saas-shadow'} ${item.isDone ? 'border-emerald-300' : (item.isDoing ? 'border-amber-300' : '')}`}>
@@ -1301,7 +1331,7 @@
                                             </button>
                                         )}
                                         {(currentUserRank === 'Admin' || currentUserRank === 'Dev') && (
-                                            <button onClick={() => { setEditCategoriesMode(true); setTempCategories(categories); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-[10px] tracking-wider uppercase text-slate-400">
+                                            <button onClick={() => { setEditCategoriesMode(true); setTempCategories([...categories]); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-[10px] tracking-wider uppercase text-slate-400 hover:text-slate-600">
                                                 <LucideIcon name="tags" size={14} /> จัดการหมวดหมู่
                                             </button>
                                         )}
@@ -1318,8 +1348,8 @@
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                             {masterProducts.filter(p => p.name.toLowerCase().includes(productSearchInput.toLowerCase())).map((p) => (
                                                 <div key={p.id} className="bg-white p-3 rounded-2xl border border-slate-200/60 shadow-sm group relative overflow-hidden transition-all duration-300">
-                                                    <div className="aspect-square bg-slate-50 rounded-xl overflow-hidden mb-2.5 border border-slate-200/20">
-                                                        {p.imgUrl ? <img src={p.imgUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><LucideIcon name="package" size={24}/></div>}
+                                                    <div className="aspect-square bg-slate-50 rounded-xl overflow-hidden mb-2.5 border border-slate-200/20 flex items-center justify-center">
+                                                        {p.imgUrl ? <img src={p.imgUrl} className="w-full h-full object-cover" /> : <LucideIcon name="package" size={24} className="text-slate-300"/>}
                                                     </div>
                                                     <p className="text-[10px] font-semibold text-slate-600 truncate text-center uppercase px-1">{p.name}</p>
                                                     
@@ -1331,6 +1361,7 @@
                                                     </div>
                                                 </div>
                                             ))}
+                                            {masterProducts.length === 0 && <div className="col-span-full text-center py-12 text-xs text-slate-400">ยังไม่มีสินค้าหลักในคลัง</div>}
                                         </div>
                                     </>
                                 )}
@@ -1340,7 +1371,7 @@
                                         <h2 className="text-md font-semibold text-slate-800 tracking-wide">เพิ่มรายการสินค้าหลักเข้าคลัง</h2>
                                         
                                         <div className="w-full space-y-1.5 text-left">
-                                            <label className="text-[10px] tracking-widest uppercase text-slate-400 font-bold ml-1">ชื่อสินค้าใหม่</label>
+                                            <label className="text-[10px] tracking-widest uppercase text-slate-400 font-bold ml-1">ชื่อสินค้าใหม่ *</label>
                                             <input type="text" placeholder="ระบุชื่อเรียกสินค้าหลัก..." className="w-full h-12 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 text-xs outline-none font-medium" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
                                         </div>
                                         
@@ -1348,12 +1379,12 @@
                                             <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files[0]; if(f){const r=new FileReader(); r.onloadend=()=>setNewProduct(p=>({...p, imageBase64:r.result, preview:r.result})); r.readAsDataURL(f);}}} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                                             <div className="w-full bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-8 flex flex-col items-center gap-2">
                                                 <LucideIcon name="image-plus" size={32} className="text-slate-400" />
-                                                <p className="text-[11px] text-slate-500 font-semibold">เลือกอัปโหลดไฟล์ภาพสินค้า</p>
+                                                <p className="text-[11px] text-slate-500 font-semibold">เลือกอัปโหลดไฟล์ภาพสินค้า (ถ้ามี)</p>
                                             </div>
                                         </div>
                                         
                                         {newProduct.preview && <img src={newProduct.preview} className="max-w-xs h-32 object-contain rounded-lg border border-slate-200" />}
-                                        <button onClick={handleAddProductMaster} disabled={!newProduct.name || !newProduct.imageBase64 || isEditingMaster} className="w-full h-12 bg-indigo-600 disabled:bg-slate-100 disabled:text-slate-300 text-white rounded-xl text-xs font-semibold tracking-widest uppercase hover:bg-indigo-700 transition-colors">ยืนยันการบันทึกรายการ</button>
+                                        <button onClick={handleAddProductMaster} disabled={!newProduct.name.trim() || isEditingMaster} className="w-full h-12 bg-indigo-600 disabled:bg-slate-100 disabled:text-slate-300 text-white rounded-xl text-xs font-semibold tracking-widest uppercase hover:bg-indigo-700 transition-colors">ยืนยันการบันทึกรายการ</button>
                                     </div>
                                 )}
                             </div>
@@ -1421,6 +1452,60 @@
                     </nav>
 
                     {/* MODALS */}
+                    {/* Category Management Modal */}
+                    {editCategoriesMode && (
+                        <div className="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal text-left">
+                            <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 space-y-4">
+                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                    <h3 className="font-bold text-sm text-slate-800">จัดการหมวดหมู่งาน</h3>
+                                    <button onClick={() => setEditCategoriesMode(false)} className="text-slate-400 hover:text-slate-600"><LucideIcon name="x" size={16}/></button>
+                                </div>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="เพิ่มหมวดหมู่ใหม่..." 
+                                        className="flex-1 h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none font-medium"
+                                        value={newCategoryInput}
+                                        onChange={(e) => setNewCategoryInput(e.target.value)}
+                                    />
+                                    <button onClick={() => { if(newCategoryInput.trim() && !tempCategories.includes(newCategoryInput.trim())){ setTempCategories([...tempCategories, newCategoryInput.trim()]); setNewCategoryInput(''); } }} className="px-3 bg-indigo-600 text-white rounded-xl text-xs font-bold">+</button>
+                                </div>
+                                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                    {tempCategories.map((cat, idx) => (
+                                        <div key={idx} className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 text-xs font-semibold">
+                                            <span>{cat}</span>
+                                            <button onClick={() => setTempCategories(tempCategories.filter(c => c !== cat))} className="text-slate-400 hover:text-red-600"><LucideIcon name="trash-2" size={14}/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2 pt-2">
+                                    <button onClick={() => setEditCategoriesMode(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase">ยกเลิก</button>
+                                    <button onClick={handleSaveCategories} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase shadow-sm">บันทึก</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Announcement Modal */}
+                    {showAnnouncementModal && (
+                        <div className="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal text-left">
+                            <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 space-y-4">
+                                <h3 className="font-bold text-sm text-slate-800">แก้ไขข้อความประกาศ</h3>
+                                <input 
+                                    type="text" 
+                                    placeholder="ใส่ข้อความประกาศ..." 
+                                    className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none font-medium" 
+                                    value={announcementInput} 
+                                    onChange={(e) => setAnnouncementInput(e.target.value)} 
+                                />
+                                <div className="flex gap-3 pt-2">
+                                    <button onClick={() => setShowAnnouncementModal(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase">ยกเลิก</button>
+                                    <button onClick={handleSaveAnnouncement} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase shadow-md">บันทึก</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Confirmation Modal for Dev Actions */}
                     {confirmModal && (
                         <div className="fixed inset-0 z-[300] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal text-center font-bold">
