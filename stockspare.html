@@ -164,6 +164,10 @@
             const [selectedCategory, setSelectedCategory] = useState('all');
             const [filterLowStock, setFilterLowStock] = useState(false);
 
+            // ระบบแบ่งหน้า (Pagination) หน้าละ 10 รายการ
+            const [currentPage, setCurrentPage] = useState(1);
+            const ITEMS_PER_PAGE = 10;
+
             // ขยายดูประวัติย้อนหลัง
             const [expandedItemId, setExpandedItemId] = useState(null);
 
@@ -325,6 +329,7 @@
                 showToast(`เพิ่ม "${newItem.name}" เรียบร้อยแล้ว`);
                 setShowAddModal(false);
                 setAddForm({ name: '', category: categories[0] || 'อะไหล่ทั่วไป', quantity: '1', minStock: '5', link: '', image: '', note: '' });
+                setCurrentPage(1);
             };
 
             const handleEditItem = async (e) => {
@@ -480,15 +485,28 @@
                 }
             };
 
+            // การกรองข้อมูล และเรียงลำดับตามชื่อ (Default Sort A-Z / ก-ฮ)
             const filteredItems = useMemo(() => {
-                return items.filter(item => {
+                const list = items.filter(item => {
                     const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                                         (item.note && item.note.toLowerCase().includes(searchTerm.toLowerCase()));
                     const matchCat = selectedCategory === 'all' || item.category === selectedCategory;
                     const matchLow = !filterLowStock || item.quantity <= (item.minStock || 5);
                     return matchSearch && matchCat && matchLow;
                 });
+
+                // เรียงลำดับตามชื่อ A-Z / ก-ฮ เป็น Default
+                return list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th'));
             }, [items, searchTerm, selectedCategory, filterLowStock]);
+
+            // คำนวณจำนวนหน้าทั้งหมด
+            const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE) || 1;
+
+            // ข้อมูลที่จะแสดงในหน้าปัจจุบัน (10 รายการ/หน้า)
+            const paginatedItems = useMemo(() => {
+                const start = (currentPage - 1) * ITEMS_PER_PAGE;
+                return filteredItems.slice(start, start + ITEMS_PER_PAGE);
+            }, [filteredItems, currentPage]);
 
             const exportToCSV = () => {
                 if (filteredItems.length === 0) return;
@@ -561,7 +579,7 @@
                                         placeholder="ค้นหาชื่ออะไหล่ หรือหมายเหตุ..." 
                                         className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl text-xs outline-none transition-colors"
                                         value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                                     />
                                 </div>
 
@@ -569,7 +587,7 @@
                                 <select 
                                     className="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs text-slate-700 font-semibold outline-none focus:border-emerald-500"
                                     value={selectedCategory}
-                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                    onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
                                 >
                                     <option value="all">ทุกหมวดหมู่</option>
                                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
@@ -580,7 +598,7 @@
                             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100">
                                 <div className="flex items-center gap-2">
                                     <button 
-                                        onClick={() => setFilterLowStock(!filterLowStock)}
+                                        onClick={() => { setFilterLowStock(!filterLowStock); setCurrentPage(1); }}
                                         className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${filterLowStock ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
                                     >
                                         <LucideIcon name="alert-circle" size={14} />
@@ -597,6 +615,10 @@
                                 </div>
 
                                 <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-2.5 py-1 rounded-full shrink-0 hidden sm:inline">
+                                        ทั้งหมด {filteredItems.length} รายการ
+                                    </span>
+
                                     <button 
                                         onClick={exportToCSV}
                                         className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors flex items-center gap-1.5"
@@ -627,146 +649,176 @@
                                 <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold">ไม่พบรายการอะไหล่ในระบบ</p>
                             </div>
                         ) : (
-                            <div className="space-y-3">
-                                {filteredItems.map((item) => {
-                                    const isLow = item.quantity <= (item.minStock || 5);
-                                    const isExpanded = expandedItemId === item.id;
+                            <>
+                                <div className="space-y-3">
+                                    {paginatedItems.map((item) => {
+                                        const isLow = item.quantity <= (item.minStock || 5);
+                                        const isExpanded = expandedItemId === item.id;
 
-                                    return (
-                                        <div key={item.id} className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${isLow ? 'border-rose-300 shadow-sm' : 'border-slate-200 saas-shadow'}`}>
-                                            <div className="p-4 flex items-center justify-between gap-4">
-                                                {/* รูปภาพ / ไอคอน */}
-                                                <div 
-                                                    className="w-14 h-14 rounded-xl bg-slate-100 border border-slate-200/80 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center relative group"
-                                                    onClick={() => item.image && setPreviewImage(item.image)}
-                                                >
-                                                    {item.image ? (
-                                                        <img src={item.image} referrerpolicy="no-referrer" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                                                    ) : (
-                                                        <LucideIcon name="package-search" size={24} className="text-slate-400" />
-                                                    )}
-                                                </div>
-
-                                                {/* รายละเอียดหลัก */}
-                                                <div className="flex-1 min-w-0 text-left">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">{item.category || 'อะไหล่ทั่วไป'}</span>
-                                                        {isLow && <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 flex items-center gap-1"><LucideIcon name="flame" size={10}/> ของใกล้หมด</span>}
+                                        return (
+                                            <div key={item.id} className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${isLow ? 'border-rose-300 shadow-sm' : 'border-slate-200 saas-shadow'}`}>
+                                                <div className="p-4 flex items-center justify-between gap-4">
+                                                    {/* รูปภาพ / ไอคอน */}
+                                                    <div 
+                                                        className="w-14 h-14 rounded-xl bg-slate-100 border border-slate-200/80 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center relative group"
+                                                        onClick={() => item.image && setPreviewImage(item.image)}
+                                                    >
+                                                        {item.image ? (
+                                                            <img src={item.image} referrerpolicy="no-referrer" loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                        ) : (
+                                                            <LucideIcon name="package-search" size={24} className="text-slate-400" />
+                                                        )}
                                                     </div>
 
-                                                    <h3 className="font-bold text-sm text-slate-800 truncate">{item.name}</h3>
+                                                    {/* รายละเอียดหลัก */}
+                                                    <div className="flex-1 min-w-0 text-left">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">{item.category || 'อะไหล่ทั่วไป'}</span>
+                                                            {isLow && <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 flex items-center gap-1"><LucideIcon name="flame" size={10}/> ของใกล้หมด</span>}
+                                                        </div>
 
-                                                    {item.note && <p className="text-[11px] text-slate-500 truncate mt-0.5">📝 {item.note}</p>}
+                                                        <h3 className="font-bold text-sm text-slate-800 truncate">{item.name}</h3>
 
-                                                    {item.link && (
-                                                        <div className="flex items-center gap-1.5 mt-1">
-                                                            <a href={item.link} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-600 hover:underline flex items-center gap-1 truncate max-w-[180px]">
-                                                                <LucideIcon name="external-link" size={11} /> ลิงก์อ้างอิง
-                                                            </a>
+                                                        {item.note && <p className="text-[11px] text-slate-500 truncate mt-0.5">📝 {item.note}</p>}
+
+                                                        {item.link && (
+                                                            <div className="flex items-center gap-1.5 mt-1">
+                                                                <a href={item.link} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-600 hover:underline flex items-center gap-1 truncate max-w-[180px]">
+                                                                    <LucideIcon name="external-link" size={11} /> ลิงก์อ้างอิง
+                                                                </a>
+                                                                <button 
+                                                                    onClick={() => copyToClipboard(item.link, () => showToast("คัดลอกลิงก์สำเร็จ"))} 
+                                                                    className="text-slate-400 hover:text-slate-600 p-0.5"
+                                                                    title="Copy Link"
+                                                                >
+                                                                    <LucideIcon name="copy" size={12} />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* ปุ่มปรับจำนวนคงเหลือและจัดการ */}
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <div className="text-center px-2">
+                                                            <span className="text-[9px] text-slate-400 font-bold uppercase block leading-none">คงเหลือ</span>
+                                                            <span className={`text-xl font-black ${isLow ? 'text-rose-600' : 'text-slate-800'}`}>{item.quantity}</span>
+                                                        </div>
+
+                                                        <div className="flex flex-col sm:flex-row gap-1">
                                                             <button 
-                                                                onClick={() => copyToClipboard(item.link, () => showToast("คัดลอกลิงก์สำเร็จ"))} 
-                                                                className="text-slate-400 hover:text-slate-600 p-0.5"
-                                                                title="Copy Link"
+                                                                onClick={() => setShowAdjustModal({ item, type: 'in' })}
+                                                                className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white flex items-center justify-center font-bold active:scale-90 transition-all"
+                                                                title="เติมสต๊อก"
                                                             >
-                                                                <LucideIcon name="copy" size={12} />
+                                                                <LucideIcon name="plus" size={16} />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => setShowAdjustModal({ item, type: 'out' })}
+                                                                className="w-8 h-8 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white flex items-center justify-center font-bold active:scale-90 transition-all"
+                                                                title="เบิกสต๊อก"
+                                                            >
+                                                                <LucideIcon name="minus" size={16} />
                                                             </button>
                                                         </div>
-                                                    )}
-                                                </div>
 
-                                                {/* ปุ่มปรับจำนวนคงเหลือและจัดการ */}
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <div className="text-center px-2">
-                                                        <span className="text-[9px] text-slate-400 font-bold uppercase block leading-none">คงเหลือ</span>
-                                                        <span className={`text-xl font-black ${isLow ? 'text-rose-600' : 'text-slate-800'}`}>{item.quantity}</span>
-                                                    </div>
-
-                                                    <div className="flex flex-col sm:flex-row gap-1">
-                                                        <button 
-                                                            onClick={() => setShowAdjustModal({ item, type: 'in' })}
-                                                            className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white flex items-center justify-center font-bold active:scale-90 transition-all"
-                                                            title="เติมสต๊อก"
-                                                        >
-                                                            <LucideIcon name="plus" size={16} />
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => setShowAdjustModal({ item, type: 'out' })}
-                                                            className="w-8 h-8 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white flex items-center justify-center font-bold active:scale-90 transition-all"
-                                                            title="เบิกสต๊อก"
-                                                        >
-                                                            <LucideIcon name="minus" size={16} />
-                                                        </button>
-                                                    </div>
-
-                                                    {currentUserRank !== 'Guest' && (
-                                                        <button 
-                                                            onClick={() => openEditModal(item)}
-                                                            className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-200/80 hover:bg-amber-600 hover:text-white flex items-center justify-center font-bold active:scale-90 transition-all"
-                                                            title="แก้ไขรายละเอียดอะไหล่"
-                                                        >
-                                                            <LucideIcon name="pencil" size={14} />
-                                                        </button>
-                                                    )}
-
-                                                    <button 
-                                                        onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
-                                                        className="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 flex items-center justify-center transition-colors"
-                                                    >
-                                                        <LucideIcon name={isExpanded ? "chevron-up" : "chevron-down"} size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* แถบประวัติย้อนหลังแบบขยายได้ */}
-                                            {isExpanded && (
-                                                <div className="bg-slate-50 border-t border-slate-100 p-4 text-xs space-y-3 animate-modal">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="font-bold text-slate-600 uppercase text-[10px] tracking-wider flex items-center gap-1.5">
-                                                            <LucideIcon name="history" size={13} /> ประวัติการทำรายการ (10 รายการล่าสุด)
-                                                        </span>
                                                         {currentUserRank !== 'Guest' && (
-                                                            <div className="flex items-center gap-3">
-                                                                <button 
-                                                                    onClick={() => openEditModal(item)}
-                                                                    className="text-amber-600 hover:text-amber-700 text-[10px] font-bold flex items-center gap-1"
-                                                                >
-                                                                    <LucideIcon name="pencil" size={12} /> แก้ไขรายละเอียด
-                                                                </button>
-                                                                <button 
-                                                                    onClick={() => setShowDeleteModal(item)}
-                                                                    className="text-rose-600 hover:text-rose-700 text-[10px] font-bold flex items-center gap-1"
-                                                                >
-                                                                    <LucideIcon name="trash-2" size={12} /> ลบรายการนี้
-                                                                </button>
-                                                            </div>
+                                                            <button 
+                                                                onClick={() => openEditModal(item)}
+                                                                className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-200/80 hover:bg-amber-600 hover:text-white flex items-center justify-center font-bold active:scale-90 transition-all"
+                                                                title="แก้ไขรายละเอียดอะไหล่"
+                                                            >
+                                                                <LucideIcon name="pencil" size={14} />
+                                                            </button>
                                                         )}
-                                                    </div>
 
-                                                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                                                        {item.history && item.history.length > 0 ? item.history.map((h, idx) => (
-                                                            <div key={idx} className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between text-[11px]">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${h.type === 'IN' || h.type === 'ADD' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                                                                        {h.type === 'IN' ? '+เติม' : h.type === 'OUT' ? '-เบิก' : 'เพิ่มใหม่'}
-                                                                    </span>
-                                                                    <span className="font-semibold text-slate-700">{h.amount} ชิ้น</span>
-                                                                    <span className="text-slate-400 truncate max-w-[150px] sm:max-w-xs">{h.note}</span>
-                                                                </div>
-                                                                <div className="text-right text-[10px] text-slate-400 shrink-0">
-                                                                    <span>{h.by || 'ไม่ระบุ'}</span>
-                                                                    <span className="block text-[8.5px] opacity-75">{h.timestamp}</span>
-                                                                </div>
-                                                            </div>
-                                                        )) : (
-                                                            <p className="text-center text-slate-400 py-2 text-[10px]">ไม่มีประวัติบันทึกเพิ่มเติม</p>
-                                                        )}
+                                                        <button 
+                                                            onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
+                                                            className="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 flex items-center justify-center transition-colors"
+                                                        >
+                                                            <LucideIcon name={isExpanded ? "chevron-up" : "chevron-down"} size={16} />
+                                                        </button>
                                                     </div>
                                                 </div>
-                                            )}
+
+                                                {/* แถบประวัติย้อนหลังแบบขยายได้ */}
+                                                {isExpanded && (
+                                                    <div className="bg-slate-50 border-t border-slate-100 p-4 text-xs space-y-3 animate-modal">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="font-bold text-slate-600 uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                                                                <LucideIcon name="history" size={13} /> ประวัติการทำรายการ (10 รายการล่าสุด)
+                                                            </span>
+                                                            {currentUserRank !== 'Guest' && (
+                                                                <div className="flex items-center gap-3">
+                                                                    <button 
+                                                                        onClick={() => openEditModal(item)}
+                                                                        className="text-amber-600 hover:text-amber-700 text-[10px] font-bold flex items-center gap-1"
+                                                                    >
+                                                                        <LucideIcon name="pencil" size={12} /> แก้ไขรายละเอียด
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => setShowDeleteModal(item)}
+                                                                        className="text-rose-600 hover:text-rose-700 text-[10px] font-bold flex items-center gap-1"
+                                                                    >
+                                                                        <LucideIcon name="trash-2" size={12} /> ลบรายการนี้
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                                            {item.history && item.history.length > 0 ? item.history.map((h, idx) => (
+                                                                <div key={idx} className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between text-[11px]">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${h.type === 'IN' || h.type === 'ADD' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                                                            {h.type === 'IN' ? '+เติม' : h.type === 'OUT' ? '-เบิก' : 'เพิ่มใหม่'}
+                                                                        </span>
+                                                                        <span className="font-semibold text-slate-700">{h.amount} ชิ้น</span>
+                                                                        <span className="text-slate-400 truncate max-w-[150px] sm:max-w-xs">{h.note}</span>
+                                                                    </div>
+                                                                    <div className="text-right text-[10px] text-slate-400 shrink-0">
+                                                                        <span>{h.by || 'ไม่ระบุ'}</span>
+                                                                        <span className="block text-[8.5px] opacity-75">{h.timestamp}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )) : (
+                                                                <p className="text-center text-slate-400 py-2 text-[10px]">ไม่มีประวัติบันทึกเพิ่มเติม</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* แถบเปลี่ยนหน้า (Pagination Bar - 10 รายการ/หน้า) */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200 saas-shadow mt-4">
+                                        <button 
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            className="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-200 text-xs font-semibold flex items-center gap-1 transition-all"
+                                        >
+                                            <LucideIcon name="chevron-left" size={14} />
+                                            <span>ก่อนหน้า</span>
+                                        </button>
+
+                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                                            <span className="text-emerald-600 font-bold">หน้า {currentPage}</span>
+                                            <span className="text-slate-400">/ {totalPages}</span>
                                         </div>
-                                    );
-                                })}
-                            </div>
+
+                                        <button 
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-200 text-xs font-semibold flex items-center gap-1 transition-all"
+                                        >
+                                            <span>ถัดไป</span>
+                                            <LucideIcon name="chevron-right" size={14} />
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </main>
 
