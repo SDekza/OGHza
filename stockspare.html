@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <title>Stock Spare - SEBOFFICIAL</title>
+    
+    <link rel="icon" type="image/png" href="sebo.png">
+    <link rel="apple-touch-icon" href="sebo.png">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#f8fafc">
+    
+    <!-- React & Babel Standalone -->
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.20/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons UMD -->
+    <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
+    
+    <!-- Firebase SDK (v10 UMD) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap');
+        
+        body { 
+            font-family: 'Anuphan', sans-serif; 
+            background-color: #f8fafc; 
+            color: #0f172a; 
+            -webkit-tap-highlight-color: transparent; 
+            overflow-x: hidden; 
+            user-select: none; 
+            overscroll-behavior-y: contain; 
+        }
+
+        .saas-shadow { 
+            box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.08), 0 1px 3px rgba(15, 23, 42, 0.02); 
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes modal-pop { 
+            0% { transform: scale(0.96); opacity: 0; } 
+            100% { transform: scale(1); opacity: 1; } 
+        }
+        .animate-modal { animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        @keyframes slide-down { 0% { transform: translateY(-100%); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        .animate-slide-down { animation: slide-down 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        .navbar-ios {
+            padding-top: calc(14px + env(safe-area-inset-top));
+            padding-bottom: 14px;
+        }
+
+        .bottom-bar-ios {
+            padding-bottom: env(safe-area-inset-bottom);
+            height: calc(64px + env(safe-area-inset-bottom));
+        }
+
+        .fab-button {
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+        }
+
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="react,env">
+        const { useState, useEffect, useMemo, useRef, memo } = React;
+
+        // Firebase Configuration (from your project)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLKMgC5Y_zg97VaWjPVFXpXhp2zon7TP0",
+            authDomain: "stock-spare-c9692.firebaseapp.com",
+            projectId: "stock-spare-c9692",
+            storageBucket: "stock-spare-c9692.firebasestorage.app",
+            messagingSenderId: "376839440950",
+            appId: "1:376839440950:web:d6d0c583e4eabf107e2697",
+            measurementId: "G-0T0KQ5NGEV"
+        };
+
+        let db = null;
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+            firebase.auth().signInAnonymously().catch(() => {});
+        } catch(e) {
+            console.warn("Firebase Init fallback to LocalStorage", e);
+        }
+
+        const LucideIcon = memo(({ name, size = 20, className = "" }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                let active = true;
+                if (window.lucide && ref.current) {
+                    ref.current.innerHTML = '';
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', name);
+                    ref.current.appendChild(i);
+                    const timer = setTimeout(() => {
+                        if (active && ref.current) {
+                            window.lucide.createIcons({
+                                root: ref.current,
+                                nameAttr: 'data-lucide',
+                                attrs: { width: size, height: size, class: "lucide-icon-svg" }
+                            });
+                        }
+                    }, 0);
+                    return () => { active = false; clearTimeout(timer); };
+                }
+            }, [name, size]);
+            return <span ref={ref} className={`inline-flex items-center justify-center ${className}`} style={{ width: size, height: size, minWidth: size }} />;
+        });
+
+        const copyToClipboard = (text, onSuccess) => {
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (onSuccess) onSuccess();
+            } catch (err) {
+                console.error("Copy failed", err);
+            }
+        };
+
+        const defaultCategories = ["อะไหล่ทั่วไป", "อุปกรณ์ไฟฟ้า", "เครื่องมือช่าง", "สกรู/น็อต", "มอเตอร์/ปั๊ม"];
+
+        const StockApp = () => {
+            const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('seb_current_user') || 'Guest');
+            const [currentUserRank, setCurrentUserRank] = useState(() => localStorage.getItem('seb_current_rank') || 'Guest');
+
+            const [items, setItems] = useState([]);
+            const [categories, setCategories] = useState(defaultCategories);
+            const [loading, setLoading] = useState(true);
+
+            // Filter & Search
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedCategory, setSelectedCategory] = useState('all');
+            const [filterLowStock, setFilterLowStock] = useState(false);
+
+            // Expand history accordion
+            const [expandedItemId, setExpandedItemId] = useState(null);
+
+            // Modals
+            const [showAddModal, setShowAddModal] = useState(false);
+            const [showAdjustModal, setShowAdjustModal] = useState(null); // { item, type: 'in'|'out' }
+            const [showCategoryModal, setShowCategoryModal] = useState(false);
+            const [showDeleteModal, setShowDeleteModal] = useState(null); // item to delete
+            const [previewImage, setPreviewImage] = useState(null);
+
+            // Toast Message
+            const [toastMessage, setToastMessage] = useState(null);
+
+            // Forms
+            const [addForm, setAddForm] = useState({ name: '', category: 'อะไหล่ทั่วไป', quantity: '1', minStock: '5', link: '', image: '', note: '' });
+            const [adjustQty, setAdjustQty] = useState('1');
+            const [adjustNote, setAdjustNote] = useState('');
+            const [newCatInput, setNewCatInput] = useState('');
+
+            const showToast = (msg) => {
+                setToastMessage(msg);
+                setTimeout(() => setToastMessage(null), 2500);
+            };
+
+            const fetchStockItems = () => {
+                setLoading(true);
+                if (db) {
+                    db.collection("stock_spare").onSnapshot((snapshot) => {
+                        const loaded = [];
+                        snapshot.forEach((doc) => {
+                            loaded.push({ id: doc.id, ...doc.data() });
+                        });
+                        setItems(loaded);
+                        setLoading(false);
+                    }, (err) => {
+                        console.error("Firestore error, fallback to LocalStorage", err);
+                        loadLocalData();
+                    });
+                } else {
+                    loadLocalData();
+                }
+            };
+
+            const loadLocalData = () => {
+                const local = localStorage.getItem('stock_spare_items');
+                if (local) {
+                    try { setItems(JSON.parse(local)); } catch(e) {}
+                }
+                setLoading(false);
+            };
+
+            const saveLocalData = (newItems) => {
+                localStorage.setItem('stock_spare_items', JSON.stringify(newItems));
+            };
+
+            useEffect(() => {
+                fetchStockItems();
+            }, []);
+
+            const handleAddItem = async (e) => {
+                e.preventDefault();
+                if (!addForm.name.trim()) return;
+
+                const newItem = {
+                    name: addForm.name.trim(),
+                    category: addForm.category,
+                    quantity: parseInt(addForm.quantity) || 0,
+                    minStock: parseInt(addForm.minStock) || 5,
+                    link: addForm.link.trim(),
+                    image: addForm.image.trim(),
+                    note: addForm.note.trim(),
+                    createdAt: new Date().toLocaleString('th-TH'),
+                    history: [{
+                        type: 'ADD',
+                        amount: parseInt(addForm.quantity) || 0,
+                        by: currentUser,
+                        note: 'เพิ่มรายการใหม่เข้าคลัง',
+                        timestamp: new Date().toLocaleString('th-TH')
+                    }]
+                };
+
+                if (db) {
+                    try {
+                        await db.collection("stock_spare").add(newItem);
+                    } catch(err) {
+                        console.error("Add failed", err);
+                    }
+                } else {
+                    const updated = [ ...items, { id: Date.now().toString(), ...newItem } ];
+                    setItems(updated);
+                    saveLocalData(updated);
+                }
+
+                showToast(`เพิ่ม "${newItem.name}" เรียบร้อยแล้ว`);
+                setShowAddModal(false);
+                setAddForm({ name: '', category: categories[0] || 'อะไหล่ทั่วไป', quantity: '1', minStock: '5', link: '', image: '', note: '' });
+            };
+
+            const handleAdjustStock = async () => {
+                if (!showAdjustModal) return;
+                const { item, type } = showAdjustModal;
+                const changeVal = parseInt(adjustQty) || 0;
+                if (changeVal <= 0) return;
+
+                const isAdd = type === 'in';
+                const newQty = isAdd ? item.quantity + changeVal : Math.max(0, item.quantity - changeVal);
+
+                const newHistory = [
+                    {
+                        type: isAdd ? 'IN' : 'OUT',
+                        amount: changeVal,
+                        by: currentUser,
+                        note: adjustNote.trim() || (isAdd ? 'เติมสต๊อก' : 'เบิกสต๊อก'),
+                        timestamp: new Date().toLocaleString('th-TH')
+                    },
+                    ...(item.history || [])
+                ].slice(0, 10); // keep max 10
+
+                if (db) {
+                    try {
+                        await db.collection("stock_spare").doc(item.id).update({
+                            quantity: newQty,
+                            history: newHistory
+                        });
+                    } catch(err) { console.error("Update stock error", err); }
+                } else {
+                    const updated = items.map(i => i.id === item.id ? { ...i, quantity: newQty, history: newHistory } : i);
+                    setItems(updated);
+                    saveLocalData(updated);
+                }
+
+                showToast(`${isAdd ? 'เติม' : 'เบิก'}สต๊อก ${item.name} จำนวน ${changeVal} ชิ้นสำเร็จ`);
+                setShowAdjustModal(null);
+                setAdjustQty('1');
+                setAdjustNote('');
+            };
+
+            const handleDeleteItem = async () => {
+                if (!showDeleteModal) return;
+                const target = showDeleteModal;
+
+                if (db) {
+                    try {
+                        await db.collection("stock_spare").doc(target.id).delete();
+                    } catch(err) { console.error("Delete failed", err); }
+                } else {
+                    const updated = items.filter(i => i.id !== target.id);
+                    setItems(updated);
+                    saveLocalData(updated);
+                }
+
+                showToast(`ลบรายการ "${target.name}" เรียบร้อยแล้ว`);
+                setShowDeleteModal(null);
+            };
+
+            const filteredItems = useMemo(() => {
+                return items.filter(item => {
+                    const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                        (item.note && item.note.toLowerCase().includes(searchTerm.toLowerCase()));
+                    const matchCat = selectedCategory === 'all' || item.category === selectedCategory;
+                    const matchLow = !filterLowStock || item.quantity <= (item.minStock || 5);
+                    return matchSearch && matchCat && matchLow;
+                });
+            }, [items, searchTerm, selectedCategory, filterLowStock]);
+
+            const exportToCSV = () => {
+                if (filteredItems.length === 0) return;
+                let csvContent = "\uFEFFลำดับ,ชื่ออะไหล่,หมวดหมู่,จำนวนคงเหลือ,จุดสั่งซื้อขั้นต่ำ,หมายเหตุ,ลิงก์\n";
+                filteredItems.forEach((item, index) => {
+                    csvContent += `"${index + 1}","${item.name.replace(/"/g, '""')}","${item.category || ''}","${item.quantity}","${item.minStock || 5}","${(item.note || '').replace(/"/g, '""')}","${item.link || ''}"\n`;
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Stock_Spare_${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast("ดาวน์โหลดไฟล์ CSV เรียบร้อยแล้ว");
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col pb-24 relative bg-slate-50">
+                    
+                    {/* Toast Notification */}
+                    {toastMessage && (
+                        <div className="fixed top-4 left-0 right-0 z-[100] flex justify-center p-4 pointer-events-none">
+                            <div className="bg-slate-900 text-slate-100 px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-slide-down border border-slate-800 pointer-events-auto">
+                                <LucideIcon name="check-circle-2" size={16} className="text-emerald-400" />
+                                <span className="text-xs font-medium">{toastMessage}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Navigation Bar */}
+                    <nav className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 sm:px-6 navbar-ios flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
+                                <img src="sebo.png" className="w-full h-full object-cover" onError={(e) => {e.target.style.display='none'}} />
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 tracking-wider uppercase leading-none">SEBOFFICIAL</h1>
+                                <span className="text-[9px] tracking-widest text-emerald-600 uppercase font-bold">STOCK SPARE SYSTEM</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <a 
+                                href="login.html" 
+                                className="h-8.5 px-3 rounded-full border border-indigo-200 bg-indigo-50 flex items-center gap-1.5 text-indigo-600 text-xs font-bold active:scale-95 transition-all hover:bg-indigo-100 shadow-sm"
+                            >
+                                <LucideIcon name="grid" size={14} />
+                                <span className="hidden sm:inline text-[11px] font-semibold">หน้าหลัก Portal</span>
+                            </a>
+                            
+                            <div className="flex items-center gap-2 border border-slate-200 bg-slate-50 px-3 py-1 rounded-full">
+                                <div className="w-5.5 h-5.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[9px] font-bold uppercase">{currentUser.charAt(0)}</div>
+                                <span className="text-[11px] text-slate-600 hidden sm:block font-medium">{currentUser}</span>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {}
+                    <main className="max-w-5xl mx-auto w-full p-4 md:p-6 space-y-4 flex-1">
+                        
+                        {/* Control Bar */}
+                        <div className="bg-white p-4 rounded-2xl border border-slate-200 saas-shadow space-y-3">
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                {/* Search Box */}
+                                <div className="relative flex-1">
+                                    <LucideIcon name="search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="ค้นหาชื่ออะไหล่ หรือหมายเหตุ..." 
+                                        className="w-full h-10 pl-10 pr-4 bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl text-xs outline-none transition-colors"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+
+                                {/* Category Selector */}
+                                <select 
+                                    className="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs text-slate-700 font-semibold outline-none focus:border-emerald-500"
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                >
+                                    <option value="all">ทุกหมวดหมู่</option>
+                                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                </select>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={() => setFilterLowStock(!filterLowStock)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 ${filterLowStock ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                                    >
+                                        <LucideIcon name="alert-circle" size={14} />
+                                        <span>ของใกล้หมด</span>
+                                    </button>
+
+                                    <button 
+                                        onClick={() => setShowCategoryModal(true)}
+                                        className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+                                    >
+                                        <LucideIcon name="tags" size={14} />
+                                        <span className="hidden sm:inline">หมวดหมู่</span>
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={exportToCSV}
+                                        className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors flex items-center gap-1.5"
+                                    >
+                                        <LucideIcon name="download" size={14} />
+                                        <span>Export CSV</span>
+                                    </button>
+
+                                    <button 
+                                        onClick={() => setShowAddModal(true)}
+                                        className="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5 active:scale-95"
+                                    >
+                                        <LucideIcon name="plus" size={14} />
+                                        <span>+ เพิ่มอะไหล่</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {}
+                        {loading ? (
+                            <div className="py-20 text-center space-y-3">
+                                <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                <p className="text-xs text-slate-400 font-medium">กำลังโหลดข้อมูลสต๊อกอะไหล่...</p>
+                            </div>
+                        ) : filteredItems.length === 0 ? (
+                            <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 p-8 space-y-3">
+                                <LucideIcon name="box" size={42} className="text-slate-300 mx-auto" />
+                                <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold">ไม่พบรายการอะไหล่ในระบบ</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {filteredItems.map((item) => {
+                                    const isLow = item.quantity <= (item.minStock || 5);
+                                    const isExpanded = expandedItemId === item.id;
+
+                                    return (
+                                        <div key={item.id} className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${isLow ? 'border-rose-300 shadow-sm' : 'border-slate-200 saas-shadow'}`}>
+                                            <div className="p-4 flex items-center justify-between gap-4">
+                                                {/* Image / Icon */}
+                                                <div 
+                                                    className="w-14 h-14 rounded-xl bg-slate-100 border border-slate-200/80 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center relative group"
+                                                    onClick={() => item.image && setPreviewImage(item.image)}
+                                                >
+                                                    {item.image ? (
+                                                        <img src={item.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                    ) : (
+                                                        <LucideIcon name="package-search" size={24} className="text-slate-400" />
+                                                    )}
+                                                </div>
+
+                                                {/* Main Information */}
+                                                <div className="flex-1 min-w-0 text-left">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">{item.category || 'อะไหล่ทั่วไป'}</span>
+                                                        {isLow && <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 flex items-center gap-1"><LucideIcon name="flame" size={10}/> ของใกล้หมด</span>}
+                                                    </div>
+
+                                                    <h3 className="font-bold text-sm text-slate-800 truncate">{item.name}</h3>
+
+                                                    {item.note && <p className="text-[11px] text-slate-500 truncate mt-0.5">📝 {item.note}</p>}
+
+                                                    {item.link && (
+                                                        <div className="flex items-center gap-1.5 mt-1">
+                                                            <a href={item.link} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-600 hover:underline flex items-center gap-1 truncate max-w-[180px]">
+                                                                <LucideIcon name="external-link" size={11} /> ลิงก์อ้างอิง
+                                                            </a>
+                                                            <button 
+                                                                onClick={() => copyToClipboard(item.link, () => showToast("คัดลอกลิงก์สำเร็จ"))} 
+                                                                className="text-slate-400 hover:text-slate-600 p-0.5"
+                                                                title="Copy Link"
+                                                            >
+                                                                <LucideIcon name="copy" size={12} />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Stock Adjust Buttons */}
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <div className="text-center px-2">
+                                                        <span className="text-[9px] text-slate-400 font-bold uppercase block leading-none">คงเหลือ</span>
+                                                        <span className={`text-xl font-black ${isLow ? 'text-rose-600' : 'text-slate-800'}`}>{item.quantity}</span>
+                                                    </div>
+
+                                                    <div className="flex flex-col sm:flex-row gap-1">
+                                                        <button 
+                                                            onClick={() => setShowAdjustModal({ item, type: 'in' })}
+                                                            className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white flex items-center justify-center font-bold active:scale-90 transition-all"
+                                                            title="เติมสต๊อก"
+                                                        >
+                                                            <LucideIcon name="plus" size={16} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => setShowAdjustModal({ item, type: 'out' })}
+                                                            className="w-8 h-8 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white flex items-center justify-center font-bold active:scale-90 transition-all"
+                                                            title="เบิกสต๊อก"
+                                                        >
+                                                            <LucideIcon name="minus" size={16} />
+                                                        </button>
+                                                    </div>
+
+                                                    <button 
+                                                        onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
+                                                        className="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 flex items-center justify-center transition-colors"
+                                                    >
+                                                        <LucideIcon name={isExpanded ? "chevron-up" : "chevron-down"} size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Expandable History Drawer */}
+                                            {isExpanded && (
+                                                <div className="bg-slate-50 border-t border-slate-100 p-4 text-xs space-y-3 animate-modal">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="font-bold text-slate-600 uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                                                            <LucideIcon name="history" size={13} /> ประวัติการทำรายการ (10 รายการล่าสุด)
+                                                        </span>
+                                                        {currentUserRank !== 'Guest' && (
+                                                            <button 
+                                                                onClick={() => setShowDeleteModal(item)}
+                                                                className="text-rose-600 hover:text-rose-700 text-[10px] font-bold flex items-center gap-1"
+                                                            >
+                                                                <LucideIcon name="trash-2" size={12} /> ลบรายการนี้
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                                        {item.history && item.history.length > 0 ? item.history.map((h, idx) => (
+                                                            <div key={idx} className="bg-white p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between text-[11px]">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${h.type === 'IN' || h.type === 'ADD' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                                                        {h.type === 'IN' ? '+เติม' : h.type === 'OUT' ? '-เบิก' : 'เพิ่มใหม่'}
+                                                                    </span>
+                                                                    <span className="font-semibold text-slate-700">{h.amount} ชิ้น</span>
+                                                                    <span className="text-slate-400 truncate max-w-[150px] sm:max-w-xs">{h.note}</span>
+                                                                </div>
+                                                                <div className="text-right text-[10px] text-slate-400 shrink-0">
+                                                                    <span>{h.by || 'ไม่ระบุ'}</span>
+                                                                    <span className="block text-[8.5px] opacity-75">{h.timestamp}</span>
+                                                                </div>
+                                                            </div>
+                                                        )) : (
+                                                            <p className="text-center text-slate-400 py-2 text-[10px]">ไม่มีประวัติบันทึกเพิ่มเติม</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </main>
+
+                    {}
+                    {/* MODAL: ADD NEW ITEM */}
+                    {showAddModal && (
+                        <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4">
+                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                    <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                                        <LucideIcon name="package-plus" className="text-emerald-600" size={20} />
+                                        เพิ่มรายการอะไหล่ใหม่
+                                    </h3>
+                                    <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600"><LucideIcon name="x" size={18} /></button>
+                                </div>
+
+                                <form onSubmit={handleAddItem} className="space-y-3 text-left">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ชื่อรายการอะไหล่ *</label>
+                                        <input required type="text" placeholder="ระบุชื่ออะไหล่..." className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 font-medium" value={addForm.name} onChange={(e) => setAddForm({...addForm, name: e.target.value})} />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">หมวดหมู่</label>
+                                            <select className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-semibold outline-none focus:border-emerald-500" value={addForm.category} onChange={(e) => setAddForm({...addForm, category: e.target.value})}>
+                                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">จำนวนเริ่มต้น</label>
+                                            <input type="number" min="0" className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 font-bold" value={addForm.quantity} onChange={(e) => setAddForm({...addForm, quantity: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">จุดสั่งซื้อขั้นต่ำ (Min Stock)</label>
+                                            <input type="number" min="1" className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 font-bold" value={addForm.minStock} onChange={(e) => setAddForm({...addForm, minStock: e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">URL รูปภาพ (ถ้ามี)</label>
+                                            <input type="url" placeholder="https://..." className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500" value={addForm.image} onChange={(e) => setAddForm({...addForm, image: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ลิงก์เอกสาร / สั่งซื้อ (ถ้ามี)</label>
+                                        <input type="url" placeholder="https://..." className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500" value={addForm.link} onChange={(e) => setAddForm({...addForm, link: e.target.value})} />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">หมายเหตุ (ตำแหน่งจัดเก็บ / รหัส)</label>
+                                        <input type="text" placeholder="ระบุตู้/ชั้นวาง หรือรหัส..." className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500" value={addForm.note} onChange={(e) => setAddForm({...addForm, note: e.target.value})} />
+                                    </div>
+
+                                    <div className="pt-2 flex gap-3">
+                                        <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold uppercase">ยกเลิก</button>
+                                        <button type="submit" className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase shadow-md">บันทึกรายการ</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL: ADJUST STOCK (IN/OUT) */}
+                    {showAdjustModal && (
+                        <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal text-center">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 space-y-4">
+                                <h3 className="font-bold text-base text-slate-800">
+                                    {showAdjustModal.type === 'in' ? '🟢 เติมสต๊อกอะไหล่' : '🔴 เบิกสต๊อกอะไหล่'}
+                                </h3>
+                                <p className="text-xs text-slate-500 font-semibold">{showAdjustModal.item.name}</p>
+
+                                <div className="space-y-3 text-left">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase">จำนวนที่ต้องการ {showAdjustModal.type === 'in' ? 'เติม' : 'เบิก'}</label>
+                                        <input type="number" min="1" autoFocus className="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-center text-xl font-black outline-none focus:border-emerald-500" value={adjustQty} onChange={(e) => setAdjustQty(e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase">หมายเหตุเพิ่มเติม</label>
+                                        <input type="text" placeholder="ระบุเหตุผล/ชื่องาน..." className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 font-medium" value={adjustNote} onChange={(e) => setAdjustNote(e.target.value)} />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button onClick={() => setShowAdjustModal(null)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold uppercase">ยกเลิก</button>
+                                    <button onClick={handleAdjustStock} className={`flex-1 py-3 text-white rounded-xl text-xs font-bold uppercase shadow-md ${showAdjustModal.type === 'in' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'}`}>ยืนยัน</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL: DELETE CONFIRMATION */}
+                    {showDeleteModal && (
+                        <div className="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal text-center">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 space-y-4">
+                                <LucideIcon name="alert-triangle" size={48} className="text-rose-500 mx-auto" />
+                                <h3 className="font-bold text-base text-slate-800">ยืนยันการลบรายการ?</h3>
+                                <p className="text-xs text-slate-500 font-semibold">{showDeleteModal.name}</p>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button onClick={() => setShowDeleteModal(null)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold uppercase">ยกเลิก</button>
+                                    <button onClick={handleDeleteItem} className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold uppercase shadow-md">ยืนยันการลบ</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL: CATEGORIES MANAGEMENT */}
+                    {showCategoryModal && (
+                        <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 space-y-4">
+                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                    <h3 className="font-bold text-slate-800 text-sm">จัดการหมวดหมู่สินค้า</h3>
+                                    <button onClick={() => setShowCategoryModal(false)} className="text-slate-400 hover:text-slate-600"><LucideIcon name="x" size={18} /></button>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <input type="text" placeholder="เพิ่มหมวดหมู่..." className="flex-1 h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 font-medium" value={newCatInput} onChange={(e) => setNewCatInput(e.target.value)} />
+                                    <button onClick={() => { if(newCatInput.trim() && !categories.includes(newCatInput.trim())){ setCategories([...categories, newCatInput.trim()]); setNewCatInput(''); } }} className="px-3 bg-emerald-600 text-white rounded-xl text-xs font-bold">+</button>
+                                </div>
+
+                                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                    {categories.map((cat, idx) => (
+                                        <div key={idx} className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 text-xs font-semibold">
+                                            <span>{cat}</span>
+                                            <button onClick={() => setCategories(categories.filter(c => c !== cat))} className="text-slate-400 hover:text-rose-600"><LucideIcon name="trash-2" size={14}/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* LIGHTBOX PREVIEW IMAGE */}
+                    {previewImage && (
+                        <div className="fixed inset-0 z-[300] bg-slate-950/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
+                            <div className="bg-white p-2 rounded-2xl max-w-lg max-h-[85vh] overflow-hidden relative shadow-2xl border border-slate-200 animate-modal">
+                                <button className="absolute top-4 right-4 bg-slate-900/60 text-white p-2 rounded-full hover:bg-slate-900 transition-colors"><LucideIcon name="x" size={16}/></button>
+                                <img src={previewImage} className="w-full h-full object-contain rounded-xl" />
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<StockApp />);
+    </script>
+</body>
+</html>
