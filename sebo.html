@@ -12,10 +12,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f8fafc">
     
+    <!-- Stable UMD React, ReactDOM, Babel Standalone & UI Libraries -->
     <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/babel-standalone/7.22.20/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.20/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Explicitly load the UMD bundle of Lucide to prevent ESM module syntax errors -->
     <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
     
     <style>
@@ -23,14 +25,15 @@
         
         body { 
             font-family: 'Anuphan', sans-serif; 
-            background-color: #f8fafc; 
-            color: #0f172a; 
+            background-color: #f8fafc; /* Cool Slate-50 Background as seen in image_d56f6f.jpg */
+            color: #0f172a; /* Deep Slate-900 Text */
             -webkit-tap-highlight-color: transparent; 
             overflow-x: hidden; 
             user-select: none; 
             overscroll-behavior-y: contain; 
         }
         
+        /* Premium spread shadow from SaaS design patterns */
         .saas-shadow { 
             box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.05), 0 1px 3px rgba(15, 23, 42, 0.02); 
         }
@@ -52,6 +55,7 @@
         }
         .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
         
+        /* Modernized Urgent minimal border alert matching SaaS UI design */
         .urgent-minimal-card { 
             background-color: #ffffff; 
             border: 1.5px solid #ef4444 !important; 
@@ -93,6 +97,7 @@
     <script type="text/babel" data-presets="react,env">
         const { useState, useEffect, useMemo, useRef, memo } = React;
 
+        // Optimized LucideIcon: Avoids excessive DOM manipulations and batched rendering
         const LucideIcon = memo(({ name, size = 20, className = "" }) => {
             const ref = useRef(null);
             useEffect(() => {
@@ -103,6 +108,7 @@
                     i.setAttribute('data-lucide', name);
                     ref.current.appendChild(i);
                     
+                    // Delay slightly to batch icon creations and prevent thread locking
                     const timer = setTimeout(() => {
                         if (active && ref.current) {
                             window.lucide.createIcons({
@@ -132,6 +138,7 @@
             return id ? `https://lh3.googleusercontent.com/d/${id}=s400` : url;
         };
 
+        // Highly optimized CSV Parser
         const parseCSV = (text) => {
             if (!text) return [];
             const result = [];
@@ -177,13 +184,6 @@
             }
         };
 
-        const generateUUID = () => {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        };
-
         const App = () => {
             const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2k5sbWJI52Psj6FlXTOqLY6uUqZmP6VeFsaY1Qhnl9Ky7dCuiS3zeKUS2cDN1n4w/exec"; 
             
@@ -208,10 +208,9 @@
             const [viewSubTab, setViewSubTab] = useState('pending'); 
             const [manageSubTab, setManageSubTab] = useState('search');
             
-            const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('seb_current_user') || ''); 
-            const [currentUserRank, setCurrentUserRank] = useState(() => localStorage.getItem('seb_current_rank') || 'Guest'); 
-            const [showUserModal, setShowUserModal] = useState(() => !localStorage.getItem('seb_current_user')); 
-            
+            const [currentUser, setCurrentUser] = useState(''); 
+            const [currentUserRank, setCurrentUserRank] = useState('Guest'); 
+            const [showUserModal, setShowUserModal] = useState(true); 
             const [modalStep, setModalStep] = useState('select'); 
             const [selectedTempUser, setSelectedTempUser] = useState(null);
             const [passwordInput, setPasswordInput] = useState('');
@@ -280,6 +279,10 @@
 
             const searchContainerRef = useRef(null);
 
+            const [pullY, setPullY] = useState(0);
+            const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+            const PULL_THRESHOLD = 75;
+
             const fetchCsvData = async (gid) => {
                 const u = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}&ts=${Date.now()}`;
                 try { 
@@ -333,13 +336,14 @@
                 setRecordsLoading(true);
                 try {
                     const text = await fetchCsvData(RECORDS_GID);
+                    // Pre-cache parsing to dramatically improve list rendering times
                     const records = parseCSV(text).slice(2).map((row, index) => {
                         if (row.length < 3) return null;
                         const dateObj = parseThaiDate(row[0]);
                         return {
                             id: index, 
                             timestamp: row[0], 
-                            timestampMs: dateObj.getTime(),
+                            timestampMs: dateObj.getTime(), // Cache epoch time
                             type: row[1], 
                             productName: row[2], 
                             imageUrl: row[3], 
@@ -357,7 +361,7 @@
                     setSavedItems(records);
                 } finally { setRecordsLoading(false); }
             };
-
+            
             const fetchLogs = async () => {
                 setLogsLoading(true);
                 try {
@@ -401,17 +405,17 @@
             };
 
             const copyToClipboard = (text) => {
-                try {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(`คัดลอก "${text}" แล้ว`);
+                }).catch(err => {
                     const textArea = document.createElement("textarea");
                     textArea.value = text;
                     document.body.appendChild(textArea);
                     textArea.select();
                     document.execCommand("copy");
                     document.body.removeChild(textArea);
-                    showToast(`คัดลอกข้อความแล้ว`);
-                } catch(e) {
                     showToast(`คัดลอกแล้ว`);
-                }
+                });
             };
             
             const handleEditAnnouncementClick = () => {
@@ -960,6 +964,30 @@
             return (
                 <div className="min-h-screen flex flex-col pb-24 md:pb-6 relative bg-slate-50">
                     
+                    {/* Pull-To-Refresh Visual */}
+                    <div 
+                        className="fixed left-0 right-0 flex justify-center z-[9999] pointer-events-none"
+                        style={{ 
+                            top: 'env(safe-area-inset-top)',
+                            transform: `translateY(${pullY > 0 ? pullY : -50}px)`,
+                            opacity: pullY > 10 ? 1 : 0,
+                            transition: pullY === 0 || isPullRefreshing ? 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s' : 'none'
+                        }}
+                    >
+                        <div className="bg-white rounded-full p-2.5 shadow-md border border-slate-200/50 flex items-center justify-center h-10 w-10 mt-4">
+                            {isPullRefreshing ? (
+                                <LucideIcon name="loader-2" className="animate-spin text-indigo-600" size={18} />
+                            ) : (
+                                <LucideIcon 
+                                    name="arrow-down" 
+                                    className={`text-slate-500 transition-transform duration-300 ${pullY >= PULL_THRESHOLD ? 'rotate-180 text-indigo-600' : ''}`} 
+                                    size={18} 
+                                />
+                            )}
+                        </div>
+                    </div>
+
+                    {}
                     {toastMessage && (
                         <div className="fixed top-4 left-0 right-0 z-[100] flex justify-center p-4 pt-safe top-safe-toast pointer-events-none">
                             <div className="bg-slate-900 text-slate-100 px-5 py-3 rounded-full shadow-xl flex items-center gap-3.5 animate-slide-down border border-slate-800 pointer-events-auto">
@@ -976,7 +1004,7 @@
                         </div>
                     )}
 
-                    {/* Authentication / Login Modal */}
+                    {}
                     {showUserModal && (
                         <div className="fixed inset-0 z-[200] bg-[#0f172a]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 animate-modal text-center">
                             <div className="max-w-6xl w-full">
@@ -1070,35 +1098,35 @@
                         </div>
                     )}
 
-                    {/* Top iOS Navbar */}
-                    <nav className="bg-white border-b border-slate-200/80 sticky top-0 z-50 px-4 sm:px-6 navbar-ios flex items-center justify-between">
+                    {}
+                    <nav className="bg-white border-b border-slate-200/80 sticky top-0 z-50 px-6 navbar-ios flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200/50 shadow-sm shrink-0">
+                            <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200/50 shadow-sm">
                                 <img src="sebo.png" className="w-full h-full object-cover" onError={(e) => {e.target.style.display='none'}} />
                             </div>
                             <div>
-                                <h1 className="text-sm font-bold text-slate-800 tracking-wider uppercase leading-none">SEBOFFICIAL</h1>
-                                <span className="text-[9px] tracking-widest text-indigo-600 uppercase font-semibold">WORK MANAGEMENT</span>
+                                <h1 className="text-sm font-semibold text-slate-800 tracking-wider uppercase leading-none">SEBOFFICIAL</h1>
+                                <span className="text-[9px] tracking-widest text-indigo-600 uppercase font-semibold">{currentUserRank} ACCESS</span>
                             </div>
                         </div>
-
-                        <div className="flex items-center gap-2 sm:gap-3">
-                            {/* Portal Home Navigation Button */}
-                            <a 
-                                href="login.html" 
-                                className="h-8.5 px-3 rounded-full border border-indigo-200 bg-indigo-50 flex items-center gap-1.5 text-indigo-600 text-xs font-bold active:scale-95 transition-all hover:bg-indigo-100 shadow-sm"
-                                title="กลับไปยัง Enterprise Portal"
-                            >
-                                <LucideIcon name="grid" size={14} />
-                                <span className="hidden sm:inline text-[11px] font-semibold">หน้าหลัก Portal</span>
-                            </a>
+                        <div className="flex items-center gap-3">
+                            {currentUserRank !== 'Guest' && (
+                                <a 
+                                    href="express.html"
+                                    target="_self"
+                                    className="w-8.5 h-8.5 rounded-full border border-slate-200/60 bg-slate-50 flex items-center justify-center text-slate-600 active:scale-90 transition-all hover:bg-slate-100"
+                                    title="Express"
+                                >
+                                    <LucideIcon name="truck" size={14} className="text-indigo-600" />
+                                </a>
+                            )}
 
                             <button onClick={handleGlobalRefresh} className={`w-8.5 h-8.5 rounded-full border border-slate-200/60 bg-slate-50 flex items-center justify-center text-slate-600 active:scale-90 transition-all ${isGlobalRefreshing ? 'animate-spin' : ''}`}>
                                 <LucideIcon name="refresh-cw" size={13} />
                             </button>
                             
-                            <div onClick={() => setShowUserModal(true)} className="flex items-center gap-2 border border-slate-200/60 bg-slate-50 px-3 py-1.5 rounded-full cursor-pointer hover:bg-slate-100 transition-all active:scale-95">
-                                <div className="w-5.5 h-5.5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-medium uppercase">{currentUser ? currentUser.charAt(0) : '?'}</div>
+                            <div onClick={() => setShowUserModal(true)} className="flex items-center gap-2 border border-slate-200/60 bg-slate-50 px-3.5 py-1.5 rounded-full cursor-pointer hover:bg-slate-100 transition-all active:scale-95">
+                                <div className="w-5.5 h-5.5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-medium uppercase">{currentUser.charAt(0) || '?'}</div>
                                 <span className="text-[11px] text-slate-600 hidden sm:block tracking-wide font-medium">{currentUser || 'ระบุตัวตน'}</span>
                             </div>
                         </div>
@@ -1118,14 +1146,15 @@
                         </div>
                     )}
 
+                    {/* Main Container */}
                     <main className="max-w-5xl mx-auto w-full p-4 md:p-8 space-y-6 flex-1">
                         
-                        {/* Tab Menu - Desktop */}
+                        {/* Tab Menu - Tablet & Desktop */}
                         <div className="hidden md:flex p-1 bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-x-auto no-scrollbar font-medium justify-around">
                             {renderMenuTabs()}
                         </div>
 
-                        {/* Record Tab */}
+                        {}
                         {activeTab === 'record' && currentUserRank !== 'Guest' && (
                             <div className="bg-white rounded-2xl p-6 md:p-10 border border-slate-200/80 saas-shadow animate-modal relative overflow-hidden">
                                 {isSaving && (
@@ -1227,6 +1256,7 @@
                                     )}
                                 </div>
 
+                                {}
                                 {draftItems.length > 0 && (
                                     <div className="border-t border-dashed border-slate-200 pt-8 mt-8 animate-modal">
                                         <div className="flex justify-between items-center mb-4 px-1">
@@ -1267,6 +1297,7 @@
                             </div>
                         )}
 
+                        {}
                         {activeTab === 'view' && (
                             <div className="space-y-6 pb-10 animate-modal">
                                 
@@ -1316,6 +1347,7 @@
                                     </div>
                                 )}
 
+                                {}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {filteredItemsRender.map((item) => {
                                         const key = item.timestamp + item.productName;
@@ -1391,6 +1423,7 @@
                             </div>
                         )}
 
+                        {/* Tab Content: Analysis & Stats */}
                         {activeTab === 'analysis' && (
                             <div className="space-y-6 pb-10 animate-modal text-center md:text-left">
                                 <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 soft-shadow">
@@ -1412,7 +1445,7 @@
                                         </div>
                                         <div className="bg-slate-50 p-6 rounded-2xl text-left border border-slate-200/60">
                                             <p className="text-slate-400 text-[10px] tracking-widest uppercase mb-1 font-bold">จำนวนรายการงาน</p>
-                                            <div className="text-3xl font-bold tracking-tight text-slate-800">{analysisData.totalRecords} <span className="text-xs font-normal text-slate-500">รายการ</span></div>
+                                            <div className="text-3xl font-bold tracking-tight text-slate-805">{analysisData.totalRecords} <span className="text-xs font-normal text-slate-500">รายการ</span></div>
                                         </div>
                                     </div>
                                     
@@ -1452,6 +1485,7 @@
                             </div>
                         )}
 
+                        {/* Tab Content: Manage Products */}
                         {activeTab === 'manage' && (
                             <div className="space-y-6 animate-modal pb-10">
                                 <div className="bg-white rounded-2xl p-2.5 border border-slate-200 flex items-center justify-between gap-2.5 soft-shadow">
@@ -1473,7 +1507,7 @@
                                         {(currentUserRank === 'Admin' || currentUserRank === 'Dev') && (
                                             <button
                                                 onClick={() => { setEditCategoriesMode(true); setTempCategories(categories); }}
-                                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-[10px] tracking-wider uppercase transition-all whitespace-nowrap text-slate-400 hover:bg-slate-50 hover:text-slate-800"
+                                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-[10px] tracking-wider uppercase transition-all whitespace-nowrap text-slate-400 hover:bg-slate-50 hover:text-slate-805"
                                             >
                                                 <LucideIcon name="tags" size={14} /> จัดการหมวดหมู่
                                             </button>
@@ -1542,6 +1576,7 @@
                             </div>
                         )}
 
+                        {}
                         {activeTab === 'dev' && (
                             <div className="space-y-6 pb-10 animate-modal text-center md:text-left">
                                 <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 soft-shadow">
@@ -1613,10 +1648,10 @@
                                                  )}
                                             </div>
                                             
-                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest pt-2 flex items-center gap-2"><LucideIcon name="database" size={16} className="text-slate-500" /> การล้างฐานข้อมูล</h3>
+                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest pt-2 flex items-center gap-2"><LucideIcon name="database" size={16} className="text-slate-505" /> การล้างฐานข้อมูล</h3>
                                             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-2.5 shadow-inner">
                                                 <button onClick={() => setDevActionModal('clear_logs')} className="w-full py-2.5 bg-white border border-slate-200 text-red-600 hover:bg-red-50/50 text-xs font-semibold uppercase tracking-wider rounded-lg shadow-sm">ล้างระบบประวัติการทำงาน (Clear Logs)</button>
-                                                <button onClick={() => setDevActionModal('clear_all_records')} className="w-full py-2.5 bg-red-600 text-white hover:bg-red-700 text-xs font-semibold uppercase tracking-wider rounded-lg shadow-sm">ล้างรายการงานทั้งหมด (Delete All Records)</button>
+                                                <button onClick={() => setDevActionModal('clear_all_records')} className="w-full py-2.5 bg-red-650 bg-red-600 text-white hover:bg-red-700 text-xs font-semibold uppercase tracking-wider rounded-lg shadow-sm">ล้างรายการงานทั้งหมด (Delete All Records)</button>
                                             </div>
                                         </div>
                                     </div>
@@ -1638,28 +1673,29 @@
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Google Workspace Database Dynamic Sync
                         </div>
                     </footer>
-
+                    
+                    {}
                     {devActionModal && (
                         <div className="fixed inset-0 z-[300] bg-slate-900/40 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
                             <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full text-center border border-slate-200">
                                 <LucideIcon name="alert-triangle" size={48} className="text-slate-700 mx-auto mb-4" />
-                                <h3 className="font-semibold text-lg text-slate-800 mb-1 tracking-wide">ยืนยันรหัสการเข้าถึง</h3>
+                                <h3 className="font-semibold text-lg text-slate-850 mb-1 tracking-wide">ยืนยันรหัสการเข้าถึง</h3>
                                 <p className="text-slate-500 text-xs mb-6 leading-relaxed font-semibold">กรุณากรอกรหัสผ่านของคุณเพื่อดำเนินการล้างฐานข้อมูล</p>
                                 <input type="password" inputMode="numeric" pattern="[0-9]*" placeholder="••••" className="w-full py-3 px-4 rounded-xl border border-slate-200 text-center font-mono text-3xl outline-none mb-6 shadow-inner focus:border-indigo-500" value={devPassInput} onChange={(e) => setDevPassInput(e.target.value)} />
                                 <div className="grid grid-cols-2 gap-3 font-semibold">
-                                    <button onClick={() => setDevActionModal(null)} className="h-11 rounded-xl text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors uppercase text-xs tracking-wider">ยกเลิก</button>
+                                    <button onClick={() => setDevActionModal(null)} className="h-11 rounded-xl text-slate-500 bg-slate-100 hover:bg-slate-150 transition-colors uppercase text-xs tracking-wider">ยกเลิก</button>
                                     <button onClick={() => handleClearSheet(devActionModal)} className="h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-md uppercase text-xs tracking-wider">ยืนยัน</button>
                                 </div>
                             </div>
                         </div>
                     )}
-
-                    {/* Edit User Rank Modal */}
+                    
+                    {/* User Position Management Modal */}
                     {editUserRankModal && ( 
                         <div className="fixed inset-0 z-[310] bg-slate-950/40 flex items-center justify-center p-4 backdrop-blur-sm animate-modal"> 
                             <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full text-center border border-slate-200"> 
                                 <LucideIcon name="shield" size={48} className="text-slate-700 mx-auto mb-4" /> 
-                                <h3 className="font-semibold text-md text-slate-800 mb-6 uppercase tracking-wider">ปรับตำแหน่งผู้ใช้งาน</h3> 
+                                <h3 className="font-semibold text-md text-slate-850 mb-6 uppercase tracking-wider">ปรับตำแหน่งผู้ใช้งาน</h3> 
                                 <div className="space-y-2 font-semibold"> 
                                     {['Dev', 'Admin', 'User', 'Guest'].map(r => (
                                         <button key={r} onClick={() => handleUpdateUserSetting(editUserRankModal.name, r, editUserRankModal.pass)} className={`w-full py-3 rounded-xl border transition-all active:scale-98 text-xs tracking-wider ${editUserRankModal.rank === r ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}>{r}</button>
@@ -1670,24 +1706,24 @@
                         </div> 
                     )}
 
-                    {/* Edit User Password Modal */}
+                    {/* User Password Management Modal */}
                     {editUserPassModal && ( 
                         <div className="fixed inset-0 z-[310] bg-slate-950/40 flex items-center justify-center p-4 backdrop-blur-sm animate-modal"> 
                             <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full text-center border border-slate-200"> 
                                 <LucideIcon name="key" size={48} className="text-slate-700 mx-auto mb-4" /> 
-                                <h3 className="font-semibold text-md text-slate-800 mb-6 uppercase tracking-wider">เปลี่ยนรหัสผ่านพนักงาน</h3> 
+                                <h3 className="font-semibold text-md text-slate-850 mb-6 uppercase tracking-wider">เปลี่ยนรหัสผ่านพนักงาน</h3> 
                                 <div className="space-y-4 font-semibold"> 
                                     <input autoFocus type="number" inputMode="numeric" placeholder="0000" className="w-full py-4 rounded-xl bg-slate-50 border border-slate-200 text-center font-bold text-3xl text-slate-800 outline-none focus:border-indigo-500" value={newPassValue} onChange={(e) => setNewPassValue(e.target.value.slice(0, 4))} /> 
                                     <div className="grid grid-cols-2 gap-3"> 
                                         <button onClick={() => setEditUserPassModal(null)} className="h-11 rounded-xl text-slate-500 bg-slate-100 active:scale-95 text-xs font-semibold uppercase tracking-wider">ยกเลิก</button> 
-                                        <button onClick={() => handleUpdateUserSetting(editUserPassModal.name, editUserPassModal.rank, newPassValue)} className="h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 text-xs font-semibold uppercase tracking-wider">บันทึกรหัส</button> 
+                                        <button onClick={() => handleUpdateUserSetting(editUserPassModal.name, editUserPassModal.rank, newPassValue)} className="h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-750 active:scale-95 text-xs font-semibold uppercase tracking-wider">บันทึกรหัส</button> 
                                     </div> 
                                 </div> 
                             </div> 
                         </div> 
                     )}
-
-                    {/* Edit Task Item Modal */}
+                    
+                    {/* Task Content Edit Modal */}
                     {editTaskItem && ( 
                         <div className="fixed inset-0 z-[250] bg-slate-950/40 flex items-center justify-center p-4 backdrop-blur-sm animate-modal text-center font-bold"> 
                             <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200"> 
@@ -1720,37 +1756,63 @@
                             </div> 
                         </div> 
                     )}
-
-                    {/* Delete Task Item Confirmation Modal */}
+                    
+                    {}
                     {itemToDelete && ( 
                         <div className="fixed inset-0 z-[250] bg-slate-950/40 flex items-center justify-center p-4 backdrop-blur-sm animate-modal text-center font-bold"> 
                             <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200"> 
                                 <LucideIcon name="trash-2" size={48} className="text-red-500 mx-auto mb-4" /> 
-                                <h3 className="font-semibold text-lg text-slate-800 mb-1">ลบรายการงานออก?</h3> 
+                                <h3 className="font-semibold text-lg text-slate-850 mb-1">ลบรายการงานออก?</h3> 
                                 <p className="text-slate-400 text-xs mb-8 truncate font-semibold">{itemToDelete.productName}</p> 
                                 <div className="grid grid-cols-2 gap-3 font-semibold"> 
-                                    <button onClick={() => setItemToDelete(null)} className="h-11 rounded-xl text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors uppercase text-xs tracking-wider">ยกเลิก</button> 
+                                    <button onClick={() => setItemToDelete(null)} className="h-11 rounded-xl text-slate-500 bg-slate-100 hover:bg-slate-150 transition-colors uppercase text-xs tracking-wider">ยกเลิก</button> 
                                     <button onClick={confirmDelete} className="h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-md uppercase text-xs tracking-wider">ยืนยัน</button> 
                                 </div> 
                             </div> 
                         </div> 
                     )}
-
-                    {/* Delete Master Product Modal */}
+                    
+                    {/* Delete Master Product Confirmation Modal */}
                     {masterItemToDelete && ( 
                         <div className="fixed inset-0 z-[250] bg-slate-950/40 flex items-center justify-center p-4 animate-modal text-center font-semibold"> 
                             <div className="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 text-center font-bold"> 
                                 <LucideIcon name="alert-triangle" size={48} className="text-red-500 mx-auto mb-4" /> 
-                                <h3 className="font-semibold text-lg text-slate-800 mb-8">ลบสินค้าชิ้นนี้จากระบบคลังหลัก?</h3> 
+                                <h3 className="font-semibold text-lg text-slate-850 mb-8">ลบสินค้าชิ้นนี้จากระบบคลังหลัก?</h3> 
                                 <div className="grid grid-cols-2 gap-3 font-semibold"> 
-                                    <button onClick={() => setMasterItemToDelete(null)} className="h-11 rounded-xl text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors uppercase text-xs tracking-wider">ยกเลิก</button> 
+                                    <button onClick={() => setMasterItemToDelete(null)} className="h-11 rounded-xl text-slate-500 bg-slate-100 hover:bg-slate-150 transition-colors uppercase text-xs tracking-wider">ยกเลิก</button> 
                                     <button onClick={() => confirmDeleteMaster(masterItemToDelete)} className="h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-md uppercase text-xs tracking-wider">ลบทันที</button> 
                                 </div> 
                             </div> 
                         </div> 
                     )}
-
-                    {/* Image Preview Overlay */}
+                    
+                    {/* Modify Product Info Modal */}
+                    {editMasterItem && ( 
+                        <div className="fixed inset-0 z-[210] bg-slate-950/40 flex items-center justify-center p-4 backdrop-blur-sm animate-modal"> 
+                            <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl max-w-sm w-full relative border border-slate-200 font-semibold"> 
+                                <button onClick={() => setEditMasterItem(null)} className="absolute top-6 right-6 bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition-all"><LucideIcon name="x" size={14} /></button> 
+                                <h3 className="font-semibold text-md text-slate-850 mb-8 text-center uppercase tracking-wider">แก้ไขรายการสินค้าคลังหลัก</h3> 
+                                <div className="space-y-5 text-left font-normal text-xs"> 
+                                    <div className="space-y-1.5"> 
+                                        <label className="text-[9px] tracking-widest text-slate-400 uppercase font-bold">ชื่อสินค้า</label> 
+                                        <input type="text" className="w-full h-12 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 text-xs outline-none font-medium" value={editMasterItem.name} onChange={(e) => setEditMasterItem({...editMasterItem, name: e.target.value})} /> 
+                                    </div> 
+                                    <div className="space-y-1.5"> 
+                                        <label className="text-[9px] tracking-widest text-slate-400 uppercase font-bold">ภาพถ่ายใหม่</label> 
+                                        <div className="relative group h-32 w-full bg-slate-50 border border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-colors hover:bg-slate-100/50"> 
+                                            <input type="file" accept="image/*" className="absolute inset-0 opacity-0 z-10 cursor-pointer" onChange={(e) => handleFileChangeInternal(e, setEditMasterItem)} /> 
+                                            {editMasterItem.preview || editMasterItem.imgUrl ? <img src={editMasterItem.preview || editMasterItem.imgUrl} className="h-full w-full object-contain p-2" /> : <div className="text-center opacity-40 uppercase font-bold"><LucideIcon name="image-plus" size={24} className="mx-auto mb-1" />เลือกภาพ</div>} 
+                                        </div> 
+                                    </div> 
+                                    <button onClick={handleUpdateMaster} disabled={isEditingMaster} className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl text-xs font-semibold tracking-widest uppercase shadow-sm flex items-center justify-center gap-2">
+                                        {isEditingMaster ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><LucideIcon name="check-circle" size={14} /> บันทึกการเปลี่ยนแปลง</>}
+                                    </button> 
+                                </div> 
+                            </div> 
+                        </div> 
+                    )}
+                    
+                    {/* Zoom / Full Preview Image Overlay */}
                     {previewImage && ( 
                         <div className="fixed inset-0 z-[400] bg-slate-950/90 flex items-center justify-center p-4 shadow-xl" onClick={() => setPreviewImage(null)}> 
                             <div className="bg-white p-2 rounded-2xl max-w-xl max-h-[85vh] overflow-hidden relative shadow-2xl border border-slate-200 animate-modal"> 
@@ -1766,7 +1828,7 @@
                              <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 text-center font-semibold">
                                 <div className="flex items-center gap-3 mb-5 text-left">
                                     <div className="p-2 bg-slate-100 text-slate-700 rounded-lg"><LucideIcon name="megaphone" size={18} /></div>
-                                    <h3 className="font-semibold text-lg text-slate-800">จัดการประกาศสำคัญ</h3>
+                                    <h3 className="font-semibold text-lg text-slate-850">จัดการประกาศสำคัญ</h3>
                                 </div>
                                 <textarea 
                                     className="w-full h-28 p-4 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 text-xs text-slate-700 resize-none transition-colors font-medium" 
@@ -1775,8 +1837,8 @@
                                     onChange={(e) => setAnnouncementInput(e.target.value)}
                                 ></textarea>
                                 <div className="grid grid-cols-2 gap-3 mt-5">
-                                    <button onClick={() => setShowAnnouncementModal(false)} className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 font-semibold uppercase text-xs tracking-wider transition-colors">ยกเลิก</button>
-                                    <button onClick={handleSaveAnnouncement} className="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold uppercase text-xs tracking-wider shadow-sm transition-colors">บันทึกข้อความ</button>
+                                    <button onClick={() => setShowAnnouncementModal(false)} className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-150 text-slate-500 font-semibold uppercase text-xs tracking-wider transition-colors">ยกเลิก</button>
+                                    <button onClick={handleSaveAnnouncement} className="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-750 text-white font-semibold uppercase text-xs tracking-wider shadow-sm transition-colors">บันทึกข้อความ</button>
                                 </div>
                              </div>
                         </div>
@@ -1787,7 +1849,7 @@
                         <div className="fixed inset-0 z-[500] bg-slate-950/40 flex items-center justify-center p-4 backdrop-blur-sm animate-modal">
                              <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 h-[70vh] flex flex-col font-semibold">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h3 className="font-semibold text-md text-slate-800 tracking-wider uppercase">จัดการหมวดหมู่สินค้า</h3>
+                                    <h3 className="font-semibold text-md text-slate-850 tracking-wider uppercase">จัดการหมวดหมู่สินค้า</h3>
                                     <button onClick={() => setEditCategoriesMode(false)} className="p-1.5 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><LucideIcon name="x" size={16}/></button>
                                 </div>
                                 
