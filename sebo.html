@@ -201,6 +201,10 @@
             const [devPassInput, setDevPassInput] = useState('');
             const [visiblePasswords, setVisiblePasswords] = useState(new Set());
 
+            // Migration state
+            const [isMigrating, setIsMigrating] = useState(false);
+            const [migrationStatus, setMigrationStatus] = useState('');
+
             const searchContainerRef = useRef(null);
 
             const showToast = (message) => {
@@ -436,6 +440,161 @@
                 if (db) {
                     await db.collection("sebo_settings").doc("categories").set({ list: tempCategories });
                     await logAction("อัปเดตหมวดหมู่", tempCategories.join(', '));
+                }
+            };
+
+            // Migration logic from old Google Sheets to Firebase Firestore
+            const handleMigrateFromSheets = async () => {
+                if (!db) { alert("ยังไม่ได้เชื่อมต่อ Firebase"); return; }
+                if (!confirm("คุณต้องการย้ายข้อมูลทั้งหมดจาก Google Sheets มายัง Firebase ใช่หรือไม่?")) return;
+
+                setIsMigrating(true);
+                setMigrationStatus("กำลังดึงข้อมูลจาก Google Sheets...");
+
+                const SHEET_ID = "108d2PHlbqt5h6p6_O-6qRfGHqs2MNK6GBRjVYdpxAZM";
+                const MASTER_GID = "519893714"; 
+                const RECORDS_GID = "379151214";
+                const SETTINGS_GID = "1966833161"; 
+
+                const fetchCsv = async (gid) => {
+                    const u = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}&ts=${Date.now()}`;
+                    try {
+                        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(u)}`);
+                        if (res.ok) return await res.text();
+                        const resDirect = await fetch(u);
+                        if (resDirect.ok) return await resDirect.text();
+                    } catch(e) {}
+                    return "";
+                };
+
+                const parseCSV = (text) => {
+                    if (!text) return [];
+                    const result = [];
+                    const lines = text.split(/\r?\n/);
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        const row = [];
+                        let cur = '';
+                        let inQuote = false;
+                        for (let j = 0; j < line.length; j++) {
+                            const char = line[j];
+                            if (char === '"') inQuote = !inQuote;
+                            else if (char === ',' && !inQuote) { row.push(cur.trim()); cur = ''; }
+                            else cur += char;
+                        }
+                        row.push(cur.trim());
+                        result.push(row);
+                    }
+                    return result;
+                };
+
+                try {
+                    // 1. Migrate Settings & Categories
+                    setMigrationStatus("กำลังย้ายข้อมูลหมวดหมู่และประกาศ...");
+                    const settingsText = await fetchCsv(SETTINGS_GID);
+                    const settingsRows = parseCSV(settingsText);
+                    const cats = [];
+                    let ann = "";
+
+                    if (settingsRows.length > 1 && settingsRows[1][4]) ann = settingsRows[1][4];
+                    settingsRows.slice(1).forEach(row => {
+                        if (row[0]) cats.push(row[0].trim());
+                    });
+
+                    if (cats.length > 0) {
+                        await db.collection("sebo_settings").doc("categories").set({ list: cats });
+                    }
+                    if (ann) {
+                        await db.collection("sebo_settings").doc("announcement").set({ message: ann });
+                    }
+
+                    // 2. Migrate Master Products
+                    setMigrationStatus("กำลังย้ายข้อมูลสินค้าคลังหลัก...");
+                    const masterText = await fetchCsv(MASTER_GID);
+                    const masterRows = parseCSV(masterText).slice(1);
+                    
+                    let masterCount = 0;
+                    for (const row of masterRows) {
+                        if (row[0]) {
+                            const pName = row[0].trim();
+                            const pImg = row[1] ? row[1].trim() : '';
+                            const formattedImg = pImg.match(/id=([^&]+)/)?.[1] || pImg.match(/\/d\/([^/]+)/)?.[1] 
+                                ? `https://lh3.googleusercontent.com/d/${pImg.match(/id=([^&]+)/)?.[1] || pImg.match(/\/d\/([^/]+)/)?.[1]}=s400`
+                                : pImg;
+
+                            await db.collection("sebo_products").add({
+                                name: pName,
+                                imgUrl: formattedImg
+                            });
+                            masterCount++;
+                        }
+                    }
+
+                    // 3. Migrate Tasks Records
+                    setMigrationStatus("กำลังย้ายข้อมูลรายการงานทั้งหมด...");
+                    const recordsText = await fetchCsv(RECORDS_GID);
+                    const recordRows = parseCSV(recordsText).slice(2);
+                    
+                    let taskCount = 0;
+                    let batch = db.batch();
+                    let bCount = 0;
+
+                    for (const row of recordRows) {
+                        if (row.length >= 3 && row[2]) {
+                            const dateStr = row[0] || '';
+                            let tsMs = Date.now();
+                            try {
+                                const parts = dateStr.trim().split(' ')[0].match(/(\d+)\/(\d+)\/(\d+)/);
+                                if (parts) {
+                                    let y = parseInt(parts[3], 10);
+                                    if (y > 2400) y -= 543;
+                                    tsMs = new Date(y, parseInt(parts[2], 10)-1, parseInt(parts[1], 10)).getTime();
+                                }
+                            } catch(e) {}
+
+                            const docRef = db.collection("sebo_tasks").doc();
+                            batch.set(docRef, {
+                                timestamp: dateStr,
+                                timestampMs: tsMs,
+                                type: row[1] || 'งานทั่วไป',
+                                productName: row[2],
+                                imageUrl: row[3] || '',
+                                quantity: row[4] || '1',
+                                isDone: String(row[5]).toUpperCase() === 'TRUE',
+                                isDoing: String(row[6]).toUpperCase() === 'TRUE',
+                                isUrgent: String(row[7]).toUpperCase() === 'TRUE',
+                                memo: row[8] || '',
+                                uuid: row[10] || generateUUID(),
+                                doingBy: row[11] || '',
+                                doneBy: row[12] || '',
+                                isStock: String(row[13]).toUpperCase() === 'TRUE',
+                                user: row[11] || row[12] || 'Admin'
+                            });
+
+                            bCount++;
+                            taskCount++;
+
+                            if (bCount >= 400) {
+                                await batch.commit();
+                                batch = db.batch();
+                                bCount = 0;
+                            }
+                        }
+                    }
+                    if (bCount > 0) {
+                        await batch.commit();
+                    }
+
+                    await logAction("ย้ายข้อมูลอัตโนมัติ", `นำเข้าสินค้า ${masterCount} รายการ และงาน ${taskCount} รายการจาก Google Sheets`);
+                    showToast(`ย้ายข้อมูลสำเร็จ! สินค้า ${masterCount} รายการ, คิวงาน ${taskCount} รายการ`);
+
+                } catch(e) {
+                    console.error("Migration error", e);
+                    alert("เกิดข้อผิดพลาดระหว่างย้ายข้อมูล: " + e.message);
+                } finally {
+                    setIsMigrating(false);
+                    setMigrationStatus('');
                 }
             };
 
@@ -1008,6 +1167,25 @@
                                 <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 saas-shadow">
                                     <h2 className="text-md font-semibold text-slate-800 mb-6 flex items-center gap-2"><LucideIcon name="command" size={20} className="text-indigo-600" /> แผงควบคุมระบบ (Developer Settings)</h2>
                                     
+                                    {/* Data Migration Section */}
+                                    <div className="mb-6 p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <LucideIcon name="database" size={18} className="text-indigo-600" />
+                                            <h3 className="text-xs font-bold text-indigo-900 uppercase tracking-wide">ย้ายข้อมูลเดิมจาก Google Sheets เข้า Firebase</h3>
+                                        </div>
+                                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                                            ดึงรายการสินค้าหลัก หมวดหมู่ ประกาศ และประวัติการทำงานเดิมใน Google Sheets ทั้งหมดมาสร้างเป็นข้อมูลใน Firebase Firestore โดยไม่ต้องพิมพ์ใหม่ทีละรายการ
+                                        </p>
+                                        <button 
+                                            onClick={handleMigrateFromSheets} 
+                                            disabled={isMigrating}
+                                            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm active:scale-95"
+                                        >
+                                            {isMigrating ? <LucideIcon name="loader-2" className="animate-spin" size={16} /> : <LucideIcon name="download-cloud" size={16} />}
+                                            {isMigrating ? migrationStatus : 'กดเพื่อเริ่มดึงข้อมูลอัตโนมัติ (Migration)'}
+                                        </button>
+                                    </div>
+
                                     <div className="space-y-4">
                                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><LucideIcon name="file-text" size={16} /> ประวัติการทำงานในระบบ (System Logs)</h3>
                                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 max-h-60 overflow-y-auto font-mono text-xs space-y-2">
