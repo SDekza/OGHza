@@ -3,21 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
     <title>Enterprise Portal - SEBOFFICIAL</title>
     
+    <!-- PWA Setup & Standalone Navigation Handler -->
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="sebo.png">
     <link rel="apple-touch-icon" href="sebo.png">
     
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SEBOFFICIAL">
     <meta name="theme-color" content="#0f172a">
+
+    <script>
+      // Standalone navigation link handler for PWA mode
+      if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+          while (target && target.tagName !== 'A') {
+            target = target.parentNode;
+          }
+          if (target && target.href && target.hostname === window.location.hostname && !target.hasAttribute('download')) {
+            e.preventDefault();
+            window.location.href = target.getAttribute('href');
+          }
+        }, false);
+      }
+    </script>
     
     <!-- Stable UMD React, ReactDOM, Babel Standalone & UI Libraries -->
     <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.20/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Explicitly load the UMD bundle of Lucide to prevent ESM module syntax errors -->
     <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
     
     <style>
@@ -30,8 +49,8 @@
 
         body { 
             font-family: 'Anuphan', sans-serif; 
-            background-color: #0f172a; /* Slate 900 */
-            color: #f8fafc; /* Slate 50 */
+            background-color: #0f172a; 
+            color: #f8fafc; 
             -webkit-tap-highlight-color: transparent; 
             overflow-x: hidden; 
             user-select: none; 
@@ -61,7 +80,6 @@
         .pin-dot.filled { background-color: #6366f1; transform: scale(1.1); border-color: #6366f1; }
         .pin-dot.empty { background-color: transparent; border: 2px solid #475569; }
 
-        /* Fancy Background Glow */
         .glow-bg {
             position: absolute;
             width: 600px;
@@ -127,9 +145,6 @@
             return <span ref={ref} className={`inline-flex items-center justify-center ${className}`} style={{ width: size, height: size, minWidth: size }} />;
         });
 
-        // ==========================================
-        // CONFIGURATION (Using existing Google Sheet)
-        // ==========================================
         const SHEET_ID = "108d2PHlbqt5h6p6_O-6qRfGHqs2MNK6GBRjVYdpxAZM";
         const SETTINGS_GID = "1966833161"; 
         
@@ -173,7 +188,6 @@
             const [passwordInput, setPasswordInput] = useState('');
             const [passError, setPassError] = useState(false);
 
-            // Prevent Pinch-to-Zoom globally
             useEffect(() => {
                 const preventMultiTouch = (e) => {
                     if (e.touches && e.touches.length > 1) {
@@ -185,11 +199,8 @@
                     e.preventDefault();
                 };
 
-                // Prevent multi-touch zoom on mobile
                 document.addEventListener('touchstart', preventMultiTouch, { passive: false });
                 document.addEventListener('touchmove', preventMultiTouch, { passive: false });
-
-                // Prevent Safari gestures
                 document.addEventListener('gesturestart', preventGesture, { passive: false });
                 document.addEventListener('gesturechange', preventGesture, { passive: false });
                 document.addEventListener('gestureend', preventGesture, { passive: false });
