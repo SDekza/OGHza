@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
     <title>Stock Spare - SEBOFFICIAL</title>
     
     <link rel="icon" type="image/png" href="sebo.png">
@@ -82,7 +83,7 @@
     <script type="text/babel" data-presets="react,env">
         const { useState, useEffect, useMemo, useRef, memo } = React;
 
-        // Firebase Configuration (from your project)
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCLKMgC5Y_zg97VaWjPVFXpXhp2zon7TP0",
             authDomain: "stock-spare-c9692.firebaseapp.com",
@@ -162,9 +163,10 @@
 
             // Modals
             const [showAddModal, setShowAddModal] = useState(false);
-            const [showAdjustModal, setShowAdjustModal] = useState(null); // { item, type: 'in'|'out' }
+            const [showEditModal, setShowEditModal] = useState(null); // Item object being edited
+            const [showAdjustModal, setShowAdjustModal] = useState(null);
             const [showCategoryModal, setShowCategoryModal] = useState(false);
-            const [showDeleteModal, setShowDeleteModal] = useState(null); // item to delete
+            const [showDeleteModal, setShowDeleteModal] = useState(null);
             const [previewImage, setPreviewImage] = useState(null);
 
             // Toast Message
@@ -172,6 +174,7 @@
 
             // Forms
             const [addForm, setAddForm] = useState({ name: '', category: 'อะไหล่ทั่วไป', quantity: '1', minStock: '5', link: '', image: '', note: '' });
+            const [editForm, setEditForm] = useState({ name: '', category: 'อะไหล่ทั่วไป', quantity: '1', minStock: '5', link: '', image: '', note: '' });
             const [adjustQty, setAdjustQty] = useState('1');
             const [adjustNote, setAdjustNote] = useState('');
             const [newCatInput, setNewCatInput] = useState('');
@@ -216,6 +219,19 @@
                 fetchStockItems();
             }, []);
 
+            const openEditModal = (item) => {
+                setShowEditModal(item);
+                setEditForm({
+                    name: item.name || '',
+                    category: item.category || categories[0] || 'อะไหล่ทั่วไป',
+                    quantity: String(item.quantity || 0),
+                    minStock: String(item.minStock || 5),
+                    link: item.link || '',
+                    image: item.image || '',
+                    note: item.note || ''
+                });
+            };
+
             const handleAddItem = async (e) => {
                 e.preventDefault();
                 if (!addForm.name.trim()) return;
@@ -255,6 +271,37 @@
                 setAddForm({ name: '', category: categories[0] || 'อะไหล่ทั่วไป', quantity: '1', minStock: '5', link: '', image: '', note: '' });
             };
 
+            const handleEditItem = async (e) => {
+                e.preventDefault();
+                if (!showEditModal || !editForm.name.trim()) return;
+                const target = showEditModal;
+
+                const updatedData = {
+                    name: editForm.name.trim(),
+                    category: editForm.category,
+                    quantity: parseInt(editForm.quantity) || 0,
+                    minStock: parseInt(editForm.minStock) || 5,
+                    link: editForm.link.trim(),
+                    image: editForm.image.trim(),
+                    note: editForm.note.trim()
+                };
+
+                if (db) {
+                    try {
+                        await db.collection("stock_spare").doc(target.id).update(updatedData);
+                    } catch(err) {
+                        console.error("Update failed", err);
+                    }
+                } else {
+                    const updated = items.map(i => i.id === target.id ? { ...i, ...updatedData } : i);
+                    setItems(updated);
+                    saveLocalData(updated);
+                }
+
+                showToast(`อัปเดตข้อมูล "${updatedData.name}" เรียบร้อยแล้ว`);
+                setShowEditModal(null);
+            };
+
             const handleAdjustStock = async () => {
                 if (!showAdjustModal) return;
                 const { item, type } = showAdjustModal;
@@ -273,7 +320,7 @@
                         timestamp: new Date().toLocaleString('th-TH')
                     },
                     ...(item.history || [])
-                ].slice(0, 10); // keep max 10
+                ].slice(0, 10);
 
                 if (db) {
                     try {
@@ -380,7 +427,6 @@
                         </div>
                     </nav>
 
-                    {}
                     <main className="max-w-5xl mx-auto w-full p-4 md:p-6 space-y-4 flex-1">
                         
                         {/* Control Bar */}
@@ -449,7 +495,6 @@
                             </div>
                         </div>
 
-                        {}
                         {loading ? (
                             <div className="py-20 text-center space-y-3">
                                 <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -475,7 +520,7 @@
                                                     onClick={() => item.image && setPreviewImage(item.image)}
                                                 >
                                                     {item.image ? (
-                                                        <img src={item.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                        <img src={item.image} referrerpolicy="no-referrer" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                                                     ) : (
                                                         <LucideIcon name="package-search" size={24} className="text-slate-400" />
                                                     )}
@@ -508,7 +553,7 @@
                                                     )}
                                                 </div>
 
-                                                {/* Stock Adjust Buttons */}
+                                                {/* Stock Adjust Buttons & Actions */}
                                                 <div className="flex items-center gap-2 shrink-0">
                                                     <div className="text-center px-2">
                                                         <span className="text-[9px] text-slate-400 font-bold uppercase block leading-none">คงเหลือ</span>
@@ -532,6 +577,16 @@
                                                         </button>
                                                     </div>
 
+                                                    {currentUserRank !== 'Guest' && (
+                                                        <button 
+                                                            onClick={() => openEditModal(item)}
+                                                            className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-200/80 hover:bg-amber-600 hover:text-white flex items-center justify-center font-bold active:scale-90 transition-all"
+                                                            title="แก้ไขรายละเอียดอะไหล่"
+                                                        >
+                                                            <LucideIcon name="pencil" size={14} />
+                                                        </button>
+                                                    )}
+
                                                     <button 
                                                         onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
                                                         className="w-8 h-8 rounded-lg text-slate-400 hover:bg-slate-100 flex items-center justify-center transition-colors"
@@ -549,12 +604,20 @@
                                                             <LucideIcon name="history" size={13} /> ประวัติการทำรายการ (10 รายการล่าสุด)
                                                         </span>
                                                         {currentUserRank !== 'Guest' && (
-                                                            <button 
-                                                                onClick={() => setShowDeleteModal(item)}
-                                                                className="text-rose-600 hover:text-rose-700 text-[10px] font-bold flex items-center gap-1"
-                                                            >
-                                                                <LucideIcon name="trash-2" size={12} /> ลบรายการนี้
-                                                            </button>
+                                                            <div className="flex items-center gap-3">
+                                                                <button 
+                                                                    onClick={() => openEditModal(item)}
+                                                                    className="text-amber-600 hover:text-amber-700 text-[10px] font-bold flex items-center gap-1"
+                                                                >
+                                                                    <LucideIcon name="pencil" size={12} /> แก้ไขรายละเอียด
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => setShowDeleteModal(item)}
+                                                                    className="text-rose-600 hover:text-rose-700 text-[10px] font-bold flex items-center gap-1"
+                                                                >
+                                                                    <LucideIcon name="trash-2" size={12} /> ลบรายการนี้
+                                                                </button>
+                                                            </div>
                                                         )}
                                                     </div>
 
@@ -586,7 +649,6 @@
                         )}
                     </main>
 
-                    {}
                     {/* MODAL: ADD NEW ITEM */}
                     {showAddModal && (
                         <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal">
@@ -642,6 +704,67 @@
                                     <div className="pt-2 flex gap-3">
                                         <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold uppercase">ยกเลิก</button>
                                         <button type="submit" className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold uppercase shadow-md">บันทึกรายการ</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL: EDIT ITEM DETAILS */}
+                    {showEditModal && (
+                        <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4">
+                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                    <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                                        <LucideIcon name="pencil" className="text-amber-600" size={18} />
+                                        แก้ไขรายละเอียดอะไหล่
+                                    </h3>
+                                    <button onClick={() => setShowEditModal(null)} className="text-slate-400 hover:text-slate-600"><LucideIcon name="x" size={18} /></button>
+                                </div>
+
+                                <form onSubmit={handleEditItem} className="space-y-3 text-left">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ชื่อรายการอะไหล่ *</label>
+                                        <input required type="text" placeholder="ระบุชื่ออะไหล่..." className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 font-medium" value={editForm.name} onChange={(e) => setEditForm({...editForm, name: e.target.value})} />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">หมวดหมู่</label>
+                                            <select className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-semibold outline-none focus:border-emerald-500" value={editForm.category} onChange={(e) => setEditForm({...editForm, category: e.target.value})}>
+                                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">จำนวนคงเหลือ</label>
+                                            <input type="number" min="0" className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 font-bold" value={editForm.quantity} onChange={(e) => setEditForm({...editForm, quantity: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">จุดสั่งซื้อขั้นต่ำ (Min Stock)</label>
+                                            <input type="number" min="1" className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500 font-bold" value={editForm.minStock} onChange={(e) => setEditForm({...editForm, minStock: e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">URL รูปภาพ (ถ้ามี)</label>
+                                            <input type="url" placeholder="https://..." className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500" value={editForm.image} onChange={(e) => setEditForm({...editForm, image: e.target.value})} />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ลิงก์เอกสาร / สั่งซื้อ (ถ้ามี)</label>
+                                        <input type="url" placeholder="https://..." className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500" value={editForm.link} onChange={(e) => setEditForm({...editForm, link: e.target.value})} />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">หมายเหตุ (ตำแหน่งจัดเก็บ / รหัส)</label>
+                                        <input type="text" placeholder="ระบุตู้/ชั้นวาง หรือรหัส..." className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none focus:border-emerald-500" value={editForm.note} onChange={(e) => setEditForm({...editForm, note: e.target.value})} />
+                                    </div>
+
+                                    <div className="pt-2 flex gap-3">
+                                        <button type="button" onClick={() => setShowEditModal(null)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold uppercase">ยกเลิก</button>
+                                        <button type="submit" className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold uppercase shadow-md">บันทึกการแก้ไข</button>
                                     </div>
                                 </form>
                             </div>
@@ -723,7 +846,7 @@
                         <div className="fixed inset-0 z-[300] bg-slate-950/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
                             <div className="bg-white p-2 rounded-2xl max-w-lg max-h-[85vh] overflow-hidden relative shadow-2xl border border-slate-200 animate-modal">
                                 <button className="absolute top-4 right-4 bg-slate-900/60 text-white p-2 rounded-full hover:bg-slate-900 transition-colors"><LucideIcon name="x" size={16}/></button>
-                                <img src={previewImage} className="w-full h-full object-contain rounded-xl" />
+                                <img src={previewImage} referrerpolicy="no-referrer" className="w-full h-full object-contain rounded-xl" />
                             </div>
                         </div>
                     )}
