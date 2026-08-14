@@ -6,12 +6,31 @@
     <meta name="referrer" content="no-referrer">
     <title>Work Management - SEBOFFICIAL</title>
     
+    <!-- PWA Setup & Standalone Navigation Handler -->
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="sebo.png">
     <link rel="apple-touch-icon" href="sebo.png">
     
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SEBOFFICIAL">
     <meta name="theme-color" content="#f8fafc">
+
+    <script>
+      // Standalone navigation link handler for PWA mode
+      if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+          while (target && target.tagName !== 'A') {
+            target = target.parentNode;
+          }
+          if (target && target.href && target.hostname === window.location.hostname && !target.hasAttribute('download')) {
+            e.preventDefault();
+            window.location.href = target.getAttribute('href');
+          }
+        }, false);
+      }
+    </script>
     
     <!-- React & Babel Standalone -->
     <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
@@ -180,7 +199,7 @@
             const [workTypeFilter, setWorkTypeFilter] = useState('all');
             const [analysisRange, setAnalysisRange] = useState('7d');
 
-            // Tasks Pagination (หน้าละ 10 รายการ เพื่อความเร็วสูงสุด)
+            // Tasks Pagination (หน้าละ 10 รายการ)
             const [taskCurrentPage, setTaskCurrentPage] = useState(1);
             const TASKS_PER_PAGE = 10;
 
@@ -224,12 +243,10 @@
                 setTimeout(() => setToastMessage(null), 2500);
             };
 
-            // Reset Task Pagination when tab/filters change
             useEffect(() => {
                 setTaskCurrentPage(1);
             }, [viewSubTab, workTypeFilter, completedDateFilter]);
 
-            // Prevent Pinch-to-Zoom globally except in Lightbox
             useEffect(() => {
                 const preventMultiTouch = (e) => {
                     if (e.touches && e.touches.length > 1) {
@@ -264,7 +281,6 @@
                 };
             }, []);
 
-            // Reset image scale when lightbox closes
             useEffect(() => {
                 if (!previewImage) {
                     setImageScale(1);
@@ -278,7 +294,6 @@
                     return;
                 }
 
-                // 1. Listen Tasks
                 const unsubTasks = db.collection("sebo_tasks").onSnapshot(snapshot => {
                     const loadedTasks = [];
                     snapshot.forEach(doc => {
@@ -290,7 +305,6 @@
                     setLoading(false);
                 }, err => console.error("Tasks sync error", err));
 
-                // 2. Listen Master Products
                 const unsubProducts = db.collection("sebo_products").onSnapshot(snapshot => {
                     const loadedProds = [];
                     snapshot.forEach(doc => {
@@ -299,7 +313,6 @@
                     setMasterProducts(loadedProds);
                 });
 
-                // 3. Listen Categories
                 const unsubCats = db.collection("sebo_settings").doc("categories").onSnapshot(doc => {
                     if (doc.exists && doc.data().list) {
                         setCategories(doc.data().list);
@@ -308,12 +321,10 @@
                     }
                 });
 
-                // 4. Listen Announcement
                 const unsubAnn = db.collection("sebo_settings").doc("announcement").onSnapshot(doc => {
                     if (doc.exists) setAnnouncement(doc.data().message || "");
                 });
 
-                // 5. Listen System Logs
                 const unsubLogs = db.collection("sebo_logs").onSnapshot(snapshot => {
                     const loadedLogs = [];
                     snapshot.forEach(doc => loadedLogs.push({ id: doc.id, ...doc.data() }));
@@ -520,7 +531,6 @@
                 showToast("บันทึกหมวดหมู่เรียบร้อยแล้ว");
             };
 
-            // Image Lightbox Interaction Handlers
             const handleMouseDown = (e) => {
                 if (imageScale > 1) {
                     setIsDragging(true);
@@ -585,7 +595,6 @@
                 }
             };
 
-            // Trigger Backup Confirmation Popup
             const triggerBackupToGoogleDocs = () => {
                 setConfirmModal({
                     type: 'backup',
@@ -601,7 +610,6 @@
                 });
             };
 
-            // Backup Firebase Data into Google Docs format
             const executeBackupToGoogleDocs = async () => {
                 setIsBackingUp(true);
                 showToast("กำลังดึงข้อมูลจาก Firebase เพื่อสำรองข้อมูล...");
@@ -760,7 +768,6 @@
                 }
             };
 
-            // Trigger Migration Confirmation Popup
             const triggerMigrateFromSheets = () => {
                 if (!db) {
                     showToast("ยังไม่ได้เชื่อมต่อ Firebase");
@@ -780,7 +787,6 @@
                 });
             };
 
-            // Migration logic from old Google Sheets to Firebase Firestore
             const executeMigrateFromSheets = async () => {
                 setIsMigrating(true);
                 setMigrationStatus("กำลังดึงข้อมูลจาก Google Sheets...");
@@ -929,7 +935,6 @@
                 }
             };
 
-            // Filters & Calculations
             const filteredByType = useMemo(() => {
                 return savedItems.filter(i => {
                     if (workTypeFilter === 'all') return true;
