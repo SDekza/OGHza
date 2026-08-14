@@ -12,12 +12,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f8fafc">
     
-    <!-- Stable UMD React, ReactDOM, Babel Standalone & UI Libraries -->
     <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/babel-standalone/7.22.20/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Explicitly load the UMD bundle of Lucide -->
     <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
     
     <style>
@@ -210,7 +208,6 @@
             const [viewSubTab, setViewSubTab] = useState('pending'); 
             const [manageSubTab, setManageSubTab] = useState('search');
             
-            // Check local authentication state from index.html portal
             const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('seb_current_user') || ''); 
             const [currentUserRank, setCurrentUserRank] = useState(() => localStorage.getItem('seb_current_rank') || 'Guest'); 
             const [showUserModal, setShowUserModal] = useState(() => !localStorage.getItem('seb_current_user')); 
@@ -282,10 +279,6 @@
             const [workTypeFilter, setWorkTypeFilter] = useState('all');
 
             const searchContainerRef = useRef(null);
-
-            const [pullY, setPullY] = useState(0);
-            const [isPullRefreshing, setIsPullRefreshing] = useState(false);
-            const PULL_THRESHOLD = 75;
 
             const fetchCsvData = async (gid) => {
                 const u = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}&ts=${Date.now()}`;
@@ -1090,7 +1083,7 @@
                         </div>
 
                         <div className="flex items-center gap-2 sm:gap-3">
-                            <!-- Portal Home Navigation Button -->
+                            {/* Portal Home Navigation Button */}
                             <a 
                                 href="login.html" 
                                 className="h-8.5 px-3 rounded-full border border-indigo-200 bg-indigo-50 flex items-center gap-1.5 text-indigo-600 text-xs font-bold active:scale-95 transition-all hover:bg-indigo-100 shadow-sm"
