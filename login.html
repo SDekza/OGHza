@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Enterprise Portal - SEBOFFICIAL</title>
     
     <link rel="icon" type="image/png" href="sebo.png">
@@ -23,6 +23,11 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap');
         
+        * {
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
+
         body { 
             font-family: 'Anuphan', sans-serif; 
             background-color: #0f172a; /* Slate 900 */
@@ -32,6 +37,7 @@
             user-select: none; 
             overscroll-behavior-y: contain;
             min-height: 100vh;
+            touch-action: manipulation;
         }
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -166,6 +172,36 @@
             const [selectedTempUser, setSelectedTempUser] = useState(null);
             const [passwordInput, setPasswordInput] = useState('');
             const [passError, setPassError] = useState(false);
+
+            // Prevent Pinch-to-Zoom globally
+            useEffect(() => {
+                const preventMultiTouch = (e) => {
+                    if (e.touches && e.touches.length > 1) {
+                        e.preventDefault();
+                    }
+                };
+
+                const preventGesture = (e) => {
+                    e.preventDefault();
+                };
+
+                // Prevent multi-touch zoom on mobile
+                document.addEventListener('touchstart', preventMultiTouch, { passive: false });
+                document.addEventListener('touchmove', preventMultiTouch, { passive: false });
+
+                // Prevent Safari gestures
+                document.addEventListener('gesturestart', preventGesture, { passive: false });
+                document.addEventListener('gesturechange', preventGesture, { passive: false });
+                document.addEventListener('gestureend', preventGesture, { passive: false });
+
+                return () => {
+                    document.removeEventListener('touchstart', preventMultiTouch);
+                    document.removeEventListener('touchmove', preventMultiTouch);
+                    document.removeEventListener('gesturestart', preventGesture);
+                    document.removeEventListener('gesturechange', preventGesture);
+                    document.removeEventListener('gestureend', preventGesture);
+                };
+            }, []);
 
             const fetchUsers = async () => {
                 setLoading(true);
