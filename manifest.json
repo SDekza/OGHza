@@ -1,0 +1,22 @@
+{
+  "short_name": "SEBOFFICIAL",
+  "name": "SEBOFFICIAL Enterprise System",
+  "icons": [
+    {
+      "src": "sebo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "sebo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "./login.html",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "./"
+}
