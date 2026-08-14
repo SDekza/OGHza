@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="referrer" content="no-referrer">
     <title>Stock Spare - SEBOFFICIAL</title>
     
@@ -30,6 +30,11 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap');
         
+        * {
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
+
         body { 
             font-family: 'Anuphan', sans-serif; 
             background-color: #f8fafc; 
@@ -38,6 +43,7 @@
             overflow-x: hidden; 
             user-select: none; 
             overscroll-behavior-y: contain; 
+            touch-action: manipulation;
         }
 
         .saas-shadow { 
@@ -83,7 +89,7 @@
     <script type="text/babel" data-presets="react,env">
         const { useState, useEffect, useMemo, useRef, memo } = React;
 
-        // Firebase Configuration
+        // การตั้งค่า Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCLKMgC5Y_zg97VaWjPVFXpXhp2zon7TP0",
             authDomain: "stock-spare-c9692.firebaseapp.com",
@@ -153,26 +159,33 @@
             const [categories, setCategories] = useState(defaultCategories);
             const [loading, setLoading] = useState(true);
 
-            // Filter & Search
+            // ตัวกรองและการค้นหา
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedCategory, setSelectedCategory] = useState('all');
             const [filterLowStock, setFilterLowStock] = useState(false);
 
-            // Expand history accordion
+            // ขยายดูประวัติย้อนหลัง
             const [expandedItemId, setExpandedItemId] = useState(null);
 
-            // Modals
+            // หน้าต่าง Modal
             const [showAddModal, setShowAddModal] = useState(false);
-            const [showEditModal, setShowEditModal] = useState(null); // Item object being edited
+            const [showEditModal, setShowEditModal] = useState(null); 
             const [showAdjustModal, setShowAdjustModal] = useState(null);
             const [showCategoryModal, setShowCategoryModal] = useState(false);
             const [showDeleteModal, setShowDeleteModal] = useState(null);
             const [previewImage, setPreviewImage] = useState(null);
 
-            // Toast Message
+            // สถานะซูม/ย้ายรูปภาพใน Lightbox
+            const [imageScale, setImageScale] = useState(1);
+            const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+            const [isDragging, setIsDragging] = useState(false);
+            const dragStartRef = useRef({ x: 0, y: 0 });
+            const touchDistanceRef = useRef(null);
+
+            // แจ้งเตือน Toast
             const [toastMessage, setToastMessage] = useState(null);
 
-            // Forms
+            // ฟอร์ม
             const [addForm, setAddForm] = useState({ name: '', category: 'อะไหล่ทั่วไป', quantity: '1', minStock: '5', link: '', image: '', note: '' });
             const [editForm, setEditForm] = useState({ name: '', category: 'อะไหล่ทั่วไป', quantity: '1', minStock: '5', link: '', image: '', note: '' });
             const [adjustQty, setAdjustQty] = useState('1');
@@ -183,6 +196,49 @@
                 setToastMessage(msg);
                 setTimeout(() => setToastMessage(null), 2500);
             };
+
+            // ป้องกันการซูมหน้าเว็บย่อ-ขยาย ยกเว้นภายใน Lightbox
+            useEffect(() => {
+                const preventMultiTouch = (e) => {
+                    if (e.touches && e.touches.length > 1) {
+                        const lightbox = document.getElementById('lightbox-image-container');
+                        if (lightbox && lightbox.contains(e.target)) {
+                            return; 
+                        }
+                        e.preventDefault();
+                    }
+                };
+
+                const preventGesture = (e) => {
+                    const lightbox = document.getElementById('lightbox-image-container');
+                    if (lightbox && lightbox.contains(e.target)) {
+                        return; 
+                    }
+                    e.preventDefault();
+                };
+
+                document.addEventListener('touchstart', preventMultiTouch, { passive: false });
+                document.addEventListener('touchmove', preventMultiTouch, { passive: false });
+                document.addEventListener('gesturestart', preventGesture, { passive: false });
+                document.addEventListener('gesturechange', preventGesture, { passive: false });
+                document.addEventListener('gestureend', preventGesture, { passive: false });
+
+                return () => {
+                    document.removeEventListener('touchstart', preventMultiTouch);
+                    document.removeEventListener('touchmove', preventMultiTouch);
+                    document.removeEventListener('gesturestart', preventGesture);
+                    document.removeEventListener('gesturechange', preventGesture);
+                    document.removeEventListener('gestureend', preventGesture);
+                };
+            }, []);
+
+            // รีเซ็ตการซูมรูปเมื่อปิด Lightbox
+            useEffect(() => {
+                if (!previewImage) {
+                    setImageScale(1);
+                    setImagePosition({ x: 0, y: 0 });
+                }
+            }, [previewImage]);
 
             const fetchStockItems = () => {
                 setLoading(true);
@@ -359,6 +415,71 @@
                 setShowDeleteModal(null);
             };
 
+            // การจัดการท่าทางนิ้วในการขยาย/เลื่อนรูปภาพใน Lightbox
+            const handleMouseDown = (e) => {
+                if (imageScale > 1) {
+                    setIsDragging(true);
+                    dragStartRef.current = { x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y };
+                }
+            };
+
+            const handleMouseMove = (e) => {
+                if (isDragging && imageScale > 1) {
+                    setImagePosition({
+                        x: e.clientX - dragStartRef.current.x,
+                        y: e.clientY - dragStartRef.current.y
+                    });
+                }
+            };
+
+            const handleMouseUp = () => {
+                setIsDragging(false);
+            };
+
+            const getTouchDistance = (touches) => {
+                return Math.hypot(
+                    touches[0].clientX - touches[1].clientX,
+                    touches[0].clientY - touches[1].clientY
+                );
+            };
+
+            const handleTouchStart = (e) => {
+                if (e.touches.length === 2) {
+                    touchDistanceRef.current = getTouchDistance(e.touches);
+                } else if (e.touches.length === 1 && imageScale > 1) {
+                    setIsDragging(true);
+                    dragStartRef.current = { x: e.touches[0].clientX - imagePosition.x, y: e.touches[0].clientY - imagePosition.y };
+                }
+            };
+
+            const handleTouchMove = (e) => {
+                if (e.touches.length === 2 && touchDistanceRef.current) {
+                    const newDist = getTouchDistance(e.touches);
+                    const factor = newDist / touchDistanceRef.current;
+                    setImageScale(prev => Math.min(Math.max(prev * factor, 1), 4));
+                    touchDistanceRef.current = newDist;
+                } else if (e.touches.length === 1 && isDragging && imageScale > 1) {
+                    setImagePosition({
+                        x: e.touches[0].clientX - dragStartRef.current.x,
+                        y: e.touches[0].clientY - dragStartRef.current.y
+                    });
+                }
+            };
+
+            const handleTouchEnd = () => {
+                setIsDragging(false);
+                touchDistanceRef.current = null;
+            };
+
+            const handleDoubleTap = () => {
+                if (imageScale > 1) {
+                    setImageScale(1);
+                    setImagePosition({ x: 0, y: 0 });
+                } else {
+                    setImageScale(2);
+                }
+            };
+
             const filteredItems = useMemo(() => {
                 return items.filter(item => {
                     const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -432,7 +553,7 @@
                         {/* Control Bar */}
                         <div className="bg-white p-4 rounded-2xl border border-slate-200 saas-shadow space-y-3">
                             <div className="flex flex-col sm:flex-row gap-3">
-                                {/* Search Box */}
+                                {/* ช่องค้นหา */}
                                 <div className="relative flex-1">
                                     <LucideIcon name="search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input 
@@ -444,7 +565,7 @@
                                     />
                                 </div>
 
-                                {/* Category Selector */}
+                                {/* ตัวเลือกหมวดหมู่ */}
                                 <select 
                                     className="h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs text-slate-700 font-semibold outline-none focus:border-emerald-500"
                                     value={selectedCategory}
@@ -455,7 +576,7 @@
                                 </select>
                             </div>
 
-                            {/* Action Buttons */}
+                            {/* ปุ่มการทำงาน */}
                             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100">
                                 <div className="flex items-center gap-2">
                                     <button 
@@ -514,7 +635,7 @@
                                     return (
                                         <div key={item.id} className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${isLow ? 'border-rose-300 shadow-sm' : 'border-slate-200 saas-shadow'}`}>
                                             <div className="p-4 flex items-center justify-between gap-4">
-                                                {/* Image / Icon */}
+                                                {/* รูปภาพ / ไอคอน */}
                                                 <div 
                                                     className="w-14 h-14 rounded-xl bg-slate-100 border border-slate-200/80 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center relative group"
                                                     onClick={() => item.image && setPreviewImage(item.image)}
@@ -526,7 +647,7 @@
                                                     )}
                                                 </div>
 
-                                                {/* Main Information */}
+                                                {/* รายละเอียดหลัก */}
                                                 <div className="flex-1 min-w-0 text-left">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">{item.category || 'อะไหล่ทั่วไป'}</span>
@@ -553,7 +674,7 @@
                                                     )}
                                                 </div>
 
-                                                {/* Stock Adjust Buttons & Actions */}
+                                                {/* ปุ่มปรับจำนวนคงเหลือและจัดการ */}
                                                 <div className="flex items-center gap-2 shrink-0">
                                                     <div className="text-center px-2">
                                                         <span className="text-[9px] text-slate-400 font-bold uppercase block leading-none">คงเหลือ</span>
@@ -596,7 +717,7 @@
                                                 </div>
                                             </div>
 
-                                            {/* Expandable History Drawer */}
+                                            {/* แถบประวัติย้อนหลังแบบขยายได้ */}
                                             {isExpanded && (
                                                 <div className="bg-slate-50 border-t border-slate-100 p-4 text-xs space-y-3 animate-modal">
                                                     <div className="flex justify-between items-center">
@@ -649,7 +770,7 @@
                         )}
                     </main>
 
-                    {/* MODAL: ADD NEW ITEM */}
+                    {/* หน้าต่าง MODAL: เพิ่มอะไหล่ใหม่ */}
                     {showAddModal && (
                         <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal">
                             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4">
@@ -710,7 +831,7 @@
                         </div>
                     )}
 
-                    {/* MODAL: EDIT ITEM DETAILS */}
+                    {/* หน้าต่าง MODAL: แก้ไขรายละเอียดอะไหล่ */}
                     {showEditModal && (
                         <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal">
                             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 space-y-4">
@@ -771,7 +892,7 @@
                         </div>
                     )}
 
-                    {/* MODAL: ADJUST STOCK (IN/OUT) */}
+                    {/* หน้าต่าง MODAL: ปรับปรุงสต๊อก (เติม/เบิก) */}
                     {showAdjustModal && (
                         <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal text-center">
                             <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 space-y-4">
@@ -799,7 +920,7 @@
                         </div>
                     )}
 
-                    {/* MODAL: DELETE CONFIRMATION */}
+                    {/* หน้าต่าง MODAL: ยืนยันการลบ */}
                     {showDeleteModal && (
                         <div className="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal text-center">
                             <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 space-y-4">
@@ -815,7 +936,7 @@
                         </div>
                     )}
 
-                    {/* MODAL: CATEGORIES MANAGEMENT */}
+                    {/* หน้าต่าง MODAL: จัดการหมวดหมู่ */}
                     {showCategoryModal && (
                         <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal">
                             <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 space-y-4">
@@ -841,12 +962,80 @@
                         </div>
                     )}
 
-                    {/* LIGHTBOX PREVIEW IMAGE */}
+                    {/* LIGHTBOX ดูรูปภาพแบบขยายพร้อมระบบซูม/ย้ายรูป */}
                     {previewImage && (
-                        <div className="fixed inset-0 z-[300] bg-slate-950/90 flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
-                            <div className="bg-white p-2 rounded-2xl max-w-lg max-h-[85vh] overflow-hidden relative shadow-2xl border border-slate-200 animate-modal">
-                                <button className="absolute top-4 right-4 bg-slate-900/60 text-white p-2 rounded-full hover:bg-slate-900 transition-colors"><LucideIcon name="x" size={16}/></button>
-                                <img src={previewImage} referrerpolicy="no-referrer" className="w-full h-full object-contain rounded-xl" />
+                        <div 
+                            className="fixed inset-0 z-[300] bg-slate-950/90 flex items-center justify-center p-4 animate-modal"
+                            onClick={(e) => {
+                                if (e.target.id === 'lightbox-backdrop') setPreviewImage(null);
+                            }}
+                            id="lightbox-backdrop"
+                        >
+                            <div 
+                                id="lightbox-image-container"
+                                className="bg-slate-900/90 p-2 rounded-2xl max-w-2xl max-h-[85vh] w-full h-full flex flex-col items-center justify-center relative shadow-2xl border border-slate-700/80 overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* แถบเครื่องมือซูมรูปภาพ */}
+                                <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-center pointer-events-auto">
+                                    <div className="bg-slate-900/80 text-white px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md border border-slate-700">
+                                        ซูม: {Math.round(imageScale * 100)}%
+                                    </div>
+                                    <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-full border border-slate-700 backdrop-blur-md">
+                                        <button 
+                                            onClick={() => setImageScale(s => Math.min(s + 0.5, 4))}
+                                            className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all"
+                                            title="ขยาย"
+                                        >
+                                            <LucideIcon name="zoom-in" size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={() => { setImageScale(1); setImagePosition({ x: 0, y: 0 }); }}
+                                            className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all text-[10px] font-bold"
+                                            title="รีเซ็ต"
+                                        >
+                                            1:1
+                                        </button>
+                                        <button 
+                                            onClick={() => setImageScale(s => Math.max(s - 0.5, 1))}
+                                            className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all"
+                                            title="ย่อ"
+                                        >
+                                            <LucideIcon name="zoom-out" size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={() => setPreviewImage(null)}
+                                            className="w-8 h-8 rounded-full bg-rose-600/90 text-white flex items-center justify-center hover:bg-rose-600 active:scale-90 transition-all ml-1"
+                                            title="ปิด"
+                                        >
+                                            <LucideIcon name="x" size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* กล่องแสดงรูปภาพที่ซูมได้ */}
+                                <div 
+                                    className="w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onTouchStart={handleTouchStart}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
+                                    onDoubleClick={handleDoubleTap}
+                                >
+                                    <img 
+                                        src={previewImage} 
+                                        referrerPolicy="no-referrer" 
+                                        className="max-w-full max-h-full object-contain rounded-xl transition-transform duration-75 ease-out pointer-events-none" 
+                                        style={{
+                                            transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageScale})`
+                                        }}
+                                    />
+                                </div>
+                                <p className="absolute bottom-2 text-[10px] text-slate-400 font-medium bg-slate-900/60 px-2.5 py-0.5 rounded-full pointer-events-none">
+                                    แตะ 2 ครั้งเพื่อซูมเข้า/ออก หรือใช้ปุ่มควบคุมด้านบน
+                                </p>
                             </div>
                         </div>
                     )}
