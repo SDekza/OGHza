@@ -385,9 +385,10 @@
 
   <script>
     /* ==========================================================================
-       GLOBAL STATE & CLOUDFLARE WORKER PROXY CONFIGURATION
+       GLOBAL STATE & CONFIGURATION
        ========================================================================== */
     const proxyWorkerUrl = "https://fan1000-api-proxy.sdekzaaa.workers.dev"; 
+    const apiKey = ""; // Runtime key supplied automatically in preview
 
     let gameState = {
       topic: '',
@@ -572,41 +573,46 @@
     }
 
     /* ==========================================================================
-       GEMINI API INTEGRATION (VIA CLOUDFLARE WORKER PROXY / CUSTOM KEY)
+       GEMINI API INTEGRATION (SMART ENVIRONMENT DETECTION)
        ========================================================================== */
     async function callGeminiAPI(promptText, isJson = true) {
       const customKey = document.getElementById('custom-api-key').value.trim();
       const payload = { contents: [{ parts: [{ text: promptText }] }] };
       if (isJson) payload.generationConfig = { responseMimeType: "application/json" };
 
-      // 1. หากผู้เล่นระบุ Custom Key ให้ยิงตรงหา Gemini API
+      // 1. หากระบุ Custom Key ในหน้าเว็บ
       if (customKey) {
         const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${customKey}`;
-        const res = await fetch(directUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data.error) {
-          throw new Error(data.error.message || data.error);
-        }
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawText) throw new Error("ไม่ได้รับคำตอบจาก AI");
-        return isJson ? JSON.parse(rawText) : rawText;
+        return await executeFetch(directUrl, payload, isJson);
       }
 
-      // 2. ยิงผ่าน Cloudflare Worker Proxy
-      const delays = [1000, 2000, 4000, 8000, 16000];
+      // 2. ตรวจสอบสภาพแวดล้อมการทำงาน (GitHub Pages vs Preview / Local)
+      const isGitHubPages = window.location.hostname.includes("github.io");
+
+      if (isGitHubPages && typeof proxyWorkerUrl !== 'undefined' && proxyWorkerUrl) {
+        try {
+          return await executeFetch(proxyWorkerUrl, payload, isJson, { 'X-App-Client': 'Fan1000-Web' });
+        } catch (err) {
+          console.warn("Worker proxy failed, switching to direct endpoint:", err);
+        }
+      }
+
+      // 3. ยิงตรงผ่าน Runtime API Key ในหน้า Preview / Local
+      const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      return await executeFetch(directUrl, payload, isJson);
+    }
+
+    async function executeFetch(url, payload, isJson, extraHeaders = {}) {
+      const delays = [1000, 2000, 4000, 8000];
       let lastErr = null;
 
       for (let i = 0; i < delays.length; i++) {
         try {
-          const res = await fetch(proxyWorkerUrl, {
+          const res = await fetch(url, {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
-              'X-App-Client': 'Fan1000-Web'
+              ...extraHeaders
             },
             body: JSON.stringify(payload)
           });
@@ -614,22 +620,16 @@
           const data = await res.json().catch(() => ({}));
 
           if (!res.ok || data.error) {
-            const errDetail = data.error?.message || data.error || `HTTP ${res.status}`;
-            if (errDetail.includes("unregistered callers") || errDetail.includes("API Key")) {
-              throw new Error("ระบบขาดการเชื่อมต่อ Gemini API Key ใน Cloudflare Worker (กรุณาตั้งค่า GEMINI_API_KEY ใน Cloudflare Variables)");
-            }
-            throw new Error(errDetail);
+            const errMsg = typeof data.error === 'string' ? data.error : (data.error?.message || `HTTP ${res.status}`);
+            throw new Error(errMsg);
           }
 
           const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (!rawText) throw new Error("ไม่ได้รับคำตอบจาก AI");
+          if (!rawText) throw new Error("ไม่ได้รับคำตอบจากระบบ AI");
 
           return isJson ? JSON.parse(rawText) : rawText;
         } catch (err) {
           lastErr = err;
-          if (err.message.includes("GEMINI_API_KEY")) {
-            throw err; // หยุด retry ทันทีถ้าเป็นปัญหาขาดการเชื่อมต่อคีย์
-          }
           if (i < delays.length - 1) {
             await new Promise(r => setTimeout(r, delays[i]));
           }
