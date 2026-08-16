@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fan1000 - เกมแฟนพันธุ์แท้ Real-time AI</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Kanit -->
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      background-color: #090d16;
+      color: #f8fafc;
+    }
+    
+    /* เอฟเฟกต์ประกายทองเรืองแสงสไตล์เกมโชว์ */
+    .gold-glow {
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #fffbeb 0%, #fbbf24 50%, #d97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gold-gradient-bg {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    /* Animation การเปิดแผ่นป้าย */
+    .tile-flip {
+      transition: transform 0.4s ease, opacity 0.4s ease, background-color 0.2s ease;
+    }
+    .tile-hidden {
+      transform: scale(1);
+      opacity: 1;
+    }
+    .tile-opened {
+      transform: scale(0);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Pulse animation สำหรับปุ่มและเวลา */
+    @keyframes pulse-fast {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .pulse-danger {
+      animation: pulse-fast 0.5s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-3 md:p-6 select-none">
+
+  <!-- แถบหัวเรื่องหลัก (Header) -->
+  <header class="w-full max-w-3xl flex items-center justify-between py-3 px-5 bg-slate-900/80 border border-slate-800 rounded-2xl backdrop-blur mb-4 shadow-xl">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl gold-gradient-bg flex items-center justify-center font-black text-slate-950 text-xl shadow-lg">
+        1000
+      </div>
+      <div>
+        <h1 class="text-2xl font-extrabold tracking-wider gold-gradient-text">FAN 1000</h1>
+        <p class="text-xs text-slate-400">เกมแฟนพันธุ์แท้ Real-time AI (1,000 คะแนนเต็ม)</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-4">
+      <div class="text-right">
+        <span class="text-xs text-slate-400 block">คะแนนสะสม</span>
+        <span id="total-score-display" class="text-xl font-bold text-amber-400">0 / 1000</span>
+      </div>
+      <button onclick="toggleAudioMute()" id="btn-audio-toggle" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition" title="เปิด/ปิด เสียง">
+        <i data-lucide="volume-2" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- กล่องเนื้อหาหลัก (Main Game Container) -->
+  <main class="w-full max-w-3xl bg-slate-900/90 border border-slate-800 rounded-3xl p-5 md:p-8 shadow-2xl gold-glow flex-1 flex flex-col justify-center">
+
+    <!-- 1. หน้าตั้งค่าเกม (Setup Screen) -->
+    <section id="setup-screen" class="space-y-6">
+      <div class="text-center space-y-2">
+        <h2 class="text-2xl font-bold text-slate-100">การแข่งขันแฟนพันธุ์แท้ทัวร์นาเมนต์</h2>
+        <p class="text-sm text-slate-400">พิมพ์หัวข้อเรื่องที่ต้องการ แล้วกดเริ่มท้าทายได้ทันที!</p>
+      </div>
+
+      <div class="space-y-4 max-w-xl mx-auto">
+        <!-- Input หัวข้อเรื่อง + ปุ่มสโคป AI -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+            <span class="flex items-center gap-1.5"><i data-lucide="target" class="w-4 h-4 text-amber-400"></i> หมวด/หัวข้อที่คุณต้องการท้าทาย</span>
+            <span class="text-xs text-slate-500 font-normal">เช่น เชลซี, Marvel, ดราก้อนบอล</span>
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="topic-input" placeholder="พิมพ์หมวดหมู่หลักที่ต้องการเล่น..." 
+              onkeydown="if(event.key==='Enter') fetchSubTopics()"
+              class="flex-1 px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-base">
+            <button onclick="fetchSubTopics()" id="btn-scope-ai" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl text-amber-400 font-semibold text-xs md:text-sm transition flex items-center gap-1.5 shrink-0">
+              <i data-lucide="sparkles" class="w-4 h-4"></i> สโคปหัวข้อ (AI)
+            </button>
+          </div>
+        </div>
+
+        <!-- กล่องแสดงตัวเลือกหัวข้อย่อย (Sub-topics Container) -->
+        <div id="subtopic-section" class="hidden space-y-2 p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-400 flex items-center gap-1">
+              <i data-lucide="layers" class="w-3.5 h-3.5"></i> สโคปหัวข้อเจาะจง (เลือก 1 ข้อ):
+            </span>
+            <span id="subtopic-loading-badge" class="hidden text-[10px] text-slate-400 flex items-center gap-1">
+              <i data-lucide="loader-2" class="w-3 h-3 animate-spin text-amber-400"></i> AI กำลังวิเคราะห์...
+            </span>
+          </div>
+          <div id="subtopic-options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+            <!-- ตัวเลือกสโคปหัวข้อย่อยจะถูกฉีดสคริปต์ตรงนี้ -->
+          </div>
+        </div>
+
+        <!-- โครงสร้างการแข่งขัน (Tournament Roadmap Preview) -->
+        <div class="bg-slate-950/90 border border-slate-800/80 p-4 rounded-2xl space-y-2.5">
+          <span class="text-xs font-bold text-amber-400 uppercase tracking-wider block border-b border-slate-800 pb-1.5">
+            🏆 ลำดับด่านการแข่งขัน (รวม 17 ข้อ - 1,000 คะแนนเต็ม)
+          </span>
+          <div class="grid grid-cols-2 gap-2 text-xs text-slate-300">
+            <div class="flex items-center gap-2 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+              <span class="w-6 h-6 rounded-md bg-rose-500/20 text-rose-300 font-bold flex items-center justify-center shrink-0">1</span>
+              <div>
+                <p class="font-bold text-amber-300">Speedy Quiz (10 ข้อ)</p>
+                <p class="text-[10px] text-slate-400">ช้อยส์ 4 ข้อ (ข้อละ 25 คะแนน)</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+              <span class="w-6 h-6 rounded-md bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center shrink-0">2</span>
+              <div>
+                <p class="font-bold text-amber-300">รอบคุณสมบัติ (4 ข้อ)</p>
+                <p class="text-[10px] text-slate-400">คำใบ้ 5 ข้อ (ข้อละ 100 คะแนน)</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+              <span class="w-6 h-6 rounded-md bg-blue-500/20 text-blue-300 font-bold flex items-center justify-center shrink-0">3</span>
+              <div>
+                <p class="font-bold text-amber-300">รอบภาพปริศนา (2 ข้อ)</p>
+                <p class="text-[10px] text-slate-400">เปิด 12 ป้าย ทายรูปภาพจริง (ข้อละ 100 คะแนน)</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+              <span class="w-6 h-6 rounded-md bg-purple-500/20 text-purple-300 font-bold flex items-center justify-center shrink-0">4</span>
+              <div>
+                <p class="font-bold text-amber-300">รอบแฟนพันธุ์แท้ (1 ข้อ)</p>
+                <p class="text-[10px] text-slate-400">คำถามเชิงลึก (ข้อละ 150 คะแนน)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- เลือกความยาก -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+            <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i> ระดับความยากการแข่งขัน
+          </label>
+          <select id="difficulty-select" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-400 text-sm">
+            <option value="easy">แฟนทั่วไป (Easy - ถามข้อมูลยอดนิยม)</option>
+            <option value="normal" selected>แฟนพันธุ์แท้ (Normal - ถามข้อมูลลึกปานกลาง)</option>
+            <option value="hard">แฟนพันธุ์แท้แห่งปี (Hard - ถามจุดสังเกตและสถิติเบื้องหลัง)</option>
+          </select>
+        </div>
+
+        <!-- Custom API Key (ซ่อนเผื่อผู้เล่นต้องการใช้คีย์ตัวเอง) -->
+        <div class="pt-1">
+          <button onclick="toggleApiKeyInput()" class="text-xs text-slate-500 hover:text-slate-400 flex items-center gap-1 mx-auto">
+            <i data-lucide="key" class="w-3 h-3"></i> ตั้งค่า Custom API Key (ตัวเลือกเสริม)
+          </button>
+          <div id="custom-api-box" class="hidden mt-2 p-3 bg-slate-950 border border-slate-800 rounded-xl">
+            <input type="password" id="custom-api-key" placeholder="ใส่ Gemini API Key ของคุณที่นี่..." class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-amber-400">
+          </div>
+        </div>
+
+        <!-- ปุ่มเริ่มเกม -->
+        <button onclick="startTournamentGeneration()" class="w-full py-4 gold-gradient-bg text-slate-950 font-black text-lg rounded-xl transition shadow-lg hover:brightness-110 flex items-center justify-center gap-2 mt-2">
+          <i data-lucide="trophy" class="w-6 h-6"></i> เริ่มออกข้อสอบทัวร์นาเมนต์ (17 ข้อ)
+        </button>
+      </div>
+    </section>
+
+    <!-- 2. หน้ากำลังโหลดข้อสอบ (Loading Screen) -->
+    <section id="loading-screen" class="hidden py-16 text-center space-y-4">
+      <div class="relative w-20 h-20 mx-auto">
+        <div class="absolute inset-0 rounded-full border-4 border-amber-500/20 animate-ping"></div>
+        <div class="w-20 h-20 rounded-full border-4 border-amber-400 border-t-transparent animate-spin"></div>
+      </div>
+      <div class="space-y-1">
+        <h3 id="loading-status-title" class="text-xl font-bold text-amber-400">ทีมงาน AI กำลังจัดเตรียมคลังข้อสอบ 17 ข้อ...</h3>
+        <p id="loading-status-desc" class="text-xs text-slate-400">กำลังสร้างโจทย์ Speedy, คำใบ้คุณสมบัติ, ค้นหาภาพจริง และคำถามแฟนพันธุ์แท้</p>
+      </div>
+    </section>
+
+    <!-- 3. หน้าสนามแข่ง (Tournament Gameplay HUD & Question Area) -->
+    <section id="game-screen" class="hidden space-y-4">
+      
+      <!-- Tournament HUD Banner -->
+      <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span id="round-badge" class="bg-amber-500/20 text-amber-300 px-3 py-0.5 rounded-full font-bold border border-amber-500/30 flex items-center gap-1">
+              รอบ 1: Speedy Quiz
+            </span>
+            <span id="question-progress-text" class="text-slate-400 font-semibold">ข้อ 1 / 17</span>
+          </div>
+          <div id="max-possible-score-tag" class="text-slate-400 font-medium">
+            คะแนนเต็มข้อนี้: <span id="current-question-max-pts" class="text-amber-400 font-bold">25</span> คะแนน
+          </div>
+        </div>
+
+        <!-- Progress Bar ทั้งทัวร์นาเมนต์ -->
+        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+          <div id="tournament-progress-bar" class="gold-gradient-bg h-full transition-all duration-300" style="width: 5.8%"></div>
+        </div>
+      </div>
+
+      <!-- แถบหมวดหมู่ข้อมูล -->
+      <div class="flex items-center justify-between px-1">
+        <span id="topic-header-tag" class="text-xs font-semibold text-slate-400 flex items-center gap-1">
+          <i data-lucide="tag" class="w-3.5 h-3.5 text-amber-400"></i> <span id="topic-header-text">เชลซี</span>
+        </span>
+        <div id="timer-box" class="hidden flex items-center gap-1.5 text-amber-400 font-extrabold text-sm bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/30">
+          <i data-lucide="clock" class="w-4 h-4"></i> <span id="timer-count">10</span>s
+        </div>
+      </div>
+
+      <!-- กล่องโจทย์ (Question / Hints Display) -->
+      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 md:p-6 min-h-[220px] flex flex-col justify-center">
+
+        <!-- 1. Speedy Quiz Container -->
+        <div id="speedy-wrapper" class="hidden space-y-4 text-center">
+          <span class="text-xs font-bold text-rose-400 tracking-wider uppercase flex items-center justify-center gap-1">
+            <i data-lucide="zap" class="w-4 h-4"></i> คำถาม Speedy Quiz (เลือกข้อที่ถูกต้องภายใน 10 วินาที)
+          </span>
+          <p id="speedy-question-text" class="text-lg md:text-xl font-bold text-amber-300 px-2"></p>
+          <div id="speedy-choices-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            <!-- ตัวเลือก 4 ข้อ -->
+          </div>
+        </div>
+
+        <!-- 2. 5 Hints Container -->
+        <div id="hints-wrapper" class="hidden space-y-2.5">
+          <!-- คำใบ้เปิดทีละข้อ -->
+        </div>
+
+        <!-- 3. Jigsaw Real Image Container -->
+        <div id="jigsaw-wrapper" class="hidden space-y-3 flex flex-col items-center w-full">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center w-full shadow-sm">
+            <span class="text-xs font-bold text-amber-400 uppercase tracking-wider block mb-0.5">🧩 คำถามทายสิ่งในภาพจริง</span>
+            <p id="jigsaw-question-text" class="text-base md:text-lg font-bold text-slate-100"></p>
+          </div>
+
+          <div class="relative w-full max-w-md aspect-video rounded-xl overflow-hidden border-2 border-amber-500/40 shadow-inner bg-slate-950 flex items-center justify-center">
+            <div id="jigsaw-img-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 text-slate-400 z-0">
+              <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-amber-400 mb-2"></i>
+              <span class="text-xs">กำลังค้นหารูปภาพจริงของคำตอบ...</span>
+            </div>
+            <img id="jigsaw-image" alt="Real Public Image" class="w-full h-full object-cover z-0 hidden" 
+              onload="document.getElementById('jigsaw-img-loader').classList.add('hidden'); this.classList.remove('hidden');"
+              onerror="handleJigsawImgError(this)">
+
+            <div id="jigsaw-grid" class="absolute inset-0 grid grid-cols-4 grid-rows-3 gap-0 p-0 z-10">
+              <!-- แผ่นป้าย 12 ช่อง -->
+            </div>
+          </div>
+          <p class="text-xs text-slate-400">คลิกเปิดแผ่นป้ายเพื่อดูภาพจริงเบื้องหลัง (เปิด 1 ป้าย ลด 7 คะแนน)</p>
+        </div>
+
+        <!-- 4. Deep Question Container -->
+        <div id="deep-question-wrapper" class="hidden space-y-2 text-center">
+          <span class="text-xs font-bold text-purple-400 tracking-wider uppercase flex items-center justify-center gap-1">
+            <i data-lucide="brain-circuit" class="w-4 h-4"></i> คำถามแฟนพันธุ์แท้เชิงลึก (150 คะแนน)
+          </span>
+          <p id="deep-question-text" class="text-lg md:text-xl font-semibold text-slate-100 leading-relaxed"></p>
+        </div>
+
+      </div>
+
+      <!-- ปุ่มควบคุมคำใบ้ (เฉพาะรอบ 5 Hints) -->
+      <div id="hint-action-bar" class="hidden">
+        <button id="btn-next-hint" onclick="revealNextHint()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs md:text-sm font-semibold text-amber-300 transition flex items-center justify-center gap-1.5">
+          <i data-lucide="unlock" class="w-4 h-4"></i> เปิดคำใบ้ถัดไป (คะแนนข้อนี้จะลดลง 15 คะแนน)
+        </button>
+      </div>
+
+      <!-- ช่องพิมพ์คำตอบ & ปุ่มส่ง (เฉพาะรอบ Hints, Jigsaw, Deep) -->
+      <div id="answer-input-container" class="space-y-3 pt-1">
+        <div class="relative">
+          <input type="text" id="player-answer-input" placeholder="พิมพ์คำตอบของคุณที่นี่..." 
+            onkeydown="if(event.key==='Enter') submitTextAnswer()"
+            class="w-full px-4 py-3.5 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition text-base md:text-lg pr-12">
+          <button onclick="submitTextAnswer()" class="absolute right-2 top-2 bottom-2 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg font-bold text-sm transition flex items-center justify-center">
+            ตอบ!
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. ป๊อปอัปแจ้งผลแต่ละข้อ (Mid-Question Feedback Modal) -->
+    <div id="feedback-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full text-center space-y-4 shadow-2xl gold-glow animate-fade-in max-h-[90vh] overflow-y-auto">
+        <div id="modal-icon-container" class="inline-block p-3.5 rounded-full bg-slate-950 border border-slate-800">
+          <!-- Icon -->
+        </div>
+        <div>
+          <h3 id="modal-title" class="text-2xl font-black"></h3>
+          <p id="modal-pts-earned" class="text-sm font-bold text-amber-400 mt-1"></p>
+        </div>
+        
+        <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl text-left space-y-2">
+          <span class="text-[11px] text-slate-400 block font-semibold">เฉลยที่ถูกต้อง:</span>
+          <p id="modal-canonical-text" class="text-amber-300 font-bold text-base border-b border-slate-800 pb-2"></p>
+          
+          <!-- กล่องเปิดคำใบ้ทั้งหมด 5 ข้อ เมื่อเฉลยรอบคุณสมบัติ -->
+          <div id="modal-all-hints-container" class="hidden space-y-1.5 pt-1">
+            <span class="text-[11px] text-amber-400 font-bold block">📜 คำใบ้ทั้งหมดทั้ง 5 ข้อ:</span>
+            <div id="modal-all-hints-list" class="space-y-1 text-xs text-slate-300"></div>
+          </div>
+
+          <p id="modal-feedback-desc" class="text-xs text-slate-300 leading-relaxed pt-1"></p>
+        </div>
+
+        <button onclick="advanceToNextQuestion()" class="w-full py-3.5 gold-gradient-bg text-slate-950 font-black rounded-xl text-base transition shadow-lg hover:brightness-110 flex items-center justify-center gap-1.5">
+          ลุยข้อต่อไป <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 5. หน้าสรุปผลการแข่งขันทั้งทัวร์นาเมนต์ (Final Tournament Summary Certificate) -->
+    <section id="tournament-summary-screen" class="hidden text-center py-4 space-y-5">
+      <div class="inline-block p-4 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400">
+        <i data-lucide="trophy" class="w-16 h-16"></i>
+      </div>
+
+      <div class="space-y-1">
+        <span class="text-xs font-bold text-slate-400 tracking-widest uppercase">ผลการแข่งขัน FAN 1000</span>
+        <h2 id="summary-rank-title" class="text-2xl md:text-3xl font-black text-amber-400"></h2>
+        <p id="summary-total-score" class="text-3xl md:text-4xl font-black gold-gradient-text pt-1"></p>
+      </div>
+
+      <!-- สรุปคะแนนแต่ละรอบ -->
+      <div class="bg-slate-950 border border-slate-800 p-4 rounded-2xl text-left space-y-2 max-w-lg mx-auto text-xs md:text-sm">
+        <span class="font-bold text-slate-300 block border-b border-slate-800 pb-1.5">📊 สรุปคะแนนที่ทำได้แยกตามรอบ:</span>
+        <div class="flex justify-between items-center py-1">
+          <span class="text-slate-400">1. Speedy Quiz (10 ข้อ):</span>
+          <span id="score-breakdown-speedy" class="font-bold text-slate-100">0 / 250</span>
+        </div>
+        <div class="flex justify-between items-center py-1">
+          <span class="text-slate-400">2. รอบคุณสมบัติ (4 ข้อ):</span>
+          <span id="score-breakdown-hints" class="font-bold text-slate-100">0 / 400</span>
+        </div>
+        <div class="flex justify-between items-center py-1">
+          <span class="text-slate-400">3. รอบภาพปริศนา (2 ข้อ):</span>
+          <span id="score-breakdown-jigsaw" class="font-bold text-slate-100">0 / 200</span>
+        </div>
+        <div class="flex justify-between items-center py-1">
+          <span class="text-slate-400">4. รอบแฟนพันธุ์แท้ (1 ข้อ):</span>
+          <span id="score-breakdown-deep" class="font-bold text-slate-100">0 / 150</span>
+        </div>
+      </div>
+
+      <button onclick="resetToSetup()" class="w-full max-w-lg mx-auto py-4 gold-gradient-bg text-slate-950 font-black rounded-xl transition text-base shadow-lg hover:brightness-110 flex items-center justify-center gap-2">
+        <i data-lucide="rotate-cw" class="w-5 h-5"></i> ท้าทายทัวร์นาเมนต์รอบใหม่
+      </button>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-4 text-center text-xs text-slate-500">
+    <p>FAN 1000 - Real-time AI Fan Phan Tae Game Showcase (1,000 Pts Edition)</p>
+  </footer>
+
+  <!-- Notification Banner -->
+  <div id="toast-message" class="fixed top-5 left-1/2 -translate-x-1/2 bg-rose-500 text-white px-5 py-2.5 rounded-full font-medium text-sm shadow-2xl opacity-0 pointer-events-none transition-all duration-300 z-50">
+    ข้อความแจ้งเตือน
+  </div>
+
+  <script>
+    /* ==========================================================================
+       GLOBAL STATE & CLOUDFLARE WORKER PROXY CONFIGURATION
+       ========================================================================== */
+    const proxyWorkerUrl = "https://fan1000-api-proxy.sdekzaaa.workers.dev"; 
+
+    let gameState = {
+      topic: '',
+      selectedSubTopic: 'รวมทุกเรื่อง',
+      difficulty: 'normal',
+      audioMuted: false,
+
+      // Tournament Questions Queue (17 ข้อเต็ม)
+      questionsQueue: [],
+      currentIndex: 0,
+
+      // State ติดตามคะแนนแต่ละรอบ
+      scores: {
+        speedy: 0,
+        hints: 0,
+        jigsaw: 0,
+        deep: 0
+      },
+
+      // State ปัจจุบันของข้อที่กำลังเล่น
+      currentQuestionMaxPts: 0,
+      currentQuestionScore: 0,
+      hintIndex: 0,
+      jigsawTilesOpened: 0,
+      speedyTimer: null,
+      timeLeft: 10
+    };
+
+    /* ==========================================================================
+       WEB AUDIO SYNTHESIZER
+       ========================================================================== */
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.1) {
+      if (gameState.audioMuted) return;
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) { console.error(e); }
+    }
+
+    function soundClick() { playTone(600, 'sine', 0.05, 0.05); }
+    function soundHint() { playTone(880, 'triangle', 0.15, 0.08); }
+    function soundCorrect() {
+      if (gameState.audioMuted) return;
+      playTone(523.25, 'sine', 0.12, 0.1);
+      setTimeout(() => playTone(659.25, 'sine', 0.12, 0.1), 100);
+      setTimeout(() => playTone(783.99, 'sine', 0.25, 0.12), 200);
+    }
+    function soundWrong() {
+      if (gameState.audioMuted) return;
+      playTone(220, 'sawtooth', 0.2, 0.12);
+      setTimeout(() => playTone(180, 'sawtooth', 0.3, 0.12), 150);
+    }
+    function soundTick() { playTone(1000, 'square', 0.03, 0.03); }
+
+    function toggleAudioMute() {
+      gameState.audioMuted = !gameState.audioMuted;
+      const btn = document.getElementById('btn-audio-toggle');
+      btn.innerHTML = gameState.audioMuted 
+        ? '<i data-lucide="volume-x" class="w-5 h-5 text-rose-400"></i>' 
+        : '<i data-lucide="volume-2" class="w-5 h-5 text-slate-300"></i>';
+      lucide.createIcons();
+    }
+
+    /* ==========================================================================
+       UI HELPERS & TOAST
+       ========================================================================== */
+    function showToast(msg) {
+      const toast = document.getElementById('toast-message');
+      toast.innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+
+    function toggleApiKeyInput() {
+      const box = document.getElementById('custom-api-box');
+      box.classList.toggle('hidden');
+    }
+
+    function getTotalScore() {
+      return gameState.scores.speedy + gameState.scores.hints + gameState.scores.jigsaw + gameState.scores.deep;
+    }
+
+    function updateScoreDisplay() {
+      document.getElementById('total-score-display').innerText = `${getTotalScore()} / 1000`;
+    }
+
+    /* ==========================================================================
+       AI SUB-TOPIC SCOPING
+       ========================================================================== */
+    async function fetchSubTopics() {
+      const mainTopic = document.getElementById('topic-input').value.trim();
+      if (!mainTopic) {
+        showToast("กรุณาพิมพ์หัวข้อหลักก่อนกดสโคป เช่น 'เชลซี' หรือ 'Marvel'");
+        return;
+      }
+
+      soundClick();
+      const subtopicSection = document.getElementById('subtopic-section');
+      const subtopicGrid = document.getElementById('subtopic-options-grid');
+      const loadingBadge = document.getElementById('subtopic-loading-badge');
+
+      subtopicSection.classList.remove('hidden');
+      loadingBadge.classList.remove('hidden');
+      subtopicGrid.innerHTML = `
+        <div class="col-span-full text-center py-4 text-xs text-slate-400 animate-pulse">
+          ✨ AI กำลังวิเคราะห์สโคปหัวข้อย่อยสำหรับ "${mainTopic}"...
+        </div>
+      `;
+
+      const prompt = `ผู้เล่นระบุหัวข้อหลักคือ: "${mainTopic}"
+ในฐานะทีมงานรายการแฟนพันธุ์แท้ จงเสนอ 3 หัวข้อย่อย (Sub-topics) ที่น่าสนใจ เจาะจง และแตกต่างกันอย่างชัดเจน สำหรับออกข้อสอบ
+ส่งออกเป็น JSON ดังนี้:
+{
+  "main_topic": "${mainTopic}",
+  "sub_topics": [
+    "หัวข้อย่อย 1 (เช่น นักเตะและผู้จัดการทีมระดับตำนาน)",
+    "หัวข้อย่อย 2 (เช่น แมตช์ความทรงจำและการแข่งขัน)",
+    "หัวข้อย่อย 3 (เช่น ประวัติศาสตร์ สถิติ และเรื่องราวเบื้องหลัง)"
+  ]
+}`;
+
+      try {
+        const res = await callGeminiAPI(prompt, true);
+        const subTopics = res.sub_topics || [];
+        renderSubTopicButtons(mainTopic, subTopics);
+      } catch (err) {
+        console.error(err);
+        renderSubTopicButtons(mainTopic, [
+          `นักเตะ/ตัวละครหลักของ ${mainTopic}`,
+          `แมตช์ความทรงจำ/เหตุการณ์สำคัญ`,
+          `ประวัติศาสตร์ สถิติ และเกร็ดเบื้องหลัง`
+        ]);
+      } finally {
+        loadingBadge.classList.add('hidden');
+      }
+    }
+
+    function renderSubTopicButtons(mainTopic, subTopics) {
+      const subtopicGrid = document.getElementById('subtopic-options-grid');
+      subtopicGrid.innerHTML = '';
+
+      subTopics.slice(0, 3).forEach((sub, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `subtopic-btn p-2.5 bg-slate-900 border border-slate-700 hover:border-amber-400 rounded-xl text-left text-xs md:text-sm text-slate-200 transition flex items-center gap-2`;
+        btn.innerHTML = `<span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[11px] flex items-center justify-center shrink-0 border border-amber-500/30">${idx + 1}</span> <span class="truncate">${sub}</span>`;
+        btn.onclick = () => selectSubTopic(sub, btn);
+        subtopicGrid.appendChild(btn);
+      });
+
+      const allBtn = document.createElement('button');
+      allBtn.type = 'button';
+      allBtn.className = `subtopic-btn p-2.5 bg-amber-500/10 border border-amber-500 rounded-xl text-left text-xs md:text-sm text-amber-300 font-bold transition flex items-center gap-2`;
+      allBtn.innerHTML = `<span class="w-5 h-5 rounded-full bg-amber-500 text-slate-950 font-bold text-[11px] flex items-center justify-center shrink-0">★</span> <span class="truncate">รวมทุกเรื่องใน ${mainTopic}</span>`;
+      allBtn.onclick = () => selectSubTopic(`รวมทุกเรื่องใน ${mainTopic}`, allBtn);
+      subtopicGrid.appendChild(allBtn);
+
+      gameState.selectedSubTopic = `รวมทุกเรื่องใน ${mainTopic}`;
+    }
+
+    function selectSubTopic(subTopicText, btnElem) {
+      soundClick();
+      gameState.selectedSubTopic = subTopicText;
+      document.querySelectorAll('.subtopic-btn').forEach(b => {
+        b.className = 'subtopic-btn p-2.5 bg-slate-900 border border-slate-700 hover:border-amber-400 rounded-xl text-left text-xs md:text-sm text-slate-200 transition flex items-center gap-2';
+      });
+      btnElem.className = 'subtopic-btn p-2.5 bg-amber-500/10 border border-amber-500 rounded-xl text-left text-xs md:text-sm text-amber-300 font-bold transition flex items-center gap-2 shadow-sm shadow-amber-500/10';
+      showToast(`เลือกสโคป: "${subTopicText}"`);
+    }
+
+    /* ==========================================================================
+       GEMINI API INTEGRATION (WITH DIRECT ENDPOINT FALLBACK)
+       ========================================================================== */
+    async function callGeminiAPI(promptText, isJson = true) {
+      const customKey = document.getElementById('custom-api-key').value.trim();
+      const payload = { contents: [{ parts: [{ text: promptText }] }] };
+      if (isJson) payload.generationConfig = { responseMimeType: "application/json" };
+
+      // 1. หากระบุ Custom Key ให้ใช้ทันที
+      if (customKey) {
+        const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${customKey}`;
+        const res = await fetch(directUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error("ไม่ได้รับคำตอบจาก AI");
+        return isJson ? JSON.parse(rawText) : rawText;
+      }
+
+      // 2. ลิสต์ปุ่มยิง (Proxy Worker และ Direct Gemini Endpoint Fallback)
+      const apiKey = "";
+      const endpoints = [];
+      if (typeof proxyWorkerUrl !== 'undefined' && proxyWorkerUrl) {
+        endpoints.push(proxyWorkerUrl);
+      }
+      endpoints.push(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`);
+
+      const delays = [1000, 2000, 4000, 8000, 16000];
+      let lastErr = null;
+
+      for (const endpoint of endpoints) {
+        for (let i = 0; i < delays.length; i++) {
+          try {
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+              const errBody = await res.json().catch(() => ({}));
+              throw new Error(errBody.error?.message || errBody.error || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!rawText) throw new Error("ไม่ได้รับคำตอบจาก AI");
+
+            return isJson ? JSON.parse(rawText) : rawText;
+          } catch (err) {
+            lastErr = err;
+            if (i < delays.length - 1) {
+              await new Promise(r => setTimeout(r, delays[i]));
+            }
+          }
+        }
+      }
+      throw lastErr;
+    }
+
+    /* ==========================================================================
+       TOURNAMENT GENERATION & FLOW LOGIC
+       ========================================================================== */
+    async function startTournamentGeneration() {
+      const topicInput = document.getElementById('topic-input').value.trim();
+      if (!topicInput) {
+        showToast("กรุณาระบุหมวดหรือหัวข้อเรื่องที่ต้องการเล่น");
+        return;
+      }
+
+      soundClick();
+      gameState.topic = topicInput;
+      if (!gameState.selectedSubTopic || !gameState.selectedSubTopic.includes(topicInput)) {
+        gameState.selectedSubTopic = `รวมทุกเรื่องใน ${topicInput}`;
+      }
+      gameState.difficulty = document.getElementById('difficulty-select').value;
+
+      // รีเซ็ตคะแนนและสถานะ
+      gameState.scores = { speedy: 0, hints: 0, jigsaw: 0, deep: 0 };
+      gameState.currentIndex = 0;
+      updateScoreDisplay();
+
+      document.getElementById('setup-screen').classList.add('hidden');
+      document.getElementById('loading-screen').classList.remove('hidden');
+
+      try {
+        const prompt = buildFullTournamentPrompt(gameState.topic, gameState.selectedSubTopic, gameState.difficulty);
+        const rawData = await callGeminiAPI(prompt, true);
+
+        // จัดระเบียบคิวข้อสอบทั้งหมด 17 ข้อ
+        gameState.questionsQueue = buildQueueFromData(rawData);
+
+        if (!gameState.questionsQueue || gameState.questionsQueue.length === 0) {
+          throw new Error("ระบบไม่สามารถประมวลผลคำถามได้ครบถ้วน");
+        }
+
+        // เริ่มแสดงสนามแข่งข้อที่ 1
+        renderQuestion(0);
+      } catch (err) {
+        console.error(err);
+        showToast(`เกิดข้อผิดพลาดในการสร้างข้อสอบ: ${err.message}`);
+        resetToSetup();
+      } finally {
+        document.getElementById('loading-screen').classList.add('hidden');
+      }
+    }
+
+    function buildFullTournamentPrompt(topic, subTopic, difficulty) {
+      const diffDesc = {
+        easy: 'ระดับแฟนทั่วไป (เน้นคำถามพื้นฐาน)',
+        normal: 'ระดับแฟนพันธุ์แท้ (เน้นรายละเอียดลึกปานกลาง)',
+        hard: 'ระดับแฟนพันธุ์แท้แห่งปี (สถิติเบื้องหลัง)'
+      }[difficulty];
+
+      return `คุณคือทีมงานออกข้อสอบรายการ "แฟนพันธุ์แท้"
+หมวดหลัก: "${topic}" สโคป: "${subTopic}" ความยาก: ${diffDesc}.
+
+ข้อกำหนด Fact-Checking:
+- ห้ามมั่วข้อมูลประวัติสโมสร/บุคคลเด็ดขาด
+- คำใบ้ 5 ข้อในรอบคุณสมบัติ ต้องเป็นจริงแบบ 100%
+- ข้อความและโจทย์ต้องสั้น กระชับ แม่นยำ
+
+จงสร้างคลังข้อสอบ 17 ข้อเป็น JSON เท่านั้น:
+{
+  "speedy_questions": [
+    {
+      "question": "คำถามสั้นกระชับ",
+      "choices": ["ตัวเลือก A", "ตัวเลือก B", "ตัวเลือก C", "ตัวเลือก D"],
+      "canonical_answer": "คำตอบถูกต้องตรงกับ 1 ใน choices",
+      "trivia": "เกร็ดความรู้สั้นๆ"
+    } // สร้างให้ครบ 10 ข้อ
+  ],
+  "hints_questions": [
+    {
+      "answer_type": "ประเภทคำตอบ",
+      "hints": ["คำใบ้ 1", "คำใบ้ 2", "คำใบ้ 3", "คำใบ้ 4", "คำใบ้ 5"],
+      "canonical_answer": "คำตอบถูกต้อง",
+      "trivia": "เกร็ดความรู้สั้นๆ"
+    } // สร้างให้ครบ 4 ข้อ
+  ],
+  "jigsaw_questions": [
+    {
+      "question": "จากภาพนี้ คืออะไร/ใคร?",
+      "answer_type": "ประเภทคำตอบ",
+      "image_subject": "ชื่อสิ่งในภาพ",
+      "search_query_en": "ชื่อค้นหาภาษาอังกฤษสั้นๆ เช่น Chelsea FC logo หรือ Dragon Ball Scouter",
+      "canonical_answer": "คำตอบถูกต้อง",
+      "trivia": "เกร็ดความรู้สั้นๆ"
+    } // สร้างให้ครบ 2 ข้อ
+  ],
+  "deep_question": {
+    "answer_type": "ประเภทคำตอบ",
+    "question": "คำถามเชิงลึกปลายเปิด 1 ข้อ",
+    "canonical_answer": "คำตอบฉบับสมบูรณ์",
+    "trivia": "เกร็ดความรู้สั้นๆ"
+  }
+}`;
+    }
+
+    function buildQueueFromData(data) {
+      let queue = [];
+      if (!data) return queue;
+
+      // 1. Speedy Quiz (10 ข้อ)
+      if (Array.isArray(data.speedy_questions)) {
+        data.speedy_questions.slice(0, 10).forEach(q => {
+          queue.push({
+            type: 'speedy',
+            roundName: 'รอบ 1: Speedy Quiz',
+            maxPts: 25,
+            data: q
+          });
+        });
+      }
+
+      // 2. รอบคุณสมบัติ 5 Hints (4 ข้อ)
+      if (Array.isArray(data.hints_questions)) {
+        data.hints_questions.slice(0, 4).forEach(q => {
+          queue.push({
+            type: 'hints',
+            roundName: 'รอบ 2: คุณสมบัติ (5 Hints)',
+            maxPts: 100,
+            data: q
+          });
+        });
+      }
+
+      // 3. รอบภาพปริศนา Jigsaw (2 ข้อ)
+      if (Array.isArray(data.jigsaw_questions)) {
+        data.jigsaw_questions.slice(0, 2).forEach(q => {
+          queue.push({
+            type: 'jigsaw',
+            roundName: 'รอบ 3: ภาพปริศนา',
+            maxPts: 100,
+            data: q
+          });
+        });
+      }
+
+      // 4. รอบแฟนพันธุ์แท้ Deep Question (1 ข้อ)
+      if (data.deep_question) {
+        queue.push({
+          type: 'deep',
+          roundName: 'รอบ 4: แฟนพันธุ์แท้ (เชิงลึก)',
+          maxPts: 150,
+          data: data.deep_question
+        });
+      }
+
+      return queue;
+    }
+
+    /* ==========================================================================
+       RENDER QUESTION SCREEN
+       ========================================================================== */
+    function renderQuestion(index) {
+      if (index >= gameState.questionsQueue.length) {
+        showFinalTournamentSummary();
+        return;
+      }
+
+      const item = gameState.questionsQueue[index];
+      const data = item.data;
+
+      // อัปเดต HUD
+      document.getElementById('round-badge').innerText = item.roundName;
+      document.getElementById('question-progress-text').innerText = `ข้อ ${index + 1} / ${gameState.questionsQueue.length}`;
+      document.getElementById('current-question-max-pts').innerText = item.maxPts;
+      document.getElementById('topic-header-text').innerText = `${gameState.topic} (${gameState.selectedSubTopic})`;
+
+      // อัปเดต Progress Bar
+      const pct = ((index + 1) / gameState.questionsQueue.length) * 100;
+      document.getElementById('tournament-progress-bar').style.width = `${pct}%`;
+
+      // ซ่อน Wrapper ทั้งหมด
+      document.getElementById('speedy-wrapper').classList.add('hidden');
+      document.getElementById('hints-wrapper').classList.add('hidden');
+      document.getElementById('jigsaw-wrapper').classList.add('hidden');
+      document.getElementById('deep-question-wrapper').classList.add('hidden');
+      document.getElementById('hint-action-bar').classList.add('hidden');
+      document.getElementById('timer-box').classList.add('hidden');
+      document.getElementById('answer-input-container').classList.remove('hidden');
+      document.getElementById('player-answer-input').value = '';
+
+      gameState.currentQuestionMaxPts = item.maxPts;
+      gameState.currentQuestionScore = item.maxPts;
+
+      // แสดงผลตามประเภทโหมด
+      if (item.type === 'speedy') {
+        document.getElementById('speedy-wrapper').classList.remove('hidden');
+        document.getElementById('answer-input-container').classList.add('hidden');
+        document.getElementById('speedy-question-text').innerText = data.question;
+        renderSpeedyChoices(data.choices);
+        startSpeedyTimer();
+      } else if (item.type === 'hints') {
+        document.getElementById('hints-wrapper').classList.remove('hidden');
+        document.getElementById('hint-action-bar').classList.remove('hidden');
+        document.getElementById('btn-next-hint').classList.remove('hidden');
+        document.getElementById('hints-wrapper').innerHTML = '';
+        gameState.hintIndex = 0;
+        revealNextHint();
+      } else if (item.type === 'jigsaw') {
+        document.getElementById('jigsaw-wrapper').classList.remove('hidden');
+        document.getElementById('jigsaw-question-text').innerText = data.question || `จากภาพนี้ คือ${data.answer_type || 'อะไร'}?`;
+        gameState.jigsawTilesOpened = 0;
+        setupJigsawBoard();
+      } else if (item.type === 'deep') {
+        document.getElementById('deep-question-wrapper').classList.remove('hidden');
+        document.getElementById('deep-question-text').innerText = data.question;
+      }
+
+      document.getElementById('game-screen').classList.remove('hidden');
+      if (item.type !== 'speedy') {
+        document.getElementById('player-answer-input').focus();
+      }
+      lucide.createIcons();
+    }
+
+    /* --- Speedy Quiz Handler --- */
+    function renderSpeedyChoices(choices) {
+      const grid = document.getElementById('speedy-choices-grid');
+      grid.innerHTML = '';
+      const labels = ['A', 'B', 'C', 'D'];
+
+      const choicesList = (choices && choices.length === 4) ? choices : [
+        gameState.questionsQueue[gameState.currentIndex].data.canonical_answer,
+        "ตัวเลือก 1", "ตัวเลือก 2", "ตัวเลือก 3"
+      ];
+
+      choicesList.forEach((choice, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `p-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-400 rounded-xl text-left text-sm font-semibold text-slate-100 transition flex items-center gap-3 shadow-sm hover:scale-[1.01] active:scale-[0.99]`;
+        btn.innerHTML = `
+          <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-300 font-black text-xs flex items-center justify-center border border-amber-500/40 shrink-0">
+            ${labels[idx]}
+          </span>
+          <span class="leading-snug flex-1">${choice}</span>
+        `;
+        btn.onclick = () => handleSpeedyChoiceClick(choice);
+        grid.appendChild(btn);
+      });
+    }
+
+    function handleSpeedyChoiceClick(selectedText) {
+      soundClick();
+      if (gameState.speedyTimer) clearInterval(gameState.speedyTimer);
+
+      const canonical = gameState.questionsQueue[gameState.currentIndex].data.canonical_answer.trim();
+      const isCorrect = selectedText.trim().toLowerCase() === canonical.toLowerCase();
+
+      const earned = isCorrect ? 25 : 0;
+      if (isCorrect) gameState.scores.speedy += earned;
+
+      showFeedbackModal(isCorrect, earned, selectedText);
+    }
+
+    function startSpeedyTimer() {
+      gameState.timeLeft = 10;
+      const timerBox = document.getElementById('timer-box');
+      const timerCount = document.getElementById('timer-count');
+      timerBox.classList.remove('hidden');
+      timerCount.innerText = gameState.timeLeft;
+      timerBox.classList.remove('pulse-danger');
+
+      if (gameState.speedyTimer) clearInterval(gameState.speedyTimer);
+
+      gameState.speedyTimer = setInterval(() => {
+        gameState.timeLeft--;
+        timerCount.innerText = gameState.timeLeft;
+        soundTick();
+
+        if (gameState.timeLeft <= 3) {
+          timerBox.classList.add('pulse-danger');
+        }
+
+        if (gameState.timeLeft <= 0) {
+          clearInterval(gameState.speedyTimer);
+          showToast("หมดเวลาการตอบ!");
+          showFeedbackModal(false, 0, "(หมดเวลา)");
+        }
+      }, 1000);
+    }
+
+    /* --- 5 Hints Handler --- */
+    function revealNextHint() {
+      const item = gameState.questionsQueue[gameState.currentIndex];
+      const hints = item.data.hints;
+
+      if (gameState.hintIndex < hints.length) {
+        soundHint();
+        const hintBox = document.createElement('div');
+        hintBox.className = 'p-3 bg-slate-900 rounded-xl border border-slate-800 text-slate-200 text-sm md:text-base flex items-start gap-2.5 shadow-sm';
+        hintBox.innerHTML = `
+          <span class="bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded text-xs border border-amber-500/30 shrink-0 mt-0.5">
+            คำใบ้ที่ ${gameState.hintIndex + 1}
+          </span>
+          <span class="leading-relaxed">${hints[gameState.hintIndex]}</span>
+        `;
+        document.getElementById('hints-wrapper').appendChild(hintBox);
+
+        if (gameState.hintIndex > 0) {
+          gameState.currentQuestionScore = Math.max(40, gameState.currentQuestionScore - 15);
+          document.getElementById('current-question-max-pts').innerText = gameState.currentQuestionScore;
+        }
+        gameState.hintIndex++;
+      }
+
+      if (gameState.hintIndex >= hints.length) {
+        document.getElementById('btn-next-hint').classList.add('hidden');
+      }
+    }
+
+    /* --- Reliable Real Image Fetcher Engine (Target Object Direct Search) --- */
+    async function setupJigsawBoard() {
+      const data = gameState.questionsQueue[gameState.currentIndex]?.data;
+      if (!data) return;
+
+      const imgElem = document.getElementById('jigsaw-image');
+      const loader = document.getElementById('jigsaw-img-loader');
+      const grid = document.getElementById('jigsaw-grid');
+      grid.innerHTML = '';
+
+      loader.classList.remove('hidden');
+      imgElem.classList.add('hidden');
+
+      // ค้นหารูปภาพจริงโดยใช้ชื่อเฉลย/วัตถุเป้าหมายโดยตรง
+      const targetQuery = data.search_query_en || data.canonical_answer || data.image_subject || gameState.topic;
+      const realImageUrl = await fetchRealPublicImage(targetQuery);
+
+      if (realImageUrl) {
+        imgElem.src = realImageUrl;
+      } else {
+        // Fallback: หากหาวิกิไม่เจอ ให้สร้างภาพวัตถุเป้าหมายตรงๆ ผ่าน AI Pollinations (เน้นวัตถุ ล็อกไม่เอาภาพวิว)
+        const cleanPrompt = encodeURIComponent(`clear close-up photo of ${targetQuery}, no background landscape, single subject`);
+        imgElem.src = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=600&height=350&nologo=true`;
+      }
+
+      // สร้างแผ่นป้าย 12 ช่อง (4x3) ชิดติดกัน ทึบสนิท 100%
+      for (let i = 0; i < 12; i++) {
+        const tile = document.createElement('button');
+        tile.className = 'tile-flip tile-hidden bg-[#0c1322] hover:bg-[#141e34] border border-slate-800/80 flex items-center justify-center cursor-pointer shadow-inner';
+        tile.innerHTML = `<span class="text-amber-400 font-black text-xl md:text-2xl drop-shadow">${i + 1}</span>`;
+        tile.onclick = () => openJigsawTile(tile, i);
+        grid.appendChild(tile);
+      }
+    }
+
+    async function fetchRealPublicImage(searchTerm) {
+      try {
+        // 1. ค้นหาผ่าน Wikimedia Commons Image Search API ด้วยชื่อคำตอบ
+        const commonsUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(searchTerm)}&gsrnamespace=6&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`;
+        const resCommons = await fetch(commonsUrl);
+        const dataCommons = await resCommons.json();
+        
+        if (dataCommons.query?.pages) {
+          const pages = dataCommons.query.pages;
+          for (let pageId in pages) {
+            const imgInfo = pages[pageId].imageinfo?.[0];
+            if (imgInfo?.thumburl || imgInfo?.url) {
+              return imgInfo.thumburl || imgInfo.url;
+            }
+          }
+        }
+
+        // 2. Wikipedia Direct Page Images API
+        const wikiEnSearch = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTerm)}&format=json&origin=*`;
+        const resEnSr = await fetch(wikiEnSearch);
+        const dataEnSr = await resEnSr.json();
+        const topPageId = dataEnSr.query?.search?.[0]?.pageid;
+
+        if (topPageId) {
+          const wikiEnImg = `https://en.wikipedia.org/w/api.php?action=query&pageids=${topPageId}&prop=pageimages&pithumbsize=800&format=json&origin=*`;
+          const resEnImg = await fetch(wikiEnImg);
+          const dataEnImg = await resEnImg.json();
+          const pageObj = dataEnImg.query?.pages?.[topPageId];
+          if (pageObj?.thumbnail?.source) {
+            return pageObj.thumbnail.source;
+          }
+        }
+      } catch (e) {
+        console.error("Wikimedia Fetch Error:", e);
+      }
+      return null;
+    }
+
+    function handleJigsawImgError(img) {
+      img.onerror = null;
+      const data = gameState.questionsQueue[gameState.currentIndex]?.data;
+      const term = encodeURIComponent(data?.search_query_en || data?.canonical_answer || gameState.topic || 'item');
+      img.src = `https://image.pollinations.ai/prompt/isolated%20photo%20of%20${term}?width=600&height=350&nologo=true`;
+    }
+
+    function openJigsawTile(tileBtn, index) {
+      if (tileBtn.classList.contains('tile-opened')) return;
+      soundHint();
+      tileBtn.classList.remove('tile-hidden');
+      tileBtn.classList.add('tile-opened');
+
+      gameState.jigsawTilesOpened++;
+      if (gameState.jigsawTilesOpened > 1) {
+        gameState.currentQuestionScore = Math.max(23, gameState.currentQuestionScore - 7);
+        document.getElementById('current-question-max-pts').innerText = gameState.currentQuestionScore;
+      }
+    }
+
+    /* --- Text Answer Submission (Hints, Jigsaw, Deep) --- */
+    async function submitTextAnswer() {
+      const playerInput = document.getElementById('player-answer-input').value.trim();
+      if (!playerInput) {
+        showToast("กรุณาพิมพ์คำตอบของคุณก่อนกดส่ง");
+        return;
+      }
+
+      soundClick();
+      const currentItem = gameState.questionsQueue[gameState.currentIndex];
+
+      if (currentItem.type === 'deep') {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('loading-screen').classList.remove('hidden');
+        document.getElementById('loading-status-title').innerText = "กรรมการ AI กำลังประเมินคำตอบแฟนพันธุ์แท้...";
+
+        const judgePrompt = `คุณคือกรรมการตัดสินรายการเกมโชว์แฟนพันธุ์แท้
+เฉลย: "${currentItem.data.canonical_answer}"
+คำตอบของผู้เล่น: "${playerInput}"
+หมวดคำถาม: "${gameState.topic}"
+
+ประเมินว่าถูกต้องตามสาระสำคัญหรือไม่ ส่งออกเป็น JSON:
+{
+  "is_correct": true หรือ false,
+  "feedback": "คำอธิบายเหตุผลสั้นๆ"
+}`;
+
+        try {
+          const evalRes = await callGeminiAPI(judgePrompt, true);
+          const isCorrect = evalRes.is_correct;
+          const earned = isCorrect ? 150 : 0;
+          if (isCorrect) gameState.scores.deep += earned;
+
+          showFeedbackModal(isCorrect, earned, playerInput, evalRes.feedback);
+        } catch (e) {
+          const isCorrect = playerInput.toLowerCase().includes(currentItem.data.canonical_answer.toLowerCase());
+          const earned = isCorrect ? 150 : 0;
+          if (isCorrect) gameState.scores.deep += earned;
+          showFeedbackModal(isCorrect, earned, playerInput);
+        } finally {
+          document.getElementById('loading-screen').classList.add('hidden');
+        }
+
+      } else {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('loading-screen').classList.remove('hidden');
+        document.getElementById('loading-status-title').innerText = "กรรมการ AI กำลังตัดสินคำตอบ...";
+
+        const judgePrompt = `คุณคือกรรมการตัดสินรายการแฟนพันธุ์แท้
+เฉลย: "${currentItem.data.canonical_answer}"
+คำตอบของผู้เล่น: "${playerInput}"
+
+ตรวจว่าถูกต้องตามสาระสำคัญหรือไม่ (อนุโลมการสะกด/ชื่อเล่น) ส่งออกเป็น JSON:
+{
+  "is_correct": true หรือ false,
+  "feedback": "คำอธิบายสั้นๆ"
+}`;
+
+        try {
+          const evalRes = await callGeminiAPI(judgePrompt, true);
+          const isCorrect = evalRes.is_correct;
+          const earned = isCorrect ? gameState.currentQuestionScore : 0;
+
+          if (isCorrect) {
+            if (currentItem.type === 'hints') gameState.scores.hints += earned;
+            else if (currentItem.type === 'jigsaw') gameState.scores.jigsaw += earned;
+          }
+
+          showFeedbackModal(isCorrect, earned, playerInput, evalRes.feedback);
+        } catch (e) {
+          const isCorrect = playerInput.toLowerCase().includes(currentItem.data.canonical_answer.toLowerCase());
+          const earned = isCorrect ? gameState.currentQuestionScore : 0;
+          if (isCorrect) {
+            if (currentItem.type === 'hints') gameState.scores.hints += earned;
+            else if (currentItem.type === 'jigsaw') gameState.scores.jigsaw += earned;
+          }
+          showFeedbackModal(isCorrect, earned, playerInput);
+        } finally {
+          document.getElementById('loading-screen').classList.add('hidden');
+        }
+      }
+    }
+
+    /* ==========================================================================
+       FEEDBACK MODAL & TOURNAMENT ADVANCEMENT
+       ========================================================================== */
+    function showFeedbackModal(isCorrect, earnedPts, playerAns, feedbackText = '') {
+      if (isCorrect) soundCorrect();
+      else soundWrong();
+
+      updateScoreDisplay();
+
+      const modal = document.getElementById('feedback-modal');
+      const iconBox = document.getElementById('modal-icon-container');
+      const title = document.getElementById('modal-title');
+      const ptsEarned = document.getElementById('modal-pts-earned');
+      const canonicalText = document.getElementById('modal-canonical-text');
+      const descText = document.getElementById('modal-feedback-desc');
+      const allHintsBox = document.getElementById('modal-all-hints-container');
+      const allHintsList = document.getElementById('modal-all-hints-list');
+
+      const currentItem = gameState.questionsQueue[gameState.currentIndex];
+      const data = currentItem.data;
+
+      if (isCorrect) {
+        iconBox.className = "inline-block p-3.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400";
+        iconBox.innerHTML = '<i data-lucide="check-circle-2" class="w-10 h-10"></i>';
+        title.innerText = "ถูกต้องสมบูรณ์!";
+        title.className = "text-2xl font-black text-emerald-400";
+        ptsEarned.innerText = `+${earnedPts} คะแนน (รวมสะสม: ${getTotalScore()} คะแนน)`;
+      } else {
+        iconBox.className = "inline-block p-3.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400";
+        iconBox.innerHTML = '<i data-lucide="x-circle" class="w-10 h-10"></i>';
+        title.innerText = "คำตอบยังไม่ถูกต้อง!";
+        title.className = "text-2xl font-black text-rose-400";
+        ptsEarned.innerText = `+0 คะแนน (คำตอบของคุณ: "${playerAns}")`;
+      }
+
+      canonicalText.innerText = data.canonical_answer;
+      descText.innerText = feedbackText || data.trivia || "คำตอบถูกบันทึกเรียบร้อยแล้ว";
+
+      // หากเป็นรอบคุณสมบัติ (5 Hints) ให้เปิดโชว์คำใบ้ทั้งหมดทั้ง 5 ข้อในหน้าสรุป
+      if (currentItem.type === 'hints' && data.hints && data.hints.length > 0) {
+        allHintsList.innerHTML = '';
+        data.hints.forEach((h, idx) => {
+          const hintItem = document.createElement('div');
+          hintItem.className = 'p-2 bg-slate-900 rounded border border-slate-800 flex items-start gap-1.5';
+          hintItem.innerHTML = `<span class="text-amber-400 font-bold shrink-0">คำใบ้ที่ ${idx + 1}:</span> <span>${h}</span>`;
+          allHintsList.appendChild(hintItem);
+        });
+        allHintsBox.classList.remove('hidden');
+      } else {
+        allHintsBox.classList.add('hidden');
+      }
+
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function advanceToNextQuestion() {
+      soundClick();
+      document.getElementById('feedback-modal').classList.add('hidden');
+      gameState.currentIndex++;
+      renderQuestion(gameState.currentIndex);
+    }
+
+    /* ==========================================================================
+       FINAL TOURNAMENT SUMMARY
+       ========================================================================== */
+    function showFinalTournamentSummary() {
+      document.getElementById('game-screen').classList.add('hidden');
+      const summaryScreen = document.getElementById('tournament-summary-screen');
+
+      const total = getTotalScore();
+      document.getElementById('summary-total-score').innerText = `${total} / 1,000 คะแนน`;
+
+      let title = "แฟนคลับมือใหม่";
+      if (total >= 900) title = "🏆 สุดยอดแฟนพันธุ์แท้แห่งปี!";
+      else if (total >= 750) title = "🥇 แฟนพันธุ์แท้ระดับเซียน";
+      else if (total >= 550) title = "🥈 แฟนพันธุ์แท้ตัวจริง";
+      else if (total >= 350) title = "🥉 ผู้เชี่ยวชาญระดับปานกลาง";
+
+      document.getElementById('summary-rank-title').innerText = title;
+
+      document.getElementById('score-breakdown-speedy').innerText = `${gameState.scores.speedy} / 250`;
+      document.getElementById('score-breakdown-hints').innerText = `${gameState.scores.hints} / 400`;
+      document.getElementById('score-breakdown-jigsaw').innerText = `${gameState.scores.jigsaw} / 200`;
+      document.getElementById('score-breakdown-deep').innerText = `${gameState.scores.deep} / 150`;
+
+      summaryScreen.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    /* ==========================================================================
+       RESET TO SETUP
+       ========================================================================== */
+    function resetToSetup() {
+      soundClick();
+      if (gameState.speedyTimer) clearInterval(gameState.speedyTimer);
+      document.getElementById('feedback-modal').classList.add('hidden');
+      document.getElementById('tournament-summary-screen').classList.add('hidden');
+      document.getElementById('game-screen').classList.add('hidden');
+      document.getElementById('subtopic-section').classList.add('hidden');
+      document.getElementById('btn-next-hint').classList.remove('hidden');
+      document.getElementById('setup-screen').classList.remove('hidden');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
