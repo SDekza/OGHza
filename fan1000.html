@@ -572,14 +572,14 @@
     }
 
     /* ==========================================================================
-       GEMINI API INTEGRATION (WITH DIRECT ENDPOINT FALLBACK)
+       GEMINI API INTEGRATION (VIA CLOUDFLARE WORKER PROXY / CUSTOM KEY)
        ========================================================================== */
     async function callGeminiAPI(promptText, isJson = true) {
       const customKey = document.getElementById('custom-api-key').value.trim();
       const payload = { contents: [{ parts: [{ text: promptText }] }] };
       if (isJson) payload.generationConfig = { responseMimeType: "application/json" };
 
-      // 1. หากระบุ Custom Key ให้ใช้ทันที
+      // 1. หากผู้เล่นระบุ Custom Key ให้ยิงตรงหา Gemini API
       if (customKey) {
         const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${customKey}`;
         const res = await fetch(directUrl, {
@@ -593,41 +593,35 @@
         return isJson ? JSON.parse(rawText) : rawText;
       }
 
-      // 2. ลิสต์ปุ่มยิง (Proxy Worker และ Direct Gemini Endpoint Fallback)
-      const apiKey = "";
-      const endpoints = [];
-      if (typeof proxyWorkerUrl !== 'undefined' && proxyWorkerUrl) {
-        endpoints.push(proxyWorkerUrl);
-      }
-      endpoints.push(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`);
-
+      // 2. ยิงผ่าน Cloudflare Worker Proxy
       const delays = [1000, 2000, 4000, 8000, 16000];
       let lastErr = null;
 
-      for (const endpoint of endpoints) {
-        for (let i = 0; i < delays.length; i++) {
-          try {
-            const res = await fetch(endpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
+      for (let i = 0; i < delays.length; i++) {
+        try {
+          const res = await fetch(proxyWorkerUrl, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-App-Client': 'Fan1000-Web'
+            },
+            body: JSON.stringify(payload)
+          });
 
-            if (!res.ok) {
-              const errBody = await res.json().catch(() => ({}));
-              throw new Error(errBody.error?.message || errBody.error || `HTTP ${res.status}`);
-            }
+          if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(errBody.error || `HTTP ${res.status}`);
+          }
 
-            const data = await res.json();
-            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!rawText) throw new Error("ไม่ได้รับคำตอบจาก AI");
+          const data = await res.json();
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!rawText) throw new Error("ไม่ได้รับคำตอบจาก AI");
 
-            return isJson ? JSON.parse(rawText) : rawText;
-          } catch (err) {
-            lastErr = err;
-            if (i < delays.length - 1) {
-              await new Promise(r => setTimeout(r, delays[i]));
-            }
+          return isJson ? JSON.parse(rawText) : rawText;
+        } catch (err) {
+          lastErr = err;
+          if (i < delays.length - 1) {
+            await new Promise(r => setTimeout(r, delays[i]));
           }
         }
       }
