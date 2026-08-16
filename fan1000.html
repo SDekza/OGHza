@@ -588,6 +588,9 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json();
+        if (data.error) {
+          throw new Error(data.error.message || data.error);
+        }
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!rawText) throw new Error("ไม่ได้รับคำตอบจาก AI");
         return isJson ? JSON.parse(rawText) : rawText;
@@ -608,18 +611,25 @@
             body: JSON.stringify(payload)
           });
 
-          if (!res.ok) {
-            const errBody = await res.json().catch(() => ({}));
-            throw new Error(errBody.error || `HTTP ${res.status}`);
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok || data.error) {
+            const errDetail = data.error?.message || data.error || `HTTP ${res.status}`;
+            if (errDetail.includes("unregistered callers") || errDetail.includes("API Key")) {
+              throw new Error("ระบบขาดการเชื่อมต่อ Gemini API Key ใน Cloudflare Worker (กรุณาตั้งค่า GEMINI_API_KEY ใน Cloudflare Variables)");
+            }
+            throw new Error(errDetail);
           }
 
-          const data = await res.json();
           const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (!rawText) throw new Error("ไม่ได้รับคำตอบจาก AI");
 
           return isJson ? JSON.parse(rawText) : rawText;
         } catch (err) {
           lastErr = err;
+          if (err.message.includes("GEMINI_API_KEY")) {
+            throw err; // หยุด retry ทันทีถ้าเป็นปัญหาขาดการเชื่อมต่อคีย์
+          }
           if (i < delays.length - 1) {
             await new Promise(r => setTimeout(r, delays[i]));
           }
