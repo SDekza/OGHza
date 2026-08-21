@@ -25,7 +25,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
-    <!-- Google Fonts & Custom Styling -->
+    <!-- Google Fonts: Anuphan & Custom Pinch Zoom Lock -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700;800&display=swap');
         
@@ -67,13 +67,6 @@
             width: 100%;
             height: 100%;
         }
-
-        /* Floating Action Speed Dial Animations */
-        @keyframes fab-bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
-        }
-        .fab-pulse { animation: fab-bounce 2s infinite; }
     </style>
 </head>
 <body>
@@ -239,8 +232,8 @@
                 return saved ? JSON.parse(saved) : [];
             });
 
-            // Mobile FAB Speed-Dial State
-            const [isFabOpen, setIsFabOpen] = useState(false);
+            // Mobile FAB Floating Menu Toggle State
+            const [showFabMenu, setShowFabMenu] = useState(false);
 
             // 1. Listen to Real-time Master Catalog (`sebo_products` - SHARED)
             useEffect(() => {
@@ -285,6 +278,8 @@
                                 ...data,
                                 productName: data.productName || '',
                                 quantity: data.quantity || 1,
+                                deliveredQty: data.deliveredQty || 0,
+                                deliveryBatches: data.deliveryBatches || [],
                                 timestampMs: data.timestampMs || Date.now()
                             });
                         });
@@ -321,17 +316,10 @@
                 return (matchedUrl !== undefined && matchedUrl !== '') ? matchedUrl : fallbackUrl;
             };
 
-            // Helper to format date-only string from full timestamp
-            const formatDateOnly = (tsStr) => {
-                if (!tsStr) return '';
-                // Splitting "21/8/2026 16:30:00" or "21/8/2026, 16:30:00" -> "21/8/2026"
-                return tsStr.split(' ')[0].replace(',', '').trim();
-            };
-
             const [activeTab, setActiveTab] = useState('orders'); // orders | create | products
             const [taskStatusFilter, setTaskStatusFilter] = useState('pending'); // pending | doing | done
             const [quickTagFilter, setQuickTagFilter] = useState('all'); // all | urgent | stock
-            const [orderDateSort, setOrderDateSort] = useState('asc'); // asc (สั่งก่อน->หลัง) | desc (สั่งหลัง->ก่อน) | dueDate (ตามวันใช้)
+            const [sortOrder, setSortOrder] = useState('dueDate'); // dueDate | createdAsc | createdDesc
             const [viewMode, setViewMode] = useState('card'); // card | compact
             const [searchTerm, setSearchTerm] = useState('');
             const [categoryFilter, setCategoryFilter] = useState('all');
@@ -340,6 +328,12 @@
             const [productSearch, setProductSearch] = useState('');
             const [productPage, setProductPage] = useState(1);
             const [expandedProduct, setExpandedProduct] = useState(null);
+
+            // Action Confirmation Modal State
+            const [actionModal, setActionModal] = useState(null);
+
+            // Partial / Batch Delivery Modal State (ส่งงานบางส่วน)
+            const [partialDeliveryModal, setPartialDeliveryModal] = useState(null); 
 
             // Delete Task Modal State
             const [taskToDelete, setTaskToDelete] = useState(null);
@@ -379,7 +373,7 @@
                 setTimeout(() => setToast(null), 2500);
             };
 
-            // Close suggestion box & fab on outside click
+            // Close suggestion box on outside click
             useEffect(() => {
                 const handleClickOutside = (e) => {
                     if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
@@ -400,6 +394,96 @@
                 setProductPage(1);
             }, [productSearch]);
 
+            // Check Privilege / Ownership for Task Management
+            const isAdminOrDev = currentUserRank === 'Admin' || currentUserRank === 'Dev';
+
+            const canManageTask = (task) => {
+                if (!task) return false;
+                if (isAdminOrDev) return true;
+                const user = String(currentUser || '').trim().toLowerCase();
+                const assigned = String(task.assignedBy || task.user || '').trim().toLowerCase();
+                const doing = String(task.doingBy || '').trim().toLowerCase();
+                const done = String(task.doneBy || '').trim().toLowerCase();
+                return user && (user === assigned || user === doing || user === done || !task.doingBy);
+            };
+
+            // Consolidation Helper: Merge duplicate pending tasks into a single card
+            const handleConsolidatePendingTasks = async () => {
+                const pendingList = tasks.filter(t => t.status === 'pending');
+                if (pendingList.length <= 1) {
+                    showToast('ℹ️ ไม่พบรายการคิวงานซ้ำซ้อนในค้างทำ');
+                    return;
+                }
+
+                // Group pending tasks by matching key fields
+                const groups = {};
+                pendingList.forEach(t => {
+                    const key = [
+                        (t.productName || '').trim().toLowerCase(),
+                        (t.type || ''),
+                        (t.memo || '').trim(),
+                        (t.dueDate || ''),
+                        !!t.isUrgent,
+                        !!t.isStock
+                    ].join('||');
+
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(t);
+                });
+
+                let mergedCount = 0;
+
+                if (db) {
+                    const batch = db.batch();
+                    let hasChanges = false;
+
+                    Object.values(groups).forEach(group => {
+                        if (group.length > 1) {
+                            const primaryTask = group[0];
+                            const totalQty = group.reduce((sum, item) => sum + (parseInt(item.quantity) || 1), 0);
+                            
+                            batch.update(db.collection("seb_tasks").doc(primaryTask.id), { quantity: totalQty });
+                            
+                            for (let i = 1; i < group.length; i++) {
+                                batch.delete(db.collection("seb_tasks").doc(group[i].id));
+                            }
+                            hasChanges = true;
+                            mergedCount += (group.length - 1);
+                        }
+                    });
+
+                    if (hasChanges) {
+                        try {
+                            await batch.commit();
+                            showToast(`⚡ รวมคิวงานซ้ำกลับเป็นใบเดียวเรียบร้อยแล้ว (${mergedCount} รายการ)`);
+                        } catch (err) {
+                            console.error("Batch consolidate error:", err);
+                            showToast('❌ ไม่สามารถรวมการ์ดงานซ้ำได้');
+                        }
+                    } else {
+                        showToast('ℹ️ ไม่พบรายการงานซ้ำกันในคิวค้างทำ');
+                    }
+                } else {
+                    let newTasks = [...tasks];
+                    Object.values(groups).forEach(group => {
+                        if (group.length > 1) {
+                            const primaryTask = group[0];
+                            const totalQty = group.reduce((sum, item) => sum + (parseInt(item.quantity) || 1), 0);
+                            const deleteIds = new Set(group.slice(1).map(g => g.id));
+
+                            newTasks = newTasks.filter(t => !deleteIds.has(t.id)).map(t => t.id === primaryTask.id ? { ...t, quantity: totalQty } : t);
+                            mergedCount += (group.length - 1);
+                        }
+                    });
+                    setTasks(newTasks);
+                    if (mergedCount > 0) {
+                        showToast(`⚡ รวมคิวงานซ้ำกลับเป็นใบเดียวเรียบร้อยแล้ว (${mergedCount} รายการ)`);
+                    } else {
+                        showToast('ℹ️ ไม่พบรายการงานซ้ำกันในคิวค้างทำ');
+                    }
+                }
+            };
+
             const handleAddTask = async (e) => {
                 e.preventDefault();
                 if (!form.productName.trim()) {
@@ -407,39 +491,67 @@
                     return;
                 }
 
-                const taskId = 'TASK-' + Date.now();
-                const newTask = {
-                    id: taskId,
-                    timestamp: new Date().toLocaleString('th-TH'),
-                    timestampMs: Date.now(),
-                    type: form.type,
-                    productName: form.productName.trim(),
-                    quantity: parseInt(form.quantity) || 1,
-                    memo: form.memo,
-                    dueDate: form.dueDate || '',
-                    isUrgent: form.isUrgent,
-                    isStock: form.isStock,
-                    status: 'pending',
-                    assignedBy: currentUser,
-                    user: currentUser,
-                    doingBy: '',
-                    doneBy: '',
-                    doneTimestamp: ''
-                };
+                // Check if a pending task with exact same specs exists, auto-merge if so
+                const existingPending = tasks.find(t => 
+                    t.status === 'pending' &&
+                    (t.productName || '').trim().toLowerCase() === form.productName.trim().toLowerCase() &&
+                    (t.type || '') === form.type &&
+                    (t.memo || '').trim() === (form.memo || '').trim() &&
+                    (t.dueDate || '') === (form.dueDate || '') &&
+                    !!t.isUrgent === !!form.isUrgent &&
+                    !!t.isStock === !!form.isStock
+                );
 
-                // Save task to separate collection `seb_tasks`
-                if (db) {
-                    try {
-                        await db.collection("seb_tasks").doc(taskId).set(newTask);
-                    } catch (err) {
-                        console.error("Firestore add error:", err);
+                const addQty = parseInt(form.quantity) || 1;
+
+                if (existingPending) {
+                    const newQty = (existingPending.quantity || 0) + addQty;
+                    if (db) {
+                        try {
+                            await db.collection("seb_tasks").doc(existingPending.id).update({ quantity: newQty });
+                        } catch (err) {
+                            console.error("Firestore merge add error:", err);
+                            setTasks(prev => prev.map(t => t.id === existingPending.id ? { ...t, quantity: newQty } : t));
+                        }
+                    } else {
+                        setTasks(prev => prev.map(t => t.id === existingPending.id ? { ...t, quantity: newQty } : t));
+                    }
+                    showToast(`พวกรวมสั่งเพิ่ม ${addQty} ชิ้น เข้ากับการ์ดค้างทำเดิมแล้ว (รวมเป็น ${newQty} ชิ้น)`);
+                } else {
+                    const taskId = 'TASK-' + Date.now();
+                    const newTask = {
+                        id: taskId,
+                        timestamp: new Date().toLocaleString('th-TH'),
+                        timestampMs: Date.now(),
+                        type: form.type,
+                        productName: form.productName.trim(),
+                        quantity: addQty,
+                        deliveredQty: 0,
+                        deliveryBatches: [],
+                        memo: form.memo,
+                        dueDate: form.dueDate || '',
+                        isUrgent: form.isUrgent,
+                        isStock: form.isStock,
+                        status: 'pending',
+                        assignedBy: currentUser,
+                        user: currentUser,
+                        doingBy: '',
+                        doneBy: '',
+                        doneTimestamp: ''
+                    };
+
+                    if (db) {
+                        try {
+                            await db.collection("seb_tasks").doc(taskId).set(newTask);
+                        } catch (err) {
+                            console.error("Firestore add error:", err);
+                            setTasks(prev => [newTask, ...prev]);
+                        }
+                    } else {
                         setTasks(prev => [newTask, ...prev]);
                     }
-                } else {
-                    setTasks(prev => [newTask, ...prev]);
+                    showToast(`ส่งงาน "${newTask.productName}" เรียบร้อยแล้ว`);
                 }
-
-                showToast(`ส่งงาน "${newTask.productName}" เรียบร้อยแล้ว`);
 
                 // Reset Form
                 setForm({
@@ -455,19 +567,377 @@
                 setTaskStatusFilter('pending');
             };
 
-            const handleStatusChange = async (taskId, nextStatus) => {
+            // Open Partial Delivery Modal
+            const openPartialDeliveryModal = (task) => {
+                if (!canManageTask(task)) {
+                    showToast('⚠️ คุณไม่มีสิทธิ์จัดการรายการนี้');
+                    return;
+                }
+                const delivered = task.deliveredQty || 0;
+                const total = task.quantity || 1;
+                const remaining = Math.max(1, total - delivered);
+
+                setPartialDeliveryModal({
+                    task,
+                    inputQty: remaining,
+                    memo: ''
+                });
+            };
+
+            // Execute Partial Delivery Submission
+            const executePartialDelivery = async (shouldSplit = false) => {
+                if (!partialDeliveryModal) return;
+                const { task, inputQty, memo } = partialDeliveryModal;
+                const addQty = parseInt(inputQty) || 0;
+
+                if (addQty <= 0) {
+                    showToast('⚠️ กรุณาระบุจำนวนชิ้นอย่างน้อย 1 ชิ้น');
+                    return;
+                }
+
+                const currentDelivered = task.deliveredQty || 0;
+                const totalQty = task.quantity || 1;
+                const newDelivered = currentDelivered + addQty;
+                const remainingQtyAfterAdd = totalQty - newDelivered;
+                const isCompleted = newDelivered >= totalQty;
+
                 const nowStr = new Date().toLocaleString('th-TH');
-                const targetTask = tasks.find(t => t.id === taskId);
-                if (!targetTask) return;
+                const batchRecord = {
+                    id: 'BATCH-' + Date.now(),
+                    qty: addQty,
+                    deliveredBy: currentUser,
+                    timestamp: nowStr,
+                    memo: memo.trim()
+                };
+
+                const updatedBatches = [...(task.deliveryBatches || []), batchRecord];
+
+                // SPLIT TASK Logic: 
+                // Move completed portion to "done", and return remaining portion back to "pending" (with Auto-Merge if a matching pending task exists)
+                if (shouldSplit && !isCompleted && remainingQtyAfterAdd > 0) {
+                    const completedTaskId = task.id;
+
+                    const completedTaskUpdates = {
+                        quantity: newDelivered,
+                        deliveredQty: newDelivered,
+                        deliveryBatches: updatedBatches,
+                        status: 'done',
+                        doingBy: task.doingBy || currentUser,
+                        doneBy: currentUser,
+                        doneTimestamp: nowStr
+                    };
+
+                    // Check if there is an existing pending task to merge the remaining portion into
+                    const matchPending = tasks.find(t => 
+                        t.id !== completedTaskId &&
+                        t.status === 'pending' &&
+                        (t.productName || '').trim().toLowerCase() === (task.productName || '').trim().toLowerCase() &&
+                        (t.type || '') === (task.type || '') &&
+                        (t.memo || '').trim() === (task.memo || '').trim() &&
+                        (t.dueDate || '') === (task.dueDate || '') &&
+                        !!t.isUrgent === !!task.isUrgent &&
+                        !!t.isStock === !!task.isStock
+                    );
+
+                    if (matchPending) {
+                        const newPendingTotal = (matchPending.quantity || 0) + remainingQtyAfterAdd;
+                        if (db) {
+                            try {
+                                const batch = db.batch();
+                                batch.update(db.collection("seb_tasks").doc(completedTaskId), completedTaskUpdates);
+                                batch.update(db.collection("seb_tasks").doc(matchPending.id), { quantity: newPendingTotal });
+                                await batch.commit();
+                            } catch (err) {
+                                console.error("Firestore split & merge error:", err);
+                                setTasks(prev => prev.map(t => {
+                                    if (t.id === completedTaskId) return { ...t, ...completedTaskUpdates };
+                                    if (t.id === matchPending.id) return { ...t, quantity: newPendingTotal };
+                                    return t;
+                                }));
+                            }
+                        } else {
+                            setTasks(prev => prev.map(t => {
+                                if (t.id === completedTaskId) return { ...t, ...completedTaskUpdates };
+                                if (t.id === matchPending.id) return { ...t, quantity: newPendingTotal };
+                                return t;
+                            }));
+                        }
+                        setPartialDeliveryModal(null);
+                        showToast(`✂️ ส่งมอบ ${newDelivered} ชิ้น (เสร็จเรียบร้อย) และเอายอดอีก ${remainingQtyAfterAdd} ชิ้นไปรวมในการ์ดค้างทำเดิมแล้วค่ะ`);
+                        return;
+                    } else {
+                        const remainingTaskId = 'TASK-' + Date.now();
+                        const remainingTaskData = {
+                            id: remainingTaskId,
+                            timestamp: task.timestamp || nowStr,
+                            timestampMs: Date.now(),
+                            type: task.type || 'สร้อย',
+                            productName: task.productName,
+                            quantity: remainingQtyAfterAdd,
+                            deliveredQty: 0,
+                            deliveryBatches: [],
+                            memo: task.memo || '',
+                            dueDate: task.dueDate || '',
+                            isUrgent: !!task.isUrgent,
+                            isStock: !!task.isStock,
+                            status: 'pending',
+                            assignedBy: task.assignedBy || currentUser,
+                            user: task.user || currentUser,
+                            doingBy: '',
+                            doneBy: '',
+                            doneTimestamp: ''
+                        };
+
+                        if (db) {
+                            try {
+                                const batch = db.batch();
+                                batch.update(db.collection("seb_tasks").doc(completedTaskId), completedTaskUpdates);
+                                batch.set(db.collection("seb_tasks").doc(remainingTaskId), remainingTaskData);
+                                await batch.commit();
+                            } catch (err) {
+                                console.error("Firestore split delivery error:", err);
+                                setTasks(prev => {
+                                    const updated = prev.map(t => t.id === completedTaskId ? { ...t, ...completedTaskUpdates } : t);
+                                    return [remainingTaskData, ...updated];
+                                });
+                            }
+                        } else {
+                            setTasks(prev => {
+                                const updated = prev.map(t => t.id === completedTaskId ? { ...t, ...completedTaskUpdates } : t);
+                                return [remainingTaskData, ...updated];
+                            });
+                        }
+
+                        setPartialDeliveryModal(null);
+                        showToast(`✂️ แยกงานส่งมอบ ${newDelivered} ชิ้น (เสร็จเรียบร้อย) และคืนคิวอีก ${remainingQtyAfterAdd} ชิ้น (ค้างทำ)`);
+                        return;
+                    }
+                }
+
+                // Standard Single-card Accumulation
+                const updates = {
+                    deliveredQty: newDelivered,
+                    deliveryBatches: updatedBatches,
+                    status: isCompleted ? 'done' : 'doing',
+                    doingBy: task.doingBy || currentUser,
+                    doneBy: isCompleted ? currentUser : '',
+                    doneTimestamp: isCompleted ? nowStr : ''
+                };
+
+                if (db) {
+                    try {
+                        await db.collection("seb_tasks").doc(task.id).update(updates);
+                    } catch (err) {
+                        console.error("Firestore partial delivery update error:", err);
+                        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...updates } : t));
+                    }
+                } else {
+                    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...updates } : t));
+                }
+
+                setPartialDeliveryModal(null);
+
+                if (isCompleted) {
+                    showToast(`🎉 ส่งมอบงานครบถ้วน ${newDelivered}/${totalQty} ชิ้น (ย้ายไปแถบเสร็จแล้ว)`);
+                } else {
+                    showToast(`📦 บันทึกส่งมอบเพิ่ม ${addQty} ชิ้น รวมเป็น ${newDelivered}/${totalQty} ชิ้นเรียบร้อยค่ะ`);
+                }
+            };
+
+            // Prompt Confirmation Modal before changing task status
+            const promptStatusChange = (task, nextStatus) => {
+                if (!canManageTask(task)) {
+                    showToast('⚠️ คุณไม่มีสิทธิ์จัดการรายการนี้');
+                    return;
+                }
+
+                let title = 'ยืนยันการเปลี่ยนสถานะ';
+                let message = `ต้องการเปลี่ยนสถานะของ "${task.productName}" ใช่หรือไม่?`;
+                let badgeText = 'ยืนยัน';
+                let badgeBg = 'bg-indigo-600 hover:bg-indigo-700 text-white';
+
+                if (task.status === 'pending' && nextStatus === 'doing') {
+                    title = '▶ ยืนยันเริ่มทำรายการนี้?';
+                    message = `ต้องการเปลี่ยนสถานะเป็น "กำลังทำ" โดย ${currentUser} ใช่หรือไม่?`;
+                    badgeText = 'เริ่มทำเลย';
+                    badgeBg = 'bg-indigo-600 hover:bg-indigo-700 text-white';
+                } else if (task.status === 'doing' && nextStatus === 'pending') {
+                    const delivered = task.deliveredQty || 0;
+                    const total = task.quantity || 1;
+                    const remaining = total - delivered;
+
+                    if (delivered > 0 && remaining > 0) {
+                        title = '✂️ ยืนยันตัดแยกงานคืนคิว?';
+                        message = `งานนี้ส่งมอบไปแล้ว ${delivered} ชิ้น ระบบจะแยก ${delivered} ชิ้นแรกไปไว้ในแถบ "เสร็จแล้ว" และย้อนอีก ${remaining} ชิ้นที่เหลือกลับไปรวมในแถบ "ค้างทำ"`;
+                        badgeText = 'ตัดแยกคืนคิว';
+                        badgeBg = 'bg-amber-600 hover:bg-amber-700 text-white';
+                    } else {
+                        title = '↩️ ยืนยันคืนเข้าคิวงาน?';
+                        message = `ต้องการย้อนกลับงาน "${task.productName}" กลับไปที่แถบ "ค้างทำ" ใช่หรือไม่?`;
+                        badgeText = 'คืนเข้าคิวงาน';
+                        badgeBg = 'bg-amber-600 hover:bg-amber-700 text-white';
+                    }
+                } else if (task.status === 'done' && nextStatus === 'doing') {
+                    title = '↩️ ยืนยันย้อนกลับไปกำลังทำ?';
+                    message = `ต้องการดึงงาน "${task.productName}" กลับมาแก้ไขในแถบ "กำลังทำ" ใช่หรือไม่?`;
+                    badgeText = 'ย้อนไปกำลังทำ';
+                    badgeBg = 'bg-indigo-600 hover:bg-indigo-700 text-white';
+                }
+
+                setActionModal({
+                    task,
+                    nextStatus,
+                    title,
+                    message,
+                    badgeText,
+                    badgeBg
+                });
+            };
+
+            // Execute Full Status Change (With Auto-Merge & Auto-Split when Reverting)
+            const executeStatusChange = async () => {
+                if (!actionModal) return;
+                const { task, nextStatus } = actionModal;
+                const taskId = task.id;
+                const nowStr = new Date().toLocaleString('th-TH');
 
                 const isDoing = nextStatus === 'doing';
-                const isDone = nextStatus === 'done';
+                const isPending = nextStatus === 'pending';
 
+                // Look for an existing pending task to merge into when returning to pending queue
+                const matchPending = tasks.find(t => 
+                    t.id !== taskId &&
+                    t.status === 'pending' &&
+                    (t.productName || '').trim().toLowerCase() === (task.productName || '').trim().toLowerCase() &&
+                    (t.type || '') === (task.type || '') &&
+                    (t.memo || '').trim() === (task.memo || '').trim() &&
+                    (t.dueDate || '') === (task.dueDate || '') &&
+                    !!t.isUrgent === !!task.isUrgent &&
+                    !!t.isStock === !!task.isStock
+                );
+
+                // Auto-Split logic when returning a partially delivered task to pending queue
+                if (task.status === 'doing' && isPending && (task.deliveredQty || 0) > 0) {
+                    const delivered = task.deliveredQty;
+                    const total = task.quantity || 1;
+                    const remaining = total - delivered;
+
+                    if (remaining > 0) {
+                        const completedTaskId = task.id;
+
+                        const completedTaskUpdates = {
+                            quantity: delivered,
+                            deliveredQty: delivered,
+                            status: 'done',
+                            doingBy: task.doingBy || currentUser,
+                            doneBy: task.doingBy || currentUser,
+                            doneTimestamp: nowStr
+                        };
+
+                        if (matchPending) {
+                            const newPendingTotal = (matchPending.quantity || 0) + remaining;
+                            if (db) {
+                                try {
+                                    const batch = db.batch();
+                                    batch.update(db.collection("seb_tasks").doc(completedTaskId), completedTaskUpdates);
+                                    batch.update(db.collection("seb_tasks").doc(matchPending.id), { quantity: newPendingTotal });
+                                    await batch.commit();
+                                } catch (err) {
+                                    console.error("Firestore split revert merge error:", err);
+                                    setTasks(prev => prev.map(t => {
+                                        if (t.id === completedTaskId) return { ...t, ...completedTaskUpdates };
+                                        if (t.id === matchPending.id) return { ...t, quantity: newPendingTotal };
+                                        return t;
+                                    }));
+                                }
+                            } else {
+                                setTasks(prev => prev.map(t => {
+                                    if (t.id === completedTaskId) return { ...t, ...completedTaskUpdates };
+                                    if (t.id === matchPending.id) return { ...t, quantity: newPendingTotal };
+                                    return t;
+                                }));
+                            }
+
+                            setActionModal(null);
+                            showToast(`✂️ แยกงาน ${delivered} ชิ้นไป "เสร็จแล้ว" และรวมอีก ${remaining} ชิ้นเข้ากับการ์ดค้างทำเดิมเรียบร้อยค่ะ`);
+                            return;
+                        } else {
+                            const remainingTaskId = 'TASK-' + Date.now();
+                            const remainingTaskData = {
+                                id: remainingTaskId,
+                                timestamp: task.timestamp || nowStr,
+                                timestampMs: Date.now(),
+                                type: task.type || 'สร้อย',
+                                productName: task.productName,
+                                quantity: remaining,
+                                deliveredQty: 0,
+                                deliveryBatches: [],
+                                memo: task.memo || '',
+                                dueDate: task.dueDate || '',
+                                isUrgent: !!task.isUrgent,
+                                isStock: !!task.isStock,
+                                status: 'pending',
+                                assignedBy: task.assignedBy || currentUser,
+                                user: task.user || currentUser,
+                                doingBy: '',
+                                doneBy: '',
+                                doneTimestamp: ''
+                            };
+
+                            if (db) {
+                                try {
+                                    const batch = db.batch();
+                                    batch.update(db.collection("seb_tasks").doc(completedTaskId), completedTaskUpdates);
+                                    batch.set(db.collection("seb_tasks").doc(remainingTaskId), remainingTaskData);
+                                    await batch.commit();
+                                } catch (err) {
+                                    console.error("Firestore split revert error:", err);
+                                    setTasks(prev => {
+                                        const updated = prev.map(t => t.id === completedTaskId ? { ...t, ...completedTaskUpdates } : t);
+                                        return [remainingTaskData, ...updated];
+                                    });
+                                }
+                            } else {
+                                setTasks(prev => {
+                                    const updated = prev.map(t => t.id === completedTaskId ? { ...t, ...completedTaskUpdates } : t);
+                                    return [remainingTaskData, ...updated];
+                                });
+                            }
+
+                            setActionModal(null);
+                            showToast(`✂️ แยกงาน ${delivered} ชิ้นไป "เสร็จแล้ว" และคืนคิว ${remaining} ชิ้นไป "ค้างทำ" เรียบร้อยค่ะ`);
+                            return;
+                        }
+                    }
+                }
+
+                // Standard Status Change with AUTO-MERGE into matching Pending card if returning to Pending
+                if (isPending && matchPending) {
+                    const mergedQty = (matchPending.quantity || 0) + (task.quantity || 1);
+                    if (db) {
+                        try {
+                            const batch = db.batch();
+                            batch.update(db.collection("seb_tasks").doc(matchPending.id), { quantity: mergedQty });
+                            batch.delete(db.collection("seb_tasks").doc(taskId));
+                            await batch.commit();
+                        } catch (err) {
+                            console.error("Firestore merge return error:", err);
+                            setTasks(prev => prev.filter(t => t.id !== taskId).map(t => t.id === matchPending.id ? { ...t, quantity: mergedQty } : t));
+                        }
+                    } else {
+                        setTasks(prev => prev.filter(t => t.id !== taskId).map(t => t.id === matchPending.id ? { ...t, quantity: mergedQty } : t));
+                    }
+                    setActionModal(null);
+                    showToast(`↩️ ย้อนรวมยอด ${task.quantity || 1} ชิ้น กลับเข้ากับการ์ดค้างทำเดิมแล้ว (รวมเป็น ${mergedQty} ชิ้น)`);
+                    return;
+                }
+
+                // Normal Status Change (e.g. Pending -> Doing or Doing -> Done)
                 const updates = {
                     status: nextStatus,
-                    doingBy: isDoing ? currentUser : (isDone ? (targetTask.doingBy || currentUser) : ''),
-                    doneBy: isDone ? currentUser : '',
-                    doneTimestamp: isDone ? nowStr : (targetTask.doneTimestamp || '')
+                    doingBy: isDoing ? (task.doingBy || currentUser) : '',
+                    doneBy: '',
+                    doneTimestamp: isPending ? '' : task.doneTimestamp
                 };
 
                 if (db) {
@@ -475,18 +945,26 @@
                         await db.collection("seb_tasks").doc(taskId).update(updates);
                     } catch (err) {
                         console.error("Firestore update error:", err);
-                        setTasks(prev => prev.map(task => task.id === taskId ? { ...task, ...updates } : task));
+                        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
                     }
                 } else {
-                    setTasks(prev => prev.map(task => task.id === taskId ? { ...task, ...updates } : task));
+                    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
                 }
 
-                if (nextStatus === 'doing') showToast('⚡ กดรับงานเรียบร้อยแล้วค่ะ');
-                if (nextStatus === 'done') showToast('✓ บันทึกงานเสร็จสมบูรณ์เรียบร้อยแล้วค่ะ');
+                setActionModal(null);
+
+                if (nextStatus === 'doing') showToast('⚡ อัปเดตสถานะเป็น "กำลังทำ" เรียบร้อยค่ะ');
+                if (nextStatus === 'pending') showToast('↩️ คืนรายการเข้าคิวงาน "ค้างทำ" เรียบร้อยค่ะ');
             };
 
             const confirmDeleteTask = async () => {
                 if (!taskToDelete) return;
+
+                if (!canManageTask(taskToDelete)) {
+                    showToast('⚠️ คุณไม่มีสิทธิ์ลบรายการนี้');
+                    setTaskToDelete(null);
+                    return;
+                }
 
                 if (db) {
                     try {
@@ -530,6 +1008,7 @@
                 }
             };
 
+            // Helper: Export Tasks to UTF-8 BOM CSV (Excel Compatible)
             const handleExportCSV = (exportAll = true) => {
                 const targetTasks = exportAll ? tasks : filteredTasks;
                 if (targetTasks.length === 0) {
@@ -538,8 +1017,8 @@
                 }
 
                 const headers = [
-                    "รหัสงาน", "วันเวลาสั่ง", "วันที่ต้องการใช้", "ประเภท", "ชื่อสินค้า", "จำนวน",
-                    "หมายเหตุ", "งานด่วน", "เติมสต๊อก", "สถานะ", "ผู้สั่งงาน",
+                    "รหัสงาน", "วันเวลาสั่ง", "วันที่ต้องการใช้", "ประเภท", "ชื่อสินค้า", "จำนวนทั้งหมด",
+                    "ส่งมอบแล้ว", "คงเหลือ", "หมายเหตุ", "งานด่วน", "เติมสต๊อก", "สถานะ", "ผู้สั่งงาน",
                     "ผู้รับงาน", "ผู้ทำเสร็จ", "วันเวลาเสร็จ"
                 ];
 
@@ -550,13 +1029,19 @@
 
                 const rows = targetTasks.map(t => {
                     const statusLabel = t.status === 'done' ? 'เสร็จเรียบร้อย' : (t.status === 'doing' ? 'กำลังทำอยู่' : 'ค้างทำ');
+                    const totalQty = t.quantity || 1;
+                    const deliveredQty = t.deliveredQty || (t.status === 'done' ? totalQty : 0);
+                    const remainingQty = Math.max(0, totalQty - deliveredQty);
+
                     return [
                         t.id || '',
                         t.timestamp || '',
                         t.dueDate || '',
                         t.type || 'สร้อย',
                         t.productName || '',
-                        t.quantity || 1,
+                        totalQty,
+                        deliveredQty,
+                        remainingQty,
                         t.memo || '',
                         t.isUrgent ? 'ด่วน' : 'ปกติ',
                         t.isStock ? 'สต๊อก' : 'ทั่วไป',
@@ -582,6 +1067,7 @@
                 showToast(`ส่งออกข้อมูล ${targetTasks.length} รายการเป็นไฟล์ Excel CSV เรียบร้อยแล้ว`);
             };
 
+            // Helper: Parse CSV File text safely
             const parseCSVText = (text) => {
                 const lines = [];
                 let curLine = [];
@@ -617,6 +1103,7 @@
                 return lines;
             };
 
+            // Handle CSV File Upload & Parsing
             const handleFileUpload = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -632,6 +1119,7 @@
                             return;
                         }
 
+                        // Check if row 0 is header
                         const hasHeader = parsedRows[0][0].includes('รหัส') || parsedRows[0][3].includes('ชื่อ') || parsedRows[0][2].includes('ประเภท');
                         const dataRows = hasHeader ? parsedRows.slice(1) : parsedRows;
 
@@ -639,12 +1127,13 @@
                             const productName = row[3] || row[0] || `งานนำเข้า-${index + 1}`;
                             const type = row[2] || 'สร้อย';
                             const quantity = parseInt(row[4]) || 1;
-                            const memo = row[5] || '';
-                            const isUrgent = (row[6] === 'ด่วน' || row[6] === 'true' || row[6] === 'TRUE');
-                            const isStock = (row[7] === 'สต๊อก' || row[7] === 'true' || row[7] === 'TRUE');
+                            const deliveredQty = parseInt(row[5]) || 0;
+                            const memo = row[8] || row[5] || '';
+                            const isUrgent = (row[9] === 'ด่วน' || row[9] === 'true' || row[9] === 'TRUE');
+                            const isStock = (row[10] === 'สต๊อก' || row[10] === 'true' || row[10] === 'TRUE');
                             let status = 'pending';
-                            if (row[8] && (row[8].includes('ทำอยู่') || row[8] === 'doing')) status = 'doing';
-                            if (row[8] && (row[8].includes('เสร็จ') || row[8] === 'done')) status = 'done';
+                            if (row[11] && (row[11].includes('ทำอยู่') || row[11] === 'doing')) status = 'doing';
+                            if (row[11] && (row[11].includes('เสร็จ') || row[11] === 'done')) status = 'done';
 
                             return {
                                 id: row[0] && row[0].startsWith('TASK-') ? row[0] : ('TASK-' + (Date.now() + index)),
@@ -653,14 +1142,16 @@
                                 type,
                                 productName,
                                 quantity,
+                                deliveredQty,
+                                deliveryBatches: [],
                                 memo,
                                 isUrgent,
                                 isStock,
                                 status,
-                                assignedBy: row[9] || currentUser,
-                                doingBy: row[10] || '',
-                                doneBy: row[11] || '',
-                                doneTimestamp: row[12] || ''
+                                assignedBy: row[12] || currentUser,
+                                doingBy: row[13] || '',
+                                doneBy: row[14] || '',
+                                doneTimestamp: row[15] || ''
                             };
                         }).filter(item => item.productName);
 
@@ -680,6 +1171,7 @@
                 e.target.value = '';
             };
 
+            // Confirm Import Tasks to Firebase
             const confirmImport = async () => {
                 if (importFileTasks.length === 0) return;
                 setIsImporting(true);
@@ -738,32 +1230,28 @@
                     return matchStatus && matchSearch && matchCat && matchTag;
                 });
 
-                // Sorting logic according to selected sorting preference
-                if (taskStatusFilter === 'pending') {
-                    list.sort((a, b) => {
-                        if (orderDateSort === 'asc') {
-                            // สั่งก่อน ➔ สั่งหลัง (เก่าไปใหม่)
-                            return (a.timestampMs || 0) - (b.timestampMs || 0);
-                        } else if (orderDateSort === 'desc') {
-                            // สั่งหลัง ➔ สั่งก่อน (ใหม่ไปเก่า)
-                            return (b.timestampMs || 0) - (a.timestampMs || 0);
-                        } else if (orderDateSort === 'dueDate') {
-                            // เรียงตามกำหนดวันที่ต้องการใช้
-                            if (a.dueDate && b.dueDate) {
-                                if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-                            } else if (a.dueDate && !b.dueDate) {
-                                return -1;
-                            } else if (!a.dueDate && b.dueDate) {
-                                return 1;
-                            }
-                            if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
-                            return (a.timestampMs || 0) - (b.timestampMs || 0);
+                // Sorting Options for Tasks List
+                list.sort((a, b) => {
+                    if (sortOrder === 'dueDate') {
+                        if (a.dueDate && b.dueDate) {
+                            if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+                        } else if (a.dueDate && !b.dueDate) {
+                            return -1;
+                        } else if (!a.dueDate && b.dueDate) {
+                            return 1;
                         }
+                        if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
+                        return (b.timestampMs || 0) - (a.timestampMs || 0);
+                    } else if (sortOrder === 'createdAsc') {
                         return (a.timestampMs || 0) - (b.timestampMs || 0);
-                    });
-                }
+                    } else if (sortOrder === 'createdDesc') {
+                        return (b.timestampMs || 0) - (a.timestampMs || 0);
+                    }
+                    return 0;
+                });
+
                 return list;
-            }, [tasks, taskStatusFilter, quickTagFilter, orderDateSort, searchTerm, categoryFilter]);
+            }, [tasks, taskStatusFilter, quickTagFilter, sortOrder, searchTerm, categoryFilter]);
 
             const filteredCatalog = useMemo(() => {
                 return catalog.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()));
@@ -776,9 +1264,6 @@
                 return filteredCatalog.slice(start, start + PRODUCTS_PER_PAGE);
             }, [filteredCatalog, productPage]);
 
-            // Check if current user has Admin or Dev privileges
-            const isAdminOrDev = currentUserRank === 'Admin' || currentUserRank === 'Dev';
-
             const getStatusBadge = (status) => {
                 switch(status) {
                     case 'pending': return { label: 'ค้างทำ', bg: 'bg-amber-100 text-amber-900 border-amber-300' };
@@ -788,8 +1273,15 @@
                 }
             };
 
+            // Format date-only string for compact view
+            const formatDateOnly = (str) => {
+                if (!str) return '';
+                const parts = str.split(' ');
+                return parts[0] || str;
+            };
+
             return (
-                <div className="min-h-screen flex flex-col pb-24 md:pb-6 bg-slate-100 relative">
+                <div className="min-h-screen flex flex-col pb-24 md:pb-6 bg-slate-100">
                     {/* Toast Notification */}
                     {toast && (
                         <div className="fixed top-4 left-0 right-0 z-[100] flex justify-center p-4 pointer-events-none">
@@ -803,6 +1295,131 @@
                     {/* Image Pinch Zoom Lightbox Modal */}
                     {previewImg && (
                         <LightboxModal src={previewImg} onClose={() => setPreviewImg(null)} />
+                    )}
+
+                    {/* Partial Delivery Modal (ส่งงานบางส่วน) */}
+                    {partialDeliveryModal && (
+                        <div className="fixed inset-0 z-[130] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-pop">
+                            <div className="bg-white rounded-3xl p-6 max-w-sm w-full border-2 border-indigo-300 shadow-2xl space-y-4">
+                                <div className="flex items-center justify-between border-b pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-2xl flex items-center justify-center font-bold">
+                                            <Icon name="package-check" size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-bold text-slate-900">ส่งมอบงานบางส่วน / ครบจำนวน</h3>
+                                            <p className="text-xs text-slate-500 font-semibold">{partialDeliveryModal.task.productName}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setPartialDeliveryModal(null)} className="text-slate-400 hover:text-slate-600">
+                                        <Icon name="x" size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs space-y-1.5 font-bold">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-600">จำนวนสั่งผลิตทั้งหมด:</span>
+                                        <span className="text-slate-900 font-extrabold text-sm">{partialDeliveryModal.task.quantity || 1} ชิ้น</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-slate-600">ส่งมอบแล้วก่อนหน้านี้:</span>
+                                        <span className="text-indigo-700 font-extrabold">{partialDeliveryModal.task.deliveredQty || 0} ชิ้น</span>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-amber-900">
+                                        <span>คงเหลือที่ต้องส่งเพิ่ม:</span>
+                                        <span className="font-black text-sm text-amber-950">
+                                            {Math.max(0, (partialDeliveryModal.task.quantity || 1) - (partialDeliveryModal.task.deliveredQty || 0))} ชิ้น
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-slate-700">จำนวนชิ้นที่ส่งมอบในรอบนี้</label>
+                                        <input 
+                                            type="number" 
+                                            min="1" 
+                                            max={Math.max(1, (partialDeliveryModal.task.quantity || 1) - (partialDeliveryModal.task.deliveredQty || 0))}
+                                            value={partialDeliveryModal.inputQty} 
+                                            onChange={(e) => setPartialDeliveryModal({ ...partialDeliveryModal, inputQty: e.target.value })}
+                                            className="w-full h-12 bg-white border-2 border-indigo-300 rounded-xl px-3 text-lg font-black text-indigo-800 outline-none focus:border-indigo-600 text-center" 
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-slate-700">หมายเหตุการส่งมอบล็อตนี้ (ถ้ามี)</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="เช่น ส่งล็อตแรก 60 ชิ้น ให้แผนกแพ็ก"
+                                            value={partialDeliveryModal.memo} 
+                                            onChange={(e) => setPartialDeliveryModal({ ...partialDeliveryModal, memo: e.target.value })}
+                                            className="w-full h-10 bg-slate-50 border border-slate-300 rounded-xl px-3 text-xs font-bold outline-none focus:border-indigo-500" 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 pt-2 border-t">
+                                    <button 
+                                        onClick={() => executePartialDelivery(false)}
+                                        className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-1.5"
+                                    >
+                                        <Icon name="check-circle" size={18} />
+                                        <span>📦 บันทึกส่งมอบ (สะสมในใบเดิม)</span>
+                                    </button>
+
+                                    {((partialDeliveryModal.task.deliveredQty || 0) + (parseInt(partialDeliveryModal.inputQty) || 0)) < (partialDeliveryModal.task.quantity || 1) && (
+                                        <button 
+                                            onClick={() => executePartialDelivery(true)}
+                                            className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-xs shadow-md flex items-center justify-center gap-1.5"
+                                        >
+                                            <Icon name="scissors" size={16} />
+                                            <span>✂️ ส่งมอบส่วนนี้ (เสร็จ) & คืนคิวที่เหลือ (ค้างทำ)</span>
+                                        </button>
+                                    )}
+
+                                    <button 
+                                        onClick={() => setPartialDeliveryModal(null)}
+                                        className="w-full h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs"
+                                    >
+                                        ยกเลิก
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Action Confirmation Modal */}
+                    {actionModal && (
+                        <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-pop">
+                            <div className="bg-white rounded-3xl p-6 max-w-sm w-full border-2 border-indigo-200 shadow-2xl text-center space-y-4">
+                                <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto">
+                                    <Icon name="help-circle" size={32} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">{actionModal.title}</h3>
+                                    <p className="text-xs text-slate-600 font-semibold mt-1">
+                                        {actionModal.message}
+                                    </p>
+                                    <div className="text-xs font-bold text-slate-800 bg-slate-100 p-2.5 rounded-xl border border-slate-200 mt-2">
+                                        📌 {actionModal.task.productName} ({actionModal.task.quantity} ชิ้น)
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <button 
+                                        onClick={() => setActionModal(null)}
+                                        className="h-12 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-sm"
+                                    >
+                                        ยกเลิก
+                                    </button>
+                                    <button 
+                                        onClick={executeStatusChange}
+                                        className={`h-12 rounded-2xl font-bold text-sm shadow-md ${actionModal.badgeBg}`}
+                                    >
+                                        {actionModal.badgeText}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     )}
 
                     {/* Delete All Confirmation Modal */}
@@ -952,7 +1569,7 @@
                                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
                                                 : 'bg-amber-100 text-amber-800 border border-amber-300'
                                         }`}>
-                                            {dbConnected ? '☁️ Sync' : '💾 Local'}
+                                            {dbConnected ? '☁️ Firebase Sync' : '💾 Local Mode'}
                                         </span>
                                     </div>
                                     <p className="text-xs text-indigo-700 font-bold uppercase mt-1">SEBOFFICIAL System</p>
@@ -985,9 +1602,9 @@
                     </header>
 
                     {/* Main Container */}
-                    <main className="max-w-4xl mx-auto w-full p-4 space-y-4 flex-1">
-                        {/* Tab Menu Navigation (Visible on Desktop/Tablet: sm and up) */}
-                        <div className="hidden sm:grid sm:grid-cols-3 bg-slate-200/90 p-1.5 rounded-2xl gap-2 font-bold">
+                    <main className="max-w-4xl mx-auto w-full p-4 space-y-5 flex-1">
+                        {/* Tab Menu Navigation (Visible on Desktop / Medium screens) */}
+                        <div className="hidden sm:grid grid-cols-3 bg-slate-200/90 p-1.5 rounded-2xl gap-2 font-bold">
                             {[
                                 { id: 'orders', label: '1. คิวงานสั่งทำ', icon: 'clipboard-list' },
                                 { id: 'create', label: '2. + สั่งงานใหม่', icon: 'plus-circle' },
@@ -1003,15 +1620,15 @@
                                     }`}
                                 >
                                     <Icon name={tab.icon} size={20} />
-                                    <span className="text-xs sm:text-sm">{tab.label}</span>
+                                    <span className="text-sm">{tab.label}</span>
                                 </button>
                             ))}
                         </div>
 
-                        {/* Active Tab 1: Orders */}
+                        {/* TAB 1: Orders Queue */}
                         {activeTab === 'orders' && (
                             <div className="space-y-4">
-                                {/* Sub-tab Status Filters (Compact Inline badges on same line) */}
+                                {/* Sub-tab Status Filters - Single Line Badge Design */}
                                 <div className="grid grid-cols-3 bg-slate-200/60 p-1.5 rounded-2xl border-2 border-slate-300 saas-card gap-1.5">
                                     {[
                                         { id: 'pending', label: 'ค้างทำ', count: tasks.filter(t => t.status === 'pending').length, activeColor: 'bg-amber-500 text-white shadow-md' },
@@ -1021,14 +1638,14 @@
                                         <button
                                             key={st.id}
                                             onClick={() => setTaskStatusFilter(st.id)}
-                                            className={`py-2 px-1.5 sm:px-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-1.5 transition-all ${
+                                            className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold flex flex-row items-center justify-center gap-1.5 transition-all ${
                                                 taskStatusFilter === st.id 
                                                     ? st.activeColor 
                                                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                                             }`}
                                         >
-                                            <span className="truncate">{st.label}</span>
-                                            <span className={`px-2 py-0.5 rounded-full text-[11px] font-black shrink-0 ${
+                                            <span>{st.label}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
                                                 taskStatusFilter === st.id ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200'
                                             }`}>
                                                 {st.count}
@@ -1037,9 +1654,10 @@
                                     ))}
                                 </div>
 
-                                {/* Quick Tag Filters, Sorting Selector & View Mode Switcher for "Pending" (ค้างทำ) Tab */}
-                                {taskStatusFilter === 'pending' && (
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-white p-2.5 rounded-2xl border-2 border-slate-300 saas-card">
+                                {/* Quick Tag Filters, View Mode Switcher, and Sort Order */}
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-white p-2.5 rounded-2xl border-2 border-slate-300 saas-card">
+                                    {/* Quick Tag Buttons & Auto Consolidate Button */}
+                                    {taskStatusFilter === 'pending' ? (
                                         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
                                             <button
                                                 onClick={() => setQuickTagFilter('all')}
@@ -1082,50 +1700,56 @@
                                                     {pendingStockCount}
                                                 </span>
                                             </button>
+
+                                            {/* Consolidated Duplicate Merge Button */}
+                                            <button
+                                                onClick={handleConsolidatePendingTasks}
+                                                className="px-2.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-xs font-extrabold transition-all shrink-0 flex items-center gap-1 shadow-sm"
+                                                title="เอายอดการ์ดงานซ้ำที่อยู่ในค้างทำมารวมกันเป็นใบเดียว"
+                                            >
+                                                <Icon name="combine" size={14} />
+                                                <span>🔗 รวมงานซ้ำ</span>
+                                            </button>
                                         </div>
+                                    ) : <div />}
 
-                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
-                                            {/* Order Date Sorting Selector */}
-                                            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                                                <span className="text-[11px] font-extrabold text-slate-500 pl-1">เรียง:</span>
-                                                <select
-                                                    value={orderDateSort}
-                                                    onChange={(e) => setOrderDateSort(e.target.value)}
-                                                    className="bg-white text-xs font-extrabold text-indigo-800 rounded-lg px-2 py-1 outline-none border border-slate-200 cursor-pointer shadow-sm"
-                                                >
-                                                    <option value="asc">สั่งก่อน➔หลัง</option>
-                                                    <option value="desc">สั่งหลัง➔ก่อน</option>
-                                                    <option value="dueDate">วันที่ต้องการใช้</option>
-                                                </select>
-                                            </div>
+                                    {/* Sort Order & View Switcher */}
+                                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                                        <select
+                                            value={sortOrder}
+                                            onChange={(e) => setSortOrder(e.target.value)}
+                                            className="h-8 px-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none"
+                                        >
+                                            <option value="dueDate">📅 เรียงตามวันกำหนดใช้</option>
+                                            <option value="createdDesc">🕒 สั่งใหม่ ➔ เก่า</option>
+                                            <option value="createdAsc">🕒 สั่งเก่า ➔ ใหม่</option>
+                                        </select>
 
-                                            {/* View Mode Toggle Switch (Card vs Compact Line) */}
-                                            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                                                <button
-                                                    onClick={() => setViewMode('card')}
-                                                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 transition-all ${
-                                                        viewMode === 'card' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                                    }`}
-                                                    title="แสดงมุมมองการ์ดรูปใหญ่"
-                                                >
-                                                    <Icon name="layout-grid" size={14} />
-                                                    <span>การ์ด</span>
-                                                </button>
+                                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                            <button
+                                                onClick={() => setViewMode('card')}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 transition-all ${
+                                                    viewMode === 'card' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                                }`}
+                                                title="แสดงมุมมองการ์ดรูปใหญ่"
+                                            >
+                                                <Icon name="layout-grid" size={14} />
+                                                <span>การ์ด</span>
+                                            </button>
 
-                                                <button
-                                                    onClick={() => setViewMode('compact')}
-                                                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 transition-all ${
-                                                        viewMode === 'compact' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                                    }`}
-                                                    title="แสดงมุมมองย่อ 1 บรรทัด"
-                                                >
-                                                    <Icon name="list" size={14} />
-                                                    <span>อย่างย่อ</span>
-                                                </button>
-                                            </div>
+                                            <button
+                                                onClick={() => setViewMode('compact')}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 transition-all ${
+                                                    viewMode === 'compact' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                                }`}
+                                                title="แสดงมุมมองย่อ 1 บรรทัด"
+                                            >
+                                                <Icon name="list" size={14} />
+                                                <span>อย่างย่อ</span>
+                                            </button>
                                         </div>
                                     </div>
-                                )}
+                                </div>
 
                                 {/* Export / Import Excel Action Toolbar */}
                                 {isAdminOrDev && (
@@ -1174,7 +1798,7 @@
                                     </div>
                                 )}
 
-                                {/* Search Bar & Category Filter */}
+                                {/* Search Bar & Filter */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     <div className="relative flex items-center">
                                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-5 h-5 flex items-center justify-center">
@@ -1210,9 +1834,15 @@
                                         filteredTasks.map(task => {
                                             const badge = getStatusBadge(task.status);
                                             const taskImage = getProductImage(task.productName, task.imageUrl || task.imgUrl || '');
+                                            const isUserAllowed = canManageTask(task);
 
-                                            // Render Compact View (มุมมองอย่างย่อ 1 บรรทัด - Date Only)
-                                            if (taskStatusFilter === 'pending' && viewMode === 'compact') {
+                                            const totalQty = task.quantity || 1;
+                                            const deliveredQty = task.deliveredQty || (task.status === 'done' ? totalQty : 0);
+                                            const remainingQty = Math.max(0, totalQty - deliveredQty);
+                                            const percent = Math.min(100, Math.round((deliveredQty / totalQty) * 100));
+
+                                            // Render Compact View (มุมมองอย่างย่อ 1 บรรทัด)
+                                            if (viewMode === 'compact') {
                                                 return (
                                                     <div 
                                                         key={task.id}
@@ -1234,8 +1864,8 @@
                                                             </div>
                                                         )}
 
-                                                        {/* Task Summary Text (1 Line layout) */}
-                                                        <div className="min-w-0 flex-1 grid grid-cols-1 md:grid-cols-3 items-center gap-1.5">
+                                                        {/* Task Summary Text */}
+                                                        <div className="min-w-0 flex-1 grid grid-cols-1 md:grid-cols-4 items-center gap-1.5">
                                                             {/* Product Name & Category */}
                                                             <div className="min-w-0 flex items-center gap-2">
                                                                 <span className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-800 text-white shrink-0">
@@ -1246,19 +1876,23 @@
                                                                 </h3>
                                                             </div>
 
-                                                            {/* Badges, Quantity, Order Date (Date Only) & Due Date */}
+                                                            {/* Order Date & Due Date */}
                                                             <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
-                                                                <span className="font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-lg shrink-0">
-                                                                    จำนวน {task.quantity} ชิ้น
-                                                                </span>
-                                                                <span className="text-[10px] font-extrabold text-slate-700 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded shrink-0" title="วันสั่งงาน">
+                                                                <span className="font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg shrink-0">
                                                                     🕒 สั่ง: {formatDateOnly(task.timestamp)}
                                                                 </span>
                                                                 {task.dueDate && (
                                                                     <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
-                                                                        📅 ใช้: {task.dueDate}
+                                                                        📅 {task.dueDate}
                                                                     </span>
                                                                 )}
+                                                            </div>
+
+                                                            {/* Partial Delivery & Total Badges */}
+                                                            <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                                                                <span className="font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-lg shrink-0">
+                                                                    ส่งแล้ว {deliveredQty}/{totalQty} ชิ้น ({percent}%)
+                                                                </span>
                                                                 {task.isUrgent && (
                                                                     <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-red-600 text-white shrink-0">
                                                                         🔥 ด่วน
@@ -1277,23 +1911,61 @@
                                                             </p>
                                                         </div>
 
-                                                        {/* Action & Delete Buttons */}
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            <button
-                                                                onClick={() => handleStatusChange(task.id, 'doing')}
-                                                                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-1 active:scale-95 transition-all"
-                                                            >
-                                                                <Icon name="play-circle" size={14} />
-                                                                <span className="hidden sm:inline">เริ่มทำ</span>
-                                                            </button>
+                                                        {/* Action Buttons */}
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                            {task.status === 'pending' && (
+                                                                <button
+                                                                    onClick={() => promptStatusChange(task, 'doing')}
+                                                                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-1 active:scale-95 transition-all"
+                                                                >
+                                                                    <Icon name="play-circle" size={14} />
+                                                                    <span className="hidden sm:inline">เริ่มทำ</span>
+                                                                </button>
+                                                            )}
 
-                                                            <button 
-                                                                onClick={() => setTaskToDelete(task)}
-                                                                className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                                                                title="ลบงานนี้"
-                                                            >
-                                                                <Icon name="trash-2" size={16} />
-                                                            </button>
+                                                            {task.status === 'doing' && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => openPartialDeliveryModal(task)}
+                                                                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-1 active:scale-95 transition-all"
+                                                                        title="บันทึกการส่งมอบงานบางส่วน / ครบจำนวน"
+                                                                    >
+                                                                        <Icon name="package-check" size={14} />
+                                                                        <span className="hidden sm:inline">ส่งมอบ</span>
+                                                                    </button>
+
+                                                                    {isUserAllowed && (
+                                                                        <button
+                                                                            onClick={() => promptStatusChange(task, 'pending')}
+                                                                            className="px-2 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition-all"
+                                                                            title="คืนเข้าคิวงาน (ค้างทำ)"
+                                                                        >
+                                                                            <Icon name="rotate-ccw" size={14} />
+                                                                        </button>
+                                                                    )}
+                                                                </>
+                                                            )}
+
+                                                            {task.status === 'done' && isUserAllowed && (
+                                                                <button
+                                                                    onClick={() => promptStatusChange(task, 'doing')}
+                                                                    className="px-2.5 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 border border-indigo-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1"
+                                                                    title="ย้อนกลับไปกำลังทำ"
+                                                                >
+                                                                    <Icon name="rotate-ccw" size={14} />
+                                                                    <span className="hidden sm:inline">ย้อนกลับ</span>
+                                                                </button>
+                                                            )}
+
+                                                            {isUserAllowed && (
+                                                                <button 
+                                                                    onClick={() => setTaskToDelete(task)}
+                                                                    className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                                                                    title="ลบงานนี้"
+                                                                >
+                                                                    <Icon name="trash-2" size={16} />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );
@@ -1332,19 +2004,21 @@
                                                         </div>
 
                                                         {/* Delete Task Button */}
-                                                        <button 
-                                                            onClick={() => setTaskToDelete(task)}
-                                                            className="text-slate-400 hover:text-red-600 p-2 rounded-xl hover:bg-red-50 transition-colors flex items-center gap-1 text-xs font-bold"
-                                                            title="ลบงานนี้ออก"
-                                                        >
-                                                            <Icon name="trash-2" size={18} />
-                                                            <span className="hidden sm:inline">ลบงาน</span>
-                                                        </button>
+                                                        {isUserAllowed && (
+                                                            <button 
+                                                                onClick={() => setTaskToDelete(task)}
+                                                                className="text-slate-400 hover:text-red-600 p-2 rounded-xl hover:bg-red-50 transition-colors flex items-center gap-1 text-xs font-bold"
+                                                                title="ลบงานนี้ออก"
+                                                            >
+                                                                <Icon name="trash-2" size={18} />
+                                                                <span className="hidden sm:inline">ลบงาน</span>
+                                                            </button>
+                                                        )}
                                                     </div>
 
-                                                    {/* Card Content with Dynamically Matched Image */}
+                                                    {/* Card Content */}
                                                     <div className="flex items-start gap-4 mt-3">
-                                                        {/* Dynamically Matched Image Thumbnail */}
+                                                        {/* Thumbnail */}
                                                         {taskImage ? (
                                                             <div 
                                                                 onClick={() => setPreviewImg(taskImage)}
@@ -1370,28 +2044,64 @@
                                                                 {task.productName}
                                                             </h3>
 
+                                                            {/* Progress Bar & Partial Delivery Badge */}
+                                                            <div className="space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                                                <div className="flex items-center justify-between text-xs font-extrabold">
+                                                                    <span className="text-indigo-800">
+                                                                        📦 ส่งมอบแล้ว: <span className="text-emerald-700 font-black">{deliveredQty}</span> / {totalQty} ชิ้น
+                                                                    </span>
+                                                                    <span className="text-slate-600 font-bold">
+                                                                        {percent}%
+                                                                    </span>
+                                                                </div>
+                                                                <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden border border-slate-300">
+                                                                    <div 
+                                                                        className="bg-emerald-500 h-full transition-all duration-300" 
+                                                                        style={{ width: `${percent}%` }}
+                                                                    ></div>
+                                                                </div>
+                                                                {remainingQty > 0 && task.status === 'doing' && (
+                                                                    <p className="text-[11px] text-amber-900 font-bold text-right pt-0.5">
+                                                                        ⏳ คงเหลือผลิตเพิ่ม: <span className="font-black text-amber-950">{remainingQty} ชิ้น</span>
+                                                                    </p>
+                                                                )}
+                                                            </div>
+
                                                             {task.memo && (
                                                                 <div className="text-xs sm:text-sm text-slate-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 font-bold">
                                                                     <span className="text-amber-900">📝 หมายเหตุ:</span> {task.memo}
                                                                 </div>
                                                             )}
 
-                                                            <div className="text-xs text-slate-500 pt-1 font-medium">
+                                                            <div className="text-xs text-slate-500 pt-0.5 font-medium">
                                                                 <span>สั่งโดย: {task.assignedBy || task.user || 'Admin'} ({task.timestamp})</span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Quantity Box */}
-                                                        <div className="text-center shrink-0">
-                                                            <div className="bg-indigo-50 text-indigo-900 px-3 py-2 rounded-2xl border-2 border-indigo-200 shadow-sm min-w-[70px]">
-                                                                <span className="text-xs font-bold text-slate-600 block">จำนวน</span>
-                                                                <span className="text-xl sm:text-2xl font-black text-indigo-700">{task.quantity}</span>
-                                                                <span className="text-xs font-bold block text-slate-600">ชิ้น</span>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    {/* Action Buttons */}
+                                                    {/* Delivery Batches History Drawer */}
+                                                    {task.deliveryBatches && task.deliveryBatches.length > 0 && (
+                                                        <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                                                            <div className="font-extrabold text-slate-700 flex items-center gap-1 pb-1 border-b border-slate-200">
+                                                                <Icon name="history" size={14} className="text-indigo-600" />
+                                                                <span>ประวัติบันทึกการส่งมอบ ({task.deliveryBatches.length} ล็อต)</span>
+                                                            </div>
+                                                            <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                                                                {task.deliveryBatches.map((batch, bIdx) => (
+                                                                    <div key={batch.id || bIdx} className="flex items-center justify-between text-[11px] bg-white p-1.5 rounded-lg border border-slate-200 font-bold">
+                                                                        <span className="text-indigo-800">
+                                                                            ล็อตที่ {bIdx + 1}: <span className="text-emerald-700 font-black">+{batch.qty} ชิ้น</span> {batch.memo ? `(${batch.memo})` : ''}
+                                                                        </span>
+                                                                        <span className="text-slate-500 font-medium">
+                                                                            โดย {batch.deliveredBy} ({batch.timestamp})
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Action & Revert Buttons */}
                                                     <div className="mt-4 pt-3 border-t-2 border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
                                                         <div className="flex items-center gap-2 w-full sm:w-auto">
                                                             <span className="text-xs font-bold text-slate-500">สถานะ:</span>
@@ -1400,10 +2110,10 @@
                                                             </span>
                                                         </div>
 
-                                                        <div className="w-full sm:w-auto">
+                                                        <div className="w-full sm:w-auto flex flex-wrap items-center gap-2">
                                                             {task.status === 'pending' && (
                                                                 <button
-                                                                    onClick={() => handleStatusChange(task.id, 'doing')}
+                                                                    onClick={() => promptStatusChange(task, 'doing')}
                                                                     className="w-full sm:w-auto px-6 h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-sm font-extrabold shadow-md active:scale-98 flex items-center justify-center gap-2 border-b-4 border-indigo-800"
                                                                 >
                                                                     <Icon name="play-circle" size={20} />
@@ -1412,19 +2122,45 @@
                                                             )}
 
                                                             {task.status === 'doing' && (
-                                                                <button
-                                                                    onClick={() => handleStatusChange(task.id, 'done')}
-                                                                    className="w-full sm:w-auto px-6 h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-extrabold shadow-md active:scale-98 flex items-center justify-center gap-2 border-b-4 border-emerald-800 animate-bounce"
-                                                                >
-                                                                    <Icon name="check-circle" size={20} />
-                                                                    <span>✓ กดปุ่มนี้เมื่อทำเสร็จแล้ว</span>
-                                                                </button>
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => openPartialDeliveryModal(task)}
+                                                                        className="flex-1 sm:flex-initial px-6 h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-extrabold shadow-md active:scale-98 flex items-center justify-center gap-2 border-b-4 border-emerald-800"
+                                                                    >
+                                                                        <Icon name="package-check" size={20} />
+                                                                        <span>📦 บันทึกส่งมอบงาน</span>
+                                                                    </button>
+
+                                                                    {isUserAllowed && (
+                                                                        <button
+                                                                            onClick={() => promptStatusChange(task, 'pending')}
+                                                                            className="px-4 h-12 bg-amber-100 hover:bg-amber-200 text-amber-900 border-2 border-amber-300 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                                                                            title="ย้อนกลับไปค้างทำ"
+                                                                        >
+                                                                            <Icon name="rotate-ccw" size={16} />
+                                                                            <span>คืนคิวงาน</span>
+                                                                        </button>
+                                                                    )}
+                                                                </>
                                                             )}
 
                                                             {task.status === 'done' && (
-                                                                <span className="text-xs sm:text-sm text-emerald-800 font-bold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 block text-center">
-                                                                    ✓ ทำเสร็จแล้วโดย: {task.doneBy || 'พนักงาน'} {task.doneTimestamp ? `(${task.doneTimestamp})` : ''}
-                                                                </span>
+                                                                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                                                    <span className="text-xs sm:text-sm text-emerald-800 font-bold bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 text-center">
+                                                                        ✓ เสร็จสิ้นโดย: {task.doneBy || 'พนักงาน'} {task.doneTimestamp ? `(${task.doneTimestamp})` : ''}
+                                                                    </span>
+
+                                                                    {isUserAllowed && (
+                                                                        <button
+                                                                            onClick={() => promptStatusChange(task, 'doing')}
+                                                                            className="px-3.5 h-10 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 border-2 border-indigo-300 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shrink-0"
+                                                                            title="ดึงงานกลับมาแก้ไขในกำลังทำ"
+                                                                        >
+                                                                            <Icon name="rotate-ccw" size={16} />
+                                                                            <span>ย้อนกลับไปกำลังทำ</span>
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </div>
@@ -1436,7 +2172,7 @@
                             </div>
                         )}
 
-                        {/* Active Tab 2: Create Order */}
+                        {/* TAB 2: Create Order */}
                         {activeTab === 'create' && (
                             <div className="saas-card p-5 sm:p-6 rounded-2xl bg-white space-y-5 animate-pop border-2 border-slate-300">
                                 <h2 className="text-base sm:text-lg font-bold text-slate-900 border-b pb-3 flex items-center gap-2">
@@ -1638,7 +2374,7 @@
                             </div>
                         )}
 
-                        {/* Active Tab 3: Products */}
+                        {/* TAB 3: Shared Product Catalog */}
                         {activeTab === 'products' && (
                             <div className="space-y-4 animate-pop">
                                 {/* Search Box */}
@@ -1817,42 +2553,38 @@
                         )}
                     </main>
 
-                    {/* Floating Action Button (FAB) Speed Dial for Mobile screens (sm:hidden) */}
-                    <div className="sm:hidden fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2.5 pointer-events-auto">
-                        {/* Speed Dial Options Menu */}
-                        {isFabOpen && (
-                            <div className="flex flex-col items-end gap-2 mb-1 animate-pop">
+                    {/* Mobile Floating Action Button (FAB Navigation Menu) */}
+                    <div className="sm:hidden fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2">
+                        {showFabMenu && (
+                            <div className="flex flex-col gap-2 mb-1 animate-pop">
                                 {[
-                                    { id: 'orders', label: '1. คิวงานสั่งทำ', icon: 'clipboard-list', color: 'bg-amber-500 text-white' },
-                                    { id: 'create', label: '2. + สั่งงานใหม่', icon: 'plus-circle', color: 'bg-indigo-600 text-white' },
-                                    { id: 'products', label: '3. ค้นหารูปสินค้า', icon: 'image', color: 'bg-emerald-600 text-white' }
-                                ].map(item => (
+                                    { id: 'orders', label: '1. คิวงานสั่งทำ', icon: 'clipboard-list', color: 'bg-indigo-600 text-white' },
+                                    { id: 'create', label: '2. + สั่งงานใหม่', icon: 'plus-circle', color: 'bg-emerald-600 text-white' },
+                                    { id: 'products', label: '3. ค้นหารูปสินค้า', icon: 'image', color: 'bg-slate-800 text-white' }
+                                ].map(btn => (
                                     <button
-                                        key={item.id}
+                                        key={btn.id}
                                         onClick={() => {
-                                            setActiveTab(item.id);
-                                            setIsFabOpen(false);
+                                            setActiveTab(btn.id);
+                                            setShowFabMenu(false);
                                         }}
-                                        className={`px-4 py-2.5 rounded-2xl font-extrabold text-xs flex items-center gap-2.5 shadow-2xl border-2 border-white transition-all active:scale-95 ${item.color} ${
-                                            activeTab === item.id ? 'ring-4 ring-indigo-300 scale-105' : ''
-                                        }`}
+                                        className={`flex items-center justify-end gap-2 px-4 py-3 rounded-2xl text-xs font-extrabold shadow-xl ${btn.color} ring-2 ring-white/50 active:scale-95 transition-all`}
                                     >
-                                        <Icon name={item.icon} size={18} />
-                                        <span>{item.label}</span>
+                                        <span>{btn.label}</span>
+                                        <Icon name={btn.icon} size={18} />
                                     </button>
                                 ))}
                             </div>
                         )}
 
-                        {/* Main Floating Trigger Button */}
                         <button
-                            onClick={() => setIsFabOpen(!isFabOpen)}
-                            className={`w-14 h-14 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl border-2 border-indigo-400 active:scale-95 transition-all ${
-                                isFabOpen ? 'rotate-45 bg-red-600 border-red-300' : 'fab-pulse'
+                            onClick={() => setShowFabMenu(!showFabMenu)}
+                            className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-2xl transition-all active:scale-90 ${
+                                showFabMenu ? 'bg-slate-900 rotate-45' : 'bg-indigo-600 ring-4 ring-indigo-200'
                             }`}
-                            aria-label="Toggle navigation menu"
+                            title="เมนูนำทางด่วน"
                         >
-                            <Icon name={isFabOpen ? "x" : "menu"} size={26} />
+                            <Icon name={showFabMenu ? "x" : "menu"} size={26} />
                         </button>
                     </div>
                 </div>
@@ -1864,3 +2596,4 @@
     </script>
 </body>
 </html>
+
