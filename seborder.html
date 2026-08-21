@@ -25,7 +25,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
-    <!-- Google Fonts: Anuphan & Custom Pinch Zoom Lock -->
+    <!-- Google Fonts & Custom CSS -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700;800&display=swap');
         
@@ -407,7 +407,6 @@
                 return user && (user === assigned || user === doing || user === done || !task.doingBy);
             };
 
-            // Consolidation Helper: Merge duplicate pending tasks into a single card
             const handleConsolidatePendingTasks = async () => {
                 const pendingList = tasks.filter(t => t.status === 'pending');
                 if (pendingList.length <= 1) {
@@ -567,7 +566,6 @@
                 setTaskStatusFilter('pending');
             };
 
-            // Open Partial Delivery Modal
             const openPartialDeliveryModal = (task) => {
                 if (!canManageTask(task)) {
                     showToast('⚠️ คุณไม่มีสิทธิ์จัดการรายการนี้');
@@ -584,7 +582,6 @@
                 });
             };
 
-            // Execute Partial Delivery Submission
             const executePartialDelivery = async (shouldSplit = false) => {
                 if (!partialDeliveryModal) return;
                 const { task, inputQty, memo } = partialDeliveryModal;
@@ -612,8 +609,7 @@
 
                 const updatedBatches = [...(task.deliveryBatches || []), batchRecord];
 
-                // SPLIT TASK Logic: 
-                // Move completed portion to "done", and return remaining portion back to "pending" (with Auto-Merge if a matching pending task exists)
+                // SPLIT TASK Logic
                 if (shouldSplit && !isCompleted && remainingQtyAfterAdd > 0) {
                     const completedTaskId = task.id;
 
@@ -627,7 +623,6 @@
                         doneTimestamp: nowStr
                     };
 
-                    // Check if there is an existing pending task to merge the remaining portion into
                     const matchPending = tasks.find(t => 
                         t.id !== completedTaskId &&
                         t.status === 'pending' &&
@@ -744,7 +739,6 @@
                 }
             };
 
-            // Prompt Confirmation Modal before changing task status
             const promptStatusChange = (task, nextStatus) => {
                 if (!canManageTask(task)) {
                     showToast('⚠️ คุณไม่มีสิทธิ์จัดการรายการนี้');
@@ -794,7 +788,6 @@
                 });
             };
 
-            // Execute Full Status Change (With Auto-Merge & Auto-Split when Reverting)
             const executeStatusChange = async () => {
                 if (!actionModal) return;
                 const { task, nextStatus } = actionModal;
@@ -804,7 +797,6 @@
                 const isDoing = nextStatus === 'doing';
                 const isPending = nextStatus === 'pending';
 
-                // Look for an existing pending task to merge into when returning to pending queue
                 const matchPending = tasks.find(t => 
                     t.id !== taskId &&
                     t.status === 'pending' &&
@@ -816,7 +808,6 @@
                     !!t.isStock === !!task.isStock
                 );
 
-                // Auto-Split logic when returning a partially delivered task to pending queue
                 if (task.status === 'doing' && isPending && (task.deliveredQty || 0) > 0) {
                     const delivered = task.deliveredQty;
                     const total = task.quantity || 1;
@@ -911,7 +902,6 @@
                     }
                 }
 
-                // Standard Status Change with AUTO-MERGE into matching Pending card if returning to Pending
                 if (isPending && matchPending) {
                     const mergedQty = (matchPending.quantity || 0) + (task.quantity || 1);
                     if (db) {
@@ -932,7 +922,6 @@
                     return;
                 }
 
-                // Normal Status Change (e.g. Pending -> Doing or Doing -> Done)
                 const updates = {
                     status: nextStatus,
                     doingBy: isDoing ? (task.doingBy || currentUser) : '',
@@ -981,7 +970,6 @@
                 setTaskToDelete(null);
             };
 
-            // Helper: Delete All Tasks from Firestore and State
             const handleDeleteAllTasks = async () => {
                 if (tasks.length === 0) return;
                 setIsDeletingAll(true);
@@ -1008,7 +996,6 @@
                 }
             };
 
-            // Helper: Export Tasks to UTF-8 BOM CSV (Excel Compatible)
             const handleExportCSV = (exportAll = true) => {
                 const targetTasks = exportAll ? tasks : filteredTasks;
                 if (targetTasks.length === 0) {
@@ -1067,7 +1054,6 @@
                 showToast(`ส่งออกข้อมูล ${targetTasks.length} รายการเป็นไฟล์ Excel CSV เรียบร้อยแล้ว`);
             };
 
-            // Helper: Parse CSV File text safely
             const parseCSVText = (text) => {
                 const lines = [];
                 let curLine = [];
@@ -1103,7 +1089,6 @@
                 return lines;
             };
 
-            // Handle CSV File Upload & Parsing
             const handleFileUpload = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -1119,26 +1104,35 @@
                             return;
                         }
 
-                        // Check if row 0 is header
-                        const hasHeader = parsedRows[0][0].includes('รหัส') || parsedRows[0][3].includes('ชื่อ') || parsedRows[0][2].includes('ประเภท');
+                        const hasHeader = parsedRows[0][0].includes('รหัส') || parsedRows[0][4].includes('ชื่อ') || parsedRows[0][3].includes('ประเภท');
                         const dataRows = hasHeader ? parsedRows.slice(1) : parsedRows;
 
                         const importedItems = dataRows.map((row, index) => {
-                            const productName = row[3] || row[0] || `งานนำเข้า-${index + 1}`;
-                            const type = row[2] || 'สร้อย';
-                            const quantity = parseInt(row[4]) || 1;
-                            const deliveredQty = parseInt(row[5]) || 0;
-                            const memo = row[8] || row[5] || '';
+                            const id = row[0] && row[0].startsWith('TASK-') ? row[0] : ('TASK-' + (Date.now() + index));
+                            const timestamp = row[1] || new Date().toLocaleString('th-TH');
+                            const dueDate = row[2] || '';
+                            const type = row[3] || 'สร้อย';
+                            const productName = row[4] || row[0] || `งานนำเข้า-${index + 1}`;
+                            const quantity = parseInt(row[5]) || 1;
+                            const deliveredQty = parseInt(row[6]) || 0;
+                            const memo = row[8] || '';
                             const isUrgent = (row[9] === 'ด่วน' || row[9] === 'true' || row[9] === 'TRUE');
                             const isStock = (row[10] === 'สต๊อก' || row[10] === 'true' || row[10] === 'TRUE');
+                            
                             let status = 'pending';
                             if (row[11] && (row[11].includes('ทำอยู่') || row[11] === 'doing')) status = 'doing';
                             if (row[11] && (row[11].includes('เสร็จ') || row[11] === 'done')) status = 'done';
 
+                            const assignedBy = row[12] || currentUser;
+                            const doingBy = row[13] || '';
+                            const doneBy = row[14] || '';
+                            const doneTimestamp = row[15] || '';
+
                             return {
-                                id: row[0] && row[0].startsWith('TASK-') ? row[0] : ('TASK-' + (Date.now() + index)),
-                                timestamp: row[1] || new Date().toLocaleString('th-TH'),
+                                id,
+                                timestamp,
                                 timestampMs: Date.now() + index,
+                                dueDate,
                                 type,
                                 productName,
                                 quantity,
@@ -1148,10 +1142,11 @@
                                 isUrgent,
                                 isStock,
                                 status,
-                                assignedBy: row[12] || currentUser,
-                                doingBy: row[13] || '',
-                                doneBy: row[14] || '',
-                                doneTimestamp: row[15] || ''
+                                assignedBy,
+                                user: assignedBy,
+                                doingBy,
+                                doneBy,
+                                doneTimestamp
                             };
                         }).filter(item => item.productName);
 
@@ -1171,7 +1166,6 @@
                 e.target.value = '';
             };
 
-            // Confirm Import Tasks to Firebase
             const confirmImport = async () => {
                 if (importFileTasks.length === 0) return;
                 setIsImporting(true);
@@ -1230,7 +1224,6 @@
                     return matchStatus && matchSearch && matchCat && matchTag;
                 });
 
-                // Sorting Options for Tasks List
                 list.sort((a, b) => {
                     if (sortOrder === 'dueDate') {
                         if (a.dueDate && b.dueDate) {
@@ -1273,7 +1266,6 @@
                 }
             };
 
-            // Format date-only string for compact view
             const formatDateOnly = (str) => {
                 if (!str) return '';
                 const parts = str.split(' ');
@@ -1520,10 +1512,12 @@
                                                     </div>
                                                 )}
                                                 <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-1.5">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
                                                         <span className="font-extrabold text-slate-900 truncate">{t.productName}</span>
                                                         <span className="px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] font-bold">{t.type}</span>
+                                                        {t.dueDate && <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 rounded text-[10px] font-bold">📅 {t.dueDate}</span>}
                                                         {t.isUrgent && <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-bold">ด่วน</span>}
+                                                        {t.isStock && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold">สต๊อก</span>}
                                                     </div>
                                                     <p className="text-slate-500 text-[11px] truncate mt-0.5">{t.memo || 'ไม่มีหมายเหตุ'}</p>
                                                 </div>
@@ -1601,7 +1595,7 @@
                         </div>
                     </header>
 
-                    {/* Main Container */}
+                    {}
                     <main className="max-w-4xl mx-auto w-full p-4 space-y-5 flex-1">
                         {/* Tab Menu Navigation (Visible on Desktop / Medium screens) */}
                         <div className="hidden sm:grid grid-cols-3 bg-slate-200/90 p-1.5 rounded-2xl gap-2 font-bold">
@@ -1823,7 +1817,6 @@
                                     </select>
                                 </div>
 
-                                {/* Task Cards List */}
                                 <div className="space-y-3">
                                     {filteredTasks.length === 0 ? (
                                         <div className="text-center py-12 saas-card rounded-2xl bg-white border-2 border-dashed border-slate-300 p-6">
@@ -1841,12 +1834,12 @@
                                             const remainingQty = Math.max(0, totalQty - deliveredQty);
                                             const percent = Math.min(100, Math.round((deliveredQty / totalQty) * 100));
 
-                                            // Render Compact View (มุมมองอย่างย่อ 1 บรรทัด)
+                                            // Render Senior Friendly Compact View (ชื่อ + จำนวน + วันที่ต้องการ ในบรรทัดเดียว + Icon ด่วน/สต๊อก)
                                             if (viewMode === 'compact') {
                                                 return (
                                                     <div 
                                                         key={task.id}
-                                                        className={`p-3 rounded-2xl border-2 transition-all flex items-center justify-between gap-3 saas-card ${
+                                                        className={`p-3.5 sm:p-4 rounded-2xl border-2 transition-all flex items-center justify-between gap-3 saas-card ${
                                                             task.isUrgent ? 'border-red-500 bg-red-50/60' : 'border-slate-300 bg-white'
                                                         }`}
                                                     >
@@ -1854,61 +1847,44 @@
                                                         {taskImage ? (
                                                             <div 
                                                                 onClick={() => setPreviewImg(taskImage)}
-                                                                className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-300 shrink-0 overflow-hidden cursor-pointer hover:opacity-90 shadow-sm"
+                                                                className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-slate-100 border border-slate-300 shrink-0 overflow-hidden cursor-pointer hover:opacity-90 shadow-sm"
                                                             >
                                                                 <img src={taskImage} loading="lazy" referrerPolicy="no-referrer" className="w-full h-full object-cover" alt={task.productName} />
                                                             </div>
                                                         ) : (
-                                                            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400">
-                                                                <Icon name="package" size={18} />
+                                                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400">
+                                                                <Icon name="package" size={22} />
                                                             </div>
                                                         )}
 
-                                                        {/* Task Summary Text */}
-                                                        <div className="min-w-0 flex-1 grid grid-cols-1 md:grid-cols-4 items-center gap-1.5">
-                                                            {/* Product Name & Category */}
-                                                            <div className="min-w-0 flex items-center gap-2">
-                                                                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-800 text-white shrink-0">
-                                                                    {task.type || 'สร้อย'}
-                                                                </span>
-                                                                <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
-                                                                    {task.productName}
-                                                                </h3>
+                                                        {/* Single-line Row: Icon + Name + Quantity + Due Date for Senior Legibility */}
+                                                        <div className="min-w-0 flex-1 flex flex-row items-center gap-2 sm:gap-3 flex-wrap">
+                                                            {/* Urgent / Stock Icons */}
+                                                            <div className="flex items-center gap-1 shrink-0 text-base sm:text-lg">
+                                                                {task.isUrgent && <span title="งานด่วนพิเศษ">🔥</span>}
+                                                                {task.isStock && <span title="งานเติมสต๊อก">📦</span>}
                                                             </div>
 
-                                                            {/* Order Date & Due Date */}
-                                                            <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
-                                                                <span className="font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg shrink-0">
-                                                                    🕒 สั่ง: {formatDateOnly(task.timestamp)}
-                                                                </span>
-                                                                {task.dueDate && (
-                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
-                                                                        📅 {task.dueDate}
-                                                                    </span>
-                                                                )}
-                                                            </div>
+                                                            {/* Product Name (Large Text) */}
+                                                            <h3 className="font-black text-base sm:text-lg text-slate-900 truncate">
+                                                                {task.productName}
+                                                            </h3>
 
-                                                            {/* Partial Delivery & Total Badges */}
-                                                            <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
-                                                                <span className="font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-lg shrink-0">
-                                                                    ส่งแล้ว {deliveredQty}/{totalQty} ชิ้น ({percent}%)
-                                                                </span>
-                                                                {task.isUrgent && (
-                                                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-red-600 text-white shrink-0">
-                                                                        🔥 ด่วน
-                                                                    </span>
-                                                                )}
-                                                                {task.isStock && (
-                                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 shrink-0">
-                                                                        📦 สต๊อก
-                                                                    </span>
-                                                                )}
-                                                            </div>
+                                                            {/* Quantity Badge (Large Text) */}
+                                                            <span className="text-sm sm:text-base font-black text-indigo-800 bg-indigo-50 border-2 border-indigo-200 px-3 py-1 rounded-xl shrink-0">
+                                                                {deliveredQty > 0 ? `ส่งแล้ว ${deliveredQty}/${totalQty} ชิ้น` : `${totalQty} ชิ้น`}
+                                                            </span>
 
-                                                            {/* Memo */}
-                                                            <p className="text-xs text-slate-600 font-bold truncate italic">
-                                                                {task.memo ? `📝 ${task.memo}` : '-'}
-                                                            </p>
+                                                            {/* Due Date Badge (Large Text) */}
+                                                            {task.dueDate ? (
+                                                                <span className="text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded-xl bg-amber-100 text-amber-950 border border-amber-300 shrink-0">
+                                                                    📅 {task.dueDate}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs font-semibold text-slate-400 shrink-0">
+                                                                    📅 ไม่ระบุวัน
+                                                                </span>
+                                                            )}
                                                         </div>
 
                                                         {/* Action Buttons */}
@@ -1916,9 +1892,9 @@
                                                             {task.status === 'pending' && (
                                                                 <button
                                                                     onClick={() => promptStatusChange(task, 'doing')}
-                                                                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-1 active:scale-95 transition-all"
+                                                                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-extrabold shadow-sm flex items-center gap-1 active:scale-95 transition-all"
                                                                 >
-                                                                    <Icon name="play-circle" size={14} />
+                                                                    <Icon name="play-circle" size={16} />
                                                                     <span className="hidden sm:inline">เริ่มทำ</span>
                                                                 </button>
                                                             )}
@@ -1927,10 +1903,10 @@
                                                                 <>
                                                                     <button
                                                                         onClick={() => openPartialDeliveryModal(task)}
-                                                                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-1 active:scale-95 transition-all"
+                                                                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-extrabold shadow-sm flex items-center gap-1 active:scale-95 transition-all"
                                                                         title="บันทึกการส่งมอบงานบางส่วน / ครบจำนวน"
                                                                     >
-                                                                        <Icon name="package-check" size={14} />
+                                                                        <Icon name="package-check" size={16} />
                                                                         <span className="hidden sm:inline">ส่งมอบ</span>
                                                                     </button>
 
@@ -2172,7 +2148,6 @@
                             </div>
                         )}
 
-                        {/* TAB 2: Create Order */}
                         {activeTab === 'create' && (
                             <div className="saas-card p-5 sm:p-6 rounded-2xl bg-white space-y-5 animate-pop border-2 border-slate-300">
                                 <h2 className="text-base sm:text-lg font-bold text-slate-900 border-b pb-3 flex items-center gap-2">
@@ -2374,7 +2349,6 @@
                             </div>
                         )}
 
-                        {/* TAB 3: Shared Product Catalog */}
                         {activeTab === 'products' && (
                             <div className="space-y-4 animate-pop">
                                 {/* Search Box */}
@@ -2553,6 +2527,7 @@
                         )}
                     </main>
 
+                    {}
                     {/* Mobile Floating Action Button (FAB Navigation Menu) */}
                     <div className="sm:hidden fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2">
                         {showFabMenu && (
@@ -2596,4 +2571,3 @@
     </script>
 </body>
 </html>
-
