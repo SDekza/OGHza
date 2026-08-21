@@ -113,6 +113,10 @@
         .app-icon-wrap.stock {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
+
+        .app-icon-wrap.order {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
     </style>
 </head>
 <body>
@@ -319,7 +323,7 @@
                     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6 animate-modal">
                         <div className="glow-bg"></div>
                         
-                        <div className="w-full max-w-4xl relative z-10">
+                        <div className="w-full max-w-5xl relative z-10">
                             {/* Header */}
                             <div className="flex items-center justify-between mb-12">
                                 <div className="flex items-center gap-4">
@@ -346,18 +350,18 @@
                             <h2 className="text-center text-slate-400 text-sm font-semibold tracking-[0.2em] uppercase mb-8">เลือกแอปพลิเคชันที่ต้องการใช้งาน</h2>
 
                             {/* App Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
                                 
                                 {/* App 1: SEBO Work Management */}
                                 <a href="sebo.html" className="app-card rounded-3xl p-6 flex items-start gap-5 group cursor-pointer">
                                     <div className="w-16 h-16 rounded-2xl app-icon-wrap flex items-center justify-center shadow-lg shrink-0 group-hover:scale-105 transition-transform">
                                         <LucideIcon name="layout-dashboard" size={28} className="text-white" />
                                     </div>
-                                    <div>
+                                    <div className="flex-1 min-w-0">
                                         <h3 className="text-lg font-bold text-white mb-2 tracking-wide group-hover:text-indigo-400 transition-colors">ระบบสั่งงาน<br/><span className="text-xs font-normal opacity-80">(Work Management)</span></h3>
                                         <p className="text-xs text-slate-400 leading-relaxed font-medium">บันทึกคิวงาน, แจกจ่ายงาน, และดูสถิติผลการปฏิบัติงานรายวัน</p>
                                     </div>
-                                    <div className="ml-auto mt-2 text-slate-500 group-hover:text-white transition-colors">
+                                    <div className="ml-auto mt-2 text-slate-500 group-hover:text-white transition-colors shrink-0">
                                         <LucideIcon name="chevron-right" size={24} />
                                     </div>
                                 </a>
@@ -367,11 +371,25 @@
                                     <div className="w-16 h-16 rounded-2xl app-icon-wrap stock flex items-center justify-center shadow-lg shrink-0 group-hover:scale-105 transition-transform">
                                         <LucideIcon name="package-search" size={28} className="text-white" />
                                     </div>
-                                    <div>
+                                    <div className="flex-1 min-w-0">
                                         <h3 className="text-lg font-bold text-white mb-2 tracking-wide group-hover:text-emerald-400 transition-colors">ระบบคลังอะไหล่<br/><span className="text-xs font-normal opacity-80">(Stock Spare)</span></h3>
                                         <p className="text-xs text-slate-400 leading-relaxed font-medium">จัดการรายการอะไหล่, เบิก-จ่าย, ค้นหาตำแหน่งจัดเก็บ และส่งออกข้อมูล</p>
                                     </div>
-                                    <div className="ml-auto mt-2 text-slate-500 group-hover:text-white transition-colors">
+                                    <div className="ml-auto mt-2 text-slate-500 group-hover:text-white transition-colors shrink-0">
+                                        <LucideIcon name="chevron-right" size={24} />
+                                    </div>
+                                </a>
+
+                                {/* App 3: SEB Order Dispatcher */}
+                                <a href="seborder.html" className="app-card rounded-3xl p-6 flex items-start gap-5 group cursor-pointer">
+                                    <div className="w-16 h-16 rounded-2xl app-icon-wrap order flex items-center justify-center shadow-lg shrink-0 group-hover:scale-105 transition-transform">
+                                        <LucideIcon name="clipboard-list" size={28} className="text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-lg font-bold text-white mb-2 tracking-wide group-hover:text-amber-400 transition-colors">แอปสั่งงานพนักงาน<br/><span className="text-xs font-normal opacity-80">(Order Dispatcher)</span></h3>
+                                        <p className="text-xs text-slate-400 leading-relaxed font-medium">สั่งงานผลิตสินค้า, ค้นหารูปในคลัง และติดตามคิวงานพนักงาน</p>
+                                    </div>
+                                    <div className="ml-auto mt-2 text-slate-500 group-hover:text-white transition-colors shrink-0">
                                         <LucideIcon name="chevron-right" size={24} />
                                     </div>
                                 </a>
