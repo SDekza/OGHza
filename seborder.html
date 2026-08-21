@@ -24,7 +24,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <!-- Google Fonts: Anuphan & Custom Pinch Zoom Lock -->
+    <!-- Google Fonts: Anuphan & Custom Styles -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700;800&display=swap');
         
@@ -274,7 +274,6 @@
                                 ...data,
                                 productName: data.productName || '',
                                 quantity: data.quantity || 1,
-                                imageUrl: data.imageUrl || data.imgUrl || '',
                                 timestampMs: data.timestampMs || Date.now()
                             });
                         });
@@ -291,8 +290,32 @@
                 return () => unsubTasks();
             }, []);
 
+            // Fast Lookup Map for Matching Product Names to Images in Master Catalog
+            const catalogImageMap = useMemo(() => {
+                const map = {};
+                catalog.forEach(item => {
+                    if (item.name) {
+                        const key = item.name.trim().toLowerCase();
+                        map[key] = item.imgUrl || item.imageUrl || '';
+                    }
+                });
+                return map;
+            }, [catalog]);
+
+            // Helper function to resolve product image dynamically by matching productName
+            const getProductImage = (productName, fallbackUrl = '') => {
+                if (!productName) return fallbackUrl;
+                const key = productName.trim().toLowerCase();
+                const matchedUrl = catalogImageMap[key];
+                return (matchedUrl !== undefined && matchedUrl !== '') ? matchedUrl : fallbackUrl;
+            };
+
             const [activeTab, setActiveTab] = useState('orders'); // orders | create | products
             const [taskStatusFilter, setTaskStatusFilter] = useState('pending'); // pending | doing | done
+            
+            // QUICK TAG FILTER STATE FOR PENDING TASKS ('all' | 'urgent' | 'stock')
+            const [pendingTagFilter, setPendingTagFilter] = useState('all');
+            
             const [searchTerm, setSearchTerm] = useState('');
             const [categoryFilter, setCategoryFilter] = useState('all');
 
@@ -303,6 +326,10 @@
 
             // Delete Task Modal State
             const [taskToDelete, setTaskToDelete] = useState(null);
+
+            // Delete All Tasks Modal State
+            const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+            const [isDeletingAll, setIsDeletingAll] = useState(false);
 
             // CSV Import & Export State
             const [showImportModal, setShowImportModal] = useState(false);
@@ -316,9 +343,9 @@
                 productName: '',
                 quantity: 1,
                 memo: '',
+                dueDate: '',
                 isUrgent: false,
-                isStock: false,
-                imageUrl: ''
+                isStock: false
             });
 
             // Autocomplete Suggestion State
@@ -372,10 +399,9 @@
                     productName: form.productName.trim(),
                     quantity: parseInt(form.quantity) || 1,
                     memo: form.memo,
+                    dueDate: form.dueDate || '',
                     isUrgent: form.isUrgent,
                     isStock: form.isStock,
-                    imageUrl: form.imageUrl,
-                    imgUrl: form.imageUrl,
                     status: 'pending',
                     assignedBy: currentUser,
                     user: currentUser,
@@ -404,12 +430,13 @@
                     productName: '',
                     quantity: 1,
                     memo: '',
+                    dueDate: '',
                     isUrgent: false,
-                    isStock: false,
-                    imageUrl: ''
+                    isStock: false
                 });
                 setActiveTab('orders');
                 setTaskStatusFilter('pending');
+                setPendingTagFilter('all');
             };
 
             const handleStatusChange = async (taskId, nextStatus) => {
@@ -460,7 +487,32 @@
                 setTaskToDelete(null);
             };
 
-            // Helper: Export Tasks to UTF-8 BOM CSV (Excel Compatible)
+            const handleDeleteAllTasks = async () => {
+                if (tasks.length === 0) return;
+                setIsDeletingAll(true);
+
+                try {
+                    if (db) {
+                        const snapshot = await db.collection("seb_tasks").get();
+                        const batch = db.batch();
+                        snapshot.forEach(doc => {
+                            batch.delete(doc.ref);
+                        });
+                        await batch.commit();
+                    } else {
+                        setTasks([]);
+                    }
+
+                    showToast("ลบรายการคิวงานทั้งหมดเรียบร้อยแล้ว");
+                    setShowDeleteAllModal(false);
+                } catch (err) {
+                    console.error("Delete all tasks error:", err);
+                    showToast("❌ เกิดข้อผิดพลาดในการลบงานทั้งหมด");
+                } finally {
+                    setIsDeletingAll(false);
+                }
+            };
+
             const handleExportCSV = (exportAll = true) => {
                 const targetTasks = exportAll ? tasks : filteredTasks;
                 if (targetTasks.length === 0) {
@@ -469,9 +521,9 @@
                 }
 
                 const headers = [
-                    "รหัสงาน", "วันเวลาสั่ง", "ประเภท", "ชื่อสินค้า", "จำนวน",
+                    "รหัสงาน", "วันเวลาสั่ง", "วันที่ต้องการใช้", "ประเภท", "ชื่อสินค้า", "จำนวน",
                     "หมายเหตุ", "งานด่วน", "เติมสต๊อก", "สถานะ", "ผู้สั่งงาน",
-                    "ผู้รับงาน", "ผู้ทำเสร็จ", "วันเวลาเสร็จ", "ลิงก์รูปภาพ"
+                    "ผู้รับงาน", "ผู้ทำเสร็จ", "วันเวลาเสร็จ"
                 ];
 
                 const escapeCSV = (val) => {
@@ -484,6 +536,7 @@
                     return [
                         t.id || '',
                         t.timestamp || '',
+                        t.dueDate || '',
                         t.type || 'สร้อย',
                         t.productName || '',
                         t.quantity || 1,
@@ -494,8 +547,7 @@
                         t.assignedBy || t.user || '',
                         t.doingBy || '',
                         t.doneBy || '',
-                        t.doneTimestamp || '',
-                        t.imageUrl || t.imgUrl || ''
+                        t.doneTimestamp || ''
                     ].map(escapeCSV).join(',');
                 });
 
@@ -513,7 +565,6 @@
                 showToast(`ส่งออกข้อมูล ${targetTasks.length} รายการเป็นไฟล์ Excel CSV เรียบร้อยแล้ว`);
             };
 
-            // Helper: Parse CSV File text safely
             const parseCSVText = (text) => {
                 const lines = [];
                 let curLine = [];
@@ -549,7 +600,6 @@
                 return lines;
             };
 
-            // Handle CSV File Upload & Parsing
             const handleFileUpload = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -565,7 +615,6 @@
                             return;
                         }
 
-                        // Check if row 0 is header
                         const hasHeader = parsedRows[0][0].includes('รหัส') || parsedRows[0][3].includes('ชื่อ') || parsedRows[0][2].includes('ประเภท');
                         const dataRows = hasHeader ? parsedRows.slice(1) : parsedRows;
 
@@ -590,7 +639,6 @@
                                 memo,
                                 isUrgent,
                                 isStock,
-                                imageUrl: row[13] || '',
                                 status,
                                 assignedBy: row[9] || currentUser,
                                 doingBy: row[10] || '',
@@ -615,7 +663,6 @@
                 e.target.value = '';
             };
 
-            // Confirm Import Tasks to Firebase
             const confirmImport = async () => {
                 if (importFileTasks.length === 0) return;
                 setIsImporting(true);
@@ -654,15 +701,43 @@
                 );
             }, [form.productName, catalog]);
 
+            // Filter pending tasks array for count badges
+            const pendingTasksList = useMemo(() => tasks.filter(t => t.status === 'pending'), [tasks]);
+            const pendingUrgentCount = useMemo(() => pendingTasksList.filter(t => t.isUrgent).length, [pendingTasksList]);
+            const pendingStockCount = useMemo(() => pendingTasksList.filter(t => t.isStock).length, [pendingTasksList]);
+
             const filteredTasks = useMemo(() => {
-                return tasks.filter(t => {
+                const list = tasks.filter(t => {
                     const matchStatus = t.status === taskStatusFilter;
                     const matchSearch = t.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                         (t.memo && t.memo.toLowerCase().includes(searchTerm.toLowerCase()));
                     const matchCat = categoryFilter === 'all' || t.type === categoryFilter;
-                    return matchStatus && matchSearch && matchCat;
+
+                    let matchTag = true;
+                    if (taskStatusFilter === 'pending') {
+                        if (pendingTagFilter === 'urgent') matchTag = t.isUrgent === true;
+                        else if (pendingTagFilter === 'stock') matchTag = t.isStock === true;
+                    }
+
+                    return matchStatus && matchSearch && matchCat && matchTag;
                 });
-            }, [tasks, taskStatusFilter, searchTerm, categoryFilter]);
+
+                // In "Pending" (ค้างทำ) tab, sort by due date ascending (earliest due date first)
+                if (taskStatusFilter === 'pending') {
+                    list.sort((a, b) => {
+                        if (a.dueDate && b.dueDate) {
+                            if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+                        } else if (a.dueDate && !b.dueDate) {
+                            return -1; // Tasks with due date come first
+                        } else if (!a.dueDate && b.dueDate) {
+                            return 1;
+                        }
+                        if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
+                        return (b.timestampMs || 0) - (a.timestampMs || 0);
+                    });
+                }
+                return list;
+            }, [tasks, taskStatusFilter, searchTerm, categoryFilter, pendingTagFilter]);
 
             const filteredCatalog = useMemo(() => {
                 return catalog.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()));
@@ -675,7 +750,6 @@
                 return filteredCatalog.slice(start, start + PRODUCTS_PER_PAGE);
             }, [filteredCatalog, productPage]);
 
-            // Check if current user has Admin or Dev privileges
             const isAdminOrDev = currentUserRank === 'Admin' || currentUserRank === 'Dev';
 
             const getStatusBadge = (status) => {
@@ -702,6 +776,42 @@
                     {/* Image Pinch Zoom Lightbox Modal */}
                     {previewImg && (
                         <LightboxModal src={previewImg} onClose={() => setPreviewImg(null)} />
+                    )}
+
+                    {/* Delete All Confirmation Modal */}
+                    {showDeleteAllModal && (
+                        <div className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-pop">
+                            <div className="bg-white rounded-3xl p-6 max-w-sm w-full border-2 border-red-300 shadow-2xl text-center space-y-4">
+                                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+                                    <Icon name="alert-triangle" size={32} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">ยืนยันลบคิวงานทั้งหมด?</h3>
+                                    <p className="text-xs text-slate-600 font-semibold mt-1">
+                                        คิวงานทั้งหมดจำนวน <span className="text-red-600 font-black">{tasks.length} รายการ</span> จะถูกลบถาวรออกจากระบบ
+                                    </p>
+                                    <p className="text-[11px] text-red-500 font-bold mt-2 bg-red-50 p-2 rounded-xl border border-red-200">
+                                        ⚠️ การกระทำนี้ไม่สามารถย้อนกลับได้
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <button 
+                                        onClick={() => setShowDeleteAllModal(false)}
+                                        disabled={isDeletingAll}
+                                        className="h-12 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-sm"
+                                    >
+                                        ยกเลิก
+                                    </button>
+                                    <button 
+                                        onClick={handleDeleteAllTasks}
+                                        disabled={isDeletingAll || tasks.length === 0}
+                                        className="h-12 bg-red-600 hover:bg-red-700 disabled:bg-slate-300 text-white rounded-2xl font-bold text-sm shadow-md flex items-center justify-center gap-2"
+                                    >
+                                        {isDeletingAll ? 'กำลังลบ...' : 'ลบงานทั้งหมด'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     )}
 
                     {/* Delete Confirm Modal */}
@@ -756,21 +866,29 @@
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto space-y-2 pr-1 my-2">
-                                    {importFileTasks.map((t, i) => (
-                                        <div key={i} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between gap-2">
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-extrabold text-slate-900 truncate">{t.productName}</span>
-                                                    <span className="px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] font-bold">{t.type}</span>
-                                                    {t.isUrgent && <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-bold">ด่วน</span>}
+                                    {importFileTasks.map((t, i) => {
+                                        const importImg = getProductImage(t.productName);
+                                        return (
+                                            <div key={i} className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between gap-2">
+                                                {importImg && (
+                                                    <div className="w-10 h-10 rounded-lg bg-white border shrink-0 overflow-hidden">
+                                                        <img src={importImg} className="w-full h-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-extrabold text-slate-900 truncate">{t.productName}</span>
+                                                        <span className="px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] font-bold">{t.type}</span>
+                                                        {t.isUrgent && <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-bold">ด่วน</span>}
+                                                    </div>
+                                                    <p className="text-slate-500 text-[11px] truncate mt-0.5">{t.memo || 'ไม่มีหมายเหตุ'}</p>
                                                 </div>
-                                                <p className="text-slate-500 text-[11px] truncate mt-0.5">{t.memo || 'ไม่มีหมายเหตุ'}</p>
+                                                <span className="font-extrabold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg shrink-0">
+                                                    {t.quantity} ชิ้น
+                                                </span>
                                             </div>
-                                            <span className="font-extrabold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg shrink-0">
-                                                {t.quantity} ชิ้น
-                                            </span>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 pt-2 border-t">
@@ -814,7 +932,7 @@
                                 </div>
                             </div>
 
-                            {/* User Session Info & Portal Link (Linked with login.html) */}
+                            {/* User Session Info & Portal Link */}
                             <div className="flex items-center gap-2">
                                 <a 
                                     href="login.html" 
@@ -866,7 +984,7 @@
                         {/* TAB 1: Orders Queue */}
                         {activeTab === 'orders' && (
                             <div className="space-y-4">
-                                {/* Sub-tab Status Filters (High Contrast) */}
+                                {/* Sub-tab Status Filters */}
                                 <div className="grid grid-cols-3 bg-slate-200/60 p-1.5 rounded-2xl border-2 border-slate-300 saas-card gap-1.5">
                                     {[
                                         { id: 'pending', label: 'ค้างทำ', count: tasks.filter(t => t.status === 'pending').length, activeColor: 'bg-amber-500 text-white shadow-md' },
@@ -875,7 +993,10 @@
                                     ].map(st => (
                                         <button
                                             key={st.id}
-                                            onClick={() => setTaskStatusFilter(st.id)}
+                                            onClick={() => {
+                                                setTaskStatusFilter(st.id);
+                                                if (st.id === 'pending') setPendingTagFilter('all');
+                                            }}
                                             className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all ${
                                                 taskStatusFilter === st.id 
                                                     ? st.activeColor 
@@ -892,7 +1013,61 @@
                                     ))}
                                 </div>
 
-                                {/* Export / Import Excel Action Toolbar (Restricted to Admin/Dev only) */}
+                                {/* Quick Tag Filters for Pending Tasks */}
+                                {taskStatusFilter === 'pending' && (
+                                    <div className="bg-white p-2.5 rounded-2xl border-2 border-slate-300 saas-card flex items-center gap-2 overflow-x-auto no-scrollbar">
+                                        <span className="text-xs font-black text-slate-700 shrink-0 flex items-center gap-1">
+                                            <span>🏷️ แท็กตัวกรอง:</span>
+                                        </span>
+                                        <button
+                                            onClick={() => setPendingTagFilter('all')}
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 shrink-0 transition-all flex items-center gap-1.5 ${
+                                                pendingTagFilter === 'all' 
+                                                    ? 'bg-slate-800 text-white border-slate-800 shadow-sm' 
+                                                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            <span>ทั้งหมด</span>
+                                            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                                                pendingTagFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-800'
+                                            }`}>
+                                                {pendingTasksList.length}
+                                            </span>
+                                        </button>
+                                        <button
+                                            onClick={() => setPendingTagFilter('urgent')}
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 shrink-0 transition-all flex items-center gap-1.5 ${
+                                                pendingTagFilter === 'urgent' 
+                                                    ? 'bg-red-600 text-white border-red-700 shadow-sm' 
+                                                    : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
+                                            }`}
+                                        >
+                                            <span>🔥 งานเร่งด่วน</span>
+                                            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                                                pendingTagFilter === 'urgent' ? 'bg-black/20 text-white' : 'bg-red-100 text-red-800'
+                                            }`}>
+                                                {pendingUrgentCount}
+                                            </span>
+                                        </button>
+                                        <button
+                                            onClick={() => setPendingTagFilter('stock')}
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 shrink-0 transition-all flex items-center gap-1.5 ${
+                                                pendingTagFilter === 'stock' 
+                                                    ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm' 
+                                                    : 'bg-indigo-50 text-indigo-700 border-indigo-300 hover:bg-indigo-100'
+                                            }`}
+                                        >
+                                            <span>📦 งานสต๊อก</span>
+                                            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                                                pendingTagFilter === 'stock' ? 'bg-black/20 text-white' : 'bg-indigo-100 text-indigo-800'
+                                            }`}>
+                                                {pendingStockCount}
+                                            </span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Export / Import Excel Action Toolbar */}
                                 {isAdminOrDev && (
                                     <div className="bg-white p-3 rounded-2xl border-2 border-slate-300 saas-card flex flex-wrap items-center justify-between gap-2.5">
                                         <div className="flex items-center gap-2 text-xs font-extrabold text-slate-700">
@@ -910,7 +1085,16 @@
                                             />
 
                                             <button 
-                                                onClick={() => fileInputRef.current && fileInputRef.click()}
+                                                onClick={() => setShowDeleteAllModal(true)}
+                                                className="px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+                                                title="ลบคิวงานทั้งหมดออกจากระบบ"
+                                            >
+                                                <Icon name="trash-2" size={16} className="text-red-600" />
+                                                <span>🗑️ ลบงานทั้งหมด</span>
+                                            </button>
+
+                                            <button 
+                                                onClick={() => fileInputRef.current && fileInputRef.current.click()}
                                                 className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
                                                 title="นำเข้าไฟล์ CSV เข้าระบบคิวงาน"
                                             >
@@ -965,6 +1149,9 @@
                                     ) : (
                                         filteredTasks.map(task => {
                                             const badge = getStatusBadge(task.status);
+                                            // Dynamic Match: Look up the image link from Master Catalog by productName
+                                            const taskImage = getProductImage(task.productName, task.imageUrl || task.imgUrl || '');
+
                                             return (
                                                 <div 
                                                     key={task.id} 
@@ -978,6 +1165,12 @@
                                                             <span className="text-xs font-extrabold uppercase tracking-wide px-3 py-1 rounded-lg bg-slate-800 text-white">
                                                                 {task.type || 'สร้อย'}
                                                             </span>
+                                                            {task.dueDate && (
+                                                                <span className="text-xs font-extrabold px-3 py-1 rounded-lg bg-amber-100 text-amber-900 border-2 border-amber-300 flex items-center gap-1 shadow-sm">
+                                                                    <span>📅 ต้องใช้:</span>
+                                                                    <span className="font-black text-amber-950">{task.dueDate}</span>
+                                                                </span>
+                                                            )}
                                                             {task.isUrgent && (
                                                                 <span className="text-xs font-black px-3 py-1 rounded-lg bg-red-600 text-white animate-pulse flex items-center gap-1">
                                                                     <span>🔥 งานด่วนพิเศษ</span>
@@ -1001,21 +1194,26 @@
                                                         </button>
                                                     </div>
 
-                                                    {/* Card Content */}
+                                                    {/* Card Content with Dynamically Matched Image */}
                                                     <div className="flex items-start gap-4 mt-3">
-                                                        {/* Thumbnail */}
-                                                        {task.imageUrl && (
+                                                        {/* Dynamically Matched Image Thumbnail */}
+                                                        {taskImage ? (
                                                             <div 
-                                                                onClick={() => setPreviewImg(task.imageUrl)}
+                                                                onClick={() => setPreviewImg(taskImage)}
                                                                 className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-100 border-2 border-slate-300 shrink-0 overflow-hidden cursor-pointer hover:opacity-90 shadow-sm"
                                                             >
                                                                 <img 
-                                                                    src={task.imageUrl} 
+                                                                    src={taskImage} 
                                                                     loading="lazy"
                                                                     referrerPolicy="no-referrer" 
                                                                     className="w-full h-full object-cover" 
                                                                     alt={task.productName} 
                                                                 />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-100 border-2 border-slate-200 shrink-0 overflow-hidden flex flex-col items-center justify-center text-slate-400">
+                                                                <Icon name="package" size={28} />
+                                                                <span className="text-[10px] font-bold mt-1 text-slate-400">ไม่มีรูปภาพ</span>
                                                             </div>
                                                         )}
 
@@ -1099,7 +1297,7 @@
                                 </h2>
 
                                 <form onSubmit={handleAddTask} className="space-y-4">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         {/* Category Select */}
                                         <div className="space-y-1">
                                             <label className="text-xs font-bold text-slate-700">ประเภทงาน/สินค้า</label>
@@ -1124,13 +1322,27 @@
                                                 required
                                             />
                                         </div>
+
+                                        {/* Due Date Input */}
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-amber-900 flex items-center gap-1">
+                                                <span>📅 วันที่ต้องการใช้สินค้า</span>
+                                                <span className="text-[10px] text-amber-700 font-semibold">(ระบุเพื่อจัดคิว)</span>
+                                            </label>
+                                            <input 
+                                                type="date"
+                                                value={form.dueDate}
+                                                onChange={(e) => setForm({...form, dueDate: e.target.value})}
+                                                className="w-full h-12 bg-amber-50/60 border-2 border-amber-300 rounded-xl px-3 text-xs sm:text-sm font-extrabold text-amber-950 outline-none focus:border-amber-500"
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Product Name with Autocomplete */}
                                     <div className="space-y-1 relative" ref={searchBoxRef}>
                                         <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
                                             <span>ชื่อสินค้า / รายละเอียดงาน</span>
-                                            <span className="text-xs text-indigo-600 font-bold">💡 พิมพ์ชื่อเพื่อค้นหารูป</span>
+                                            <span className="text-xs text-indigo-600 font-bold">💡 พิมพ์ชื่อเพื่อจับคู่รูปภาพคลังอัตโนมัติ</span>
                                         </label>
                                         
                                         <div className="relative">
@@ -1149,7 +1361,7 @@
                                             {form.productName && (
                                                 <button 
                                                     type="button" 
-                                                    onClick={() => setForm({...form, productName: '', imageUrl: ''})}
+                                                    onClick={() => setForm({...form, productName: ''})}
                                                     className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
                                                 >
                                                     <Icon name="x-circle" size={20} />
@@ -1170,7 +1382,6 @@
                                                             setForm({
                                                                 ...form, 
                                                                 productName: item.name, 
-                                                                imageUrl: item.imgUrl,
                                                                 type: item.category || form.type
                                                             });
                                                             setShowSuggestions(false);
@@ -1205,12 +1416,12 @@
                                         )}
                                     </div>
 
-                                    {/* Image Preview Box */}
-                                    {form.imageUrl && (
+                                    {/* Dynamic Matched Image Preview Box */}
+                                    {getProductImage(form.productName) ? (
                                         <div className="bg-indigo-50 p-3 rounded-2xl border-2 border-indigo-200 flex items-center gap-4 animate-pop">
                                             <div className="w-16 h-16 rounded-xl bg-white border border-slate-300 overflow-hidden shrink-0">
                                                 <img 
-                                                    src={form.imageUrl} 
+                                                    src={getProductImage(form.productName)} 
                                                     loading="lazy"
                                                     referrerPolicy="no-referrer" 
                                                     className="w-full h-full object-cover" 
@@ -1218,19 +1429,17 @@
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <span className="text-xs font-extrabold text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-lg">
-                                                    ✓ แนบรูปภาพสินค้าเรียบร้อย
+                                                    ✓ แมตช์รูปภาพตรงกับคลังสินค้าอัตโนมัติ
                                                 </span>
                                                 <p className="text-sm font-extrabold text-slate-900 truncate mt-1">{form.productName}</p>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => setForm({...form, imageUrl: ''})}
-                                                    className="text-xs text-red-600 font-bold hover:underline mt-0.5 block"
-                                                >
-                                                    ลบรูปออก
-                                                </button>
                                             </div>
                                         </div>
-                                    )}
+                                    ) : form.productName.trim() ? (
+                                        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex items-center gap-3">
+                                            <Icon name="info" size={20} className="text-slate-400 shrink-0" />
+                                            <p className="text-xs text-slate-500 font-medium">ไม่พบรูปภาพตรงตามชื่อนี้ในคลังหลัก (สามารถสั่งผลิตเป็นงานกำหนดเองได้)</p>
+                                        </div>
+                                    ) : null}
 
                                     {/* Memo */}
                                     <div className="space-y-1">
@@ -1281,7 +1490,7 @@
                             </div>
                         )}
 
-                        {/* TAB 3: Shared Product Catalog (sebo_products) */}
+                        {/* TAB 3: Shared Product Catalog */}
                         {activeTab === 'products' && (
                             <div className="space-y-4 animate-pop">
                                 {/* Search Box */}
@@ -1372,8 +1581,7 @@
                                                                 setForm({ 
                                                                     ...form, 
                                                                     type: p.category || 'สร้อย', 
-                                                                    productName: p.name,
-                                                                    imageUrl: p.imgUrl 
+                                                                    productName: p.name
                                                                 });
                                                                 setActiveTab('create');
                                                             }}
@@ -1431,7 +1639,7 @@
                                     )}
                                 </div>
 
-                                {/* Pagination Controls (10 items per page) */}
+                                {/* Pagination Controls */}
                                 {totalProductPages > 1 && (
                                     <div className="saas-card p-3 rounded-2xl bg-white border-2 border-slate-300 flex items-center justify-between text-xs font-extrabold">
                                         <button 
