@@ -23,8 +23,9 @@
     <!-- Firebase SDK (v10 COMPAT) for Firebase Firestore integration -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
-    <!-- Google Fonts: Anuphan & Custom Styles -->
+    <!-- Google Fonts & Custom Styling -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700;800&display=swap');
         
@@ -66,6 +67,13 @@
             width: 100%;
             height: 100%;
         }
+
+        /* Floating Action Speed Dial Animations */
+        @keyframes fab-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        .fab-pulse { animation: fab-bounce 2s infinite; }
     </style>
 </head>
 <body>
@@ -231,6 +239,9 @@
                 return saved ? JSON.parse(saved) : [];
             });
 
+            // Mobile FAB Speed-Dial State
+            const [isFabOpen, setIsFabOpen] = useState(false);
+
             // 1. Listen to Real-time Master Catalog (`sebo_products` - SHARED)
             useEffect(() => {
                 if (!db) return;
@@ -310,12 +321,18 @@
                 return (matchedUrl !== undefined && matchedUrl !== '') ? matchedUrl : fallbackUrl;
             };
 
+            // Helper to format date-only string from full timestamp
+            const formatDateOnly = (tsStr) => {
+                if (!tsStr) return '';
+                // Splitting "21/8/2026 16:30:00" or "21/8/2026, 16:30:00" -> "21/8/2026"
+                return tsStr.split(' ')[0].replace(',', '').trim();
+            };
+
             const [activeTab, setActiveTab] = useState('orders'); // orders | create | products
             const [taskStatusFilter, setTaskStatusFilter] = useState('pending'); // pending | doing | done
-            
-            // QUICK TAG FILTER STATE FOR PENDING TASKS ('all' | 'urgent' | 'stock')
-            const [pendingTagFilter, setPendingTagFilter] = useState('all');
-            
+            const [quickTagFilter, setQuickTagFilter] = useState('all'); // all | urgent | stock
+            const [orderDateSort, setOrderDateSort] = useState('asc'); // asc (สั่งก่อน->หลัง) | desc (สั่งหลัง->ก่อน) | dueDate (ตามวันใช้)
+            const [viewMode, setViewMode] = useState('card'); // card | compact
             const [searchTerm, setSearchTerm] = useState('');
             const [categoryFilter, setCategoryFilter] = useState('all');
 
@@ -362,7 +379,7 @@
                 setTimeout(() => setToast(null), 2500);
             };
 
-            // Close suggestion box on outside click
+            // Close suggestion box & fab on outside click
             useEffect(() => {
                 const handleClickOutside = (e) => {
                     if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
@@ -436,7 +453,6 @@
                 });
                 setActiveTab('orders');
                 setTaskStatusFilter('pending');
-                setPendingTagFilter('all');
             };
 
             const handleStatusChange = async (taskId, nextStatus) => {
@@ -487,6 +503,7 @@
                 setTaskToDelete(null);
             };
 
+            // Helper: Delete All Tasks from Firestore and State
             const handleDeleteAllTasks = async () => {
                 if (tasks.length === 0) return;
                 setIsDeletingAll(true);
@@ -701,10 +718,9 @@
                 );
             }, [form.productName, catalog]);
 
-            // Filter pending tasks array for count badges
-            const pendingTasksList = useMemo(() => tasks.filter(t => t.status === 'pending'), [tasks]);
-            const pendingUrgentCount = useMemo(() => pendingTasksList.filter(t => t.isUrgent).length, [pendingTasksList]);
-            const pendingStockCount = useMemo(() => pendingTasksList.filter(t => t.isStock).length, [pendingTasksList]);
+            const pendingTasksAll = useMemo(() => tasks.filter(t => t.status === 'pending'), [tasks]);
+            const pendingUrgentCount = useMemo(() => pendingTasksAll.filter(t => t.isUrgent).length, [pendingTasksAll]);
+            const pendingStockCount = useMemo(() => pendingTasksAll.filter(t => t.isStock).length, [pendingTasksAll]);
 
             const filteredTasks = useMemo(() => {
                 const list = tasks.filter(t => {
@@ -712,32 +728,42 @@
                     const matchSearch = t.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                         (t.memo && t.memo.toLowerCase().includes(searchTerm.toLowerCase()));
                     const matchCat = categoryFilter === 'all' || t.type === categoryFilter;
-
+                    
                     let matchTag = true;
                     if (taskStatusFilter === 'pending') {
-                        if (pendingTagFilter === 'urgent') matchTag = t.isUrgent === true;
-                        else if (pendingTagFilter === 'stock') matchTag = t.isStock === true;
+                        if (quickTagFilter === 'urgent') matchTag = !!t.isUrgent;
+                        if (quickTagFilter === 'stock') matchTag = !!t.isStock;
                     }
 
                     return matchStatus && matchSearch && matchCat && matchTag;
                 });
 
-                // In "Pending" (ค้างทำ) tab, sort by due date ascending (earliest due date first)
+                // Sorting logic according to selected sorting preference
                 if (taskStatusFilter === 'pending') {
                     list.sort((a, b) => {
-                        if (a.dueDate && b.dueDate) {
-                            if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-                        } else if (a.dueDate && !b.dueDate) {
-                            return -1; // Tasks with due date come first
-                        } else if (!a.dueDate && b.dueDate) {
-                            return 1;
+                        if (orderDateSort === 'asc') {
+                            // สั่งก่อน➔สั่งหลัง
+                            return (a.timestampMs || 0) - (b.timestampMs || 0);
+                        } else if (orderDateSort === 'desc') {
+                            // สั่งหลัง➔สั่งก่อน
+                            return (b.timestampMs || 0) - (a.timestampMs || 0);
+                        } else if (orderDateSort === 'dueDate') {
+                            // วันที่ต้องการใช้
+                            if (a.dueDate && b.dueDate) {
+                                if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+                            } else if (a.dueDate && !b.dueDate) {
+                                return -1;
+                            } else if (!a.dueDate && b.dueDate) {
+                                return 1;
+                            }
+                            if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
+                            return (a.timestampMs || 0) - (b.timestampMs || 0);
                         }
-                        if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
-                        return (b.timestampMs || 0) - (a.timestampMs || 0);
+                        return (a.timestampMs || 0) - (b.timestampMs || 0);
                     });
                 }
                 return list;
-            }, [tasks, taskStatusFilter, searchTerm, categoryFilter, pendingTagFilter]);
+            }, [tasks, taskStatusFilter, quickTagFilter, orderDateSort, searchTerm, categoryFilter]);
 
             const filteredCatalog = useMemo(() => {
                 return catalog.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()));
@@ -750,6 +776,7 @@
                 return filteredCatalog.slice(start, start + PRODUCTS_PER_PAGE);
             }, [filteredCatalog, productPage]);
 
+            // Check if current user has Admin or Dev privileges
             const isAdminOrDev = currentUserRank === 'Admin' || currentUserRank === 'Dev';
 
             const getStatusBadge = (status) => {
@@ -762,7 +789,7 @@
             };
 
             return (
-                <div className="min-h-screen flex flex-col pb-24 md:pb-6 bg-slate-100">
+                <div className="min-h-screen flex flex-col pb-24 md:pb-6 bg-slate-100 relative">
                     {/* Toast Notification */}
                     {toast && (
                         <div className="fixed top-4 left-0 right-0 z-[100] flex justify-center p-4 pointer-events-none">
@@ -925,7 +952,7 @@
                                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
                                                 : 'bg-amber-100 text-amber-800 border border-amber-300'
                                         }`}>
-                                            {dbConnected ? '☁️ Firebase Sync' : '💾 Local Mode'}
+                                            {dbConnected ? '☁️ Sync' : '💾 Local'}
                                         </span>
                                     </div>
                                     <p className="text-xs text-indigo-700 font-bold uppercase mt-1">SEBOFFICIAL System</p>
@@ -958,9 +985,9 @@
                     </header>
 
                     {/* Main Container */}
-                    <main className="max-w-4xl mx-auto w-full p-4 space-y-5 flex-1">
-                        {/* Tab Menu Navigation */}
-                        <div className="grid grid-cols-3 bg-slate-200/90 p-1.5 rounded-2xl gap-2 font-bold">
+                    <main className="max-w-4xl mx-auto w-full p-4 space-y-4 flex-1">
+                        {/* Tab Menu Navigation (Visible on Desktop/Tablet: sm and up) */}
+                        <div className="hidden sm:grid sm:grid-cols-3 bg-slate-200/90 p-1.5 rounded-2xl gap-2 font-bold">
                             {[
                                 { id: 'orders', label: '1. คิวงานสั่งทำ', icon: 'clipboard-list' },
                                 { id: 'create', label: '2. + สั่งงานใหม่', icon: 'plus-circle' },
@@ -969,7 +996,7 @@
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`py-3 px-2 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-2 transition-all ${
+                                    className={`py-3 px-2 rounded-xl flex items-center justify-center gap-2 transition-all ${
                                         activeTab === tab.id 
                                             ? 'bg-white text-indigo-700 shadow-md font-extrabold ring-2 ring-indigo-500' 
                                             : 'text-slate-600 hover:text-slate-900'
@@ -981,10 +1008,10 @@
                             ))}
                         </div>
 
-                        {/* TAB 1: Orders Queue */}
+                        {/* Active Tab 1: Orders */}
                         {activeTab === 'orders' && (
                             <div className="space-y-4">
-                                {/* Sub-tab Status Filters */}
+                                {/* Sub-tab Status Filters (Compact Inline badges on same line) */}
                                 <div className="grid grid-cols-3 bg-slate-200/60 p-1.5 rounded-2xl border-2 border-slate-300 saas-card gap-1.5">
                                     {[
                                         { id: 'pending', label: 'ค้างทำ', count: tasks.filter(t => t.status === 'pending').length, activeColor: 'bg-amber-500 text-white shadow-md' },
@@ -993,18 +1020,15 @@
                                     ].map(st => (
                                         <button
                                             key={st.id}
-                                            onClick={() => {
-                                                setTaskStatusFilter(st.id);
-                                                if (st.id === 'pending') setPendingTagFilter('all');
-                                            }}
-                                            className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all ${
+                                            onClick={() => setTaskStatusFilter(st.id)}
+                                            className={`py-2 px-1.5 sm:px-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-1.5 transition-all ${
                                                 taskStatusFilter === st.id 
                                                     ? st.activeColor 
                                                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                                             }`}
                                         >
-                                            <span>{st.label}</span>
-                                            <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
+                                            <span className="truncate">{st.label}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-[11px] font-black shrink-0 ${
                                                 taskStatusFilter === st.id ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200'
                                             }`}>
                                                 {st.count}
@@ -1013,57 +1037,95 @@
                                     ))}
                                 </div>
 
-                                {/* Quick Tag Filters for Pending Tasks */}
+                                {/* Quick Tag Filters, Sorting Selector & View Mode Switcher for "Pending" (ค้างทำ) Tab */}
                                 {taskStatusFilter === 'pending' && (
-                                    <div className="bg-white p-2.5 rounded-2xl border-2 border-slate-300 saas-card flex items-center gap-2 overflow-x-auto no-scrollbar">
-                                        <span className="text-xs font-black text-slate-700 shrink-0 flex items-center gap-1">
-                                            <span>🏷️ แท็กตัวกรอง:</span>
-                                        </span>
-                                        <button
-                                            onClick={() => setPendingTagFilter('all')}
-                                            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 shrink-0 transition-all flex items-center gap-1.5 ${
-                                                pendingTagFilter === 'all' 
-                                                    ? 'bg-slate-800 text-white border-slate-800 shadow-sm' 
-                                                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
-                                            }`}
-                                        >
-                                            <span>ทั้งหมด</span>
-                                            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                                                pendingTagFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-800'
-                                            }`}>
-                                                {pendingTasksList.length}
-                                            </span>
-                                        </button>
-                                        <button
-                                            onClick={() => setPendingTagFilter('urgent')}
-                                            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 shrink-0 transition-all flex items-center gap-1.5 ${
-                                                pendingTagFilter === 'urgent' 
-                                                    ? 'bg-red-600 text-white border-red-700 shadow-sm' 
-                                                    : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
-                                            }`}
-                                        >
-                                            <span>🔥 งานเร่งด่วน</span>
-                                            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                                                pendingTagFilter === 'urgent' ? 'bg-black/20 text-white' : 'bg-red-100 text-red-800'
-                                            }`}>
-                                                {pendingUrgentCount}
-                                            </span>
-                                        </button>
-                                        <button
-                                            onClick={() => setPendingTagFilter('stock')}
-                                            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 shrink-0 transition-all flex items-center gap-1.5 ${
-                                                pendingTagFilter === 'stock' 
-                                                    ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm' 
-                                                    : 'bg-indigo-50 text-indigo-700 border-indigo-300 hover:bg-indigo-100'
-                                            }`}
-                                        >
-                                            <span>📦 งานสต๊อก</span>
-                                            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                                                pendingTagFilter === 'stock' ? 'bg-black/20 text-white' : 'bg-indigo-100 text-indigo-800'
-                                            }`}>
-                                                {pendingStockCount}
-                                            </span>
-                                        </button>
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-white p-2.5 rounded-2xl border-2 border-slate-300 saas-card">
+                                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+                                            <span className="text-xs font-bold text-slate-500 shrink-0 mr-1">กรองด่วน:</span>
+                                            
+                                            <button
+                                                onClick={() => setQuickTagFilter('all')}
+                                                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all shrink-0 flex items-center gap-1 ${
+                                                    quickTagFilter === 'all'
+                                                        ? 'bg-slate-900 text-white shadow-sm'
+                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
+                                                }`}
+                                            >
+                                                <span>ทั้งหมด</span>
+                                                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${quickTagFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                                                    {pendingTasksAll.length}
+                                                </span>
+                                            </button>
+
+                                            <button
+                                                onClick={() => setQuickTagFilter('urgent')}
+                                                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all shrink-0 flex items-center gap-1 ${
+                                                    quickTagFilter === 'urgent'
+                                                        ? 'bg-red-600 text-white shadow-sm ring-2 ring-red-400'
+                                                        : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                                                }`}
+                                            >
+                                                <span>🔥 งานเร่งด่วน</span>
+                                                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${quickTagFilter === 'urgent' ? 'bg-black/20 text-white' : 'bg-red-200 text-red-900'}`}>
+                                                    {pendingUrgentCount}
+                                                </span>
+                                            </button>
+
+                                            <button
+                                                onClick={() => setQuickTagFilter('stock')}
+                                                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all shrink-0 flex items-center gap-1 ${
+                                                    quickTagFilter === 'stock'
+                                                        ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400'
+                                                        : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+                                                }`}
+                                            >
+                                                <span>📦 งานสต๊อก</span>
+                                                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${quickTagFilter === 'stock' ? 'bg-black/20 text-white' : 'bg-indigo-200 text-indigo-900'}`}>
+                                                    {pendingStockCount}
+                                                </span>
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
+                                            {/* Order Date Sorting Selector */}
+                                            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                                <span className="text-[11px] font-extrabold text-slate-500 pl-1">เรียง:</span>
+                                                <select
+                                                    value={orderDateSort}
+                                                    onChange={(e) => setOrderDateSort(e.target.value)}
+                                                    className="bg-white text-xs font-extrabold text-indigo-800 rounded-lg px-2 py-1 outline-none border border-slate-200 cursor-pointer shadow-sm"
+                                                >
+                                                    <option value="asc">🕒 สั่งก่อน➔หลัง</option>
+                                                    <option value="desc">🕒 สั่งหลัง➔ก่อน</option>
+                                                    <option value="dueDate">📅 วันที่ต้องการใช้</option>
+                                                </select>
+                                            </div>
+
+                                            {/* View Mode Toggle Switch (Card vs Compact Line) */}
+                                            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                                <button
+                                                    onClick={() => setViewMode('card')}
+                                                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 transition-all ${
+                                                        viewMode === 'card' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                                    }`}
+                                                    title="แสดงมุมมองการ์ดรูปใหญ่"
+                                                >
+                                                    <Icon name="layout-grid" size={14} />
+                                                    <span>การ์ด</span>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => setViewMode('compact')}
+                                                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 transition-all ${
+                                                        viewMode === 'compact' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                                    }`}
+                                                    title="แสดงมุมมองย่อ 1 บรรทัด"
+                                                >
+                                                    <Icon name="list" size={14} />
+                                                    <span>อย่างย่อ</span>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
@@ -1114,7 +1176,7 @@
                                     </div>
                                 )}
 
-                                {/* Search Bar & Filter */}
+                                {/* Search Bar & Category Filter */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     <div className="relative flex items-center">
                                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-5 h-5 flex items-center justify-center">
@@ -1140,7 +1202,7 @@
                                 </div>
 
                                 {/* Task Cards List */}
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     {filteredTasks.length === 0 ? (
                                         <div className="text-center py-12 saas-card rounded-2xl bg-white border-2 border-dashed border-slate-300 p-6">
                                             <Icon name="inbox" size={48} className="text-slate-300 mx-auto mb-3" />
@@ -1149,9 +1211,97 @@
                                     ) : (
                                         filteredTasks.map(task => {
                                             const badge = getStatusBadge(task.status);
-                                            // Dynamic Match: Look up the image link from Master Catalog by productName
                                             const taskImage = getProductImage(task.productName, task.imageUrl || task.imgUrl || '');
 
+                                            // Render Compact View (มุมมองอย่างย่อ 1 บรรทัด - Date Only)
+                                            if (taskStatusFilter === 'pending' && viewMode === 'compact') {
+                                                return (
+                                                    <div 
+                                                        key={task.id}
+                                                        className={`p-3 rounded-2xl border-2 transition-all flex items-center justify-between gap-3 saas-card ${
+                                                            task.isUrgent ? 'border-red-500 bg-red-50/60' : 'border-slate-300 bg-white'
+                                                        }`}
+                                                    >
+                                                        {/* Thumbnail Preview */}
+                                                        {taskImage ? (
+                                                            <div 
+                                                                onClick={() => setPreviewImg(taskImage)}
+                                                                className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-300 shrink-0 overflow-hidden cursor-pointer hover:opacity-90 shadow-sm"
+                                                            >
+                                                                <img src={taskImage} loading="lazy" referrerPolicy="no-referrer" className="w-full h-full object-cover" alt={task.productName} />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400">
+                                                                <Icon name="package" size={18} />
+                                                            </div>
+                                                        )}
+
+                                                        {/* Task Summary Text (1 Line layout) */}
+                                                        <div className="min-w-0 flex-1 grid grid-cols-1 md:grid-cols-3 items-center gap-1.5">
+                                                            {/* Product Name & Category */}
+                                                            <div className="min-w-0 flex items-center gap-2">
+                                                                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-800 text-white shrink-0">
+                                                                    {task.type || 'สร้อย'}
+                                                                </span>
+                                                                <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
+                                                                    {task.productName}
+                                                                </h3>
+                                                            </div>
+
+                                                            {/* Badges, Quantity, Order Date (Date Only) & Due Date */}
+                                                            <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                                                                <span className="font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-lg shrink-0">
+                                                                    จำนวน {task.quantity} ชิ้น
+                                                                </span>
+                                                                <span className="text-[10px] font-extrabold text-slate-700 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded shrink-0" title="วันสั่งงาน">
+                                                                    🕒 สั่ง: {formatDateOnly(task.timestamp)}
+                                                                </span>
+                                                                {task.dueDate && (
+                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                                                                        📅 ใช้: {task.dueDate}
+                                                                    </span>
+                                                                )}
+                                                                {task.isUrgent && (
+                                                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-red-600 text-white shrink-0">
+                                                                        🔥 ด่วน
+                                                                    </span>
+                                                                )}
+                                                                {task.isStock && (
+                                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 shrink-0">
+                                                                        📦 สต๊อก
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Memo */}
+                                                            <p className="text-xs text-slate-600 font-bold truncate italic">
+                                                                {task.memo ? `📝 ${task.memo}` : '-'}
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Action & Delete Buttons */}
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <button
+                                                                onClick={() => handleStatusChange(task.id, 'doing')}
+                                                                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-1 active:scale-95 transition-all"
+                                                            >
+                                                                <Icon name="play-circle" size={14} />
+                                                                <span className="hidden sm:inline">เริ่มทำ</span>
+                                                            </button>
+
+                                                            <button 
+                                                                onClick={() => setTaskToDelete(task)}
+                                                                className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                                                                title="ลบงานนี้"
+                                                            >
+                                                                <Icon name="trash-2" size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Render Full Card View (มุมมองการ์ดใหญ่ Default)
                                             return (
                                                 <div 
                                                     key={task.id} 
@@ -1288,7 +1438,7 @@
                             </div>
                         )}
 
-                        {/* TAB 2: Create Order */}
+                        {/* Active Tab 2: Create Order */}
                         {activeTab === 'create' && (
                             <div className="saas-card p-5 sm:p-6 rounded-2xl bg-white space-y-5 animate-pop border-2 border-slate-300">
                                 <h2 className="text-base sm:text-lg font-bold text-slate-900 border-b pb-3 flex items-center gap-2">
@@ -1490,7 +1640,7 @@
                             </div>
                         )}
 
-                        {/* TAB 3: Shared Product Catalog */}
+                        {/* Active Tab 3: Products */}
                         {activeTab === 'products' && (
                             <div className="space-y-4 animate-pop">
                                 {/* Search Box */}
@@ -1668,6 +1818,45 @@
                             </div>
                         )}
                     </main>
+
+                    {/* Floating Action Button (FAB) Speed Dial for Mobile screens (sm:hidden) */}
+                    <div className="sm:hidden fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2.5 pointer-events-auto">
+                        {/* Speed Dial Options Menu */}
+                        {isFabOpen && (
+                            <div className="flex flex-col items-end gap-2 mb-1 animate-pop">
+                                {[
+                                    { id: 'orders', label: '1. คิวงานสั่งทำ', icon: 'clipboard-list', color: 'bg-amber-500 text-white' },
+                                    { id: 'create', label: '2. + สั่งงานใหม่', icon: 'plus-circle', color: 'bg-indigo-600 text-white' },
+                                    { id: 'products', label: '3. ค้นหารูปสินค้า', icon: 'image', color: 'bg-emerald-600 text-white' }
+                                ].map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => {
+                                            setActiveTab(item.id);
+                                            setIsFabOpen(false);
+                                        }}
+                                        className={`px-4 py-2.5 rounded-2xl font-extrabold text-xs flex items-center gap-2.5 shadow-2xl border-2 border-white transition-all active:scale-95 ${item.color} ${
+                                            activeTab === item.id ? 'ring-4 ring-indigo-300 scale-105' : ''
+                                        }`}
+                                    >
+                                        <Icon name={item.icon} size={18} />
+                                        <span>{item.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Main Floating Trigger Button */}
+                        <button
+                            onClick={() => setIsFabOpen(!isFabOpen)}
+                            className={`w-14 h-14 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl border-2 border-indigo-400 active:scale-95 transition-all ${
+                                isFabOpen ? 'rotate-45 bg-red-600 border-red-300' : 'fab-pulse'
+                            }`}
+                            aria-label="Toggle navigation menu"
+                        >
+                            <Icon name={isFabOpen ? "x" : "menu"} size={26} />
+                        </button>
+                    </div>
                 </div>
             );
         };
