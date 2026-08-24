@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tactics & Play Analysis App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    canvas { touch-action: none; }
+    
+    /* Preset color buttons */
+    .color-preset {
+      width: 24px;
+      height: 24px;
+      border-radius: 9999px;
+      cursor: pointer;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      transition: all 0.15s ease;
+    }
+    .color-preset:hover, .color-preset:active {
+      transform: scale(1.18);
+      border-color: rgba(255, 255, 255, 0.9);
+    }
+    
+    /* Active Tool Styling */
+    .tool-btn {
+      transition: all 0.15s ease;
+    }
+    .tool-btn.active {
+      background-color: #059669;
+      border-color: #34d399;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+    /* Phone Rotation Animation for Orientation Warning Overlay */
+    @keyframes rotatePhone {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(-90deg); }
+      75% { transform: rotate(-90deg); }
+      100% { transform: rotate(0deg); }
+    }
+    .animate-rotate-phone {
+      animation: rotatePhone 2.5s infinite ease-in-out;
+    }
+
+    /* Force landscape check styling */
+    @media screen and (max-width: 900px) and (orientation: portrait) {
+      #landscape-enforcer-overlay {
+        display: flex !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-white flex flex-col h-screen overflow-hidden font-sans select-none">
+
+  <!-- Orientation Enforcer Overlay for Mobile Viewports in Portrait Mode -->
+  <div id="landscape-enforcer-overlay" class="fixed inset-0 bg-gray-950/98 z-50 hidden flex-col items-center justify-center text-center p-6 backdrop-blur-md">
+    <div class="bg-gray-900 border border-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm flex flex-col items-center gap-5">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-950/80 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-3xl shadow-lg">
+        <span class="animate-rotate-phone">📱</span>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-emerald-400 mb-1">กรุณาหมุนโทรศัพท์เป็นแนวนอน</h2>
+        <p class="text-xs text-gray-300 leading-relaxed">
+          ระบบบังคับใช้ <span class="text-amber-400 font-semibold">Landscape Mode (แนวนอน)</span> ในมือถือ เพื่อการแสดงผลกระดานแทคติกและวิเคราะห์สนามที่ชัดเจนสมบูรณ์ที่สุด
+        </p>
+      </div>
+      <div class="text-[11px] bg-gray-950 px-3 py-1.5 rounded-full text-gray-400 border border-gray-800 flex items-center gap-1.5">
+        <span>🔄</span> ปลดล็อกการหมุนหน้าจอ (Auto-Rotate) แล้วเอียงเครื่อง
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Header Bar -->
+  <header class="bg-gray-900 border-b border-gray-800 px-3 py-2 flex items-center justify-between gap-2 shadow-md z-20 shrink-0">
+    <div class="flex items-center gap-2">
+      <!-- Mobile Sidebar Toggle Button -->
+      <button id="mobile-sidebar-toggle" onclick="toggleMobileSidebar()" class="md:hidden bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all">
+        <span>⚙️</span> <span class="hidden sm:inline">ตั้งค่า</span>
+      </button>
+
+      <div class="flex items-center gap-1.5">
+        <span class="text-xl">⚽</span>
+        <h1 class="text-sm font-bold bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent hidden sm:block">
+          Tactics & Play Analysis
+        </h1>
+      </div>
+    </div>
+
+    <!-- Mode Tab Navigation Switcher -->
+    <div class="flex bg-gray-950 p-1 rounded-xl border border-gray-800 text-[11px] font-semibold">
+      <button id="tab-board-btn" onclick="switchTab('board')" class="px-3 py-1 rounded-lg bg-emerald-600 text-white shadow transition-all flex items-center gap-1">
+        <span>📋</span> <span class="hidden xs:inline">1.</span> Board
+      </button>
+      <button id="tab-analysis-btn" onclick="switchTab('analysis')" class="px-3 py-1 rounded-lg text-gray-400 hover:text-white transition-all flex items-center gap-1">
+        <span>🔍</span> <span class="hidden xs:inline">2.</span> Analysis
+      </button>
+    </div>
+
+    <!-- Quick Actions Header Buttons -->
+    <div class="flex items-center gap-1.5">
+      <button id="reset-action-btn" onclick="handleResetAction()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1 transition-all">
+        ↻ <span class="hidden sm:inline">รีเซ็ต</span>
+      </button>
+      <button onclick="exportCanvasImage()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all shadow-md shadow-emerald-950">
+        💾 <span class="hidden sm:inline">ส่งออก</span> PNG
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace Layout Area -->
+  <div class="flex flex-1 overflow-hidden relative">
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="mobile-backdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+
+    <!-- Responsive Sidebar Controls Panel -->
+    <aside id="sidebar-drawer" class="fixed md:static inset-y-0 left-0 w-72 md:w-80 bg-gray-900 border-r border-gray-800 p-3.5 overflow-y-auto flex flex-col gap-4 text-xs z-30 transition-transform duration-200 transform -translate-x-full md:translate-x-0 shadow-2xl md:shadow-none">
+      
+      <!-- Mobile Drawer Close Button Header -->
+      <div class="flex md:hidden items-center justify-between pb-2 border-b border-gray-800">
+        <span class="font-bold text-gray-300 flex items-center gap-1.5"><span>⚙️</span> แผงควบคุมตั้งค่า</span>
+        <button onclick="toggleMobileSidebar(false)" class="text-gray-400 hover:text-white bg-gray-800 p-1 rounded-lg text-xs">✕ ปิด</button>
+      </div>
+
+      <!-- Shared Tactical Drawing Tools Palette Panel -->
+      <div id="drawing-palette" class="bg-gray-950/90 p-3 rounded-xl border border-gray-800 flex flex-col gap-2">
+        <h3 class="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+          <span class="flex items-center gap-1"><span>🖌️</span> เครื่องมือวาดแทคติก</span>
+          <button onclick="setAnalysisTool('none')" id="tool-none" class="text-[10px] text-gray-400 hover:text-white bg-gray-800 px-2 py-0.5 rounded">โหมดเลือก/ลาก</button>
+        </h3>
+        
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="tool-spotlight" onclick="setAnalysisTool('spotlight')" class="tool-btn border border-gray-700 bg-gray-800 p-1.5 rounded-lg text-[11px] flex items-center justify-center gap-1 font-semibold">
+            <span>💡</span> Spotlight
+          </button>
+          <button id="tool-curved" onclick="setAnalysisTool('curved')" class="tool-btn border border-gray-700 bg-gray-800 p-1.5 rounded-lg text-[11px] flex items-center justify-center gap-1 font-semibold">
+            <span>↪</span> บอลโค้ง
+          </button>
+          <button id="tool-arrow" onclick="setAnalysisTool('arrow')" class="tool-btn border border-gray-700 bg-gray-800 p-1.5 rounded-lg text-[11px] flex items-center justify-center gap-1 font-semibold">
+            <span>➔</span> เส้นตรง/ลูกศร
+          </button>
+          <button id="tool-polygon" onclick="setAnalysisTool('polygon')" class="tool-btn border border-gray-700 bg-gray-800 p-1.5 rounded-lg text-[11px] flex items-center justify-center gap-1 font-semibold">
+            <span>⬡</span> กรอบพื้นที่
+          </button>
+        </div>
+
+        <!-- Tool Properties Selectors -->
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-800">
+          <div>
+            <label class="block text-gray-400 mb-0.5 text-[10px]">รูปแบบเส้น</label>
+            <select id="line-style" onchange="redrawActiveCanvas()" class="w-full bg-gray-800 border border-gray-700 rounded p-1 text-white text-[11px]">
+              <option value="solid">เส้นทึบ (Solid)</option>
+              <option value="dashed">เส้นประ (Dashed)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-0.5 text-[10px]">หัวลูกศร</label>
+            <select id="arrow-head-option" onchange="redrawActiveCanvas()" class="w-full bg-gray-800 border border-gray-700 rounded p-1 text-white text-[11px]">
+              <option value="head">มีหัวลูกศร</option>
+              <option value="none">ไม่มีหัว (เส้นเปล่า)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Color & Opacity Slider Controls -->
+        <div class="flex items-center justify-between pt-1 border-t border-gray-800">
+          <div class="flex items-center gap-1.5">
+            <input type="color" id="tool-color" value="#facc15" onchange="updateToolColorHex()" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+            <span id="tool-hex" class="text-gray-300 font-mono text-[10px]">#FACC15</span>
+          </div>
+          <div class="flex items-center gap-1 text-[10px]">
+            <span class="text-gray-400">โปร่งแสง:</span>
+            <input type="range" id="tool-opacity" min="0.1" max="1.0" step="0.05" value="0.75" oninput="redrawActiveCanvas()" class="w-16 accent-emerald-500">
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PANEL 1: PLAYER BOARD CONTROLS ================= -->
+      <div id="controls-board" class="flex flex-col gap-3.5">
+        <h2 class="text-[11px] font-bold text-emerald-400 border-b border-gray-800 pb-1.5 uppercase tracking-wider flex items-center justify-between">
+          <span class="flex items-center gap-1.5"><span>⚙️</span> ตั้งค่ากระดานจัดทัพ</span>
+        </h2>
+
+        <!-- Undo / Redo for Board -->
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="undoBoard()" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 p-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all">
+            ↩️ Undo
+          </button>
+          <button onclick="redoBoard()" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 p-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all">
+            ↪️ Redo
+          </button>
+        </div>
+
+        <!-- Save / Load Tactical Board LocalStorage Section -->
+        <div class="border-t border-gray-800 pt-2.5 flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-amber-400 flex items-center gap-1.5 text-[11px]">
+              <span>💾</span> บันทึก / โหลดกระดานแทคติก
+            </span>
+            <span id="save-status-msg" class="text-[10px] text-emerald-400 font-semibold transition-opacity opacity-0">บันทึกสำเร็จ!</span>
+          </div>
+          
+          <div class="flex items-center gap-1.5">
+            <input type="text" id="save-board-name" placeholder="ตั้งชื่อกระดาน (เช่น 4-3-3 บุกหนัก)" class="flex-1 bg-gray-800 border border-gray-700 rounded p-1.5 text-white text-[11px] placeholder-gray-500">
+            <button onclick="saveBoardToStorage()" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap active:scale-95 transition-all shadow-md shadow-amber-950">
+              💾 บันทึก
+            </button>
+          </div>
+
+          <div class="flex flex-col gap-1 mt-1">
+            <span class="text-[10px] text-gray-400 font-medium">กระดานที่บันทึกไว้ในระบบ:</span>
+            <div id="saved-boards-list" class="max-h-36 overflow-y-auto flex flex-col gap-1 pr-1">
+              <!-- Dynamic List populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Team Mode Option -->
+        <div>
+          <label class="block text-gray-300 mb-1 font-medium text-[11px]">โหมดจำนวนทีม</label>
+          <select id="team-mode" onchange="updateBoardMode()" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-1.5 text-white text-[11px]">
+            <option value="single">Single Team (1 ทีม - ฝ่ายบุก/ฝึกซ้อม)</option>
+            <option value="duel" selected>Duel Team (2 ทีม - ประกบคู่ 11v11)</option>
+          </select>
+        </div>
+
+        <!-- Player Token Size Selector Option -->
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-gray-300 mb-1 font-medium text-[11px]">ขนาดหมากผู้เล่น</label>
+            <select id="player-token-size" onchange="drawBoard()" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-1.5 text-white text-[11px]">
+              <option value="normal" selected>ขนาดปกติ (Normal)</option>
+              <option value="small">ขนาดเล็ก (Small - 50%)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-1 font-medium text-[11px]">แนวสนาม</label>
+            <select id="pitch-orientation" onchange="updateOrientation()" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-1.5 text-white text-[11px]">
+              <option value="horizontal" selected>แนวนอน</option>
+              <option value="vertical">แนวตั้ง</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Pitch Surface Pattern & Football Toggle Checkbox -->
+        <div class="grid grid-cols-2 gap-2">
+          <div class="flex items-center gap-1.5 bg-gray-950 p-1.5 rounded-lg border border-gray-800">
+            <input type="checkbox" id="show-ball-check" checked onchange="drawBoard()" class="w-3.5 h-3.5 text-emerald-600 rounded accent-emerald-500 cursor-pointer">
+            <label for="show-ball-check" class="text-gray-200 font-medium text-[11px] cursor-pointer">⚽ บอลในสนาม</label>
+          </div>
+          <div>
+            <select id="pitch-theme" onchange="drawBoard()" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-1.5 text-white text-[11px]">
+              <option value="grass" selected>หญ้าลายสลับ (Grass)</option>
+              <option value="classic">หญ้าสีเรียบ (Classic)</option>
+              <option value="dark">แทคติกธีมเข้ม (Dark)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Team A Settings -->
+        <div class="border-t border-gray-800 pt-2.5 flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-gray-200 flex items-center gap-1.5 text-[11px]">
+              <span id="teamA-badge" class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>
+              ทีม A (Home / ทีมบุก)
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-gray-400 mb-0.5 text-[10px]">แผนการเล่น</label>
+              <select id="teamA-formation" onchange="applyFormation('A', this.value)" class="w-full bg-gray-800 border border-gray-700 rounded p-1 text-white text-[11px]">
+                <option value="433" selected>4-3-3</option>
+                <option value="4231">4-2-3-1</option>
+                <option value="442">4-4-2</option>
+                <option value="352">3-5-2</option>
+                <option value="343">3-4-3</option>
+                <option value="532">5-3-2</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-gray-400 mb-0.5 text-[10px]">สีเสื้อทีม A</label>
+              <div class="flex items-center gap-1.5">
+                <input type="color" id="teamA-color" value="#ef4444" onchange="setTeamColor('A', this.value)" class="w-5 h-5 rounded cursor-pointer bg-transparent border-0">
+                <span id="teamA-hex" class="text-gray-300 font-mono text-[10px]">#EF4444</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Team B Settings -->
+        <div id="teamB-container" class="border-t border-gray-800 pt-2.5 flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-gray-200 flex items-center gap-1.5 text-[11px]">
+              <span id="teamB-badge" class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span>
+              ทีม B (Away / ทีมรับ)
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-gray-400 mb-0.5 text-[10px]">แผนการเล่น</label>
+              <select id="teamB-formation" onchange="applyFormation('B', this.value)" class="w-full bg-gray-800 border border-gray-700 rounded p-1 text-white text-[11px]">
+                <option value="433">4-3-3</option>
+                <option value="4231" selected>4-2-3-1</option>
+                <option value="442">4-4-2</option>
+                <option value="352">3-5-2</option>
+                <option value="343">3-4-3</option>
+                <option value="532">5-3-2</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-gray-400 mb-0.5 text-[10px]">สีเสื้อทีม B</label>
+              <div class="flex items-center gap-1.5">
+                <input type="color" id="teamB-color" value="#2563eb" onchange="setTeamColor('B', this.value)" class="w-5 h-5 rounded cursor-pointer bg-transparent border-0">
+                <span id="teamB-hex" class="text-gray-300 font-mono text-[10px]">#2563EB</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Player Inspector Panel -->
+        <div id="player-inspector" class="border-t border-gray-800 pt-2.5 flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-gray-300 flex items-center gap-1 text-[11px]">
+              <span>👤</span> แก้ไขข้อมูลหมากที่เลือก
+            </h3>
+            <span class="text-[10px] text-rose-400">กด Del เพื่อลบ</span>
+          </div>
+          <div id="no-player-selected" class="text-gray-500 italic p-1.5 bg-gray-950 rounded border border-gray-800 text-center text-[10px]">
+            แตะหมากบนสนามเพื่อแก้ไข/ลบ
+          </div>
+          <div id="player-edit-form" class="hidden flex-col gap-1.5">
+            <div class="flex items-center gap-2">
+              <div class="w-20">
+                <label class="block text-gray-400 mb-0.5 text-[10px]">เบอร์</label>
+                <input type="text" id="edit-player-num" oninput="updateSelectedPlayer()" class="w-full bg-gray-800 border border-gray-700 rounded p-1 text-white font-bold text-center text-xs">
+              </div>
+              <div class="w-20">
+                <label class="block text-gray-400 mb-0.5 text-[10px]">ตำแหน่ง</label>
+                <input type="text" id="edit-player-role" oninput="updateSelectedPlayer()" class="w-full bg-gray-800 border border-gray-700 rounded p-1 text-white text-center text-xs">
+              </div>
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-0.5 text-[10px]">ชื่อนักเตะ</label>
+              <input type="text" id="edit-player-name" oninput="updateSelectedPlayer()" placeholder="เช่น Reece James" class="w-full bg-gray-800 border border-gray-700 rounded p-1 text-white text-xs">
+            </div>
+            <button onclick="deleteSelectedPlayer()" class="w-full bg-rose-900/80 hover:bg-rose-800 border border-rose-700 text-rose-200 p-1 rounded text-xs font-semibold mt-1 active:scale-95 transition-all">
+              🗑️ ลบหมากนี้ (Delete)
+            </button>
+          </div>
+
+          <!-- Restore Deleted Players Button -->
+          <button id="restore-player-btn" onclick="restoreDeletedPlayer()" class="w-full bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800 text-emerald-200 p-1.5 rounded-lg text-xs font-semibold mt-1 transition-all flex items-center justify-center gap-1 active:scale-95">
+            ♻️ เรียกคืนหมากที่ลบ (<span id="deleted-count">0</span>)
+          </button>
+        </div>
+
+        <!-- Board Clear Annotations Action Button -->
+        <div class="border-t border-gray-800 pt-2">
+          <button onclick="clearBoardAnnotations()" class="w-full bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-200 p-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 active:scale-95">
+            🗑️ ล้างการวาดบนกระดาน
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= PANEL 2: PLAY ANALYSIS CONTROLS ================= -->
+      <div id="controls-analysis" class="hidden flex-col gap-3.5">
+        <h2 class="text-[11px] font-bold text-amber-400 border-b border-gray-800 pb-1.5 uppercase tracking-wider flex items-center gap-1.5">
+          <span>⚙️</span> เครื่องมือวิเคราะห์ภาพ
+        </h2>
+
+        <!-- Image Upload Input Button -->
+        <div>
+          <label class="block text-gray-300 mb-1 font-medium text-[11px]">อัปโหลดภาพเหตุการณ์ฟุตบอล</label>
+          <input type="file" id="image-loader" accept="image/*" onchange="handleImageUpload(event)" class="w-full text-[11px] text-gray-300 bg-gray-800 border border-gray-700 rounded-lg p-1.5 cursor-pointer file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-emerald-600 file:text-white">
+        </div>
+
+        <!-- Undo / Redo Actions for Analysis Mode -->
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-800">
+          <button onclick="undoAnnotation()" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 p-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all">
+            ↩️ Undo
+          </button>
+          <button onclick="redoAnnotation()" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 p-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all">
+            ↪️ Redo
+          </button>
+        </div>
+
+        <!-- Clear Analysis Annotations Button -->
+        <div class="pt-1 border-t border-gray-800">
+          <button onclick="clearAllAnnotations()" class="w-full bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-200 p-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 active:scale-95">
+            🗑️ ล้างภาพวาดวิเคราะห์ทั้งหมด
+          </button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Canvas Main Display Area -->
+    <main class="flex-1 bg-gray-950 flex items-center justify-center p-2 relative overflow-hidden">
+      <div class="relative shadow-2xl rounded-xl overflow-hidden border border-gray-800 bg-gray-900 flex items-center justify-center max-w-full max-h-full">
+        <canvas id="main-canvas" width="960" height="600" class="max-w-full max-h-full object-contain"></canvas>
+      </div>
+
+      <!-- Quick Floating Toolbar for Mobile Screens -->
+      <div class="md:hidden fixed bottom-3 left-1/2 transform -translate-x-1/2 bg-gray-900/90 border border-gray-700 backdrop-blur-md px-3 py-1.5 rounded-full shadow-2xl flex items-center gap-2 z-20">
+        <button onclick="setAnalysisTool('none')" id="m-tool-none" class="p-1.5 rounded-full text-xs hover:bg-gray-800 text-gray-300">🤏</button>
+        <div class="w-px h-4 bg-gray-700"></div>
+        <button onclick="setAnalysisTool('spotlight')" id="m-tool-spotlight" class="p-1.5 rounded-full text-xs hover:bg-gray-800 text-amber-400">💡</button>
+        <button onclick="setAnalysisTool('curved')" id="m-tool-curved" class="p-1.5 rounded-full text-xs hover:bg-gray-800 text-emerald-400">↪</button>
+        <button onclick="setAnalysisTool('arrow')" id="m-tool-arrow" class="p-1.5 rounded-full text-xs hover:bg-gray-800 text-sky-400">➔</button>
+        <button onclick="setAnalysisTool('polygon')" id="m-tool-polygon" class="p-1.5 rounded-full text-xs hover:bg-gray-800 text-purple-400">⬡</button>
+      </div>
+    </main>
+
+  </div>
+
+  <script>
+    // --- APP GLOBAL STATE variables ---
+    let currentTab = 'board'; // 'board' หรือ 'analysis'
+    const canvas = document.getElementById('main-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- BOARD STATE ---
+    let boardMode = 'duel'; // 'single' หรือ 'duel'
+    let orientation = 'horizontal';
+    let selectedPlayerId = null;
+    let draggedPlayer = null;
+    let isDraggingBall = false;
+    let currentLoadedBoardName = '';
+
+    let ball = { x: 0.5, y: 0.5 };
+
+    // Board Undo/Redo State Stack & Deleted Players Recovery Stack
+    let boardHistory = [];
+    let boardRedoStack = [];
+    let deletedPlayersStack = [];
+
+    // Formations Database (ST positions centered on Y-axis at 0.50, shifted back along X-axis to 0.42/0.58)
+    const FORMATIONS = {
+      '433': [
+        { x: 0.06, y: 0.50, num: '1', role: 'GK' },
+        { x: 0.22, y: 0.15, num: '2', role: 'RB' },
+        { x: 0.18, y: 0.38, num: '4', role: 'CB' },
+        { x: 0.18, y: 0.62, num: '5', role: 'CB' },
+        { x: 0.22, y: 0.85, num: '3', role: 'LB' },
+        { x: 0.32, y: 0.50, num: '6', role: 'DM' },
+        { x: 0.38, y: 0.32, num: '8', role: 'CM' },
+        { x: 0.38, y: 0.68, num: '10', role: 'CM' },
+        { x: 0.46, y: 0.18, num: '7', role: 'RW' },
+        { x: 0.42, y: 0.50, num: '9', role: 'ST' },
+        { x: 0.46, y: 0.82, num: '11', role: 'LW' }
+      ],
+      '4231': [
+        { x: 0.06, y: 0.50, num: '1', role: 'GK' },
+        { x: 0.22, y: 0.15, num: '2', role: 'RB' },
+        { x: 0.18, y: 0.38, num: '4', role: 'CB' },
+        { x: 0.18, y: 0.62, num: '5', role: 'CB' },
+        { x: 0.22, y: 0.85, num: '3', role: 'LB' },
+        { x: 0.30, y: 0.38, num: '6', role: 'DM' },
+        { x: 0.30, y: 0.62, num: '8', role: 'DM' },
+        { x: 0.40, y: 0.20, num: '7', role: 'RAM' },
+        { x: 0.38, y: 0.50, num: '10', role: 'CAM' },
+        { x: 0.40, y: 0.80, num: '11', role: 'LAM' },
+        { x: 0.42, y: 0.50, num: '9', role: 'ST' }
+      ],
+      '442': [
+        { x: 0.06, y: 0.50, num: '1', role: 'GK' },
+        { x: 0.22, y: 0.15, num: '2', role: 'RB' },
+        { x: 0.18, y: 0.38, num: '4', role: 'CB' },
+        { x: 0.18, y: 0.62, num: '5', role: 'CB' },
+        { x: 0.22, y: 0.85, num: '3', role: 'LB' },
+        { x: 0.35, y: 0.18, num: '7', role: 'RM' },
+        { x: 0.32, y: 0.38, num: '6', role: 'CM' },
+        { x: 0.32, y: 0.62, num: '8', role: 'CM' },
+        { x: 0.35, y: 0.82, num: '11', role: 'LM' },
+        { x: 0.42, y: 0.38, num: '9', role: 'ST' },
+        { x: 0.42, y: 0.62, num: '10', role: 'ST' }
+      ],
+      '352': [
+        { x: 0.06, y: 0.50, num: '1', role: 'GK' },
+        { x: 0.18, y: 0.25, num: '3', role: 'CB' },
+        { x: 0.16, y: 0.50, num: '4', role: 'CB' },
+        { x: 0.18, y: 0.75, num: '5', role: 'CB' },
+        { x: 0.32, y: 0.12, num: '2', role: 'RWB' },
+        { x: 0.28, y: 0.35, num: '6', role: 'DM' },
+        { x: 0.36, y: 0.50, num: '10', role: 'AM' },
+        { x: 0.28, y: 0.65, num: '8', role: 'DM' },
+        { x: 0.32, y: 0.88, num: '11', role: 'LWB' },
+        { x: 0.42, y: 0.38, num: '9', role: 'ST' },
+        { x: 0.42, y: 0.62, num: '7', role: 'ST' }
+      ],
+      '343': [
+        { x: 0.06, y: 0.50, num: '1', role: 'GK' },
+        { x: 0.18, y: 0.25, num: '3', role: 'CB' },
+        { x: 0.16, y: 0.50, num: '4', role: 'CB' },
+        { x: 0.18, y: 0.75, num: '5', role: 'CB' },
+        { x: 0.32, y: 0.15, num: '2', role: 'RWB' },
+        { x: 0.30, y: 0.38, num: '6', role: 'CM' },
+        { x: 0.30, y: 0.62, num: '8', role: 'CM' },
+        { x: 0.32, y: 0.85, num: '11', role: 'LWB' },
+        { x: 0.45, y: 0.20, num: '7', role: 'RW' },
+        { x: 0.42, y: 0.50, num: '9', role: 'ST' },
+        { x: 0.45, y: 0.80, num: '10', role: 'LW' }
+      ],
+      '532': [
+        { x: 0.06, y: 0.50, num: '1', role: 'GK' },
+        { x: 0.20, y: 0.12, num: '2', role: 'RWB' },
+        { x: 0.16, y: 0.30, num: '3', role: 'CB' },
+        { x: 0.15, y: 0.50, num: '4', role: 'CB' },
+        { x: 0.16, y: 0.70, num: '5', role: 'CB' },
+        { x: 0.20, y: 0.88, num: '11', role: 'LWB' },
+        { x: 0.30, y: 0.30, num: '6', role: 'CM' },
+        { x: 0.28, y: 0.50, num: '8', role: 'DM' },
+        { x: 0.30, y: 0.70, num: '10', role: 'CM' },
+        { x: 0.42, y: 0.38, num: '9', role: 'ST' },
+        { x: 0.42, y: 0.62, num: '7', role: 'ST' }
+      ]
+    };
+
+    let players = [];
+
+    // --- ANNOTATION STATE ---
+    let currentTool = 'none';
+    let boardAnnotations = [];
+    let analysisAnnotations = [];
+    let redoStack = [];
+    let selectedAnnotationIndex = -1;
+
+    let isDrawingAnnotation = false;
+    let currentDrawing = null;
+    let currentPolygonPoints = [];
+    let curvedStartPoint = null;
+    let mouseHoverPos = { x: 0, y: 0 };
+    let draggedControlPoint = null;
+    let uploadedImage = null;
+
+    // Toggle Mobile Sidebar Drawer Function
+    function toggleMobileSidebar(forceState) {
+      const drawer = document.getElementById('sidebar-drawer');
+      const backdrop = document.getElementById('mobile-backdrop');
+      const isHidden = drawer.classList.contains('-translate-x-full');
+      const shouldOpen = forceState !== undefined ? forceState : isHidden;
+
+      if (shouldOpen) {
+        drawer.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        drawer.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    function getActiveAnnotations() {
+      return currentTab === 'board' ? boardAnnotations : analysisAnnotations;
+    }
+
+    // Get touch or mouse position scaled relative to canvas grid
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function saveBoardState() {
+      boardHistory.push({
+        players: JSON.parse(JSON.stringify(players)),
+        annotations: JSON.parse(JSON.stringify(boardAnnotations)),
+        ball: { ...ball }
+      });
+      boardRedoStack = [];
+      if (boardHistory.length > 35) boardHistory.shift();
+    }
+
+    function undoBoard() {
+      if (boardHistory.length > 0) {
+        boardRedoStack.push({
+          players: JSON.parse(JSON.stringify(players)),
+          annotations: JSON.parse(JSON.stringify(boardAnnotations)),
+          ball: { ...ball }
+        });
+        const state = boardHistory.pop();
+        players = state.players;
+        boardAnnotations = state.annotations;
+        ball = state.ball;
+        selectedPlayerId = null;
+        selectedAnnotationIndex = -1;
+        updateInspectorUI();
+        drawBoard();
+      }
+    }
+
+    function redoBoard() {
+      if (boardRedoStack.length > 0) {
+        boardHistory.push({
+          players: JSON.parse(JSON.stringify(players)),
+          annotations: JSON.parse(JSON.stringify(boardAnnotations)),
+          ball: { ...ball }
+        });
+        const state = boardRedoStack.pop();
+        players = state.players;
+        boardAnnotations = state.annotations;
+        ball = state.ball;
+        drawBoard();
+      }
+    }
+
+    // ================= LOCAL STORAGE SAVE / LOAD BOARD LOGIC =================
+    function saveBoardToStorage() {
+      const nameInput = document.getElementById('save-board-name');
+      let boardName = nameInput.value.trim();
+      if (!boardName) {
+        const d = new Date();
+        boardName = `แผน ${d.toLocaleDateString('th-TH')} ${d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
+      }
+
+      currentLoadedBoardName = boardName;
+
+      const boardData = {
+        id: 'board_' + Date.now(),
+        name: boardName,
+        savedAt: new Date().toLocaleDateString('th-TH') + ' ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+        boardMode: boardMode,
+        orientation: orientation,
+        pitchTheme: document.getElementById('pitch-theme').value,
+        tokenSize: document.getElementById('player-token-size').value,
+        showBall: document.getElementById('show-ball-check').checked,
+        teamAColor: document.getElementById('teamA-color').value,
+        teamBColor: document.getElementById('teamB-color').value,
+        teamAFormation: document.getElementById('teamA-formation').value,
+        teamBFormation: document.getElementById('teamB-formation').value,
+        players: JSON.parse(JSON.stringify(players)),
+        boardAnnotations: JSON.parse(JSON.stringify(boardAnnotations)),
+        ball: { ...ball }
+      };
+
+      let savedBoards = getSavedBoardsFromStorage();
+      savedBoards.unshift(boardData); // add to top
+      localStorage.setItem('tactics_saved_boards', JSON.stringify(savedBoards));
+
+      showSaveStatus('บันทึกสำเร็จ!');
+      renderSavedBoardsList();
+    }
+
+    function getSavedBoardsFromStorage() {
+      try {
+        const raw = localStorage.getItem('tactics_saved_boards');
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function renderSavedBoardsList() {
+      const container = document.getElementById('saved-boards-list');
+      if (!container) return;
+
+      const boards = getSavedBoardsFromStorage();
+      if (boards.length === 0) {
+        container.innerHTML = '<div class="text-[10px] text-gray-500 italic p-2 bg-gray-950 rounded border border-gray-800/60 text-center">ยังไม่มีกระดานที่บันทึกไว้</div>';
+        return;
+      }
+
+      container.innerHTML = boards.map(b => `
+        <div class="bg-gray-950 border border-gray-800 p-1.5 rounded-lg flex items-center justify-between gap-1 hover:border-gray-700 transition-all">
+          <div class="flex-1 min-w-0 cursor-pointer" onclick="loadBoardFromStorage('${b.id}')">
+            <div class="text-[11px] font-semibold text-emerald-400 truncate">${escapeHtml(b.name)}</div>
+            <div class="text-[9px] text-gray-400 flex items-center gap-1">
+              <span>📅 ${b.savedAt}</span>
+              <span class="text-amber-300">(${b.boardMode === 'single' ? '1 ทีม' : '2 ทีม'})</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button onclick="loadBoardFromStorage('${b.id}')" class="bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 border border-emerald-700/60 px-2 py-0.5 rounded text-[10px] font-medium active:scale-95 transition-all">
+              โหลด
+            </button>
+            <button onclick="deleteBoardFromStorage('${b.id}')" class="bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/60 px-1.5 py-0.5 rounded text-[10px] active:scale-95 transition-all" title="ลบกระดานนี้">
+              🗑️
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function loadBoardFromStorage(boardId) {
+      const boards = getSavedBoardsFromStorage();
+      const b = boards.find(item => item.id === boardId);
+      if (!b) return;
+
+      saveBoardState(); // Push to undo stack before loading
+
+      // Restore board variables
+      currentLoadedBoardName = b.name || '';
+      document.getElementById('save-board-name').value = b.name || '';
+      boardMode = b.boardMode || 'duel';
+      orientation = b.orientation || 'horizontal';
+      players = JSON.parse(JSON.stringify(b.players || []));
+      boardAnnotations = JSON.parse(JSON.stringify(b.boardAnnotations || []));
+      ball = b.ball ? { ...b.ball } : { x: 0.5, y: 0.5 };
+
+      // Restore Form Controls
+      document.getElementById('team-mode').value = boardMode;
+      document.getElementById('pitch-orientation').value = orientation;
+      if (b.pitchTheme) document.getElementById('pitch-theme').value = b.pitchTheme;
+      if (b.tokenSize) document.getElementById('player-token-size').value = b.tokenSize;
+      if (b.showBall !== undefined) document.getElementById('show-ball-check').checked = b.showBall;
+
+      if (b.teamAColor) setTeamColor('A', b.teamAColor);
+      if (b.teamBColor) setTeamColor('B', b.teamBColor);
+      if (b.teamAFormation) document.getElementById('teamA-formation').value = b.teamAFormation;
+      if (b.teamBFormation) document.getElementById('teamB-formation').value = b.teamBFormation;
+
+      // Update Canvas Aspect Ratio / Dimensions
+      if (orientation === 'vertical') {
+        canvas.width = 600;
+        canvas.height = 800;
+      } else {
+        canvas.width = 960;
+        canvas.height = 600;
+      }
+
+      updateBoardModeUI();
+
+      selectedPlayerId = null;
+      selectedAnnotationIndex = -1;
+      updateInspectorUI();
+
+      drawBoard();
+      showSaveStatus('โหลดกระดานสำเร็จ!');
+    }
+
+    function deleteBoardFromStorage(boardId) {
+      let boards = getSavedBoardsFromStorage();
+      boards = boards.filter(item => item.id !== boardId);
+      localStorage.setItem('tactics_saved_boards', JSON.stringify(boards));
+      renderSavedBoardsList();
+      showSaveStatus('ลบเรียบร้อย');
+    }
+
+    function restoreDeletedPlayer() {
+      if (deletedPlayersStack.length === 0) {
+        showSaveStatus('ไม่มีหมากที่ถูกลบ');
+        return;
+      }
+      saveBoardState();
+      const restoredPlayer = deletedPlayersStack.pop();
+      players.push(restoredPlayer);
+      selectedPlayerId = restoredPlayer.id;
+      updateInspectorUI();
+      drawBoard();
+      updateRestoreButtonUI();
+      showSaveStatus(`เรียกคืนหมาก #${restoredPlayer.num} สำเร็จ!`);
+    }
+
+    function updateRestoreButtonUI() {
+      const countEl = document.getElementById('deleted-count');
+      if (countEl) countEl.innerText = deletedPlayersStack.length;
+    }
+
+    function showSaveStatus(msg) {
+      const el = document.getElementById('save-status-msg');
+      if (!el) return;
+      el.innerText = msg;
+      el.classList.remove('opacity-0');
+      setTimeout(() => {
+        el.classList.add('opacity-0');
+      }, 2000);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+
+      const boardBtn = document.getElementById('tab-board-btn');
+      const analysisBtn = document.getElementById('tab-analysis-btn');
+      const boardControls = document.getElementById('controls-board');
+      const analysisControls = document.getElementById('controls-analysis');
+
+      selectedAnnotationIndex = -1;
+
+      if (tab === 'board') {
+        boardBtn.className = 'px-3 py-1 rounded-lg bg-emerald-600 text-white shadow transition-all flex items-center gap-1 font-semibold';
+        analysisBtn.className = 'px-3 py-1 rounded-lg text-gray-400 hover:text-white transition-all flex items-center gap-1 font-semibold';
+        boardControls.classList.remove('hidden');
+        analysisControls.classList.add('hidden');
+        drawBoard();
+      } else {
+        analysisBtn.className = 'px-3 py-1 rounded-lg bg-emerald-600 text-white shadow transition-all flex items-center gap-1 font-semibold';
+        boardBtn.className = 'px-3 py-1 rounded-lg text-gray-400 hover:text-white transition-all flex items-center gap-1 font-semibold';
+        analysisControls.classList.remove('hidden');
+        boardControls.classList.add('hidden');
+        redrawAnalysis();
+      }
+      
+      toggleMobileSidebar(false);
+    }
+
+    function setAnalysisTool(tool) {
+      currentTool = tool;
+      currentPolygonPoints = [];
+      curvedStartPoint = null;
+      selectedAnnotationIndex = -1;
+
+      const tools = ['none', 'spotlight', 'curved', 'arrow', 'polygon'];
+      tools.forEach(t => {
+        const btn = document.getElementById(`tool-${t}`);
+        const mBtn = document.getElementById(`m-tool-${t}`);
+        if (btn) {
+          if (t === tool) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+        if (mBtn) {
+          if (t === tool) mBtn.classList.add('bg-gray-700', 'ring-2', 'ring-emerald-500');
+          else mBtn.classList.remove('bg-gray-700', 'ring-2', 'ring-emerald-500');
+        }
+      });
+      redrawActiveCanvas();
+    }
+
+    function handleResetAction() {
+      if (currentTab === 'board') {
+        saveBoardState();
+        resetPlayers();
+      } else {
+        clearAllAnnotations();
+      }
+    }
+
+    function clearBoardAnnotations() {
+      saveBoardState();
+      boardAnnotations = [];
+      selectedAnnotationIndex = -1;
+      drawBoard();
+    }
+
+    function clearAllAnnotations() {
+      analysisAnnotations = [];
+      redoStack = [];
+      currentPolygonPoints = [];
+      selectedAnnotationIndex = -1;
+      redrawAnalysis();
+    }
+
+    function undoAnnotation() {
+      const activeAnn = getActiveAnnotations();
+      if (activeAnn.length > 0) {
+        redoStack.push(activeAnn.pop());
+        selectedAnnotationIndex = -1;
+        redrawActiveCanvas();
+      }
+    }
+
+    function redoAnnotation() {
+      if (redoStack.length > 0) {
+        getActiveAnnotations().push(redoStack.pop());
+        redrawActiveCanvas();
+      }
+    }
+
+    function updateToolColorHex() {
+      const hex = document.getElementById('tool-color').value;
+      document.getElementById('tool-hex').innerText = hex.toUpperCase();
+      redrawActiveCanvas();
+    }
+
+    function redrawActiveCanvas() {
+      if (currentTab === 'board') {
+        drawBoard();
+      } else {
+        redrawAnalysis();
+      }
+    }
+
+    function initDefaultPlayers() {
+      players = [];
+      deletedPlayersStack = [];
+      updateRestoreButtonUI();
+
+      // Team A
+      FORMATIONS['433'].forEach((p, idx) => {
+        players.push({
+          id: `A_${idx}`,
+          team: 'A',
+          x: p.x,
+          y: p.y,
+          num: p.num,
+          role: p.role,
+          name: ''
+        });
+      });
+
+      // Team B (Mirrored for Duel mode, ST cleanly centered at y=0.50, x=0.58)
+      FORMATIONS['4231'].forEach((p, idx) => {
+        players.push({
+          id: `B_${idx}`,
+          team: 'B',
+          x: 1 - p.x,
+          y: p.y,
+          num: p.num,
+          role: p.role,
+          name: ''
+        });
+      });
+    }
+
+    function resetPlayers() {
+      initDefaultPlayers();
+      selectedPlayerId = null;
+      ball = { x: 0.5, y: 0.5 };
+      updateInspectorUI();
+      drawBoard();
+    }
+
+    function updateBoardMode() {
+      saveBoardState();
+      boardMode = document.getElementById('team-mode').value;
+      updateBoardModeUI();
+      drawBoard();
+    }
+
+    function updateBoardModeUI() {
+      const teamBCont = document.getElementById('teamB-container');
+      if (boardMode === 'single') {
+        teamBCont.classList.add('hidden');
+      } else {
+        teamBCont.classList.remove('hidden');
+      }
+    }
+
+    function updateOrientation() {
+      const oldOrientation = orientation;
+      const targetOrientation = document.getElementById('pitch-orientation').value;
+      
+      if (oldOrientation === targetOrientation) return;
+
+      saveBoardState();
+      orientation = targetOrientation;
+
+      if (orientation === 'vertical') {
+        canvas.width = 600;
+        canvas.height = 800;
+        players.forEach(p => {
+          const oldX = p.x;
+          const oldY = p.y;
+          p.x = oldY;
+          p.y = 1 - oldX;
+        });
+        ball = { x: ball.y, y: 1 - ball.x };
+      } else {
+        canvas.width = 960;
+        canvas.height = 600;
+        players.forEach(p => {
+          const oldX = p.x;
+          const oldY = p.y;
+          p.x = 1 - oldY;
+          p.y = oldX;
+        });
+        ball = { x: 1 - ball.y, y: ball.x };
+      }
+      
+      redrawActiveCanvas();
+    }
+
+    function applyFormation(team, formationKey) {
+      saveBoardState();
+      const form = FORMATIONS[formationKey] || FORMATIONS['433'];
+      let teamPlayers = players.filter(p => p.team === team);
+
+      form.forEach((pos, idx) => {
+        if (teamPlayers[idx]) {
+          if (team === 'A') {
+            teamPlayers[idx].x = pos.x;
+            teamPlayers[idx].y = pos.y;
+          } else {
+            teamPlayers[idx].x = 1 - pos.x;
+            teamPlayers[idx].y = pos.y;
+          }
+          teamPlayers[idx].num = pos.num;
+          teamPlayers[idx].role = pos.role;
+        }
+      });
+
+      drawBoard();
+    }
+
+    function setTeamColor(team, colorHex) {
+      saveBoardState();
+      if (team === 'A') {
+        document.getElementById('teamA-color').value = colorHex;
+        document.getElementById('teamA-hex').innerText = colorHex.toUpperCase();
+        document.getElementById('teamA-badge').style.backgroundColor = colorHex;
+      } else {
+        document.getElementById('teamB-color').value = colorHex;
+        document.getElementById('teamB-hex').innerText = colorHex.toUpperCase();
+        document.getElementById('teamB-badge').style.backgroundColor = colorHex;
+      }
+      drawBoard();
+    }
+
+    function updateInspectorUI() {
+      const form = document.getElementById('player-edit-form');
+      const noSel = document.getElementById('no-player-selected');
+
+      const p = players.find(x => x.id === selectedPlayerId);
+      if (p) {
+        noSel.classList.add('hidden');
+        form.classList.remove('hidden');
+        form.classList.add('flex');
+        document.getElementById('edit-player-num').value = p.num;
+        document.getElementById('edit-player-role').value = p.role;
+        document.getElementById('edit-player-name').value = p.name || '';
+      } else {
+        noSel.classList.remove('hidden');
+        form.classList.add('hidden');
+        form.classList.remove('flex');
+      }
+      updateRestoreButtonUI();
+    }
+
+    function updateSelectedPlayer() {
+      const p = players.find(x => x.id === selectedPlayerId);
+      if (p) {
+        p.num = document.getElementById('edit-player-num').value;
+        p.role = document.getElementById('edit-player-role').value;
+        p.name = document.getElementById('edit-player-name').value;
+        drawBoard();
+      }
+    }
+
+    function deleteSelectedPlayer() {
+      if (selectedPlayerId) {
+        saveBoardState();
+        const pToDelete = players.find(p => p.id === selectedPlayerId);
+        if (pToDelete) {
+          deletedPlayersStack.push(JSON.parse(JSON.stringify(pToDelete)));
+        }
+        players = players.filter(p => p.id !== selectedPlayerId);
+        selectedPlayerId = null;
+        updateInspectorUI();
+        drawBoard();
+      }
+    }
+
+    // --- CANVAS RENDERING LOGIC ---
+    function drawBoard() {
+      if (currentTab !== 'board') return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const theme = document.getElementById('pitch-theme').value;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Pitch Grass Surface Rendering
+      if (theme === 'grass') {
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#166534';
+        const stripeWidth = w / 12;
+        for (let i = 0; i < 12; i += 2) {
+          ctx.fillRect(i * stripeWidth, 0, stripeWidth, h);
+        }
+      } else if (theme === 'classic') {
+        ctx.fillStyle = '#1e6b36';
+        ctx.fillRect(0, 0, w, h);
+      } else { // Dark Tactical Theme
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // Pitch Boundary Markings
+      const pad = 30;
+      const pw = w - pad * 2;
+      const ph = h - pad * 2;
+
+      ctx.strokeStyle = theme === 'dark' ? '#334155' : 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 2.5;
+
+      ctx.strokeRect(pad, pad, pw, ph);
+
+      // Center Line & Circle
+      ctx.beginPath();
+      if (orientation === 'horizontal') {
+        ctx.moveTo(w / 2, pad);
+        ctx.lineTo(w / 2, h - pad);
+      } else {
+        ctx.moveTo(pad, h / 2);
+        ctx.lineTo(w - pad, h / 2);
+      }
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, Math.min(pw, ph) * 0.14, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, 4, 0, Math.PI * 2);
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fill();
+
+      // Goal Areas and Penalty Boxes
+      if (orientation === 'horizontal') {
+        const pBoxW = pw * 0.16;
+        const pBoxH = ph * 0.44;
+        ctx.strokeRect(pad, (h - pBoxH) / 2, pBoxW, pBoxH);
+
+        const gBoxW = pw * 0.06;
+        const gBoxH = ph * 0.22;
+        ctx.strokeRect(pad, (h - gBoxH) / 2, gBoxW, gBoxH);
+
+        ctx.strokeRect(w - pad - pBoxW, (h - pBoxH) / 2, pBoxW, pBoxH);
+        ctx.strokeRect(w - pad - gBoxW, (h - gBoxH) / 2, gBoxW, gBoxH);
+      } else {
+        const pBoxW = pw * 0.44;
+        const pBoxH = ph * 0.16;
+        ctx.strokeRect((w - pBoxW) / 2, pad, pBoxW, pBoxH);
+
+        const gBoxW = pw * 0.22;
+        const gBoxH = ph * 0.06;
+        ctx.strokeRect((w - gBoxW) / 2, pad, gBoxW, gBoxH);
+
+        ctx.strokeRect((w - pBoxW) / 2, h - pad - pBoxH, pBoxW, pBoxH);
+        ctx.strokeRect((w - gBoxW) / 2, h - pad - gBoxH, pBoxW, pBoxH);
+      }
+
+      // Football Rendering
+      const showBall = document.getElementById('show-ball-check').checked;
+      if (showBall) {
+        const ballX = ball.x * w;
+        const ballY = ball.y * h;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(ballX, ballY, 9, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(ballX, ballY, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Render Board Annotations
+      boardAnnotations.forEach((item, idx) => renderSingleAnnotation(item, idx === selectedAnnotationIndex));
+
+      if (currentTab === 'board' && currentDrawing) {
+        renderSingleAnnotation(currentDrawing, false);
+      }
+
+      if (currentTab === 'board' && currentTool === 'polygon' && currentPolygonPoints.length > 0) {
+        renderPolygonPreview();
+      }
+
+      // Render Players with Token Size Scale Option
+      const colorA = document.getElementById('teamA-color').value;
+      const colorB = document.getElementById('teamB-color').value;
+      const isSmallToken = document.getElementById('player-token-size').value === 'small';
+
+      const tokenRadius = isSmallToken ? 9.5 : 17;
+      const selectionRadius = isSmallToken ? 13 : 22;
+      const fontNumber = isSmallToken ? 'bold 9px sans-serif' : 'bold 13px sans-serif';
+      const fontName = isSmallToken ? '9px sans-serif' : '11px sans-serif';
+      const nameOffsetY = isSmallToken ? 16 : 26;
+
+      players.forEach(p => {
+        if (boardMode === 'single' && p.team === 'B') return;
+
+        const px = p.x * w;
+        const py = p.y * h;
+        const color = p.team === 'A' ? colorA : colorB;
+        const isSelected = (p.id === selectedPlayerId);
+
+        // Player Selection Ring
+        if (isSelected) {
+          ctx.beginPath();
+          ctx.arc(px, py, selectionRadius, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(52, 211, 153, 0.4)';
+          ctx.fill();
+          ctx.strokeStyle = '#34d399';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Player Circle Token
+        ctx.beginPath();
+        ctx.arc(px, py, tokenRadius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.lineWidth = isSmallToken ? 1.5 : 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        // Player Number Label
+        ctx.fillStyle = '#ffffff';
+        ctx.font = fontNumber;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.num, px, py);
+
+        // Player Name Label
+        if (p.name) {
+          ctx.font = fontName;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(p.name, px, py + nameOffsetY);
+        }
+      });
+    }
+
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          uploadedImage = img;
+          redrawAnalysis();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function redrawAnalysis() {
+      if (currentTab !== 'analysis') return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (uploadedImage) {
+        ctx.drawImage(uploadedImage, 0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.fillStyle = '#111827';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('📷 อัปโหลดภาพเหตุการณ์สนามเพื่อเริ่มวาดแทคติก', canvas.width / 2, canvas.height / 2);
+      }
+
+      analysisAnnotations.forEach((item, idx) => renderSingleAnnotation(item, idx === selectedAnnotationIndex));
+
+      if (currentTab === 'analysis' && currentDrawing) {
+        renderSingleAnnotation(currentDrawing, false);
+      }
+
+      if (currentTab === 'analysis' && currentTool === 'polygon' && currentPolygonPoints.length > 0) {
+        renderPolygonPreview();
+      }
+    }
+
+    function renderSingleAnnotation(ann, isSelected = false) {
+      ctx.save();
+
+      if (ann.type === 'spotlight') {
+        const rx = ann.rx || ann.radius || 35;
+        const ry = ann.ry || Math.round(rx * 0.45);
+        const groundX = ann.x;
+        const groundY = ann.y;
+        
+        const scale = rx / 35;
+        const topWidth = Math.max(8, 14 * scale);
+        const beamHeight = Math.min(groundY, 260 * scale);
+        const topY = Math.max(0, groundY - beamHeight);
+
+        // Light Beam Cone Path
+        ctx.beginPath();
+        ctx.moveTo(groundX - topWidth / 2, topY);
+        ctx.lineTo(groundX + topWidth / 2, topY);
+        ctx.lineTo(groundX + rx, groundY);
+        ctx.ellipse(groundX, groundY, rx, ry, 0, 0, Math.PI);
+        ctx.lineTo(groundX - rx, groundY);
+        ctx.closePath();
+
+        const beamGrad = ctx.createLinearGradient(groundX, topY, groundX, groundY);
+        beamGrad.addColorStop(0, `rgba(255, 255, 230, ${ann.opacity * 0.15})`);
+        beamGrad.addColorStop(1, `rgba(255, 255, 180, ${ann.opacity * 0.6})`);
+        ctx.fillStyle = beamGrad;
+        ctx.fill();
+
+        // Base Ground Ellipse
+        ctx.beginPath();
+        ctx.ellipse(groundX, groundY, rx, ry, 0, 0, Math.PI * 2);
+        const ellipseGrad = ctx.createRadialGradient(groundX, groundY, 0, groundX, groundY, rx);
+        ellipseGrad.addColorStop(0, `rgba(255, 255, 255, ${ann.opacity * 0.8})`);
+        ellipseGrad.addColorStop(0.7, `rgba(255, 255, 200, ${ann.opacity * 0.5})`);
+        ellipseGrad.addColorStop(1, `rgba(255, 255, 150, 0)`);
+        ctx.fillStyle = ellipseGrad;
+        ctx.fill();
+
+        // Selection Highlight (dashed outline on click)
+        if (isSelected) {
+          ctx.beginPath();
+          ctx.ellipse(groundX, groundY, rx, ry, 0, 0, Math.PI * 2);
+          ctx.strokeStyle = '#34d399';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([6, 4]);
+          ctx.stroke();
+        }
+
+      } else if (ann.type === 'curved') {
+        ctx.strokeStyle = ann.color;
+        ctx.lineWidth = ann.thickness || 4;
+        ctx.globalAlpha = ann.opacity || 0.8;
+
+        if (ann.lineStyle === 'dashed') {
+          ctx.setLineDash([8, 6]);
+        } else {
+          ctx.setLineDash([]);
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(ann.startX, ann.startY);
+        ctx.quadraticCurveTo(ann.controlX, ann.controlY, ann.endX, ann.endY);
+        ctx.stroke();
+
+        if (ann.arrowHead !== 'none') {
+          const angle = Math.atan2(ann.endY - ann.controlY, ann.endX - ann.controlX);
+          drawArrowHead(ann.endX, ann.endY, angle, ann.color, ann.opacity);
+        }
+
+        if (isSelected || currentTool === 'curved') {
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.arc(ann.controlX, ann.controlY, 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#facc15';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
+      } else if (ann.type === 'arrow') {
+        ctx.strokeStyle = ann.color;
+        ctx.lineWidth = ann.thickness || 4;
+        ctx.globalAlpha = ann.opacity || 0.8;
+
+        if (ann.lineStyle === 'dashed') {
+          ctx.setLineDash([8, 6]);
+        } else {
+          ctx.setLineDash([]);
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(ann.startX, ann.startY);
+        ctx.lineTo(ann.endX, ann.endY);
+        ctx.stroke();
+
+        if (ann.arrowHead !== 'none') {
+          const angle = Math.atan2(ann.endY - ann.startY, ann.endX - ann.startX);
+          drawArrowHead(ann.endX, ann.endY, angle, ann.color, ann.opacity);
+        }
+
+        if (isSelected) {
+          ctx.setLineDash([]);
+          ctx.strokeStyle = '#34d399';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(ann.startX, ann.startY, 5, 0, Math.PI * 2);
+          ctx.arc(ann.endX, ann.endY, 5, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+      } else if (ann.type === 'polygon' && ann.points && ann.points.length >= 3) {
+        ctx.strokeStyle = ann.color;
+        ctx.lineWidth = ann.thickness || 3;
+        ctx.globalAlpha = ann.opacity || 0.5;
+
+        if (ann.lineStyle === 'dashed') {
+          ctx.setLineDash([8, 6]);
+        } else {
+          ctx.setLineDash([]);
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(ann.points[0].x, ann.points[0].y);
+        for (let i = 1; i < ann.points.length; i++) {
+          ctx.lineTo(ann.points[i].x, ann.points[i].y);
+        }
+        ctx.closePath();
+
+        ctx.fillStyle = ann.color;
+        ctx.fill();
+        ctx.stroke();
+
+        if (isSelected) {
+          ctx.setLineDash([]);
+          ctx.strokeStyle = '#34d399';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function drawArrowHead(x, y, angle, color, opacity) {
+      ctx.save();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.globalAlpha = opacity;
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-14, -7);
+      ctx.lineTo(-14, 7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function renderPolygonPreview() {
+      if (currentPolygonPoints.length === 0) return;
+
+      ctx.save();
+      const color = document.getElementById('tool-color').value;
+      const opacity = parseFloat(document.getElementById('tool-opacity').value);
+      const lineStyle = document.getElementById('line-style').value;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = opacity;
+
+      if (lineStyle === 'dashed') {
+        ctx.setLineDash([8, 6]);
+      } else {
+        ctx.setLineDash([]);
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(currentPolygonPoints[0].x, currentPolygonPoints[0].y);
+      for (let i = 1; i < currentPolygonPoints.length; i++) {
+        ctx.lineTo(currentPolygonPoints[i].x, currentPolygonPoints[i].y);
+      }
+
+      if (mouseHoverPos) {
+        ctx.lineTo(mouseHoverPos.x, mouseHoverPos.y);
+      }
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      currentPolygonPoints.forEach((pt, idx) => {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = idx === 0 ? '#34d399' : '#facc15';
+        ctx.fill();
+      });
+
+      if (currentPolygonPoints.length >= 3 && mouseHoverPos) {
+        const startPt = currentPolygonPoints[0];
+        const dist = Math.hypot(mouseHoverPos.x - startPt.x, mouseHoverPos.y - startPt.y);
+        if (dist < 22) {
+          ctx.beginPath();
+          ctx.arc(startPt.x, startPt.y, 12, 0, Math.PI * 2);
+          ctx.strokeStyle = '#34d399';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function isNearCurve(pos, ann) {
+      if (ann.type !== 'curved') return false;
+      if (Math.hypot(ann.controlX - pos.x, ann.controlY - pos.y) < 25) return true;
+      for (let t = 0; t <= 1; t += 0.05) {
+        const invT = 1 - t;
+        const x = invT * invT * ann.startX + 2 * invT * t * ann.controlX + t * t * ann.endX;
+        const y = invT * invT * ann.startY + 2 * invT * t * ann.controlY + t * t * ann.endY;
+        if (Math.hypot(x - pos.x, y - pos.y) < 20) return true;
+      }
+      return false;
+    }
+
+    function setupInteractions() {
+      // Keyboard Delete / Backspace Listener
+      window.addEventListener('keydown', (e) => {
+        if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          if (currentTab === 'board') {
+            let deleted = false;
+            if (selectedPlayerId) {
+              saveBoardState();
+              const pToDelete = players.find(p => p.id === selectedPlayerId);
+              if (pToDelete) {
+                deletedPlayersStack.push(JSON.parse(JSON.stringify(pToDelete)));
+              }
+              players = players.filter(p => p.id !== selectedPlayerId);
+              selectedPlayerId = null;
+              updateInspectorUI();
+              deleted = true;
+            } else if (selectedAnnotationIndex >= 0 && boardAnnotations[selectedAnnotationIndex]) {
+              saveBoardState();
+              boardAnnotations.splice(selectedAnnotationIndex, 1);
+              selectedAnnotationIndex = -1;
+              deleted = true;
+            }
+            if (deleted) drawBoard();
+
+          } else if (currentTab === 'analysis') {
+            if (selectedAnnotationIndex >= 0 && analysisAnnotations[selectedAnnotationIndex]) {
+              redoStack = [];
+              analysisAnnotations.splice(selectedAnnotationIndex, 1);
+              selectedAnnotationIndex = -1;
+              redrawAnalysis();
+            }
+          }
+        }
+      });
+
+      const handleStart = (e) => {
+        const pos = getPos(e);
+        const w = canvas.width;
+        const h = canvas.height;
+        const activeAnn = getActiveAnnotations();
+        const isSmallToken = document.getElementById('player-token-size').value === 'small';
+        const hitRadius = isSmallToken ? 15 : 24;
+
+        // 1. Dragging curve control point handle
+        if (selectedAnnotationIndex >= 0 && activeAnn[selectedAnnotationIndex]) {
+          const ann = activeAnn[selectedAnnotationIndex];
+          if (ann.type === 'curved' && isNearCurve(pos, ann)) {
+            draggedControlPoint = ann;
+            return;
+          }
+        }
+
+        // 2. Select Annotation Item on Canvas Click
+        let clickedAnnIdx = activeAnn.findIndex(ann => {
+          if (ann.type === 'spotlight') {
+            const rx = ann.rx || ann.radius || 35;
+            const ry = ann.ry || rx * 0.45;
+            const dx = (pos.x - ann.x) / rx;
+            const dy = (pos.y - ann.y) / ry;
+            return (dx * dx + dy * dy) <= 1.2;
+          } else if (ann.type === 'arrow') {
+            const distStart = Math.hypot(pos.x - ann.startX, pos.y - ann.startY);
+            const distEnd = Math.hypot(pos.x - ann.endX, pos.y - ann.endY);
+            return distStart < 18 || distEnd < 18;
+          } else if (ann.type === 'curved') {
+            return isNearCurve(pos, ann);
+          } else if (ann.type === 'polygon' && ann.points) {
+            return ann.points.some(p => Math.hypot(pos.x - p.x, pos.y - p.y) < 18);
+          }
+          return false;
+        });
+
+        if (clickedAnnIdx >= 0 && currentTool === 'none') {
+          selectedAnnotationIndex = clickedAnnIdx;
+          selectedPlayerId = null;
+          updateInspectorUI();
+          redrawActiveCanvas();
+          return;
+        }
+
+        if (currentTool === 'none') {
+          // Ball Dragging Interaction
+          if (currentTab === 'board' && document.getElementById('show-ball-check').checked) {
+            const bx = ball.x * w;
+            const by = ball.y * h;
+            if (Math.hypot(bx - pos.x, by - pos.y) < 22) {
+              saveBoardState();
+              isDraggingBall = true;
+              return;
+            }
+          }
+
+          // Player Token Selection and Drag
+          if (currentTab === 'board') {
+            const clickedPlayer = players.find(p => {
+              if (boardMode === 'single' && p.team === 'B') return false;
+              const px = p.x * w;
+              const py = p.y * h;
+              return Math.hypot(px - pos.x, py - pos.y) < hitRadius;
+            });
+
+            if (clickedPlayer) {
+              saveBoardState();
+              draggedPlayer = clickedPlayer;
+              selectedPlayerId = clickedPlayer.id;
+              selectedAnnotationIndex = -1;
+            } else {
+              selectedPlayerId = null;
+            }
+
+            updateInspectorUI();
+            drawBoard();
+          }
+
+        } else {
+          // Annotation Tools Drawing State
+          const color = document.getElementById('tool-color').value;
+          const opacity = parseFloat(document.getElementById('tool-opacity').value);
+          const lineStyle = document.getElementById('line-style').value;
+          const arrowHead = document.getElementById('arrow-head-option').value;
+
+          if (currentTool === 'spotlight') {
+            isDrawingAnnotation = true;
+            currentDrawing = {
+              type: 'spotlight',
+              x: pos.x,
+              y: pos.y,
+              rx: 35,
+              ry: 16,
+              color: color,
+              opacity: opacity
+            };
+            selectedAnnotationIndex = activeAnn.length;
+            redrawActiveCanvas();
+
+          } else if (currentTool === 'curved') {
+            if (!curvedStartPoint) {
+              // Click 1: Set Start Point
+              curvedStartPoint = { x: pos.x, y: pos.y };
+            } else {
+              // Click 2: Set End Point & Create Curve
+              if (currentTab === 'board') saveBoardState();
+              const midX = (curvedStartPoint.x + pos.x) / 2;
+              const midY = (curvedStartPoint.y + pos.y) / 2;
+              const newCurved = {
+                type: 'curved',
+                startX: curvedStartPoint.x,
+                startY: curvedStartPoint.y,
+                endX: pos.x,
+                endY: pos.y,
+                controlX: midX,
+                controlY: midY,
+                color: color,
+                opacity: opacity,
+                thickness: 4,
+                lineStyle: lineStyle,
+                arrowHead: arrowHead
+              };
+              activeAnn.push(newCurved);
+              selectedAnnotationIndex = activeAnn.length - 1;
+              redoStack = [];
+              curvedStartPoint = null;
+              redrawActiveCanvas();
+              setAnalysisTool('none'); // Auto Revert to Select/Drag mode
+            }
+
+          } else if (currentTool === 'arrow') {
+            isDrawingAnnotation = true;
+            currentDrawing = {
+              type: 'arrow',
+              startX: pos.x,
+              startY: pos.y,
+              endX: pos.x,
+              endY: pos.y,
+              color: color,
+              opacity: opacity,
+              thickness: 4,
+              lineStyle: lineStyle,
+              arrowHead: arrowHead
+            };
+
+          } else if (currentTool === 'polygon') {
+            if (currentPolygonPoints.length >= 3) {
+              const startPt = currentPolygonPoints[0];
+              const dist = Math.hypot(pos.x - startPt.x, pos.y - startPt.y);
+
+              if (dist < 22) {
+                if (currentTab === 'board') saveBoardState();
+                activeAnn.push({
+                  type: 'polygon',
+                  points: [...currentPolygonPoints],
+                  color: color,
+                  opacity: opacity,
+                  thickness: 3,
+                  lineStyle: lineStyle
+                });
+                selectedAnnotationIndex = activeAnn.length - 1;
+                redoStack = [];
+                currentPolygonPoints = [];
+                redrawActiveCanvas();
+                setAnalysisTool('none'); // Auto Revert to Select/Drag mode
+                return;
+              }
+            }
+
+            currentPolygonPoints.push({ x: pos.x, y: pos.y });
+            redrawActiveCanvas();
+          }
+        }
+      };
+
+      const handleMove = (e) => {
+        const pos = getPos(e);
+        const w = canvas.width;
+        const h = canvas.height;
+
+        mouseHoverPos = pos;
+
+        if (draggedControlPoint) {
+          draggedControlPoint.controlX = pos.x;
+          draggedControlPoint.controlY = pos.y;
+          redrawActiveCanvas();
+          return;
+        }
+
+        if (currentTool === 'none') {
+          if (isDraggingBall) {
+            ball.x = Math.max(0.02, Math.min(0.98, pos.x / w));
+            ball.y = Math.max(0.02, Math.min(0.98, pos.y / h));
+            drawBoard();
+          } else if (draggedPlayer) {
+            draggedPlayer.x = Math.max(0.02, Math.min(0.98, pos.x / w));
+            draggedPlayer.y = Math.max(0.02, Math.min(0.98, pos.y / h));
+            drawBoard();
+          }
+
+        } else {
+          if (isDrawingAnnotation && currentDrawing) {
+            if (currentDrawing.type === 'spotlight') {
+              const rx = Math.hypot(pos.x - currentDrawing.x, pos.y - currentDrawing.y);
+              currentDrawing.rx = Math.max(20, rx);
+              currentDrawing.ry = Math.max(9, rx * 0.45);
+            } else if (currentDrawing.type === 'arrow') {
+              currentDrawing.endX = pos.x;
+              currentDrawing.endY = pos.y;
+            }
+            redrawActiveCanvas();
+          } else if (currentTool === 'curved' && curvedStartPoint) {
+            redrawActiveCanvas();
+            // Temporary dashed line preview
+            ctx.save();
+            ctx.strokeStyle = document.getElementById('tool-color').value;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(curvedStartPoint.x, curvedStartPoint.y);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(curvedStartPoint.x, curvedStartPoint.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#34d399';
+            ctx.fill();
+            ctx.restore();
+          } else if (currentTool === 'polygon' && currentPolygonPoints.length > 0) {
+            redrawActiveCanvas();
+          }
+        }
+      };
+
+      const handleEnd = () => {
+        draggedPlayer = null;
+        isDraggingBall = false;
+        draggedControlPoint = null;
+
+        if (isDrawingAnnotation && currentDrawing) {
+          if (currentTab === 'board') saveBoardState();
+          const activeAnn = getActiveAnnotations();
+          activeAnn.push({ ...currentDrawing });
+          selectedAnnotationIndex = activeAnn.length - 1;
+          redoStack = [];
+          currentDrawing = null;
+          isDrawingAnnotation = false;
+          redrawActiveCanvas();
+          setAnalysisTool('none'); // Auto Revert to Select/Drag mode
+        }
+      };
+
+      canvas.addEventListener('mousedown', handleStart);
+      canvas.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleEnd);
+
+      canvas.addEventListener('touchstart', handleStart, { passive: true });
+      canvas.addEventListener('touchmove', handleMove, { passive: true });
+      window.addEventListener('touchend', handleEnd);
+    }
+
+    // Export Canvas Output Image PNG Function with Custom Board Filename
+    function exportCanvasImage() {
+      const link = document.createElement('a');
+
+      if (currentTab === 'board') {
+        let nameInput = document.getElementById('save-board-name').value.trim();
+        if (!nameInput && currentLoadedBoardName) {
+          nameInput = currentLoadedBoardName;
+        }
+        if (!nameInput) {
+          nameInput = 'tactics-lineup-board';
+        }
+        // Sanitize board name for safe cross-platform filename saving
+        const safeFileName = nameInput.replace(/[/\\?%*:|"<>]/g, '-').replace(/\s+/g, '_');
+        link.download = `${safeFileName}.png`;
+      } else {
+        link.download = 'play-tactics-analysis.png';
+      }
+
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    window.onload = () => {
+      initDefaultPlayers();
+      setupInteractions();
+      updateBoardMode();
+      setAnalysisTool('none');
+      renderSavedBoardsList();
+    };
+  </script>
+</body>
+</html>
