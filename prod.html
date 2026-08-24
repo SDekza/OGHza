@@ -251,6 +251,17 @@
                 } catch(e) {}
             };
 
+            // ฟังก์ชันแปลงลิงก์ Google Drive เป็น Direct Image URL อัตโนมัติ
+            const formatImageUrl = (url) => {
+                if (!url) return '';
+                const trimmed = url.trim();
+                const match = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                }
+                return trimmed;
+            };
+
             const handleAddProductMaster = async () => {
                 if (currentUserRank === 'Guest' || currentUserRank === 'User' || !db) {
                     showToast("คุณไม่มีสิทธิ์ในการเพิ่มสินค้า");
@@ -263,7 +274,7 @@
                     if (newProduct.imageType === 'file') {
                         img = newProduct.imageBase64 || '';
                     } else {
-                        img = newProduct.urlInput ? newProduct.urlInput.trim() : '';
+                        img = formatImageUrl(newProduct.urlInput);
                     }
 
                     const prodData = {
@@ -296,7 +307,7 @@
                     if (editingProduct.imageType === 'file') {
                         if (editingProduct.imageBase64) finalImg = editingProduct.imageBase64;
                     } else {
-                        finalImg = editingProduct.urlInput !== undefined ? editingProduct.urlInput.trim() : finalImg;
+                        finalImg = editingProduct.urlInput !== undefined ? formatImageUrl(editingProduct.urlInput) : finalImg;
                     }
 
                     await db.collection("sebo_products").doc(editingProduct.id).update({
@@ -671,10 +682,10 @@
                                     ) : (
                                         <input 
                                             type="text" 
-                                            placeholder="https://example.com/image.jpg" 
+                                            placeholder="https://example.com/image.jpg หรือลิงก์ Google Drive" 
                                             className="w-full h-12 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 text-xs outline-none font-medium" 
                                             value={newProduct.urlInput} 
-                                            onChange={(e) => setNewProduct({...newProduct, urlInput: e.target.value, preview: e.target.value})} 
+                                            onChange={(e) => setNewProduct({...newProduct, urlInput: e.target.value, preview: formatImageUrl(e.target.value)})} 
                                         />
                                     )}
                                 </div>
@@ -790,10 +801,10 @@
                                     ) : (
                                         <input 
                                             type="text" 
-                                            placeholder="https://example.com/image.jpg" 
+                                            placeholder="https://example.com/image.jpg หรือลิงก์ Google Drive" 
                                             className="w-full h-11 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3 text-xs outline-none font-medium" 
                                             value={editingProduct.urlInput} 
-                                            onChange={(e) => setEditingProduct({ ...editingProduct, urlInput: e.target.value, preview: e.target.value })} 
+                                            onChange={(e) => setEditingProduct({ ...editingProduct, urlInput: e.target.value, preview: formatImageUrl(e.target.value) })} 
                                         />
                                     )}
                                 </div>
