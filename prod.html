@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
+    <title>Product Management - SEBOFFICIAL</title>
+    
+    <link rel="icon" type="image/png" href="https://placehold.co/192x192/4f46e5/ffffff?text=SEBO">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/4f46e5/ffffff?text=SEBO">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SEBOFFICIAL">
+    <meta name="theme-color" content="#f8fafc">
+
+    <script>
+      if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+          while (target && target.tagName !== 'A') {
+            target = target.parentNode;
+          }
+          if (target && target.href && target.hostname === window.location.hostname && !target.hasAttribute('download')) {
+            e.preventDefault();
+            window.location.href = target.getAttribute('href');
+          }
+        }, false);
+      }
+    </script>
+    
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.20/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
+
+    <!-- Firebase SDK (v10 UMD) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body { 
+            font-family: 'Anuphan', sans-serif; 
+            background-color: #f8fafc; 
+            color: #0f172a; 
+            -webkit-tap-highlight-color: transparent; 
+            overflow-x: hidden; 
+            user-select: none; 
+            overscroll-behavior-y: contain; 
+            touch-action: manipulation;
+        }
+        
+        .saas-shadow { 
+            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.08), 0 1px 3px rgba(15, 23, 42, 0.02); 
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes modal-pop { 
+            0% { transform: scale(0.96); opacity: 0; } 
+            100% { transform: scale(1); opacity: 1; } 
+        }
+        .animate-modal { animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        .navbar-ios {
+            padding-top: calc(14px + env(safe-area-inset-top));
+            padding-bottom: 14px;
+        }
+
+        @keyframes slide-down { 0% { transform: translateY(-100%); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        .animate-slide-down { animation: slide-down 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes marquee { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
+        .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 25s linear infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="react,env">
+        const { useState, useEffect, useMemo, useRef, memo } = React;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLKMgC5Y_zg97VaWjPVFXpXhp2zon7TP0",
+            authDomain: "stock-spare-c9692.firebaseapp.com",
+            projectId: "stock-spare-c9692",
+            storageBucket: "stock-spare-c9692.firebasestorage.app",
+            messagingSenderId: "376839440950",
+            appId: "1:376839440950:web:d6d0c583e4eabf107e2697",
+            measurementId: "G-0T0KQ5NGEV"
+        };
+
+        let db = null;
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.firestore();
+                firebase.auth().signInAnonymously().catch(() => {});
+            }
+        } catch(e) {
+            console.warn("Firebase Init Error", e);
+        }
+
+        const LucideIcon = memo(({ name, size = 20, className = "" }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                let active = true;
+                if (window.lucide && ref.current) {
+                    ref.current.innerHTML = '';
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', name);
+                    ref.current.appendChild(i);
+                    const timer = setTimeout(() => {
+                        if (active && ref.current) {
+                            window.lucide.createIcons({
+                                root: ref.current,
+                                nameAttr: 'data-lucide',
+                                attrs: { width: size, height: size, class: "lucide-icon-svg" }
+                            });
+                        }
+                    }, 0);
+                    return () => { active = false; clearTimeout(timer); };
+                }
+            }, [name, size]);
+            return <span ref={ref} className={`inline-flex items-center justify-center ${className}`} style={{ width: size, height: size, minWidth: size }} />;
+        });
+
+        const App = () => {
+            const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('seb_current_user') || 'Admin');
+            const [currentUserRank, setCurrentUserRank] = useState(() => localStorage.getItem('seb_current_rank') || 'Admin');
+
+            const [masterProducts, setMasterProducts] = useState([]);
+            const [announcement, setAnnouncement] = useState("ยินดีต้อนรับสู่ระบบจัดการคลังสินค้า - SEBOFFICIAL");
+            const [loading, setLoading] = useState(true);
+
+            // Manage Sub Tab: 'search' | 'add'
+            const [manageSubTab, setManageSubTab] = useState('search');
+
+            // Pagination & Search State
+            const [productSearchInput, setProductSearchInput] = useState('');
+            const [productCurrentPage, setProductCurrentPage] = useState(1);
+            const PRODUCTS_PER_PAGE = 20;
+
+            // Form States
+            const [newProduct, setNewProduct] = useState({ name: '', imageBase64: '', urlInput: '', imageType: 'file', preview: '' });
+            const [isEditingMaster, setIsEditingMaster] = useState(false);
+            const [masterItemToDelete, setMasterItemToDelete] = useState(null);
+            const [editingProduct, setEditingProduct] = useState(null);
+
+            // Modals & UI Controls
+            const [previewImage, setPreviewImage] = useState(null);
+            const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+            const [announcementInput, setAnnouncementInput] = useState("");
+            const [toastMessage, setToastMessage] = useState(null);
+
+            // Lightbox Zoom & Drag State
+            const [imageScale, setImageScale] = useState(1);
+            const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+            const [isDragging, setIsDragging] = useState(false);
+            const dragStartRef = useRef({ x: 0, y: 0 });
+            const touchDistanceRef = useRef(null);
+
+            const showToast = (message) => {
+                setToastMessage(message);
+                setTimeout(() => setToastMessage(null), 2500);
+            };
+
+            useEffect(() => {
+                const preventMultiTouch = (e) => {
+                    if (e.touches && e.touches.length > 1) {
+                        const lightbox = document.getElementById('lightbox-image-container');
+                        if (lightbox && lightbox.contains(e.target)) return; 
+                        e.preventDefault();
+                    }
+                };
+
+                const preventGesture = (e) => {
+                    const lightbox = document.getElementById('lightbox-image-container');
+                    if (lightbox && lightbox.contains(e.target)) return; 
+                    e.preventDefault();
+                };
+
+                document.addEventListener('touchstart', preventMultiTouch, { passive: false });
+                document.addEventListener('touchmove', preventMultiTouch, { passive: false });
+                document.addEventListener('gesturestart', preventGesture, { passive: false });
+
+                return () => {
+                    document.removeEventListener('touchstart', preventMultiTouch);
+                    document.removeEventListener('touchmove', preventMultiTouch);
+                    document.removeEventListener('gesturestart', preventGesture);
+                };
+            }, []);
+
+            useEffect(() => {
+                if (!previewImage) {
+                    setImageScale(1);
+                    setImagePosition({ x: 0, y: 0 });
+                }
+            }, [previewImage]);
+
+            useEffect(() => {
+                if (!db) {
+                    setLoading(false);
+                    return;
+                }
+
+                const unsubProducts = db.collection("sebo_products").onSnapshot(snapshot => {
+                    const loadedProds = [];
+                    snapshot.forEach(doc => {
+                        loadedProds.push({ id: doc.id, ...doc.data() });
+                    });
+                    setMasterProducts(loadedProds);
+                    setLoading(false);
+                }, err => {
+                    console.error("Products sync error", err);
+                    setLoading(false);
+                });
+
+                const unsubAnn = db.collection("sebo_settings").doc("announcement").onSnapshot(doc => {
+                    if (doc.exists) setAnnouncement(doc.data().message || "");
+                });
+
+                return () => {
+                    unsubProducts();
+                    unsubAnn();
+                };
+            }, []);
+
+            const logAction = async (action, details = "") => {
+                if (!db) return;
+                try {
+                    await db.collection("sebo_logs").add({
+                        timestamp: new Date().toLocaleString('th-TH'),
+                        createdAt: Date.now(),
+                        user: currentUser,
+                        action,
+                        details
+                    });
+                } catch(e) {}
+            };
+
+            const handleAddProductMaster = async () => {
+                if (currentUserRank === 'Guest' || currentUserRank === 'User' || !db) {
+                    showToast("คุณไม่มีสิทธิ์ในการเพิ่มสินค้า");
+                    return;
+                }
+                if (!newProduct.name.trim()) return;
+                setIsEditingMaster(true);
+                try {
+                    let img = '';
+                    if (newProduct.imageType === 'file') {
+                        img = newProduct.imageBase64 || '';
+                    } else {
+                        img = newProduct.urlInput ? newProduct.urlInput.trim() : '';
+                    }
+
+                    const prodData = {
+                        name: newProduct.name.trim(),
+                        imgUrl: img
+                    };
+                    await db.collection("sebo_products").add(prodData);
+                    await logAction("เพิ่มสินค้าหลัก", newProduct.name);
+                    setNewProduct({ name: '', imageBase64: '', urlInput: '', imageType: 'file', preview: '' });
+                    setManageSubTab('search');
+                    setProductCurrentPage(1);
+                    showToast("บันทึกสินค้าหลักเรียบร้อยแล้ว");
+                } catch(e) {
+                    console.error("Add master error", e);
+                    showToast("เกิดข้อผิดพลาดในการบันทึกสินค้า");
+                } finally {
+                    setIsEditingMaster(false);
+                }
+            };
+
+            const handleUpdateProductMaster = async () => {
+                if ((currentUserRank !== 'Admin' && currentUserRank !== 'Dev') || !editingProduct || !db) {
+                    showToast("คุณไม่มีสิทธิ์ในการแก้ไขสินค้า");
+                    return;
+                }
+                if (!editingProduct.name.trim()) return;
+                setIsEditingMaster(true);
+                try {
+                    let finalImg = editingProduct.imgUrl || '';
+                    if (editingProduct.imageType === 'file') {
+                        if (editingProduct.imageBase64) finalImg = editingProduct.imageBase64;
+                    } else {
+                        finalImg = editingProduct.urlInput !== undefined ? editingProduct.urlInput.trim() : finalImg;
+                    }
+
+                    await db.collection("sebo_products").doc(editingProduct.id).update({
+                        name: editingProduct.name.trim(),
+                        imgUrl: finalImg
+                    });
+
+                    await logAction("แก้ไขสินค้าหลัก", editingProduct.name);
+                    setEditingProduct(null);
+                    showToast("อัปเดตข้อมูลสินค้าเรียบร้อยแล้ว");
+                } catch(e) {
+                    console.error("Update master error", e);
+                    showToast("เกิดข้อผิดพลาดในการอัปเดตสินค้า");
+                } finally {
+                    setIsEditingMaster(false);
+                }
+            };
+
+            const confirmDeleteMaster = async (prod) => {
+                if (!db || !prod) return;
+                try {
+                    await db.collection("sebo_products").doc(prod.id).delete();
+                    await logAction("ลบสินค้าหลัก", prod.name);
+                    showToast(`ลบ "${prod.name}" เรียบร้อยแล้ว`);
+                } catch(e) {}
+                setMasterItemToDelete(null);
+            };
+
+            const handleSaveAnnouncement = async () => {
+                setShowAnnouncementModal(false);
+                setAnnouncement(announcementInput);
+                if (db) {
+                    await db.collection("sebo_settings").doc("announcement").set({ message: announcementInput });
+                    await logAction("อัปเดตประกาศ", announcementInput);
+                }
+                showToast("อัปเดตข้อความประกาศแล้ว");
+            };
+
+            const handleMouseDown = (e) => {
+                if (imageScale > 1) {
+                    setIsDragging(true);
+                    dragStartRef.current = { x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y };
+                }
+            };
+
+            const handleMouseMove = (e) => {
+                if (isDragging && imageScale > 1) {
+                    setImagePosition({
+                        x: e.clientX - dragStartRef.current.x,
+                        y: e.clientY - dragStartRef.current.y
+                    });
+                }
+            };
+
+            const handleMouseUp = () => {
+                setIsDragging(false);
+            };
+
+            const getTouchDistance = (touches) => {
+                return Math.hypot(
+                    touches[0].clientX - touches[1].clientX,
+                    touches[0].clientY - touches[1].clientY
+                );
+            };
+
+            const handleTouchStart = (e) => {
+                if (e.touches.length === 2) {
+                    touchDistanceRef.current = getTouchDistance(e.touches);
+                } else if (e.touches.length === 1 && imageScale > 1) {
+                    setIsDragging(true);
+                    dragStartRef.current = { x: e.touches[0].clientX - imagePosition.x, y: e.touches[0].clientY - imagePosition.y };
+                }
+            };
+
+            const handleTouchMove = (e) => {
+                if (e.touches.length === 2 && touchDistanceRef.current) {
+                    const newDist = getTouchDistance(e.touches);
+                    const factor = newDist / touchDistanceRef.current;
+                    setImageScale(prev => Math.min(Math.max(prev * factor, 1), 4));
+                    touchDistanceRef.current = newDist;
+                } else if (e.touches.length === 1 && isDragging && imageScale > 1) {
+                    setImagePosition({
+                        x: e.touches[0].clientX - dragStartRef.current.x,
+                        y: e.touches[0].clientY - dragStartRef.current.y
+                    });
+                }
+            };
+
+            const handleTouchEnd = () => {
+                setIsDragging(false);
+                touchDistanceRef.current = null;
+            };
+
+            const handleDoubleTap = () => {
+                if (imageScale > 1) {
+                    setImageScale(1);
+                    setImagePosition({ x: 0, y: 0 });
+                } else {
+                    setImageScale(2);
+                }
+            };
+
+            const filteredMasterProducts = useMemo(() => {
+                return masterProducts.filter(p => p.name.toLowerCase().includes(productSearchInput.toLowerCase()));
+            }, [masterProducts, productSearchInput]);
+
+            const totalProductPages = Math.ceil(filteredMasterProducts.length / PRODUCTS_PER_PAGE) || 1;
+
+            const paginatedMasterProducts = useMemo(() => {
+                const start = (productCurrentPage - 1) * PRODUCTS_PER_PAGE;
+                return filteredMasterProducts.slice(start, start + PRODUCTS_PER_PAGE);
+            }, [filteredMasterProducts, productCurrentPage]);
+
+            return (
+                <div className="min-h-screen flex flex-col pb-12 relative bg-slate-50">
+                    
+                    {/* Toast Notification */}
+                    {toastMessage && (
+                        <div className="fixed top-4 left-0 right-0 z-[100] flex justify-center p-4 pointer-events-none">
+                            <div className="bg-slate-900 text-slate-100 px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-slide-down border border-slate-800 pointer-events-auto">
+                                <LucideIcon name="check-circle-2" size={16} className="text-indigo-400"/>
+                                <span className="text-xs font-medium">{toastMessage}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Top iOS Navbar */}
+                    <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 sm:px-6 navbar-ios flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200/50 shadow-sm shrink-0 bg-indigo-600 flex items-center justify-center text-white font-black text-xs">
+                                SEB
+                            </div>
+                            <div>
+                                <h1 className="text-sm font-bold text-slate-800 tracking-wider uppercase leading-none">SEBOFFICIAL</h1>
+                                <span className="text-[9px] tracking-widest text-indigo-600 uppercase font-semibold">PRODUCT MANAGEMENT</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            {}
+                            <a 
+                                href="login.html" 
+                                className="h-8.5 px-3 py-1.5 rounded-full border border-indigo-200 bg-indigo-50 flex items-center gap-1.5 text-indigo-600 text-xs font-bold active:scale-95 transition-all hover:bg-indigo-100 shadow-sm"
+                                title="กลับไปยัง Enterprise Portal เพื่อเปลี่ยนผู้ใช้/ล็อกอิน"
+                            >
+                                <LucideIcon name="grid" size={14} />
+                                <span className="hidden sm:inline text-[11px] font-semibold">หน้าหลัก Portal</span>
+                            </a>
+
+                            <div className="flex items-center gap-2 border border-slate-200 bg-slate-50 px-3 py-1.5 rounded-full">
+                                <div className="w-5.5 h-5.5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[9px] font-bold uppercase">{currentUser.charAt(0)}</div>
+                                <span className="text-[11px] text-slate-700 hidden sm:block font-medium">{currentUser} ({currentUserRank})</span>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Announcement Banner */}
+                    {(announcement || currentUserRank === 'Admin' || currentUserRank === 'Dev') && (
+                        <div 
+                            className="bg-indigo-600 text-white text-[11px] tracking-wide py-2 overflow-hidden relative flex items-center cursor-pointer hover:bg-indigo-700 transition-colors shadow-sm" 
+                            onClick={() => {
+                                if (currentUserRank === 'Admin' || currentUserRank === 'Dev') {
+                                    setAnnouncementInput(announcement);
+                                    setShowAnnouncementModal(true);
+                                }
+                            }}
+                        >
+                            {announcement ? (
+                                <div className="animate-marquee whitespace-nowrap px-4 font-medium">{announcement}</div>
+                            ) : (
+                                <div className="flex justify-center items-center gap-2 opacity-80 w-full"><LucideIcon name="plus-circle" size={11}/> กดเพื่อเพิ่มประกาศสำคัญ (เฉพาะ Admin/Dev)</div>
+                            )}
+                        </div>
+                    )}
+
+                    <main className="max-w-5xl mx-auto w-full p-4 md:p-8 space-y-6 flex-1">
+                        
+                        {/* Sub Tab Navigation for Products */}
+                        <div className="bg-white rounded-2xl p-2.5 border border-slate-200 flex items-center justify-between gap-2.5 saas-shadow">
+                            <div className="flex flex-1 gap-1 overflow-x-auto no-scrollbar">
+                                <button 
+                                    onClick={() => { setManageSubTab('search'); setProductCurrentPage(1); }} 
+                                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-[11px] tracking-wider uppercase transition-all whitespace-nowrap font-medium ${manageSubTab === 'search' ? 'bg-indigo-50 text-indigo-600 font-semibold shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    <LucideIcon name="package" size={15} /> รายการสินค้าคลัง
+                                </button>
+                                {(currentUserRank === 'Admin' || currentUserRank === 'Dev') && (
+                                    <button 
+                                        onClick={() => setManageSubTab('add')} 
+                                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-[11px] tracking-wider uppercase transition-all whitespace-nowrap font-medium ${manageSubTab === 'add' ? 'bg-indigo-50 text-indigo-600 font-semibold shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        <LucideIcon name="plus-circle" size={15} /> เพิ่มรายการสินค้าใหม่
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Search & Grid View */}
+                        {manageSubTab === 'search' && (
+                            <div className="space-y-6 animate-modal">
+                                <div className="bg-white rounded-2xl p-3 border border-slate-200 flex items-center justify-between px-4 saas-shadow gap-3">
+                                    <div className="flex items-center flex-1">
+                                        <LucideIcon name="search" size={16} className="text-slate-400 mr-3 shrink-0"/>
+                                        <input 
+                                            type="text" 
+                                            placeholder="พิมพ์ชื่อสินค้าเพื่อค้นหาข้อมูล..." 
+                                            className="flex-1 bg-transparent text-xs text-slate-700 outline-none font-medium" 
+                                            value={productSearchInput} 
+                                            onChange={(e) => { setProductSearchInput(e.target.value); setProductCurrentPage(1); }} 
+                                        />
+                                    </div>
+                                    <span className="text-[10px] text-indigo-600 font-bold shrink-0 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                                        {filteredMasterProducts.length} รายการ
+                                    </span>
+                                </div>
+                                
+                                {loading ? (
+                                    <div className="py-20 text-center flex flex-col items-center gap-3">
+                                        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                        <span className="text-xs font-semibold text-slate-400">กำลังโหลดรายการสินค้า...</span>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                        {paginatedMasterProducts.map((p) => (
+                                            <div key={p.id} className="bg-white p-3 rounded-2xl border border-slate-200/60 shadow-sm group relative overflow-hidden transition-all duration-300 hover:shadow-md">
+                                                <div className="aspect-square bg-slate-50 rounded-xl overflow-hidden mb-2.5 border border-slate-200/20 flex items-center justify-center">
+                                                    {p.imgUrl ? (
+                                                        <img src={p.imgUrl} className="w-full h-full object-cover" loading="lazy" referrerPolicy="no-referrer" />
+                                                    ) : (
+                                                        <LucideIcon name="package" size={28} className="text-slate-300"/>
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] font-semibold text-slate-700 truncate text-center uppercase px-1">{p.name}</p>
+                                                
+                                                {/* Actions Overlay */}
+                                                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-[1px]">
+                                                    {(currentUserRank === 'Admin' || currentUserRank === 'Dev') && (
+                                                        <button 
+                                                            onClick={() => setEditingProduct({
+                                                                id: p.id,
+                                                                name: p.name,
+                                                                imgUrl: p.imgUrl || '',
+                                                                imageType: 'url',
+                                                                urlInput: p.imgUrl || '',
+                                                                imageBase64: '',
+                                                                preview: p.imgUrl || ''
+                                                            })} 
+                                                            className="bg-white text-indigo-600 p-2 rounded-lg hover:bg-slate-50 active:scale-90 shadow-md"
+                                                            title="แก้ไขสินค้า (เฉพาะ Admin/Dev)"
+                                                        >
+                                                            <LucideIcon name="pencil" size={14} />
+                                                        </button>
+                                                    )}
+                                                    {currentUserRank !== 'User' && currentUserRank !== 'Guest' && (
+                                                        <button 
+                                                            onClick={() => setMasterItemToDelete(p)} 
+                                                            className="bg-white text-red-600 p-2 rounded-lg hover:bg-slate-50 active:scale-90 shadow-md" 
+                                                            title="ลบสินค้า"
+                                                        >
+                                                            <LucideIcon name="trash-2" size={14} />
+                                                        </button>
+                                                    )}
+                                                    {p.imgUrl && (
+                                                        <button 
+                                                            onClick={() => setPreviewImage(p.imgUrl)} 
+                                                            className="bg-white text-slate-800 p-2 rounded-lg hover:bg-slate-50 active:scale-90 shadow-md" 
+                                                            title="ดูรูปภาพ"
+                                                        >
+                                                            <LucideIcon name="maximize" size={14} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {filteredMasterProducts.length === 0 && (
+                                            <div className="col-span-full text-center py-16 opacity-60">
+                                                <LucideIcon name="package-open" size={40} className="mx-auto mb-2 text-slate-300"/>
+                                                <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">ยังไม่มีสินค้าในคลัง</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Pagination */}
+                                {totalProductPages > 1 && (
+                                    <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200 saas-shadow mt-4">
+                                        <button 
+                                            onClick={() => setProductCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={productCurrentPage === 1}
+                                            className="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-200 text-xs font-semibold flex items-center gap-1 transition-all"
+                                        >
+                                            <LucideIcon name="chevron-left" size={14} />
+                                            <span>ก่อนหน้า</span>
+                                        </button>
+
+                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                                            <span className="text-indigo-600 font-bold">หน้า {productCurrentPage}</span>
+                                            <span className="text-slate-400">/ {totalProductPages}</span>
+                                        </div>
+
+                                        <button 
+                                            onClick={() => setProductCurrentPage(p => Math.min(totalProductPages, p + 1))}
+                                            disabled={productCurrentPage === totalProductPages}
+                                            className="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-200 text-xs font-semibold flex items-center gap-1 transition-all"
+                                        >
+                                            <span>ถัดไป</span>
+                                            <LucideIcon name="chevron-right" size={14} />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Add New Product View */}
+                        {manageSubTab === 'add' && (
+                            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 saas-shadow flex flex-col items-center max-w-xl mx-auto space-y-6 animate-modal">
+                                <h2 className="text-md font-bold text-slate-800 tracking-wide flex items-center gap-2">
+                                    <LucideIcon name="plus-circle" size={20} className="text-indigo-600"/>
+                                    เพิ่มรายการสินค้าหลักเข้าคลัง
+                                </h2>
+                                
+                                <div className="w-full space-y-1.5 text-left">
+                                    <label className="text-[10px] tracking-widest uppercase text-slate-400 font-bold ml-1">ชื่อสินค้าใหม่ *</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="ระบุชื่อเรียกสินค้าหลัก..." 
+                                        className="w-full h-12 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 text-xs outline-none font-medium transition-all" 
+                                        value={newProduct.name} 
+                                        onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} 
+                                    />
+                                </div>
+
+                                <div className="w-full space-y-3 text-left">
+                                    <label className="text-[10px] tracking-widest uppercase text-slate-400 font-bold ml-1">รูปแบบภาพสินค้า</label>
+                                    <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setNewProduct(p => ({ ...p, imageType: 'file' }))} 
+                                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${newProduct.imageType === 'file' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                                        >
+                                            อัปโหลดไฟล์
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setNewProduct(p => ({ ...p, imageType: 'url' }))} 
+                                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${newProduct.imageType === 'url' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                                        >
+                                            ใส่ URL รูปภาพ
+                                        </button>
+                                    </div>
+
+                                    {newProduct.imageType === 'file' ? (
+                                        <div className="w-full relative group">
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                onChange={(e) => { 
+                                                    const f = e.target.files[0]; 
+                                                    if(f){
+                                                        const r = new FileReader(); 
+                                                        r.onloadend = () => setNewProduct(p => ({ ...p, imageBase64: r.result, preview: r.result })); 
+                                                        r.readAsDataURL(f);
+                                                    }
+                                                }} 
+                                                className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                                            />
+                                            <div className="w-full bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-8 flex flex-col items-center gap-2">
+                                                <LucideIcon name="image-plus" size={32} className="text-indigo-500" />
+                                                <p className="text-[11px] text-slate-500 font-semibold">เลือกอัปโหลดไฟล์ภาพสินค้า (ถ้ามี)</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <input 
+                                            type="text" 
+                                            placeholder="https://example.com/image.jpg" 
+                                            className="w-full h-12 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-4 text-xs outline-none font-medium" 
+                                            value={newProduct.urlInput} 
+                                            onChange={(e) => setNewProduct({...newProduct, urlInput: e.target.value, preview: e.target.value})} 
+                                        />
+                                    )}
+                                </div>
+                                
+                                {newProduct.preview && (
+                                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 flex justify-center max-h-40">
+                                        <img 
+                                            src={newProduct.preview} 
+                                            className="max-h-36 object-contain rounded-lg" 
+                                            referrerPolicy="no-referrer"
+                                            onError={(e) => e.target.style.display = 'none'}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3 w-full">
+                                    <button 
+                                        onClick={() => setManageSubTab('search')} 
+                                        className="flex-1 h-12 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase hover:bg-slate-200 transition-colors"
+                                    >
+                                        ยกเลิก
+                                    </button>
+                                    <button 
+                                        onClick={handleAddProductMaster} 
+                                        disabled={!newProduct.name.trim() || isEditingMaster} 
+                                        className="flex-1 h-12 bg-indigo-600 disabled:bg-slate-100 disabled:text-slate-300 text-white rounded-xl text-xs font-semibold tracking-widest uppercase hover:bg-indigo-700 transition-colors shadow-sm"
+                                    >
+                                        ยืนยันการบันทึกรายการ
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Delete Product Modal */}
+                    {masterItemToDelete && (
+                        <div className="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal text-center font-bold"> 
+                            <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 space-y-4"> 
+                                <LucideIcon name="alert-triangle" size={48} className="text-red-500 mx-auto" /> 
+                                <h3 className="font-semibold text-base text-slate-800">ลบสินค้าชิ้นนี้จากคลังหลัก?</h3> 
+                                <p className="text-xs text-slate-500 font-medium">{masterItemToDelete.name}</p>
+                                <div className="grid grid-cols-2 gap-3 font-semibold pt-2"> 
+                                    <button onClick={() => setMasterItemToDelete(null)} className="h-11 rounded-xl text-slate-500 bg-slate-100 uppercase text-xs">ยกเลิก</button> 
+                                    <button onClick={() => confirmDeleteMaster(masterItemToDelete)} className="h-11 rounded-xl bg-red-600 text-white uppercase text-xs shadow-md">ยืนยัน</button> 
+                                </div> 
+                            </div> 
+                        </div>
+                    )}
+
+                    {/* Edit Product Modal (Admin / Dev Only) */}
+                    {editingProduct && (currentUserRank === 'Admin' || currentUserRank === 'Dev') && (
+                        <div className="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal text-left">
+                            <div className="bg-white p-6 rounded-2xl shadow-xl max-w-md w-full border border-slate-200 space-y-4">
+                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                    <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                                        <LucideIcon name="pencil" size={16} className="text-indigo-600" />
+                                        แก้ไขข้อมูลสินค้าหลัก
+                                    </h3>
+                                    <button onClick={() => setEditingProduct(null)} className="text-slate-400 hover:text-slate-600">
+                                        <LucideIcon name="x" size={18} />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ชื่อสินค้า</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full h-11 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3 text-xs outline-none font-semibold text-slate-800" 
+                                        value={editingProduct.name} 
+                                        onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })} 
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">รูปแบบการแก้ไขรูปภาพ</label>
+                                    <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                                        <button 
+                                            type="button"
+                                            onClick={() => setEditingProduct(p => ({ ...p, imageType: 'file' }))} 
+                                            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${editingProduct.imageType === 'file' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                                        >
+                                            อัปโหลดไฟล์ใหม่
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setEditingProduct(p => ({ ...p, imageType: 'url' }))} 
+                                            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${editingProduct.imageType === 'url' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                                        >
+                                            วาง URL รูปภาพ
+                                        </button>
+                                    </div>
+
+                                    {editingProduct.imageType === 'file' ? (
+                                        <div className="w-full relative group">
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                onChange={(e) => { 
+                                                    const f = e.target.files[0]; 
+                                                    if(f){
+                                                        const r = new FileReader(); 
+                                                        r.onloadend = () => setEditingProduct(p => ({ ...p, imageBase64: r.result, preview: r.result })); 
+                                                        r.readAsDataURL(f);
+                                                    }
+                                                }} 
+                                                className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                                            />
+                                            <div className="w-full bg-slate-50 border border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center gap-1.5">
+                                                <LucideIcon name="upload-cloud" size={24} className="text-indigo-500" />
+                                                <p className="text-[10px] text-slate-500 font-semibold">แตะเพื่อเลือกไฟล์รูปภาพใหม่จากเครื่อง</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <input 
+                                            type="text" 
+                                            placeholder="https://example.com/image.jpg" 
+                                            className="w-full h-11 bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl px-3 text-xs outline-none font-medium" 
+                                            value={editingProduct.urlInput} 
+                                            onChange={(e) => setEditingProduct({ ...editingProduct, urlInput: e.target.value, preview: e.target.value })} 
+                                        />
+                                    )}
+                                </div>
+
+                                {editingProduct.preview && (
+                                    <div className="bg-slate-50 rounded-xl p-2 border border-slate-200 flex justify-center max-h-36">
+                                        <img 
+                                            src={editingProduct.preview} 
+                                            className="max-h-32 object-contain rounded-lg" 
+                                            referrerPolicy="no-referrer"
+                                            onError={(e) => e.target.style.display = 'none'}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3 pt-2">
+                                    <button onClick={() => setEditingProduct(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase">ยกเลิก</button>
+                                    <button onClick={handleUpdateProductMaster} disabled={isEditingMaster} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase shadow-md hover:bg-indigo-700">บันทึกการแก้ไข</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Announcement Modal */}
+                    {showAnnouncementModal && (
+                        <div className="fixed inset-0 z-[250] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-modal text-left">
+                            <div className="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 space-y-4">
+                                <h3 className="font-bold text-sm text-slate-800">แก้ไขข้อความประกาศ</h3>
+                                <input 
+                                    type="text" 
+                                    placeholder="ใส่ข้อความประกาศ..." 
+                                    className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs outline-none font-medium" 
+                                    value={announcementInput} 
+                                    onChange={(e) => setAnnouncementInput(e.target.value)} 
+                                />
+                                <div className="flex gap-3 pt-2">
+                                    <button onClick={() => setShowAnnouncementModal(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold uppercase">ยกเลิก</button>
+                                    <button onClick={handleSaveAnnouncement} className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase shadow-md">บันทึก</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Lightbox Preview Image Modal */}
+                    {previewImage && (
+                        <div 
+                            className="fixed inset-0 z-[300] bg-slate-950/90 flex items-center justify-center p-4 animate-modal"
+                            onClick={(e) => {
+                                if (e.target.id === 'lightbox-backdrop') setPreviewImage(null);
+                            }}
+                            id="lightbox-backdrop"
+                        >
+                            <div 
+                                id="lightbox-image-container"
+                                className="bg-slate-900/90 p-2 rounded-2xl max-w-2xl max-h-[85vh] w-full h-full flex flex-col items-center justify-center relative shadow-2xl border border-slate-700/80 overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-center pointer-events-auto">
+                                    <div className="bg-slate-900/80 text-white px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md border border-slate-700">
+                                        ซูม: {Math.round(imageScale * 100)}%
+                                    </div>
+                                    <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-full border border-slate-700 backdrop-blur-md">
+                                        <button 
+                                            onClick={() => setImageScale(s => Math.min(s + 0.5, 4))}
+                                            className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all"
+                                            title="ขยาย"
+                                        >
+                                            <LucideIcon name="zoom-in" size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={() => { setImageScale(1); setImagePosition({ x: 0, y: 0 }); }}
+                                            className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all text-[10px] font-bold"
+                                            title="รีเซ็ต"
+                                        >
+                                            1:1
+                                        </button>
+                                        <button 
+                                            onClick={() => setImageScale(s => Math.max(s - 0.5, 1))}
+                                            className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center hover:bg-slate-700 active:scale-90 transition-all"
+                                            title="ย่อ"
+                                        >
+                                            <LucideIcon name="zoom-out" size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={() => setPreviewImage(null)}
+                                            className="w-8 h-8 rounded-full bg-rose-600/90 text-white flex items-center justify-center hover:bg-rose-600 active:scale-90 transition-all ml-1"
+                                            title="ปิด"
+                                        >
+                                            <LucideIcon name="x" size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div 
+                                    className="w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onTouchStart={handleTouchStart}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
+                                    onDoubleClick={handleDoubleTap}
+                                >
+                                    <img 
+                                        src={previewImage} 
+                                        referrerPolicy="no-referrer" 
+                                        className="max-w-full max-h-full object-contain rounded-xl transition-transform duration-75 ease-out pointer-events-none" 
+                                        style={{
+                                            transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageScale})`
+                                        }}
+                                    />
+                                </div>
+                                <p className="absolute bottom-2 text-[10px] text-slate-400 font-medium bg-slate-900/60 px-2.5 py-0.5 rounded-full pointer-events-none">
+                                    แตะ 2 ครั้งเพื่อซูมเข้า/ออก หรือใช้ปุ่มควบคุมด้านบน
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
