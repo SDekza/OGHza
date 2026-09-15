@@ -11,6 +11,10 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Cropper.js (สำหรับบังคับตัดภาพสี่เหลี่ยมจัตุรัส 1:1) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
     <!-- SheetJS, ExcelJS และ FileSaver สำหรับประมวลผลและฝังรูปลง Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -32,6 +36,8 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .dragover { background-color: #f0fdf4 !important; border-color: #22c55e !important; }
+        /* สไตล์หน้าต่าง Crop */
+        .cropper-view-box, .cropper-face { border-radius: 8px; }
     </style>
 </head>
 <body class="p-3 md:p-8 text-slate-800 flex flex-col min-h-screen">
@@ -43,15 +49,15 @@
             <h1 class="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3">
                 <span>📦</span> ตรวจสอบค่าส่งเกิน TikTok Shop & ซิงค์ภาพตราชั่ง
             </h1>
-            <p class="text-slate-500 text-sm mt-1">วิเคราะห์ส่วนต่างค่าน้ำหนัก • ซิงค์กล้องมือถือถ่ายรูป • ฝังรูปภาพลง Excel เคลมอัตโนมัติ</p>
+            <p class="text-slate-500 text-sm mt-1">วิเคราะห์ส่วนต่างค่าน้ำหนัก • ซิงค์กล้องมือถือถ่ายรูป (ตัดภาพ 1:1 อัตโนมัติ) • ฝังรูปลง Excel เคลม</p>
         </div>
 
-        <!-- Header Mobile (กระชับ ดูง่าย) -->
+        <!-- Header Mobile -->
         <div class="md:hidden flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
             <div class="flex items-center gap-2">
                 <span class="text-2xl">⚖️</span>
                 <div>
-                    <h1 class="font-bold text-base text-slate-900 leading-tight">ถ่ายรูปชั่งน้ำหนัก</h1>
+                    <h1 class="font-bold text-base text-slate-900 leading-tight">ถ่ายรูปชั่งน้ำหนัก (1:1)</h1>
                     <p class="text-[11px] text-slate-500">ซิงค์รูปเข้า Drive โฟลเดอร์ "ค่าส่งเกิน"</p>
                 </div>
             </div>
@@ -151,7 +157,7 @@
                             <th class="hidden md:table-cell px-3 py-3 font-semibold text-right">ร้านค้าจ่าย (บาท)</th>
                             <th class="px-3 py-3 font-semibold text-right">น้ำหนักระบบ</th>
                             <th class="px-3 py-3 font-semibold text-right">ขนส่งชั่งได้</th>
-                            <th class="px-3 py-3 font-semibold text-center">แนบรูปภาพ</th>
+                            <th class="px-3 py-3 font-semibold text-center">แนบรูปภาพ (1:1)</th>
                             <th class="px-3 py-3 font-semibold text-center">สาเหตุ</th>
                         </tr>
                     </thead>
@@ -176,8 +182,32 @@
 
     </div>
 
-    <!-- Hidden File Input For Camera/Upload -->
-    <input type="file" id="camera_input" accept="image/*" capture="environment" class="hidden">
+    <!-- Hidden Input รับไฟล์รูปภาพ -->
+    <input type="file" id="camera_input" accept="image/*" class="hidden">
+
+    <!-- Modal Crop รูปภาพสัดส่วน 1:1 -->
+    <div id="crop_modal" class="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-3 bg-slate-800 text-white flex items-center justify-between">
+                <span class="font-bold text-sm">✂️ ปรับกรอบภาพชั่งน้ำหนัก (1:1)</span>
+                <button onclick="closeCropModal()" class="text-slate-400 hover:text-white p-1">✕</button>
+            </div>
+            
+            <div class="p-3 bg-slate-950 flex-grow flex items-center justify-center overflow-hidden" style="max-height: 55vh;">
+                <img id="image_to_crop" src="" class="max-w-full max-h-full block">
+            </div>
+
+            <div class="p-4 bg-white flex flex-col gap-2">
+                <p class="text-xs text-slate-500 text-center">เลื่อน/ขยายกรอบให้เห็นเลขตราชั่งและใบปะหน้าชัดเจน</p>
+                <div class="flex gap-2">
+                    <button onclick="closeCropModal()" class="flex-1 py-2.5 bg-slate-100 text-slate-700 font-semibold rounded-xl text-xs hover:bg-slate-200 transition">ยกเลิก</button>
+                    <button onclick="confirmCropAndUpload()" id="btn_confirm_crop" class="flex-1 py-2.5 bg-emerald-600 text-white font-semibold rounded-xl text-xs hover:bg-emerald-700 transition shadow-sm flex items-center justify-center gap-1">
+                        <span>ยืนยันและอัปโหลด</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs flex items-center gap-2 opacity-0 pointer-events-none transition duration-300 z-50">
@@ -186,7 +216,6 @@
     </div>
 
     <script>
-        // Google Apps Script API URL ของคุณ
         const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbz2smYacrRo03eNvxu6GzhoHRMQ97b-4gbh3pUj1SDwZReziHeVdoJ-gLBPePlWn80E5g/exec";
 
         // DOM Elements
@@ -202,6 +231,12 @@
         const filterExcess = document.getElementById('filter_excess');
         const cameraInput = document.getElementById('camera_input');
 
+        // Modal Crop DOM
+        const cropModal = document.getElementById('crop_modal');
+        const imageToCrop = document.getElementById('image_to_crop');
+        const btnConfirmCrop = document.getElementById('btn_confirm_crop');
+        let cropper = null;
+
         // State
         let orderMap = new Map();
         let displayData = [];
@@ -209,14 +244,12 @@
         const itemsPerPage = 50;
         let activeUploadingOrderId = null;
 
-        // Auto Load On Mobile
         window.addEventListener('DOMContentLoaded', () => {
             if (window.innerWidth < 768) {
                 fetchOrdersFromCloud();
             }
         });
 
-        // Drag & Drop Setup
         if (dropZone) {
             dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
             dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
@@ -233,7 +266,6 @@
             });
         }
 
-        // อ่านไฟล์รายงาน Excel ของ TikTok Shop
         function handleFile(file) {
             hideError();
             dropStatus.innerText = "กำลังประมวลผลไฟล์... " + file.name;
@@ -366,13 +398,12 @@
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-slate-50/80 transition";
 
-                    // เปลี่ยนสีปุ่ม: มีรูปแล้ว = สีม่วงคราม / ยังไม่มีรูป = สีเขียว
                     let imageBtnHtml = '';
                     if (order.imageUrl) {
                         imageBtnHtml = `
                             <div class="flex items-center justify-center gap-1.5">
                                 <button onclick="triggerCamera('${order.orderId}')" class="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-semibold flex items-center gap-1">
-                                    <span>✅ มีรูปแล้ว (กดเปลี่ยน)</span>
+                                    <span>✅ มีรูป 1:1 แล้ว (เปลี่ยน)</span>
                                 </button>
                                 <a href="${order.imageUrl}" target="_blank" class="p-1 text-indigo-600 hover:text-indigo-800" title="เปิดดูรูปภาพ">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
@@ -419,7 +450,7 @@
             document.getElementById('btn_next').disabled = currentPage === totalPages || totalPages === 0;
         }
 
-        // Camera Trigger & Resize
+        // Camera / Gallery Trigger
         function triggerCamera(orderId) {
             activeUploadingOrderId = orderId;
             cameraInput.click();
@@ -427,42 +458,65 @@
 
         cameraInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (!file || !activeUploadingOrderId) return;
-            const targetOrderId = activeUploadingOrderId;
+            if (!file) return;
 
-            showToast("⏳ กำลังบีบอัดและอัปโหลดรูป...");
+            // โหลดภาพเข้า Cropper Modal
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                imageToCrop.src = evt.target.result;
+                cropModal.classList.remove('hidden');
 
-            // บีบอัดภาพไม่ให้เกิน 1200px ก่อนส่งเข้า Drive
-            const img = new Image();
-            img.src = URL.createObjectURL(file);
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                const maxDim = 1200;
-
-                if (width > maxDim || height > maxDim) {
-                    if (width > height) {
-                        height = Math.round((height * maxDim) / width);
-                        width = maxDim;
-                    } else {
-                        width = Math.round((width * maxDim) / height);
-                        height = maxDim;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                const base64Data = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-                uploadImageToDrive(targetOrderId, base64Data);
+                if (cropper) cropper.destroy();
+                
+                // บังคับอัตราส่วน 1:1 (aspectRatio: 1)
+                cropper = new Cropper(imageToCrop, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    autoCropArea: 0.9,
+                    responsive: true,
+                    guides: true,
+                    movable: true,
+                    zoomable: true,
+                    rotatable: false,
+                    scalable: false
+                });
             };
+            reader.readAsDataURL(file);
             cameraInput.value = '';
         });
 
-        // อัปโหลดเข้า Drive ผ่าน Google Apps Script
+        function closeCropModal() {
+            cropModal.classList.add('hidden');
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+        }
+
+        // ตัดภาพสี่เหลี่ยมจัตุรัส 800x800 px แล้วอัปโหลด
+        function confirmCropAndUpload() {
+            if (!cropper || !activeUploadingOrderId) return;
+
+            btnConfirmCrop.disabled = true;
+            btnConfirmCrop.innerText = "กำลังตัดรูป...";
+
+            const canvas = cropper.getCroppedCanvas({
+                width: 800,
+                height: 800,
+                imageSmoothingQuality: 'high'
+            });
+
+            const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+            const targetOrderId = activeUploadingOrderId;
+
+            closeCropModal();
+            showToast("⏳ กำลังอัปโหลดภาพ 1:1 ไปยัง Drive...");
+            btnConfirmCrop.disabled = false;
+            btnConfirmCrop.innerText = "ยืนยันและอัปโหลด";
+
+            uploadImageToDrive(targetOrderId, base64Data);
+        }
+
         function uploadImageToDrive(orderId, base64Data) {
             fetch(DEFAULT_API_URL, {
                 method: 'POST',
@@ -481,17 +535,14 @@
                         item.imageUrl = data.fileUrl;
                         renderTable();
                     }
-                    showToast("✅ บันทึกรูปลง Drive สำเร็จ!");
+                    showToast("✅ บันทึกรูป 1:1 ลง Drive สำเร็จ!");
                 } else {
                     alert("อัปโหลดไม่สำเร็จ: " + data.message);
                 }
             })
-            .catch(err => {
-                alert("เกิดข้อผิดพลาดในการเชื่อมต่อ Google Drive: " + err.message);
-            });
+            .catch(err => alert("เชื่อมต่อล้มเหลว: " + err.message));
         }
 
-        // ซิงค์จากคอมฯ ขึ้นคลาวด์
         function syncOrdersToCloud() {
             const orders = Array.from(orderMap.values());
             if (orders.length === 0) { alert("ไม่มีข้อมูลให้อัปโหลด กรุณาลากไฟล์ Excel เข้ามาก่อน"); return; }
@@ -508,11 +559,8 @@
             })
             .then(res => res.json())
             .then(res => {
-                if (res.status === 'success') {
-                    showToast(`☁️ ซิงค์ข้อมูล ${res.count} ออเดอร์เรียบร้อยแล้ว!`);
-                } else {
-                    alert("เกิดข้อผิดพลาด: " + res.message);
-                }
+                if (res.status === 'success') showToast(`☁️ ซิงค์ข้อมูล ${res.count} ออเดอร์สำเร็จ!`);
+                else alert("เกิดข้อผิดพลาด: " + res.message);
             })
             .catch(err => alert("ซิงค์ไม่สำเร็จ: " + err.message))
             .finally(() => {
@@ -521,7 +569,6 @@
             });
         }
 
-        // ดึงข้อมูลจากคลาวด์ลงมา (มือถือ / คอมฯ)
         function fetchOrdersFromCloud() {
             const spin = document.getElementById('spin_sync_m');
             if (spin) spin.classList.remove('hidden');
@@ -560,7 +607,7 @@
             });
         }
 
-        // ส่งออกไฟล์เคลม Excel พร้อมฝังรูปภาพลงในเซลล์คอลัมน์ J โดยตรง (In-cell Image)
+        // Export Excel พร้อมฝังรูปสี่เหลี่ยมจัตุรัส 1:1 ขนาดมาตรฐานเดียวกันทุกแถว
         async function exportToClaimExcel() {
             const orders = (filterExcess && filterExcess.checked) 
                 ? Array.from(orderMap.values()).filter(o => o.isExcess) 
@@ -571,10 +618,9 @@
             const exportBtn = document.getElementById('btn_export_excel');
             const exportText = document.getElementById('export_text');
             exportBtn.disabled = true;
-            exportText.innerText = "⏳ กำลังดึงข้อมูลรูปภาพจาก Drive...";
+            exportText.innerText = "⏳ กำลังดึงรูปภาพจาก Drive...";
 
             try {
-                // 1. ดึง Base64 ของรูปภาพทั้งหมดจาก Google Drive ผ่าน Apps Script
                 const response = await fetch(`${DEFAULT_API_URL}?include_base64=true`);
                 const cloudData = await response.json();
                 
@@ -590,12 +636,11 @@
                     });
                 }
 
-                exportText.innerText = "⏳ กำลังสร้างและฝังรูปลง Excel...";
+                exportText.innerText = "⏳ กำลังฝังรูป 1:1 ลง Excel...";
 
                 const workbook = new ExcelJS.Workbook();
                 const worksheet = workbook.addWorksheet('Sheet1');
 
-                // ตั้งค่าความกว้างคอลัมน์
                 worksheet.columns = [
                     { key: 'col1', width: 10 },
                     { key: 'col2', width: 16 },
@@ -606,10 +651,9 @@
                     { key: 'col7', width: 18 },
                     { key: 'col8', width: 18 },
                     { key: 'col9', width: 18 },
-                    { key: 'col10', width: 26 } // คอลัมน์สำหรับแสดงรูปภาพ
+                    { key: 'col10', width: 20 } // ปรับขนาดช่องรูปให้พอดีรูป 1:1
                 ];
 
-                // หัวตาราง
                 const headerRow = worksheet.addRow([
                     'ลำดับ',
                     'ชื่อร้านค้า\n(Shop name)',
@@ -630,7 +674,6 @@
                     cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
                 });
 
-                // ใส่ข้อมูลแต่ละแถว
                 for (let i = 0; i < orders.length; i++) {
                     const o = orders[i];
                     const rowIndex = i + 2;
@@ -648,12 +691,12 @@
                         ''
                     ]);
 
-                    row.getCell(5).numFmt = '@'; // บังคับ Order ID เป็นข้อความตัวเลขล้วน
+                    row.getCell(5).numFmt = '@';
                     row.alignment = { vertical: 'middle', horizontal: 'center' };
 
-                    // ถ้ามีรูปภาพ ให้ฝังรูปลงช่องเซลล์คอลัมน์ J พร้อมขยายความสูงแถว
+                    // ฝังรูปลงเซลล์แบบ 1:1 (ขนาดกว้าง x ยาว 100x100 px เท่ากันทุกรูป)
                     if (o.imageBase64) {
-                        row.height = 90;
+                        row.height = 85; // ปรับความสูงแถวให้รับกับรูปสี่เหลี่ยมจัตุรัส
 
                         const imageId = workbook.addImage({
                             base64: o.imageBase64,
@@ -661,15 +704,14 @@
                         });
 
                         worksheet.addImage(imageId, {
-                            tl: { col: 9.15, row: rowIndex - 1 + 0.1 },
-                            ext: { width: 140, height: 105 }
+                            tl: { col: 9.2, row: rowIndex - 1 + 0.1 },
+                            ext: { width: 100, height: 100 } // ล็อกอัตราส่วน 1:1
                         });
                     } else {
                         row.height = 24;
                     }
                 }
 
-                // ตั้งชื่อไฟล์ตามวันที่ วว-ดด-ปปปป
                 const now = new Date();
                 const d = String(now.getDate()).padStart(2, '0');
                 const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -678,17 +720,16 @@
 
                 const buffer = await workbook.xlsx.writeBuffer();
                 saveAs(new Blob([buffer]), fileName);
-                showToast("✅ สร้างและฝังรูปลงไฟล์ Excel เรียบร้อยแล้ว!");
+                showToast("✅ สร้างและฝังรูป 1:1 ลง Excel เรียบร้อย!");
 
             } catch (err) {
-                alert("เกิดข้อผิดพลาดในการสร้างไฟล์ Excel: " + err.message);
+                alert("สร้างไฟล์ไม่สำเร็จ: " + err.message);
             } finally {
                 exportBtn.disabled = false;
                 exportText.innerText = "📥 ส่งออกไฟล์เคลม (.xlsx)";
             }
         }
 
-        // Helpers
         function copyText(text) {
             navigator.clipboard.writeText(text).then(() => showToast(`📋 คัดลอก ${text} แล้ว`));
         }
