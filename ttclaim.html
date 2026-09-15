@@ -11,7 +11,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Cropper.js (สำหรับบังคับตัดภาพสี่เหลี่ยมจัตุรัส 1:1) -->
+    <!-- Cropper.js (สำหรับตัดภาพ 1:1) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
@@ -36,7 +36,6 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .dragover { background-color: #f0fdf4 !important; border-color: #22c55e !important; }
-        /* สไตล์หน้าต่าง Crop */
         .cropper-view-box, .cropper-face { border-radius: 8px; }
     </style>
 </head>
@@ -49,7 +48,7 @@
             <h1 class="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3">
                 <span>📦</span> ตรวจสอบค่าส่งเกิน TikTok Shop & ซิงค์ภาพตราชั่ง
             </h1>
-            <p class="text-slate-500 text-sm mt-1">วิเคราะห์ส่วนต่างค่าน้ำหนัก • ซิงค์กล้องมือถือถ่ายรูป (ตัดภาพ 1:1 อัตโนมัติ) • ฝังรูปลง Excel เคลม</p>
+            <p class="text-slate-500 text-sm mt-1">วิเคราะห์ส่วนต่างค่าน้ำหนัก • ซิงค์กล้องมือถือถ่ายรูป (1:1) • กรอกเลขพัสดุ/น้ำหนักชั่งจริง • ฝังรูปลง Excel</p>
         </div>
 
         <!-- Header Mobile -->
@@ -57,8 +56,8 @@
             <div class="flex items-center gap-2">
                 <span class="text-2xl">⚖️</span>
                 <div>
-                    <h1 class="font-bold text-base text-slate-900 leading-tight">ถ่ายรูปชั่งน้ำหนัก (1:1)</h1>
-                    <p class="text-[11px] text-slate-500">ซิงค์รูปเข้า Drive โฟลเดอร์ "ค่าส่งเกิน"</p>
+                    <h1 class="font-bold text-base text-slate-900 leading-tight">บันทึกข้อมูลเคลม (1:1)</h1>
+                    <p class="text-[11px] text-slate-500">ถ่ายรูปตราชั่ง + กรอกน้ำหนักจริง</p>
                 </div>
             </div>
             <button onclick="fetchOrdersFromCloud()" id="btn_cloud_sync_m" class="px-3 py-1.5 bg-emerald-600 active:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm">
@@ -78,7 +77,7 @@
                         <span class="font-bold text-slate-800 text-sm">ระบบเชื่อมต่อ คอมพิวเตอร์ ⇄ มือถือ</span>
                         <span class="bg-emerald-200 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">พร้อมใช้งาน</span>
                     </div>
-                    <p class="text-xs text-slate-500 mt-0.5">โยนไฟล์ในคอม ➔ กดซิงค์ ➔ ใช้มือถือเปิดเว็บถ่ายรูป ➔ กลับมากดดาวน์โหลดไฟล์เคลม</p>
+                    <p class="text-xs text-slate-500 mt-0.5">โยนไฟล์ในคอม ➔ กดซิงค์ ➔ ใช้มือถือเปิดเว็บถ่ายรูป/ใส่น้ำหนักจริง ➔ กลับมากดดาวน์โหลด Excel</p>
                 </div>
             </div>
             
@@ -101,7 +100,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
             </svg>
             <p class="text-base font-bold text-slate-800" id="drop_status">ลากไฟล์ Excel รายงาน TikTok Shop มาวางที่นี่</p>
-            <p class="text-xs text-slate-500">รองรับไฟล์ <span class="font-mono bg-emerald-200 px-1 py-0.5 rounded text-emerald-900">.xlsx, .xls</span> ลากรวมกันได้หลายสัปดาห์</p>
+            <p class="text-xs text-slate-500">รองรับไฟล์ <span class="font-mono bg-emerald-200 px-1 py-0.5 rounded text-emerald-900">.xlsx, .xls</span></p>
             <input type="file" id="file_input" accept=".xlsx, .xls" class="hidden" multiple>
         </div>
 
@@ -158,6 +157,7 @@
                             <th class="px-3 py-3 font-semibold text-right">น้ำหนักระบบ</th>
                             <th class="px-3 py-3 font-semibold text-right">ขนส่งชั่งได้</th>
                             <th class="px-3 py-3 font-semibold text-center">แนบรูปภาพ (1:1)</th>
+                            <th class="px-3 py-3 font-semibold text-center">ข้อมูลชั่งจริง</th>
                             <th class="px-3 py-3 font-semibold text-center">สาเหตุ</th>
                         </tr>
                     </thead>
@@ -185,18 +185,16 @@
     <!-- Hidden Input รับไฟล์รูปภาพ -->
     <input type="file" id="camera_input" accept="image/*" class="hidden">
 
-    <!-- Modal Crop รูปภาพสัดส่วน 1:1 -->
+    <!-- Modal Crop รูปภาพ 1:1 -->
     <div id="crop_modal" class="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4 hidden">
         <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             <div class="p-3 bg-slate-800 text-white flex items-center justify-between">
                 <span class="font-bold text-sm">✂️ ปรับกรอบภาพชั่งน้ำหนัก (1:1)</span>
                 <button onclick="closeCropModal()" class="text-slate-400 hover:text-white p-1">✕</button>
             </div>
-            
             <div class="p-3 bg-slate-950 flex-grow flex items-center justify-center overflow-hidden" style="max-height: 55vh;">
                 <img id="image_to_crop" src="" class="max-w-full max-h-full block">
             </div>
-
             <div class="p-4 bg-white flex flex-col gap-2">
                 <p class="text-xs text-slate-500 text-center">เลื่อน/ขยายกรอบให้เห็นเลขตราชั่งและใบปะหน้าชัดเจน</p>
                 <div class="flex gap-2">
@@ -205,6 +203,37 @@
                         <span>ยืนยันและอัปโหลด</span>
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal กรอกข้อมูล Tracking No. และ น้ำหนักชั่งจริง -->
+    <div id="details_modal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b pb-2">
+                <div>
+                    <h3 class="font-bold text-sm text-slate-900">📝 ข้อมูลชั่งจริงร้านค้า</h3>
+                    <p id="modal_order_id_lbl" class="text-xs font-mono text-emerald-600 font-bold mt-0.5">-</p>
+                </div>
+                <button onclick="closeDetailsModal()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเลขติดตามพัสดุ (Tracking Number)</label>
+                    <input type="text" id="modal_tracking_input" placeholder="TH123456789..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">น้ำหนักที่ชั่งได้จริง (kg) (weight from seller)</label>
+                    <input type="text" inputmode="decimal" pattern="[0-9]*[.]?[0-9]*" id="modal_weight_input" placeholder="เช่น 0.15 หรือ 1.20" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <p class="text-[10px] text-slate-400 mt-1">แป้นพิมพ์เปิด NumPad ทศนิยมอัตโนมัติ (หน่วยกิโลกรัม kg)</p>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeDetailsModal()" class="flex-1 py-2 bg-slate-100 text-slate-700 font-semibold rounded-xl text-xs hover:bg-slate-200">ยกเลิก</button>
+                <button onclick="saveDetailsFromModal()" id="btn_save_details" class="flex-1 py-2 bg-emerald-600 text-white font-semibold rounded-xl text-xs hover:bg-emerald-700 shadow-sm flex items-center justify-center gap-1">บันทึก</button>
             </div>
         </div>
     </div>
@@ -237,6 +266,13 @@
         const btnConfirmCrop = document.getElementById('btn_confirm_crop');
         let cropper = null;
 
+        // Modal Details DOM
+        const detailsModal = document.getElementById('details_modal');
+        const modalOrderIdLbl = document.getElementById('modal_order_id_lbl');
+        const modalTrackingInput = document.getElementById('modal_tracking_input');
+        const modalWeightInput = document.getElementById('modal_weight_input');
+        let activeDetailOrderId = null;
+
         // State
         let orderMap = new Map();
         let displayData = [];
@@ -245,9 +281,7 @@
         let activeUploadingOrderId = null;
 
         window.addEventListener('DOMContentLoaded', () => {
-            if (window.innerWidth < 768) {
-                fetchOrdersFromCloud();
-            }
+            if (window.innerWidth < 768) fetchOrdersFromCloud();
         });
 
         if (dropZone) {
@@ -300,7 +334,7 @@
 
         function extractData(rawData) {
             let headerRowIndex = -1;
-            let colOrder = -1, colSellerPaid = -1, colEstWeight = -1, colBilledWeight = -1, colDate = -1;
+            let colOrder = -1, colSellerPaid = -1, colEstWeight = -1, colBilledWeight = -1, colDate = -1, colTrack = -1;
 
             for (let r = 0; r < Math.min(25, rawData.length); r++) {
                 const row = rawData[r];
@@ -311,6 +345,7 @@
                     if (val.includes('น้ำหนักพัสดุโดยประมาณ') || val.includes('estweight')) colEstWeight = c;
                     if (val.includes('น้ำหนักที่เรียกเก็บเงิน') || val.includes('billedweight')) colBilledWeight = c;
                     if (val.includes('เวลาที่ชำระ') || val.includes('วันที่ชำระ')) colDate = c;
+                    if (val.includes('หมายเลขติดตามพัสดุ') || val.includes('tracking')) colTrack = c;
                 }
                 if (colOrder !== -1) { headerRowIndex = r; break; }
             }
@@ -330,6 +365,7 @@
                 let sellerPaid = parseFloat(String(colSellerPaid !== -1 ? row[colSellerPaid] : 0).replace(/,/g, '')) || 0;
                 let estWeight = parseFloat(String(colEstWeight !== -1 ? row[colEstWeight] : 0).replace(/,/g, '')) || 0;
                 let billedWeight = parseFloat(String(colBilledWeight !== -1 ? row[colBilledWeight] : 0).replace(/,/g, '')) || 0;
+                let trackingNo = colTrack !== -1 ? String(row[colTrack]).trim() : "";
 
                 let isExcess = sellerPaid < -0.01;
                 let reason = "-";
@@ -350,6 +386,8 @@
 
                 const existing = orderMap.get(idStr);
                 const imageUrl = existing ? existing.imageUrl : "";
+                const actualWeight = existing ? existing.actualWeight : "";
+                if (existing && !trackingNo) trackingNo = existing.trackingNo;
 
                 orderMap.set(idStr, {
                     orderId: idStr,
@@ -361,7 +399,9 @@
                     isExcess: isExcess,
                     reason: reason,
                     badgeClass: badgeClass,
-                    imageUrl: imageUrl
+                    imageUrl: imageUrl,
+                    trackingNo: trackingNo,
+                    actualWeight: actualWeight
                 });
             }
 
@@ -392,29 +432,46 @@
             const currentOrders = displayData.slice(startIndex, startIndex + itemsPerPage);
 
             if (currentOrders.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-400">ไม่พบรายการในเงื่อนไขปัจจุบัน</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-slate-400">ไม่พบรายการในเงื่อนไขปัจจุบัน</td></tr>`;
             } else {
                 currentOrders.forEach((order, index) => {
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-slate-50/80 transition";
 
+                    // Image button
                     let imageBtnHtml = '';
                     if (order.imageUrl) {
                         imageBtnHtml = `
-                            <div class="flex items-center justify-center gap-1.5">
-                                <button onclick="triggerCamera('${order.orderId}')" class="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-semibold flex items-center gap-1">
-                                    <span>✅ มีรูป 1:1 แล้ว (เปลี่ยน)</span>
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="triggerCamera('${order.orderId}')" class="px-2 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-semibold">
+                                    <span>✅ 1:1 แล้ว (เปลี่ยน)</span>
                                 </button>
-                                <a href="${order.imageUrl}" target="_blank" class="p-1 text-indigo-600 hover:text-indigo-800" title="เปิดดูรูปภาพ">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                <a href="${order.imageUrl}" target="_blank" class="p-1 text-indigo-600 hover:text-indigo-800" title="ดูรูป">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                                 </a>
                             </div>
                         `;
                     } else {
                         imageBtnHtml = `
-                            <button onclick="triggerCamera('${order.orderId}')" id="btn_upload_${order.orderId}" class="px-3 py-1 bg-emerald-600 active:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1 mx-auto shadow-sm">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
-                                <span>📸 ถ่าย/แนบรูป</span>
+                            <button onclick="triggerCamera('${order.orderId}')" class="px-2.5 py-1 bg-emerald-600 active:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1 mx-auto shadow-sm">
+                                <span>📸 แนบรูป 1:1</span>
+                            </button>
+                        `;
+                    }
+
+                    // Details Button (Tracking & Actual Weight)
+                    let detailsBtnHtml = '';
+                    const hasDetails = order.actualWeight || order.trackingNo;
+                    if (hasDetails) {
+                        detailsBtnHtml = `
+                            <button onclick="openDetailsModal('${order.orderId}')" class="px-2 py-1 bg-sky-50 border border-sky-300 text-sky-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 mx-auto">
+                                <span>✏️ ${order.actualWeight ? order.actualWeight + ' kg' : 'มีข้อมูล'}</span>
+                            </button>
+                        `;
+                    } else {
+                        detailsBtnHtml = `
+                            <button onclick="openDetailsModal('${order.orderId}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 mx-auto">
+                                <span>📝 ใส่น้ำหนักจริง</span>
                             </button>
                         `;
                     }
@@ -423,7 +480,12 @@
                         <td class="px-3 py-3 text-center text-slate-400 font-medium">${startIndex + index + 1}</td>
                         <td class="hidden md:table-cell px-3 py-3 text-slate-600">${order.dateStr}</td>
                         <td class="px-3 py-3 font-mono font-bold text-slate-900">
-                            <span class="cursor-pointer hover:text-emerald-600" onclick="copyText('${order.orderId}')">${order.orderId}</span>
+                            <div class="flex items-center gap-1.5">
+                                <span>${order.orderId}</span>
+                                <button onclick="copySingleOrder('${order.orderId}', this)" class="p-1 text-slate-400 hover:text-emerald-600 active:text-emerald-700 bg-slate-50 hover:bg-slate-100 rounded-md transition" title="คัดลอกเลขออเดอร์">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                            </div>
                         </td>
                         <td class="hidden md:table-cell px-3 py-3 text-right font-semibold ${order.isExcess ? 'text-rose-600' : 'text-slate-400'}">
                             ${order.sellerPaid > 0 ? '-' + order.sellerPaid.toFixed(2) : '-'}
@@ -433,6 +495,7 @@
                             ${order.billedWeight ? order.billedWeight + ' ก.' : '-'}
                         </td>
                         <td class="px-3 py-3 text-center">${imageBtnHtml}</td>
+                        <td class="px-3 py-3 text-center">${detailsBtnHtml}</td>
                         <td class="px-3 py-3 text-center">
                             <span class="px-2 py-0.5 text-[11px] rounded-full inline-block ${order.badgeClass}">${order.reason}</span>
                         </td>
@@ -450,7 +513,71 @@
             document.getElementById('btn_next').disabled = currentPage === totalPages || totalPages === 0;
         }
 
-        // Camera / Gallery Trigger
+        // คัดลอก Order ID รายแถว (สำหรับมือถือและคอม)
+        function copySingleOrder(orderId, btn) {
+            navigator.clipboard.writeText(orderId).then(() => {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                btn.classList.add('bg-emerald-50');
+                showToast(`📋 คัดลอก ${orderId} แล้ว`);
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('bg-emerald-50');
+                }, 1200);
+            });
+        }
+
+        // Details Modal Operations
+        function openDetailsModal(orderId) {
+            activeDetailOrderId = orderId;
+            const item = orderMap.get(orderId);
+            modalOrderIdLbl.innerText = orderId;
+            modalTrackingInput.value = (item && item.trackingNo) ? item.trackingNo : "";
+            modalWeightInput.value = (item && item.actualWeight) ? item.actualWeight : "";
+            detailsModal.classList.remove('hidden');
+            setTimeout(() => modalWeightInput.focus(), 150);
+        }
+
+        function closeDetailsModal() {
+            detailsModal.classList.add('hidden');
+            activeDetailOrderId = null;
+        }
+
+        function saveDetailsFromModal() {
+            if (!activeDetailOrderId) return;
+            const targetOrderId = activeDetailOrderId;
+            const trackingNo = modalTrackingInput.value.trim();
+            const actualWeight = modalWeightInput.value.trim();
+
+            const item = orderMap.get(targetOrderId);
+            if (item) {
+                item.trackingNo = trackingNo;
+                item.actualWeight = actualWeight;
+                renderTable();
+            }
+
+            closeDetailsModal();
+            showToast("💾 กำลังบันทึกข้อมูลไปยังคลาวด์...");
+
+            // อัปเดตไปยัง Google Apps Script
+            fetch(DEFAULT_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: 'update_details',
+                    orderId: targetOrderId,
+                    trackingNo: trackingNo,
+                    actualWeight: actualWeight
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.status === 'success') showToast("✅ บันทึกข้อมูลเรียบร้อย!");
+            })
+            .catch(err => console.error(err));
+        }
+
+        // Camera / Cropper Operations
         function triggerCamera(orderId) {
             activeUploadingOrderId = orderId;
             cameraInput.click();
@@ -460,15 +587,12 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            // โหลดภาพเข้า Cropper Modal
             const reader = new FileReader();
             reader.onload = function(evt) {
                 imageToCrop.src = evt.target.result;
                 cropModal.classList.remove('hidden');
 
                 if (cropper) cropper.destroy();
-                
-                // บังคับอัตราส่วน 1:1 (aspectRatio: 1)
                 cropper = new Cropper(imageToCrop, {
                     aspectRatio: 1,
                     viewMode: 1,
@@ -476,9 +600,7 @@
                     responsive: true,
                     guides: true,
                     movable: true,
-                    zoomable: true,
-                    rotatable: false,
-                    scalable: false
+                    zoomable: true
                 });
             };
             reader.readAsDataURL(file);
@@ -487,25 +609,16 @@
 
         function closeCropModal() {
             cropModal.classList.add('hidden');
-            if (cropper) {
-                cropper.destroy();
-                cropper = null;
-            }
+            if (cropper) { cropper.destroy(); cropper = null; }
         }
 
-        // ตัดภาพสี่เหลี่ยมจัตุรัส 800x800 px แล้วอัปโหลด
         function confirmCropAndUpload() {
             if (!cropper || !activeUploadingOrderId) return;
 
             btnConfirmCrop.disabled = true;
             btnConfirmCrop.innerText = "กำลังตัดรูป...";
 
-            const canvas = cropper.getCroppedCanvas({
-                width: 800,
-                height: 800,
-                imageSmoothingQuality: 'high'
-            });
-
+            const canvas = cropper.getCroppedCanvas({ width: 800, height: 800, imageSmoothingQuality: 'high' });
             const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
             const targetOrderId = activeUploadingOrderId;
 
@@ -521,11 +634,7 @@
             fetch(DEFAULT_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                    action: 'upload_image',
-                    orderId: orderId,
-                    base64: base64Data
-                })
+                body: JSON.stringify({ action: 'upload_image', orderId: orderId, base64: base64Data })
             })
             .then(res => res.json())
             .then(data => {
@@ -594,7 +703,9 @@
                             isExcess: isExcess,
                             reason: o.reason,
                             badgeClass: badgeClass,
-                            imageUrl: o.imageUrl || ""
+                            imageUrl: o.imageUrl || "",
+                            trackingNo: o.trackingNo || "",
+                            actualWeight: o.actualWeight || ""
                         });
                     });
                     processAndRender();
@@ -607,7 +718,7 @@
             });
         }
 
-        // Export Excel พร้อมฝังรูปสี่เหลี่ยมจัตุรัส 1:1 ขนาดมาตรฐานเดียวกันทุกแถว
+        // Export Excel เคลมสินค้า
         async function exportToClaimExcel() {
             const orders = (filterExcess && filterExcess.checked) 
                 ? Array.from(orderMap.values()).filter(o => o.isExcess) 
@@ -630,9 +741,7 @@
                         if (o.imageBase64) base64Map.set(o.orderId, o.imageBase64);
                     });
                     orders.forEach(o => {
-                        if (base64Map.has(o.orderId)) {
-                            o.imageBase64 = base64Map.get(o.orderId);
-                        }
+                        if (base64Map.has(o.orderId)) o.imageBase64 = base64Map.get(o.orderId);
                     });
                 }
 
@@ -651,7 +760,7 @@
                     { key: 'col7', width: 18 },
                     { key: 'col8', width: 18 },
                     { key: 'col9', width: 18 },
-                    { key: 'col10', width: 20 } // ปรับขนาดช่องรูปให้พอดีรูป 1:1
+                    { key: 'col10', width: 20 }
                 ];
 
                 const headerRow = worksheet.addRow([
@@ -684,19 +793,18 @@
                         'THLCDPWLPP',
                         '',
                         o.orderId,
-                        '',
+                        o.trackingNo || '',
                         o.estWeight ? (o.estWeight / 1000).toFixed(2) : '',
                         o.billedWeight ? (o.billedWeight / 1000).toFixed(2) : '',
-                        '',
+                        o.actualWeight || '',
                         ''
                     ]);
 
                     row.getCell(5).numFmt = '@';
                     row.alignment = { vertical: 'middle', horizontal: 'center' };
 
-                    // ฝังรูปลงเซลล์แบบ 1:1 (ขนาดกว้าง x ยาว 100x100 px เท่ากันทุกรูป)
                     if (o.imageBase64) {
-                        row.height = 85; // ปรับความสูงแถวให้รับกับรูปสี่เหลี่ยมจัตุรัส
+                        row.height = 85;
 
                         const imageId = workbook.addImage({
                             base64: o.imageBase64,
@@ -705,7 +813,7 @@
 
                         worksheet.addImage(imageId, {
                             tl: { col: 9.2, row: rowIndex - 1 + 0.1 },
-                            ext: { width: 100, height: 100 } // ล็อกอัตราส่วน 1:1
+                            ext: { width: 100, height: 100 }
                         });
                     } else {
                         row.height = 24;
@@ -728,10 +836,6 @@
                 exportBtn.disabled = false;
                 exportText.innerText = "📥 ส่งออกไฟล์เคลม (.xlsx)";
             }
-        }
-
-        function copyText(text) {
-            navigator.clipboard.writeText(text).then(() => showToast(`📋 คัดลอก ${text} แล้ว`));
         }
 
         function changePage(step) {
