@@ -61,12 +61,48 @@
         svg { flex-shrink: 0; }
     </style>
 </head>
-<body class="p-3 sm:p-6 md:p-8 text-slate-800 flex flex-col min-h-screen">
+<body class="p-2 sm:p-4 md:p-8 text-slate-800 flex flex-col min-h-screen bg-slate-50">
 
-    <div class="max-w-6xl mx-auto w-full bg-white p-4 sm:p-7 md:p-10 rounded-3xl shadow-xl border border-slate-100 flex-grow">
+    <div class="max-w-6xl mx-auto w-full bg-white p-3 sm:p-5 md:p-10 rounded-2xl md:rounded-3xl shadow-sm md:shadow-xl border border-slate-100 flex-grow">
         
-        <!-- Header -->
-        <div class="text-center mb-6">
+        <!-- Header: Mobile Minimal vs Desktop Full -->
+        <!-- Mobile Header (hidden on md+) -->
+        <div class="block md:hidden mb-3 pb-2 border-b border-slate-100">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="p-1.5 bg-emerald-600 text-white rounded-lg text-sm">📦</span>
+                    <div>
+                        <h1 class="font-bold text-slate-900 text-base leading-tight">ระบบเคลมค่าส่ง (มือถือ)</h1>
+                        <p class="text-[11px] text-slate-400">ถ่ายรูปหน้าตราชั่งบันทึกเข้า Drive</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <!-- Mobile Sync Button -->
+                    <button type="button" onclick="fetchOrdersFromCloud()" id="btn_pull_mobile" class="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 active:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition active:scale-95">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span>ซิงค์ข้อมูล</span>
+                    </button>
+                    <!-- Settings Button Mobile -->
+                    <button type="button" onclick="toggleApiSettings()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile Stats Pill -->
+            <div id="mobile_stats_bar" class="hidden mt-2 flex items-center justify-between text-xs bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/70">
+                <span class="text-slate-600">ออเดอร์: <b id="mobile_total_count" class="text-slate-900">0</b></span>
+                <span class="text-slate-600">ถ่ายรูปแล้ว: <b id="mobile_photo_count" class="text-emerald-600">0</b></span>
+            </div>
+        </div>
+
+        <!-- Desktop Header (hidden on mobile) -->
+        <div class="hidden md:block text-center mb-6">
             <div class="inline-flex items-center justify-center p-3 bg-emerald-50 rounded-2xl mb-3 text-emerald-600">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
@@ -80,8 +116,8 @@
             </p>
         </div>
 
-        <!-- Cloud Sync & Mobile Panel -->
-        <div class="mb-6 p-4 sm:p-5 bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-sky-50/70 rounded-2xl border border-emerald-200/80 shadow-sm">
+        <!-- Cloud Sync Panel (DESKTOP ONLY: hidden on mobile) -->
+        <div class="hidden md:block mb-6 p-4 sm:p-5 bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-sky-50/70 rounded-2xl border border-emerald-200/80 shadow-sm">
             <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <div class="p-2.5 bg-emerald-600 text-white rounded-xl shadow-sm">
@@ -99,7 +135,7 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <!-- Pull Data (Mobile) -->
+                    <!-- Pull Data -->
                     <button type="button" id="btn_pull_cloud" onclick="fetchOrdersFromCloud()" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-xl shadow-sm text-xs sm:text-sm font-semibold transition active:scale-95">
                         <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -124,20 +160,20 @@
                     </button>
                 </div>
             </div>
+        </div>
 
-            <!-- Expandable API URL Setting -->
-            <div id="api_settings_panel" class="hidden mt-4 pt-3 border-t border-emerald-200/60">
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Google Apps Script Web App URL (บันทึกอัตโนมัติ):</label>
-                <div class="flex gap-2">
-                    <input type="text" id="api_url_input" class="w-full text-xs font-mono p-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="https://script.google.com/macros/s/.../exec">
-                    <button type="button" onclick="saveApiUrl()" class="px-3.5 py-1.5 bg-slate-800 text-white rounded-xl text-xs font-medium hover:bg-slate-900 transition">บันทึก</button>
-                </div>
+        <!-- Expandable API URL Setting (Shared) -->
+        <div id="api_settings_panel" class="hidden mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Google Apps Script Web App URL:</label>
+            <div class="flex gap-2">
+                <input type="text" id="api_url_input" class="w-full text-xs font-mono p-2 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="https://script.google.com/macros/s/.../exec">
+                <button type="button" onclick="saveApiUrl()" class="px-3.5 py-1.5 bg-slate-800 text-white rounded-xl text-xs font-medium hover:bg-slate-900 transition flex-shrink-0">บันทึก</button>
             </div>
         </div>
         
-        <!-- Drag & Drop Zone -->
+        <!-- Drag & Drop Zone (DESKTOP ONLY: hidden on mobile) -->
         <div id="drop_zone" onclick="document.getElementById('file_input').click()" 
-             class="border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-100/60 transition-all duration-200 p-6 sm:p-8 md:p-10 text-center rounded-2xl cursor-pointer flex flex-col items-center justify-center gap-3 select-none">
+             class="hidden md:flex border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-100/60 transition-all duration-200 p-6 sm:p-8 md:p-10 text-center rounded-2xl cursor-pointer flex-col items-center justify-center gap-3 select-none">
             <div class="p-3.5 bg-white rounded-full shadow-sm text-emerald-600">
                 <svg class="w-8 h-8 transition-transform duration-200 group-hover:-translate-y-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
@@ -170,14 +206,13 @@
         </div>
 
         <!-- Results Container -->
-        <div id="results_container" class="hidden mt-8">
+        <div id="results_container" class="hidden mt-4 md:mt-8">
             
-            <!-- Summary Dashboard Card -->
-            <div class="flex flex-col gap-5 bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200/80 mb-6">
+            <!-- Summary Dashboard Card (DESKTOP ONLY: hidden on mobile) -->
+            <div class="hidden md:flex flex-col gap-5 bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200/80 mb-6">
                 
                 <!-- Row 1: Key Stats & Primary Actions -->
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                    
                     <!-- Statistics Badges -->
                     <div class="flex flex-wrap items-center gap-3 text-slate-700">
                         <div class="bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
@@ -194,8 +229,6 @@
 
                     <!-- Filter Toggle & Actions -->
                     <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-start lg:justify-end">
-                        
-                        <!-- Toggle Switch: "เฉพาะ ค่าส่งเกิน" -->
                         <label for="filter_excess" class="flex items-center gap-2.5 bg-white border border-slate-200 px-3.5 py-2 rounded-xl hover:bg-slate-50 transition duration-200 shadow-sm select-none cursor-pointer">
                             <div class="relative inline-flex items-center flex-shrink-0">
                                 <input type="checkbox" id="filter_excess" class="sr-only peer" onchange="processAndRender()" checked>
@@ -225,7 +258,7 @@
                     </div>
                 </div>
 
-                <!-- Row 2: 3 Dedicated Copy Buttons for Excel -->
+                <!-- Row 2: Copy Buttons for Excel -->
                 <div class="pt-3 border-t border-slate-200/90 flex flex-wrap items-center gap-2">
                     <span class="text-xs font-semibold text-slate-500 mr-1 flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,7 +267,6 @@
                         คัดลอกลง Excel แถวละช่อง:
                     </span>
 
-                    <!-- Button 1: Order IDs (Green) -->
                     <button type="button" id="btn_copy_orders" onclick="copyAllByType('orderId', this)" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm text-xs font-semibold transition active:scale-95">
                         <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
@@ -242,7 +274,6 @@
                         <span id="label_copy_orders">คัดลอกเลขออเดอร์ทั้งหมด (0)</span>
                     </button>
 
-                    <!-- Button 2: Est Weights (Sky) -->
                     <button type="button" id="btn_copy_est" onclick="copyAllByType('estWeight', this)" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl shadow-sm text-xs font-semibold transition active:scale-95">
                         <svg class="w-4 h-4 text-sky-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
@@ -250,7 +281,6 @@
                         <span id="label_copy_est">คัดลอกน้ำหนักระบบทั้งหมด (0)</span>
                     </button>
 
-                    <!-- Button 3: Billed Weights (Amber) -->
                     <button type="button" id="btn_copy_billed" onclick="copyAllByType('billedWeight', this)" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-sm text-xs font-semibold transition active:scale-95">
                         <svg class="w-4 h-4 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path>
@@ -260,15 +290,16 @@
                 </div>
             </div>
 
-            <!-- Orders Table Container -->
-            <div class="border border-slate-200 rounded-2xl overflow-x-auto shadow-sm bg-white">
-                <table class="w-full text-left border-collapse text-sm whitespace-nowrap">
+            <!-- Orders Table Container (Mobile shows 6 columns, PC shows all) -->
+            <div class="border border-slate-200 rounded-xl md:rounded-2xl overflow-x-auto shadow-sm bg-white">
+                <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
                     <thead class="bg-slate-900 text-slate-100 select-none">
                         <tr>
-                            <th class="px-4 py-3.5 font-semibold w-14 text-center">#</th>
+                            <!-- 1. ลำดับ (แสดงทั้ง Mobile & PC) -->
+                            <th class="px-2.5 md:px-4 py-2.5 md:py-3.5 font-semibold w-10 md:w-14 text-center">#</th>
                             
-                            <!-- Sortable Date -->
-                            <th class="px-4 py-3.5 font-semibold cursor-pointer hover:bg-slate-800 transition-colors group" onclick="toggleSort('timestamp')">
+                            <!-- 2. วันที่ชำระเงิน (PC ONLY: hidden on mobile) -->
+                            <th class="hidden md:table-cell px-4 py-3.5 font-semibold cursor-pointer hover:bg-slate-800 transition-colors group" onclick="toggleSort('timestamp')">
                                 <div class="flex items-center">
                                     วันที่ชำระเงิน 
                                     <svg id="sort_icon_timestamp" class="sort-icon group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,13 +308,23 @@
                                 </div>
                             </th>
                             
-                            <th class="px-4 py-3.5 font-semibold">หมายเลขคำสั่งซื้อ (Order ID)</th>
-                            <th class="px-4 py-3.5 font-semibold text-right">ร้านค้าจ่าย (บาท)</th>
-                            <th class="px-4 py-3.5 font-semibold text-right">น้ำหนักระบบ</th>
-                            <th class="px-4 py-3.5 font-semibold text-right">ขนส่งชั่งได้</th>
-                            
-                            <!-- Sortable Reason -->
-                            <th class="px-4 py-3.5 font-semibold cursor-pointer hover:bg-slate-800 transition-colors group text-center" onclick="toggleSort('reason')">
+                            <!-- 3. หมายเลขคำสั่งซื้อ (Order ID) (แสดงทั้ง Mobile & PC) -->
+                            <th class="px-2.5 md:px-4 py-2.5 md:py-3.5 font-semibold">หมายเลขคำสั่งซื้อ (Order ID)</th>
+
+                            <!-- 4. ร้านค้าจ่าย (บาท) (PC ONLY: hidden on mobile) -->
+                            <th class="hidden md:table-cell px-4 py-3.5 font-semibold text-right">ร้านค้าจ่าย (บาท)</th>
+
+                            <!-- 5. น้ำหนักระบบ (แสดงทั้ง Mobile & PC) -->
+                            <th class="px-2 md:px-4 py-2.5 md:py-3.5 font-semibold text-right">น้ำหนักระบบ</th>
+
+                            <!-- 6. ขนส่งชั่งได้ (แสดงทั้ง Mobile & PC) -->
+                            <th class="px-2 md:px-4 py-2.5 md:py-3.5 font-semibold text-right">ขนส่งชั่งได้</th>
+
+                            <!-- 7. แนบรูป (ปุ่มกล้อง/ดูรูป) (แสดงทั้ง Mobile & PC) -->
+                            <th class="px-2 md:px-4 py-2.5 md:py-3.5 font-semibold text-center w-28 md:w-36">แนบรูป</th>
+
+                            <!-- 8. สาเหตุ (แสดงทั้ง Mobile & PC) -->
+                            <th class="px-2 md:px-4 py-2.5 md:py-3.5 font-semibold cursor-pointer hover:bg-slate-800 transition-colors group text-center" onclick="toggleSort('reason')">
                                 <div class="flex items-center justify-center">
                                     สาเหตุ 
                                     <svg id="sort_icon_reason" class="sort-icon group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,9 +332,6 @@
                                     </svg>
                                 </div>
                             </th>
-
-                            <!-- Image Attachment Action -->
-                            <th class="px-4 py-3.5 font-semibold text-center w-36">รูปหลักฐานตราชั่ง</th>
                         </tr>
                     </thead>
                     <tbody id="table_body" class="divide-y divide-slate-100">
@@ -303,24 +341,24 @@
             </div>
 
             <!-- Pagination Bar -->
-            <div class="mt-5 flex flex-col sm:flex-row items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-200 gap-4">
-                <div class="text-sm text-slate-600">
-                    แสดง <span id="page_start" class="font-bold text-slate-900">0</span> ถึง <span id="page_end" class="font-bold text-slate-900">0</span> 
-                    (จากที่แสดงผล <span id="filtered_count" class="font-bold text-slate-900">0</span> รายการ)
+            <div class="mt-3 md:mt-5 flex flex-col sm:flex-row items-center justify-between bg-slate-50 p-2.5 md:p-4 rounded-xl md:rounded-2xl border border-slate-200 gap-2.5 md:gap-4">
+                <div class="text-xs md:text-sm text-slate-600">
+                    แสดง <span id="page_start" class="font-bold text-slate-900">0</span>-<span id="page_end" class="font-bold text-slate-900">0</span> 
+                    (จาก <span id="filtered_count" class="font-bold text-slate-900">0</span> รายการ)
                 </div>
-                <div class="flex items-center gap-2">
-                    <button id="btn_prev" onclick="changePage(-1)" class="px-3.5 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium text-sm flex items-center gap-1 shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center gap-1.5 md:gap-2">
+                    <button id="btn_prev" onclick="changePage(-1)" class="px-2.5 md:px-3.5 py-1 md:py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg md:rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium text-xs md:text-sm flex items-center gap-1 shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
                         <span>ก่อนหน้า</span>
                     </button>
-                    <div class="text-xs sm:text-sm font-medium px-2 text-slate-700">
-                        หน้า <span id="current_page_text" class="text-emerald-700 font-bold">1</span> / <span id="total_pages_text" class="font-bold">1</span>
+                    <div class="text-xs md:text-sm font-medium px-1.5 md:px-2 text-slate-700">
+                        <span id="current_page_text" class="text-emerald-700 font-bold">1</span>/<span id="total_pages_text" class="font-bold">1</span>
                     </div>
-                    <button id="btn_next" onclick="changePage(1)" class="px-3.5 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium text-sm flex items-center gap-1 shadow-sm">
+                    <button id="btn_next" onclick="changePage(1)" class="px-2.5 md:px-3.5 py-1 md:py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg md:rounded-xl hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium text-xs md:text-sm flex items-center gap-1 shadow-sm">
                         <span>ถัดไป</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                         </svg>
                     </button>
@@ -330,11 +368,11 @@
     </div>
 
     <!-- Floating Toast Notification -->
-    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-16 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-sm font-medium pointer-events-none">
+    <div id="toast" class="fixed bottom-4 right-4 z-50 transform translate-y-16 opacity-0 transition-all duration-300 bg-slate-900 text-white px-3.5 py-2.5 rounded-xl shadow-xl flex items-center gap-2 text-xs md:text-sm font-medium pointer-events-none">
         <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        <span id="toast_text">คัดลอกเรียบร้อยแล้ว</span>
+        <span id="toast_text">เรียบร้อย</span>
     </div>
 
     <script>
@@ -368,7 +406,9 @@
 
         const apiUrlInput = document.getElementById('api_url_input');
         const apiSettingsPanel = document.getElementById('api_settings_panel');
-        const syncBadge = document.getElementById('sync_badge');
+        const mobileStatsBar = document.getElementById('mobile_stats_bar');
+        const mobileTotalCount = document.getElementById('mobile_total_count');
+        const mobilePhotoCount = document.getElementById('mobile_photo_count');
 
         // Google Apps Script Web App Deployment URL
         const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbz2smYacrRo03eNvxu6GzhoHRMQ97b-4gbh3pUj1SDwZReziHeVdoJ-gLBPePlWn80E5g/exec";
@@ -382,30 +422,34 @@
         const itemsPerPage = 50;
         let currentSort = { key: null, direction: 1 };
         let toastTimeout = null;
-        let currentTargetOrderId = null; // Used when mobile camera is opened
+        let currentTargetOrderId = null;
 
-        // Drag & Drop Setup
-        dropZone.addEventListener('dragover', (e) => { 
-            e.preventDefault(); 
-            dropZone.classList.add('dragover'); 
-        });
-        dropZone.addEventListener('dragleave', (e) => { 
-            e.preventDefault(); 
-            dropZone.classList.remove('dragover'); 
-        });
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault(); 
-            dropZone.classList.remove('dragover'); 
-            if (e.dataTransfer.files && e.dataTransfer.files.length) {
-                Array.from(e.dataTransfer.files).forEach(file => handleFile(file));
-            }
-        });
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files.length) {
-                Array.from(e.target.files).forEach(file => handleFile(file));
-            }
-            fileInput.value = '';
-        });
+        // Setup Drag & Drop only if available (desktop)
+        if (dropZone) {
+            dropZone.addEventListener('dragover', (e) => { 
+                e.preventDefault(); 
+                dropZone.classList.add('dragover'); 
+            });
+            dropZone.addEventListener('dragleave', (e) => { 
+                e.preventDefault(); 
+                dropZone.classList.remove('dragover'); 
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault(); 
+                dropZone.classList.remove('dragover'); 
+                if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                    Array.from(e.dataTransfer.files).forEach(file => handleFile(file));
+                }
+            });
+        }
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length) {
+                    Array.from(e.target.files).forEach(file => handleFile(file));
+                }
+                fileInput.value = '';
+            });
+        }
 
         function toggleApiSettings() {
             apiSettingsPanel.classList.toggle('hidden');
@@ -416,7 +460,7 @@
             if (val) {
                 scriptApiUrl = val;
                 localStorage.setItem('tiktok_claim_api_url', val);
-                showToast("บันทึก Google Apps Script API URL สำเร็จ");
+                showToast("บันทึก API URL สำเร็จ");
                 apiSettingsPanel.classList.add('hidden');
             }
         }
@@ -427,15 +471,16 @@
             currentPage = 1;
             hideError();
             resultsContainer.classList.add('hidden');
-            dropStatus.innerText = "ลากไฟล์ Excel รายงาน TikTok Shop มาวางที่นี่ (หรือคลิกเพื่อเลือกไฟล์)";
-            totalOrdersEl.innerText = "0";
-            totalExcessAmountEl.innerText = "0.00";
+            if (mobileStatsBar) mobileStatsBar.classList.add('hidden');
+            if (dropStatus) dropStatus.innerText = "ลากไฟล์ Excel รายงาน TikTok Shop มาวางที่นี่ (หรือคลิกเพื่อเลือกไฟล์)";
+            if (totalOrdersEl) totalOrdersEl.innerText = "0";
+            if (totalExcessAmountEl) totalExcessAmountEl.innerText = "0.00";
             updateButtonLabels(0);
         }
 
         function handleFile(file) {
             hideError();
-            dropStatus.innerText = "กำลังประมวลผลไฟล์... " + file.name;
+            if (dropStatus) dropStatus.innerText = "กำลังประมวลผลไฟล์... " + file.name;
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -445,7 +490,6 @@
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     
-                    // Sanitize & repair cell range dimension
                     let max_r = 0, max_c = 0;
                     for (let key in worksheet) {
                         if (key[0] === '!') continue;
@@ -463,12 +507,12 @@
                     }
                     
                     extractDataFromSheet(rawData);
-                    dropStatus.innerText = "ประมวลผลเสร็จสิ้น! สามารถลากไฟล์อื่นมาเพิ่มข้อมูลได้อีก";
+                    if (dropStatus) dropStatus.innerText = "ประมวลผลเสร็จสิ้น! สามารถลากไฟล์อื่นมาเพิ่มข้อมูลได้อีก";
                     
                 } catch (error) {
                     console.error(error);
-                    showError("เกิดข้อผิดพลาดในการอ่านไฟล์ " + file.name + " โปรดตรวจสอบว่าเป็นไฟล์ Excel รายงานที่ถูกต้อง");
-                    dropStatus.innerText = "ลากไฟล์ Excel รายงาน TikTok Shop มาวางที่นี่";
+                    showError("เกิดข้อผิดพลาดในการอ่านไฟล์ " + file.name);
+                    if (dropStatus) dropStatus.innerText = "ลากไฟล์ Excel รายงาน TikTok Shop มาวางที่นี่";
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -496,7 +540,7 @@
             }
 
             if (headerRowIndex === -1 || colOrder === -1) {
-                showError("ไม่พบคอลัมน์ 'หมายเลขคำสั่งซื้อ' ในไฟล์นี้ กรุณาตรวจสอบว่าเป็นไฟล์รายงานจากระบบ TikTok Shop");
+                showError("ไม่พบคอลัมน์ 'หมายเลขคำสั่งซื้อ' ในไฟล์นี้");
                 return;
             }
 
@@ -529,18 +573,17 @@
 
                 if (isExcess) {
                     if (sellerPaid >= -0.99) {
-                        reason = "เศษทศนิยมคลาดเคลื่อน";
+                        reason = "ทศนิยมคลาดเคลื่อน";
                         badgeClass = "bg-slate-100 text-slate-700 border border-slate-300";
                     } else if (billedWeight > estWeight && estWeight > 0) {
-                        reason = "น้ำหนักจริงเกินกว่าระบบ";
+                        reason = "น้ำหนักจริงเกิน";
                         badgeClass = "bg-orange-100 text-orange-700 border border-orange-200 font-semibold";
                     } else {
-                        reason = "โดนหักค่าส่ง (ตรวจสอบโปรโมชั่น)";
+                        reason = "โดนหักค่าส่ง";
                         badgeClass = "bg-rose-100 text-rose-700 border border-rose-200 font-semibold";
                     }
                 }
 
-                // Preserve existing imageUrl if present
                 const existing = orderMap.get(idStr);
                 const imageUrl = existing ? existing.imageUrl : "";
 
@@ -591,15 +634,18 @@
 
         function processAndRender() {
             let allOrdersArray = Array.from(orderMap.values());
-            totalOrdersEl.innerText = allOrdersArray.length.toLocaleString();
+            if (totalOrdersEl) totalOrdersEl.innerText = allOrdersArray.length.toLocaleString();
 
             let totalSum = 0;
+            let photoCount = 0;
             allOrdersArray.forEach(o => {
                 if (o.isExcess) totalSum += o.sellerPaid;
+                if (o.imageUrl) photoCount++;
             });
-            totalExcessAmountEl.innerText = totalSum.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+            if (totalExcessAmountEl) totalExcessAmountEl.innerText = totalSum.toLocaleString('th-TH', { minimumFractionDigits: 2 });
 
-            if (filterExcess.checked) {
+            const isExcessOnly = filterExcess ? filterExcess.checked : true;
+            if (isExcessOnly) {
                 displayData = allOrdersArray.filter(order => order.isExcess);
             } else {
                 displayData = [...allOrdersArray];
@@ -614,6 +660,13 @@
                     if (valA > valB) return 1 * currentSort.direction;
                     return 0;
                 });
+            }
+
+            // Update mobile stats
+            if (mobileStatsBar && mobileTotalCount && mobilePhotoCount) {
+                mobileStatsBar.classList.remove('hidden');
+                mobileTotalCount.innerText = displayData.length.toLocaleString();
+                mobilePhotoCount.innerText = photoCount.toLocaleString();
             }
 
             updateButtonLabels(displayData.length);
@@ -662,7 +715,7 @@
                 }, 1400);
             }
 
-            showToast(`คัดลอก${typeName} (${displayData.length.toLocaleString()} แถว) เรียบร้อย! วางลง Excel ได้ทันที`);
+            showToast(`คัดลอก${typeName} (${displayData.length.toLocaleString()} แถว) เรียบร้อย!`);
         }
 
         function exportClaimExcel() {
@@ -697,26 +750,17 @@
                     order.estWeight > 0 ? order.estWeight : 0,
                     order.billedWeight > 0 ? order.billedWeight : 0,
                     "",
-                    order.imageUrl || "" // Google Drive Direct link if captured
+                    order.imageUrl || ""
                 ]);
             });
 
             const ws = XLSX.utils.aoa_to_sheet(rows);
 
             ws['!cols'] = [
-                { wch: 8 },  // ลำดับ
-                { wch: 15 }, // ชื่อร้านค้า
-                { wch: 18 }, // รหัสร้านค้า
-                { wch: 25 }, // รายการพัสดุ
-                { wch: 28 }, // Order ID
-                { wch: 24 }, // Tracking
-                { wch: 22 }, // Input weight
-                { wch: 24 }, // Chargable weight
-                { wch: 22 }, // Weight from seller
-                { wch: 40 }  // Picture / Google Drive Link
+                { wch: 8 },  { wch: 15 }, { wch: 18 }, { wch: 25 }, { wch: 28 },
+                { wch: 24 }, { wch: 22 }, { wch: 24 }, { wch: 22 }, { wch: 40 }
             ];
 
-            // Enforce Text Format ('s') on Order ID & Tracking Number
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let R = 1; R <= range.e.r; ++R) {
                 const cellRefOrderId = XLSX.utils.encode_cell({ c: 4, r: R });
@@ -759,7 +803,7 @@
             const currentOrders = displayData.slice(startIndex, endIndex);
 
             if (currentOrders.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 text-base">ไม่พบออเดอร์ในเงื่อนไขตัวกรองปัจจุบัน ✨</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 text-sm">ไม่พบรายการ ✨</td></tr>';
             } else {
                 currentOrders.forEach((order, index) => {
                     const globalIndex = startIndex + index + 1;
@@ -768,7 +812,7 @@
                     
                     const amountColor = order.isExcess ? 'text-rose-600 font-bold' : 'text-slate-400';
                     const amountSign = order.isNegative ? '-' : '';
-                    const weightDiffColor = order.billedWeight > order.estWeight ? 'text-amber-600 font-bold' : 'text-slate-600';
+                    const weightDiffColor = order.billedWeight > order.estWeight ? 'text-orange-600 font-semibold' : 'text-slate-600';
 
                     const estWeightVal = order.estWeight > 0 ? order.estWeight : '0';
                     const billedWeightVal = order.billedWeight > 0 ? order.billedWeight : '0';
@@ -777,15 +821,15 @@
                     let imageActionHtml = '';
                     if (order.imageUrl) {
                         imageActionHtml = `
-                            <div class="flex items-center justify-center gap-1.5">
-                                <a href="${order.imageUrl}" target="_blank" class="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-semibold hover:bg-emerald-200 transition flex items-center gap-1" title="เปิดดูรูปบน Google Drive">
-                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex items-center justify-center gap-1">
+                                <a href="${order.imageUrl}" target="_blank" class="px-2 py-0.5 md:py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-[11px] md:text-xs font-semibold hover:bg-emerald-200 transition flex items-center gap-0.5" title="เปิดดูรูปบน Google Drive">
+                                    <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                     </svg>
-                                    <span>ดูรูปแล้ว</span>
+                                    <span>ดูรูป</span>
                                 </a>
                                 <button type="button" onclick="triggerCamera('${order.orderId}')" class="p-1 text-slate-400 hover:text-emerald-700 rounded transition" title="ถ่ายรูปใหม่">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                                     </svg>
                                 </button>
@@ -793,7 +837,7 @@
                         `;
                     } else {
                         imageActionHtml = `
-                            <button type="button" id="btn_upload_${order.orderId}" onclick="triggerCamera('${order.orderId}')" class="px-3 py-1 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-300 hover:border-emerald-300 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 mx-auto active:scale-95">
+                            <button type="button" id="btn_upload_${order.orderId}" onclick="triggerCamera('${order.orderId}')" class="px-2 md:px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[11px] md:text-xs font-semibold transition flex items-center justify-center gap-1 mx-auto active:scale-95 shadow-sm">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -804,62 +848,47 @@
                     }
 
                     tr.innerHTML = `
-                        <td class="px-4 py-3 text-slate-400 text-center font-mono text-xs">${globalIndex}</td>
-                        <td class="px-4 py-3 text-slate-600">${order.dateStr}</td>
+                        <!-- 1. ลำดับ -->
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-slate-400 text-center font-mono text-[11px] md:text-xs">${globalIndex}</td>
                         
-                        <!-- Order ID -->
-                        <td class="px-4 py-3 font-mono font-medium text-slate-900">
-                            <div class="flex items-center gap-2">
-                                <span>${order.orderId}</span>
-                                <button type="button" onclick="copyValue('${order.orderId}', this, 'คัดลอก Order ID แล้ว')" class="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="คัดลอกหมายเลขคำสั่งซื้อนี้">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <!-- 2. วันที่ (PC ONLY) -->
+                        <td class="hidden md:table-cell px-4 py-3 text-slate-600">${order.dateStr}</td>
+                        
+                        <!-- 3. Order ID -->
+                        <td class="px-2 md:px-4 py-2 md:py-3 font-mono font-medium text-slate-900 text-xs md:text-sm">
+                            <div class="flex items-center gap-1">
+                                <span class="truncate max-w-[130px] sm:max-w-none">${order.orderId}</span>
+                                <button type="button" onclick="copyValue('${order.orderId}', this, 'คัดลอก Order ID แล้ว')" class="p-1 text-slate-400 hover:text-emerald-600 rounded" title="คัดลอก">
+                                    <svg class="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                                     </svg>
                                 </button>
                             </div>
                         </td>
                         
-                        <!-- Seller Paid Amount -->
-                        <td class="px-4 py-3 text-right ${amountColor}">
+                        <!-- 4. ร้านค้าจ่าย (PC ONLY) -->
+                        <td class="hidden md:table-cell px-4 py-3 text-right ${amountColor}">
                             ${amountSign}${order.sellerPaid > 0 ? order.sellerPaid.toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-'}
                         </td>
                         
-                        <!-- System Weight -->
-                        <td class="px-4 py-3 text-right font-mono">
-                            <div class="flex items-center justify-end gap-1.5">
-                                <span class="text-slate-600">${order.estWeight > 0 ? order.estWeight + ' ก.' : '-'}</span>
-                                ${order.estWeight > 0 ? `
-                                    <button type="button" onclick="copyValue('${estWeightVal}', this, 'คัดลอกน้ำหนักระบบ: ${estWeightVal} ก.')" class="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="คัดลอกค่าน้ำหนักระบบ (${estWeightVal})">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                                        </svg>
-                                    </button>
-                                ` : ''}
-                            </div>
+                        <!-- 5. น้ำหนักระบบ -->
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-right font-mono text-slate-600">
+                            ${order.estWeight > 0 ? order.estWeight : '-'}
                         </td>
                         
-                        <!-- Billed Weight -->
-                        <td class="px-4 py-3 text-right font-mono">
-                            <div class="flex items-center justify-end gap-1.5">
-                                <span class="${weightDiffColor}">${order.billedWeight > 0 ? order.billedWeight + ' ก.' : '-'}</span>
-                                ${order.billedWeight > 0 ? `
-                                    <button type="button" onclick="copyValue('${billedWeightVal}', this, 'คัดลอกน้ำหนักชั่งได้: ${billedWeightVal} ก.')" class="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="คัดลอกค่าน้ำหนักชั่งได้ (${billedWeightVal})">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                                        </svg>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </td>
-                        
-                        <!-- Reason Badge -->
-                        <td class="px-4 py-3 text-center">
-                            <span class="px-2.5 py-0.5 text-xs rounded-full inline-block whitespace-nowrap ${order.badgeClass}">${order.reason}</span>
+                        <!-- 6. ขนส่งชั่งได้ -->
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-right font-mono ${weightDiffColor}">
+                            ${order.billedWeight > 0 ? order.billedWeight : '-'}
                         </td>
 
-                        <!-- Picture Evidence Column -->
-                        <td class="px-4 py-3 text-center">
+                        <!-- 7. แนบรูป -->
+                        <td class="px-1.5 md:px-4 py-2 md:py-3 text-center">
                             ${imageActionHtml}
+                        </td>
+
+                        <!-- 8. สาเหตุ -->
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-center">
+                            <span class="px-1.5 md:px-2.5 py-0.5 text-[10px] md:text-xs rounded-full inline-block whitespace-nowrap ${order.badgeClass}">${order.reason}</span>
                         </td>
                     `;
                     tableBody.appendChild(tr);
@@ -876,29 +905,25 @@
             btnNext.disabled = currentPage === totalPages || totalPages === 0;
         }
 
-        // Open camera/gallery for specific order
         function triggerCamera(orderId) {
             currentTargetOrderId = orderId;
             cameraInput.value = '';
             cameraInput.click();
         }
 
-        // Handle image captured from mobile camera or chosen from gallery
         function handleCapturedImage(input) {
             if (!input.files || input.files.length === 0 || !currentTargetOrderId) return;
             const file = input.files[0];
             const orderId = currentTargetOrderId;
 
-            // Visual feedback on button
             const targetBtn = document.getElementById(`btn_upload_${orderId}`);
             if (targetBtn) {
-                targetBtn.innerHTML = `<span class="animate-pulse text-amber-600">กำลังอัปโหลด...</span>`;
+                targetBtn.innerHTML = `<span class="animate-pulse text-amber-600 text-[10px]">กำลังส่ง...</span>`;
                 targetBtn.disabled = true;
             }
 
-            showToast(`กำลังบีบอัดและอัปโหลดรูป #${orderId} ไปยัง Google Drive...`);
+            showToast(`กำลังส่งรูป #${orderId} เข้า Drive...`);
 
-            // Compress image using HTML5 Canvas to keep payload light and fast
             compressImage(file, 1280, 0.75, function(base64Data) {
                 uploadImageToDrive(orderId, base64Data, targetBtn);
             });
@@ -939,7 +964,6 @@
             reader.readAsDataURL(file);
         }
 
-        // POST image to Google Apps Script -> Google Drive folder "ค่าส่งเกิน"
         async function uploadImageToDrive(orderId, base64Data, targetBtn) {
             try {
                 const payload = {
@@ -962,13 +986,13 @@
                         orderMap.get(orderId).imageUrl = result.fileUrl;
                     }
                     processAndRender();
-                    showToast(`อัปโหลดรูปออเดอร์ #${orderId} ลง Google Drive สำเร็จ!`);
+                    showToast(`บันทึกรูป #${orderId} เรียบร้อย!`);
                 } else {
-                    throw new Error(result.message || 'เกิดข้อผิดพลาดในการบันทึกภาพ');
+                    throw new Error(result.message || 'บันทึกภาพไม่สำเร็จ');
                 }
             } catch (err) {
                 console.error(err);
-                showToast(`เกิดข้อผิดพลาดในการอัปโหลด: ${err.message}`);
+                showToast(`เกิดข้อผิดพลาด: ${err.message}`);
                 if (targetBtn) {
                     targetBtn.innerHTML = `<span>ลองใหม่</span>`;
                     targetBtn.disabled = false;
@@ -976,10 +1000,9 @@
             }
         }
 
-        // Desktop: Sync extracted orders to Google Sheets via Apps Script
         async function syncOrdersToCloud() {
             if (!displayData || displayData.length === 0) {
-                showToast('กรุณาลากไฟล์รายงาน TikTok เข้ามาก่อนซิงค์ข้อมูล');
+                showToast('กรุณาลากไฟล์รายงานเข้ามาก่อนซิงค์');
                 return;
             }
 
@@ -1010,25 +1033,27 @@
 
                 const res = await response.json();
                 if (res.status === 'success') {
-                    showToast(`ซิงค์ข้อมูล ${ordersPayload.length.toLocaleString()} รายการไปมือถือเรียบร้อยแล้ว!`);
+                    showToast(`ซิงค์ข้อมูล ${ordersPayload.length.toLocaleString()} รายการไปมือถือแล้ว!`);
                 } else {
                     throw new Error(res.message || 'Sync failed');
                 }
             } catch (err) {
                 console.error(err);
-                showToast(`ซิงค์ไม่สำเร็จ: โปรดตรวจสอบการเชื่อมต่อหรือ API URL`);
+                showToast(`ซิงค์ไม่สำเร็จ โปรดตรวจสอบการเชื่อมต่อ`);
             } finally {
                 btnSync.innerHTML = originalText;
                 btnSync.disabled = false;
             }
         }
 
-        // Mobile: Fetch synced orders from Google Sheets
         async function fetchOrdersFromCloud() {
-            const btnPull = document.getElementById('btn_pull_cloud');
-            const originalText = btnPull.innerHTML;
-            btnPull.innerHTML = `<span class="animate-spin">⏳</span> กำลังดึงข้อมูล...`;
-            btnPull.disabled = true;
+            const btnPullPc = document.getElementById('btn_pull_cloud');
+            const btnPullMobile = document.getElementById('btn_pull_mobile');
+            if (btnPullPc) btnPullPc.disabled = true;
+            if (btnPullMobile) {
+                btnPullMobile.disabled = true;
+                btnPullMobile.innerHTML = `<span class="animate-spin">⏳</span> ดึงข้อมูล...`;
+            }
 
             try {
                 const response = await fetch(scriptApiUrl + '?action=get_orders', {
@@ -1043,7 +1068,7 @@
                         let badgeClass = "bg-rose-100 text-rose-700 border border-rose-200 font-semibold";
                         if (item.reason.includes('น้ำหนักจริงเกิน')) {
                             badgeClass = "bg-orange-100 text-orange-700 border border-orange-200 font-semibold";
-                        } else if (item.reason.includes('เศษทศนิยม')) {
+                        } else if (item.reason.includes('ทศนิยม')) {
                             badgeClass = "bg-slate-100 text-slate-700 border border-slate-300";
                         }
 
@@ -1063,37 +1088,36 @@
                         });
                     });
 
-                    dropStatus.innerText = `ดึงข้อมูลจากระบบคลาวด์แล้ว ${res.orders.length.toLocaleString()} รายการ`;
+                    if (dropStatus) dropStatus.innerText = `ดึงข้อมูลแล้ว ${res.orders.length.toLocaleString()} รายการ`;
                     processAndRender();
-                    showToast(`ดึงข้อมูล ${res.orders.length.toLocaleString()} รายการสำเร็จ! พร้อมถ่ายรูป`);
+                    showToast(`ดึงข้อมูล ${res.orders.length.toLocaleString()} รายการสำเร็จ!`);
                 } else {
-                    showToast('ยังไม่มีรายการที่ซิงค์มาจากคอมพิวเตอร์');
+                    showToast('ยังไม่มีรายการที่ซิงค์มา');
                 }
             } catch (err) {
                 console.error(err);
-                showToast(`ไม่สามารถดึงข้อมูลได้: ${err.message}`);
+                showToast(`ดึงข้อมูลไม่สำเร็จ: ${err.message}`);
             } finally {
-                btnPull.innerHTML = originalText;
-                btnPull.disabled = false;
+                if (btnPullPc) btnPullPc.disabled = false;
+                if (btnPullMobile) {
+                    btnPullMobile.disabled = false;
+                    btnPullMobile.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg><span>ซิงค์ข้อมูล</span>`;
+                }
             }
         }
 
         function copyValue(text, btn, toastMsg) {
             executeCopy(text);
-            
             if (btn) {
                 const originalHTML = btn.innerHTML;
-                btn.innerHTML = `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                btn.innerHTML = `<svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
                 btn.classList.add('bg-emerald-100');
                 setTimeout(() => { 
                     btn.innerHTML = originalHTML; 
                     btn.classList.remove('bg-emerald-100');
                 }, 1200);
             }
-            
-            if (toastMsg) {
-                showToast(toastMsg);
-            }
+            if (toastMsg) showToast(toastMsg);
         }
 
         function executeCopy(text) {
@@ -1117,7 +1141,7 @@
             toastTimeout = setTimeout(() => {
                 toast.classList.remove('translate-y-0', 'opacity-100');
                 toast.classList.add('translate-y-16', 'opacity-0');
-            }, 2500);
+            }, 2300);
         }
 
         function changePage(step) {
@@ -1134,6 +1158,13 @@
             errorMessage.classList.add('hidden');
             errorText.innerText = '';
         }
+
+        // Auto-fetch on mobile if opened directly
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.innerWidth < 768) {
+                fetchOrdersFromCloud();
+            }
+        });
     </script>
 </body>
 </html>
